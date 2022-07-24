@@ -1,2 +1,11 @@
 # commit-check
-Check every commit with GitHub Action
+
+Check commit inlcude
+
+* conventional commit
+* conventional branch
+* bannded word
+* spell
+*
+
+## Development

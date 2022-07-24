@@ -1,0 +1,19 @@
+name: Commit Check Action
+description: Automatically check echo commits then post annotations/comments with faulty results.
+author: shenxianpeng
+branding:
+  icon: "check-circle"
+  color: "green"
+inputs:
+  conventional-commit:
+    description: Check commit message, more details please refer to https://www.conventionalcommits.org/en/v1.0.0/
+    required: false
+    default: "^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)"
+outputs:
+  checks-failed:
+    description: An integer that can be used as a boolean value to indicate if all checks failed.
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  args:
+    - --conventional-commit=${{ inputs.conventional-commit }}
