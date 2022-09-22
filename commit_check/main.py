@@ -4,12 +4,12 @@ import argparse
 import sys
 from typing import Sequence
 
-import pre_commit.constants as C
+import commit_check.constants as C
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
-    parser = argparse.ArgumentParser(prog='check-commit')
+    parser = argparse.ArgumentParser(prog='commit-check')
 
     parser.add_argument(
         '--version',

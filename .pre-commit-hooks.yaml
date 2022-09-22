@@ -1,0 +1,12 @@
+- id: check-msg-formatting
+  name: check for message formatting
+  description: prevents unconventional commits from being committed.
+  entry: check-msg-formatting
+  language: python
+  stages: [commit, push, manual]
+- id: check-branch-naming
+  name: check working branch naming
+  description: prevents unconventional branch from being pushed to remote repo.
+  entry: check-branch-naming
+  language: python
+  stages: [commit, push, manual]

@@ -8,4 +8,5 @@ else:  # pragma: <3.8 cover
     import importlib_metadata
 
 
+CONFIG_FILE = '.commitcheck.yml'
 VERSION = importlib_metadata.version('commit_check')
