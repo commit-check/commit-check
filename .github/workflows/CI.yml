@@ -34,7 +34,7 @@ jobs:
           path: ${{ github.workspace }}/dist/*.whl
       - name: run pre-commit
         run: |
-          pip install requirements-dev.txt
+          pip install -r requirements-dev.txt
           pre-commit run --all-files
       # - name: Collect Coverage
       #   run: coverage run -m pytest
