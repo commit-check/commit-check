@@ -1,0 +1,72 @@
+name: "CI"
+
+on:
+  push:
+    paths:
+      - "**.py"
+      - "**requirements*.txt"
+      - pyproject.toml
+      - ".github/workflows/CI.yml"
+      - "!docs/**"
+  pull_request:
+    types: opened
+    paths:
+      - "**.py"
+      - "**requirements*.txt"
+      - pyproject.toml
+      - ".github/workflows/CI.yml"
+      - "!docs/**"
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Build wheel
+        run: python3 -m pip wheel --no-deps -w dist .
+      - name: Upload wheel as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: cpp-linter_wheel
+          path: ${{ github.workspace }}/dist/*.whl
+      - name: run pre-commit
+        run: |
+          pip install requirements-dev.txt
+          pre-commit run --all-files
+      # - name: Collect Coverage
+      #   run: coverage run -m pytest
+
+      # - run: coverage report && coverage xml
+      # - uses: codecov/codecov-action@v3
+      #   with:
+      #     files: ./coverage.xml
+      #     fail_ci_if_error: true # optional (default = false)
+      #     verbose: true # optional (default = false)
+
+  install:
+    needs: [build-test]
+    strategy:
+      fail-fast: false
+      matrix:
+        py: ['3.7', '3.8', '3.9', '3.10']
+        os: ['windows-latest', ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.py }}
+
+      - name: download wheel artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: commit-check_wheel
+          path: dist
+
+      - name: Install workflow deps
+        # using a wildcard as filename on Windows requires a bash shell
+        shell: bash
+        run: python3 -m pip install dist/*.whl
