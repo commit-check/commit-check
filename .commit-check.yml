@@ -1,5 +1,5 @@
 options:
--   option: check-message
+-   option: message
     regex: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)'
     error: "
     <type>: <description>
@@ -10,6 +10,6 @@ options:
 
     More please refer to https://www.conventionalcommits.org
     "
--   option: check-branch
+-   option: branch
     regex: '^(bugfix|feature|release|hotfix|task)\/[\w-.]+|(master)|(main)'
     error: "Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/"
