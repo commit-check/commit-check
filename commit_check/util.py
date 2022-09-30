@@ -6,6 +6,7 @@ A module containing utility functions.
 """
 import subprocess
 from subprocess import CalledProcessError
+from sys import stdout
 
 
 CONFIG_FILE = '.commit-check.yml'
@@ -38,10 +39,11 @@ def get_commit_message() -> list:
 
 
 def cmd_output(*cmd: str) -> str:
-    # proc = subprocess.Popen(cmd)
-    # stdout, stderr = proc.communicate()
-    # stdout = stdout.decode('utf-8')
-    # if proc.returncode != 0:
-    #     raise CalledProcessError(cmd, 1, proc.returncode, stdout, stderr)
-    # return stdout
-    pass
+    process = subprocess.Popen(
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8'
+    )
+    stdout, stderr = process.communicate()
+    if process.returncode == 0 and stdout is not None:
+        return stdout
+    elif stderr != "":
+        return stderr
