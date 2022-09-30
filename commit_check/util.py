@@ -6,7 +6,6 @@ A module containing utility functions.
 """
 import subprocess
 from subprocess import CalledProcessError
-from sys import stdout
 
 
 CONFIG_FILE = '.commit-check.yml'
@@ -22,10 +21,10 @@ def get_branch_name() -> str:
     :returns: A `str` describing the current branch name.
     """
     try:
-        branch_name = cmd_output('git', 'rev-parse', '--abbrev-ref', 'HEAD')
+        branch_name = cmd_output('git rev-parse --abbrev-ref HEAD')
     except CalledProcessError:
         branch_name = ''
-    return branch_name
+    return branch_name.strip()
 
 
 def get_commit_message() -> list:
@@ -33,17 +32,26 @@ def get_commit_message() -> list:
 
     :returns: A `list` message not be pushed to remote.
     """
-    pass
-    # commit_messages = []
-    # commit_message = cmd_output('')
+    commit_message = []
+    try:
+        outputs = cmd_output(
+            f'git log origin/{get_branch_name()}..HEAD --pretty=format:"%s"',
+        ).splitlines()
+    except CalledProcessError:
+        output = ''
+    for output in outputs:
+        commit_message.append(output)
+    return commit_message
 
 
 def cmd_output(*cmd: str) -> str:
     process = subprocess.Popen(
-        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8'
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8',
     )
     stdout, stderr = process.communicate()
     if process.returncode == 0 and stdout is not None:
         return stdout
-    elif stderr != "":
+    elif stderr != '':
         return stderr
+    else:
+        return ''
