@@ -5,10 +5,9 @@
 A module containing utility functions.
 """
 import subprocess
+import yaml
 from subprocess import CalledProcessError
-
-
-CONFIG_FILE = '.commit-check.yml'
+from commit_check import CONFIG_FILE, RED, RESET_COLOR
 
 
 def get_branch_name() -> str:
@@ -45,6 +44,10 @@ def get_commit_message() -> list:
 
 
 def cmd_output(*cmd: str) -> str:
+    """Run command
+
+    :returns: Get `str` message.
+    """
     process = subprocess.Popen(
         cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8',
     )
@@ -55,3 +58,17 @@ def cmd_output(*cmd: str) -> str:
         return stderr
     else:
         return ''
+
+
+def validate_config() -> dict:
+    """Validate config file.
+
+    :returns: Get `dict` value if exist else get None.
+    """
+    try:
+        with open(CONFIG_FILE, 'r') as file:
+            configuration = yaml.safe_load(file)
+        return configuration
+    except FileNotFoundError:
+        print(f"\n{RED}{CONFIG_FILE} is not found under root directory.{RESET_COLOR}")
+        return None
