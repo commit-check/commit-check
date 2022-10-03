@@ -1,4 +1,4 @@
-name: Commit Checker
+name: Commit Check
 description: Check commit message formatting, branch naming, referencing Jira tickets, and more
 author: shenxianpeng
 branding:

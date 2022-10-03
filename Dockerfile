@@ -4,7 +4,7 @@ FROM ubuntu:20.04
 # See https://docs.github.com/en/actions/creating-actions/dockerfile-support-for-github-actions#workdir
 
 
-LABEL com.github.actions.name="Commit Checker"
+LABEL com.github.actions.name="Commit Check"
 LABEL com.github.actions.description="Check each commit with GitHub Action"
 LABEL com.github.actions.icon="code"
 LABEL com.github.actions.color="gray-dark"
