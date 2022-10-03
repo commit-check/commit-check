@@ -1,4 +1,4 @@
-Commit Check
+Commit Checker
 ============
 
 Check commit message formatting, branch naming, referencing Jira tickets, and more
