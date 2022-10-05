@@ -63,12 +63,14 @@ def cmd_output(*cmd: str) -> str:
 def validate_config() -> dict:
     """Validate config file.
 
-    :returns: Get `dict` value if exist else get None.
+    :returns: Get `dict` value if exist else get empty.
     """
+    configuration = {}
     try:
-        with open(CONFIG_FILE, 'r') as file:
-            configuration = yaml.safe_load(file)
-        return configuration
+        with open(CONFIG_FILE) as f:
+            configuration = yaml.safe_load(f)
     except FileNotFoundError:
-        print(f"\n{RED}{CONFIG_FILE} is not found under root directory.{RESET_COLOR}")
-        return None
+        print(
+            f'\n{RED}{CONFIG_FILE} is not found under root directory.{RESET_COLOR}',
+        )
+    return configuration

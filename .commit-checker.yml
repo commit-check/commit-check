@@ -14,7 +14,7 @@ checks:
     regex: '^(bugfix|feature|release|hotfix|task)\/[\w-.]+|(master)|(main)'
     error: "Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/"
 #   - check: ticket
-#     regex: 
+#     regex:
 
 ignore:
   - "tests/**"

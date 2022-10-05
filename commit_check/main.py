@@ -35,7 +35,8 @@ def get_parser() -> argparse.ArgumentParser:
         '--message',
         help=(
             'check commit message formatting convention. overwrite the config file if specified. '
-            'default follow conventional commits https://www.conventionalcommits.org if config file not exist.'
+            'by default follow conventional commits https://www.conventionalcommits.org '
+            'when config file not exist.'
         ),
         type=str,
         default='',
@@ -68,9 +69,9 @@ def main():
         if args.config:
             config = validate_config()
         if args.message:
-            message.check_message()
+            message.check_message(config)
         if args.branch:
-            branch.check_branch()
+            branch.check_branch(config)
 
 
 if __name__ == '__main__':
