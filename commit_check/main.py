@@ -9,7 +9,7 @@ import argparse
 from commit_check import branch
 from commit_check import message
 from commit_check.util import validate_config
-from . import RESET_COLOR, YELLOW, VERSION, CONFIG_FILE
+from . import RESET_COLOR, YELLOW, VERSION, CONFIG_FILE, DEFAULT_CONFIG
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -34,7 +34,8 @@ def get_parser() -> argparse.ArgumentParser:
         '-m',
         '--message',
         help=(
-            'check commit message formatting convention. overwrite the config file if specified. '
+            'check commit message formatting convention. '
+            'overwrite the config file if specified. '
             'by default follow conventional commits https://www.conventionalcommits.org '
             'when config file not exist.'
         ),
@@ -66,6 +67,7 @@ def main():
         )
         parser.print_help()
     else:
+        config = DEFAULT_CONFIG
         if args.config:
             config = validate_config()
         if args.message:

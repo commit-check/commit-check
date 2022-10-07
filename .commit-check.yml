@@ -16,5 +16,5 @@ checks:
 #   - check: ticket
 #     regex:
 
-ignore:
-  - "tests/**"
+# ignore:
+#   - "tests/**"
