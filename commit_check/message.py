@@ -6,6 +6,8 @@ def check_message(config) -> bool:
     checks = config['checks']
     for check in checks:
         if check['check'] == 'message':
+            if check['regex'] == "":
+                return True
             messages = get_commit_message()
             for message in messages:
                 result = re.match(check['regex'], message)
