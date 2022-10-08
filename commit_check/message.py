@@ -12,10 +12,13 @@ def check_message(config) -> bool:
                     f"{YELLOW}Not found regex for commit message. skip checking.{RESET_COLOR}",
                 )
                 return True
-            messages = get_commit_message()
-            for message in messages:
-                result = re.match(check['regex'], message)
+            commit_messages = get_commit_message()
+            for commit_message in commit_messages:
+                result = re.match(check['regex'], commit_message)
                 if result is None:
-                    error_tips('message', check['regex'], check['error'])
+                    error_tips(
+                        check['check'], check['regex'],
+                        check['error'], commit_message,
+                    )
                     return False
     return True

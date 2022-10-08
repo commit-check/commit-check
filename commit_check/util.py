@@ -7,7 +7,7 @@ A module containing utility functions.
 import subprocess
 import yaml
 from subprocess import CalledProcessError
-from commit_check import CONFIG_FILE
+from commit_check import CONFIG_FILE, RED, RESET_COLOR
 
 
 def get_branch_name() -> str:
@@ -74,7 +74,7 @@ def validate_config() -> dict:
     return configuration
 
 
-def error_tips(check: str, regex: str, error: str):
+def error_tips(check: str, regex: str, error: str, checkpoint: str):
     """Output error message.
 
     : returns: Give an error message to user
@@ -93,12 +93,16 @@ def error_tips(check: str, regex: str, error: str):
     print("Commit rejected.                                                  ")
     print("                                                                  ")
     if check == "message":
-        print("Invalid commit message. ", end='')
+        print(
+            f"Invalid commit message => {RED}{checkpoint}{RESET_COLOR} ", end='',
+        )
     elif check == "branch":
-        print("Invalid branch name. ", end='')
+        print(
+            f"Invalid branch name => {RED}{checkpoint}{RESET_COLOR} ", end='',
+        )
     else:
         print(f"commit-check does not support {check} yet.")
         SystemExit(1)
-    print(f"it does't match regex: {regex}")
+    print(f"\nIt does't match regex: {regex}")
     print("")
     print(error)

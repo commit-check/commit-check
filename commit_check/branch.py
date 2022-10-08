@@ -17,6 +17,9 @@ def check_branch(config) -> bool:
             branch_name = get_branch_name()
             result = re.match(check['regex'], branch_name)
             if result is None:
-                error_tips(check['check'], check['regex'], check['error'])
+                error_tips(
+                    check['check'], check['regex'],
+                    check['error'], branch_name,
+                )
                 return False
     return True
