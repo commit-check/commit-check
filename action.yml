@@ -25,7 +25,4 @@ runs:
     - name: Run commit-check
       id: commit-check
       shell: bash
-      run: |
-        commit-check \
-          --message="${{ inputs.check-message }}" \
-          --branch="${{ inputs.check-branch }}"
+      run: commit-check --message --branch
