@@ -11,6 +11,7 @@ license = {text = "MIT License"}
 authors = [
     { name = "Peter Shen", email = "xianpeng.shen@gmail.com" },
 ]
+dependencies = ["pyyaml"]
 classifiers = [
     # https://pypi.org/pypi?%3Aaction=list_classifiers
     "Development Status :: 1 - Planning",

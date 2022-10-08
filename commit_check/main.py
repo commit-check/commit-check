@@ -77,9 +77,7 @@ def main():
         )
         parser.print_help()
     else:
-        config = DEFAULT_CONFIG
-        if args.config:
-            config = validate_config()
+        config = validate_config() if validate_config() else DEFAULT_CONFIG
         if args.message:
             message.check_message(config)
         if args.branch:
