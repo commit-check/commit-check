@@ -53,6 +53,14 @@ def get_parser() -> argparse.ArgumentParser:
         required=False,
     )
 
+    parser.add_argument(
+        '-n',
+        '--no-verify',
+        help='bypasses commit-check.',
+        action="store_true",
+        required=False,
+    )
+
     return parser
 
 
@@ -60,6 +68,8 @@ def main():
     """The main entrypoint of commit-check program."""
     parser = get_parser()
     args = parser.parse_args()
+    if args.no_verify:
+        return
     if not any([args.message, args.branch, validate_config()]):
         print(
             f'\n{YELLOW}Nothing to do because `--message` and `--branch`',
@@ -77,4 +87,4 @@ def main():
 
 
 if __name__ == '__main__':
-    SystemExit(main())
+    main()
