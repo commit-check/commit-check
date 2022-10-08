@@ -25,6 +25,10 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: run pre-commit
+        run: pre-commit run --all-files
       - name: Build wheel
         run: python3 -m pip wheel --no-deps -w dist .
       - name: Upload wheel as artifact
@@ -32,10 +36,6 @@ jobs:
         with:
           name: commit-check_wheel
           path: ${{ github.workspace }}/dist/*.whl
-      - name: run pre-commit
-        run: |
-          pip install -r requirements-dev.txt
-          pre-commit run --all-files
       # - name: Collect Coverage
       #   run: coverage run -m pytest
 
