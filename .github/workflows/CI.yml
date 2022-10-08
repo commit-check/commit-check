@@ -66,8 +66,9 @@ jobs:
           name: commit-check_wheel
           path: dist
 
-      - name: Install workflow deps
+      - name: Install commit-check
         # using a wildcard as filename on Windows requires a bash shell
+        shell: bash
         run: python3 -m pip install dist/*.whl
 
       - name: Print commit check help

@@ -3,3 +3,4 @@ commit_check.egg-info
 .mypy_cache
 venv
 UNKNOWN.egg-info
+dist
