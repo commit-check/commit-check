@@ -68,5 +68,7 @@ jobs:
 
       - name: Install workflow deps
         # using a wildcard as filename on Windows requires a bash shell
-        shell: bash
         run: python3 -m pip install dist/*.whl
+
+      - name: Print commit check help
+        run: commit-check -h
