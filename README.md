@@ -123,14 +123,15 @@ Commit rejected by Commit-Check.
 
 Commit rejected.
 
-Invalid commit message.
+Invalid commit message. it does't match regex: ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)
 
-message does't match regex: ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)
+The commit message should be structured as follows:
 
-<type>: <description>
-For Example. feat: Support new feature xxxx
-Between type and description MUST have a colon and space.
-More please refer to https://www.conventionalcommits.or
+<type>[optional scope]: <description>
+[optional body]
+[optional footer(s)]
+
+More details please refer to https://www.conventionalcommits.org
 ```
 
 ### Check branch naming failed
@@ -149,11 +150,9 @@ Commit rejected by Commit-Check.
 
 Commit rejected.
 
-Invalid branch name.
+Invalid branch name. it does't match regex: ^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)
 
-branch does't match regex: ^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)
-
-Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/
+Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/ or master main
 ```
 
 ## Have question or feedback?
