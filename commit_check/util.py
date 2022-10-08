@@ -7,7 +7,7 @@ A module containing utility functions.
 import subprocess
 import yaml
 from subprocess import CalledProcessError
-from commit_check import CONFIG_FILE, RED, RESET_COLOR
+from commit_check import CONFIG_FILE
 
 
 def get_branch_name() -> str:
@@ -70,9 +70,7 @@ def validate_config() -> dict:
         with open(CONFIG_FILE) as f:
             configuration = yaml.safe_load(f)
     except FileNotFoundError:
-        print(
-            f'\n{RED}{CONFIG_FILE} is not found under root directory.{RESET_COLOR}',
-        )
+        pass
     return configuration
 
 
@@ -95,13 +93,12 @@ def error_tips(check: str, regex: str, error: str):
     print("Commit rejected.                                                  ")
     print("                                                                  ")
     if check == "message":
-        print("Invalid commit message.")
+        print("Invalid commit message. ", end='')
     elif check == "branch":
-        print("Invalid branch name.")
+        print("Invalid branch name. ", end='')
     else:
         print(f"commit-check does not support {check} yet.")
         SystemExit(1)
-    print("")
-    print(f"{check} does't match regex: {regex}")
+    print(f"it does't match regex: {regex}")
     print("")
     print(error)

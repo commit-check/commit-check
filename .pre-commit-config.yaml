@@ -33,3 +33,8 @@ repos:
     -   id: mypy
         additional_dependencies: [types-all]
         exclude: ^testing/resources/
+# -   repo: https://github.com/commit-check/commit-check
+#     rev: 74fc18ba405b566b9c99adfa7d26fc665b00b6a5
+#     hooks:
+#     -   id: check-message
+#     -   id: check-branch

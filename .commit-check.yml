@@ -1,17 +1,11 @@
 checks:
   - check: message
     regex: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)'
-    error: "The commit message should be structured as follows:
-    <type>[optional scope]: <description>
-
-    [optional body]
-
-    [optional footer(s)]
-
+    error: "The commit message should be structured as follows:\n\n
+    <type>[optional scope]: <description>\n
+    [optional body]\n
+    [optional footer(s)]\n\n
     More details please refer to https://www.conventionalcommits.org"
   - check: branch
     regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)'
-    error: "Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/"
-
-# ignore:
-#   - "tests/**"
+    error: 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/'
