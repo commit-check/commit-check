@@ -44,14 +44,14 @@ jobs:
           git push --delete origin latest || true
           git tag -a latest -m 'Retag latest commit'
           git push origin latest
-      - name: Test commit-check github action
-        uses: commit-check/commit-check@latest
-        id: commit-check
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          commit: true
-          branch: true
+      # - name: Test commit-check github action
+      #   uses: commit-check/commit-check@latest
+      #   id: commit-check
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     commit: true
+      #     branch: true
       # - name: Collect Coverage
       #   run: coverage run -m pytest
 
