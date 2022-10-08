@@ -36,27 +36,27 @@ def get_parser() -> argparse.ArgumentParser:
         help=(
             'check commit message formatting convention. '
             'overwrite the config file if specified. '
-            'by default follow conventional commits https://www.conventionalcommits.org '
-            'when config file not exist.'
+            'by default follow conventional commits https://www.conventionalcommits.org'
         ),
-        type=str,
-        default='',
+        action="store_true",
         required=False,
     )
 
     parser.add_argument(
         '-b',
         '--branch',
-        help='check git branch naming convention. overwrite the config file if specified.',
-        type=str,
-        default='',
+        help=(
+            'check git branch naming convention. overwrite the config file if specified. '
+            'by default follow bitbucket branching model.'
+        ),
+        action="store_true",
         required=False,
     )
 
     parser.add_argument(
         '-n',
         '--no-verify',
-        help='bypasses commit-check.',
+        help='bypasses all commit checks',
         action="store_true",
         required=False,
     )

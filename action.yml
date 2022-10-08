@@ -12,7 +12,7 @@ inputs:
   branch:
     description: prevents unconventional branch from being pushed to remote repo.
     required: false
-    default: '^(bugfix|feature|release|hotfix|task)\/[\w-.]+|(master)|(main)'
+    default: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)'
 outputs:
   checks-failed:
     description: An integer that can be used as a boolean value to indicate if all checks failed.

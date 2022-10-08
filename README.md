@@ -62,7 +62,7 @@ checks:
 
 ### Use default configuration
 
-If you do not set .commit-check.yml, `commit-check` will use the default configuration. i.e. the commit message will follow the rules of [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary), but will not check branch naming.
+If you do not set `.commit-check.yml`, `commit-check` will use the default configuration. i.e. the commit message will follow the rules of [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary), branch naming follow bitbucket [branching model](https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/).
 
 If you want to skip the `commit-check`, you can use the option `-n` or `--no-verify`.
 

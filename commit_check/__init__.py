@@ -20,11 +20,11 @@ DEFAULT_CONFIG = {
             '[optional footer(s)]\n\n'
             'More details please refer to https://www.conventionalcommits.org',
         },
-        # {
-        #     'check': 'branch',
-        #     'regex': r'^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)',
-        #     'error': 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/',
-        # },
+        {
+            'check': 'branch',
+            'regex': r'^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|',
+            'error': 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/',
+        },
     ],
 }
 
