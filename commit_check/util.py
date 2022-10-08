@@ -34,7 +34,7 @@ def get_commit_message() -> list:
     commit_message = []
     try:
         outputs = cmd_output(
-            f'git log origin/{get_branch_name()}..HEAD --pretty=format:"%s"',
+            'git log --branches --not --remotes --pretty=format:"%s"',
         ).splitlines()
     except CalledProcessError:
         output = ''
@@ -74,3 +74,34 @@ def validate_config() -> dict:
             f'\n{RED}{CONFIG_FILE} is not found under root directory.{RESET_COLOR}',
         )
     return configuration
+
+
+def error_tips(check: str, regex: str, error: str):
+    """Output error message.
+
+    : returns: Give an error message to user
+    """
+    print("Commit rejected by Commit-Check.                                  ")
+    print("                                                                  ")
+    print(r"  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)  ")
+    print(r"   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \   ")
+    print(r" __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__ ")
+    print(r"(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)")
+    print(r"   || E ||      || R ||      || R ||      || O ||      || R ||   ")
+    print(r" _.' `-' '._  _.' `-' '._  _.' `-' '._  _.' `-' '._  _.' `-' '.  ")
+    print(r"(.-./`-'\.-.)(.-./`-`\.-.)(.-./`-`\.-.)(.-./`-'\.-.)(.-./`-`\.-.)")
+    print(r" `-'     `-'  `-'     `-'  `-'     `-'  `-'     `-'  `-'     `-' ")
+    print("                                                                  ")
+    print("Commit rejected.                                                  ")
+    print("                                                                  ")
+    if check == "message":
+        print("Invalid commit message.")
+    elif check == "branch":
+        print("Invalid branch name.")
+    else:
+        print(f"commit-check does not support {check} yet.")
+        SystemExit(1)
+    print("")
+    print(f"{check} does't match regex: {regex}")
+    print("")
+    print(error)

@@ -1,17 +1,15 @@
 checks:
   - check: message
     regex: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)'
-    error: "
-    <type>: <description>
+    error: "<type>: <description>
 
-    For Example. feat: Support for async execution
+    For Example. feat: Support new feature xxxx
 
     Between type and description MUST have a colon and space.
 
-    More please refer to https://www.conventionalcommits.org
-    "
+    More please refer to https://www.conventionalcommits.org"
   - check: branch
-    regex: '^(bugfix|feature|release|hotfix|task)\/[\w-.]+|(master)|(main)'
+    regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)'
     error: "Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/"
 #   - check: ticket
 #     regex:
