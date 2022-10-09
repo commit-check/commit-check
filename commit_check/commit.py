@@ -1,6 +1,6 @@
 import re
 from commit_check import YELLOW, RESET_COLOR
-from commit_check.util import get_commit_message, error_tips
+from commit_check.util import get_commit_message, print_error_message
 
 
 def check_message(config) -> bool:
@@ -16,7 +16,7 @@ def check_message(config) -> bool:
             for commit_message in commit_messages:
                 result = re.match(check['regex'], commit_message)
                 if result is None:
-                    error_tips(
+                    print_error_message(
                         check['check'], check['regex'],
                         check['error'], commit_message,
                     )

@@ -162,3 +162,5 @@ To provide feedback (requesting a feature or reporting a bug) please post to [is
 ## License
 
 The scripts and documentation in this project are released under the [MIT License](LICENSE)
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/H2H85WC9L)

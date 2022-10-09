@@ -7,7 +7,7 @@ The module containing main entrypoint function.
 import argparse
 
 from commit_check import branch
-from commit_check import message
+from commit_check import commit
 from commit_check.util import validate_config
 from . import RESET_COLOR, YELLOW, VERSION, CONFIG_FILE, DEFAULT_CONFIG
 
@@ -27,7 +27,7 @@ def get_parser() -> argparse.ArgumentParser:
         '-c',
         '--config',
         default=CONFIG_FILE,
-        help='path to alternate config file',
+        help='path to alternate config file. default is the current path',
     )
 
     parser.add_argument(
@@ -70,16 +70,18 @@ def main():
     args = parser.parse_args()
     if args.no_verify:
         return
-    if not any([args.message, args.branch, validate_config()]):
+    if not any([args.message, args.branch]):
         print(
             f'\n{YELLOW}Nothing to do because `--message` and `--branch`',
             f'was not specified.{RESET_COLOR}\n',
         )
         parser.print_help()
     else:
-        config = validate_config() if validate_config() else DEFAULT_CONFIG
+        config = validate_config(args.config) if validate_config(
+            args.config,
+        ) else DEFAULT_CONFIG
         if args.message:
-            message.check_message(config)
+            commit.check_message(config)
         if args.branch:
             branch.check_branch(config)
 

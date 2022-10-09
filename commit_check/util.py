@@ -6,8 +6,9 @@ A module containing utility functions.
 """
 import subprocess
 import yaml
+from pathlib import PurePath
 from subprocess import CalledProcessError
-from commit_check import CONFIG_FILE, RED, RESET_COLOR
+from commit_check import RED, RESET_COLOR
 
 
 def get_branch_name() -> str:
@@ -60,24 +61,24 @@ def cmd_output(*cmd: str) -> str:
         return ''
 
 
-def validate_config() -> dict:
+def validate_config(path_to_config: str) -> dict:
     """Validate config file.
 
     :returns: Get `dict` value if exist else get empty.
     """
     configuration = {}
     try:
-        with open(CONFIG_FILE) as f:
+        with open(PurePath(path_to_config)) as f:
             configuration = yaml.safe_load(f)
     except FileNotFoundError:
         pass
     return configuration
 
 
-def error_tips(check: str, regex: str, error: str, checkpoint: str):
-    """Output error message.
+def print_error_message(check: str, regex: str, error: str, checkpoint: str):
+    """Print error message.
 
-    : returns: Give an error message to user
+    : returns: Give error messages to user
     """
     print("Commit rejected by Commit-Check.                                  ")
     print("                                                                  ")

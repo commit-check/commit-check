@@ -27,7 +27,7 @@ jobs:
           python-version: '3.x'
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
-      - name: run pre-commit
+      - name: Run pre-commit
         run: pre-commit run --all-files
       - name: Build wheel
         run: python3 -m pip wheel --no-deps -w dist .

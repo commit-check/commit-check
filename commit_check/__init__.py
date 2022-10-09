@@ -32,4 +32,5 @@ DEFAULT_CONFIG = {
 """
 Overwrite default config if .commit-check.yml exist.
 """
+
 CONFIG_FILE = '.commit-check.yml'
