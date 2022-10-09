@@ -114,6 +114,10 @@ def print_error_message(check: str, regex: str, error: str, checkpoint: str):
         print(
             f"Invalid branch name => {RED}{checkpoint}{RESET_COLOR} ", end='',
         )
+    elif check == "email":
+        print(
+            f"Invalid email address => {RED}{checkpoint}{RESET_COLOR} ", end='',
+        )
     else:
         print(f"commit-check does not support {check} yet.")
         SystemExit(1)
