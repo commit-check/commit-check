@@ -14,5 +14,5 @@ checks:
     error: 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/'
   # Check committer email address
   - check: email
-    regex: '^\S+@rs.\S+$'
+    regex: '^\S+@gmail.\S+$'
     error: 'Your email address is not a gmail'
