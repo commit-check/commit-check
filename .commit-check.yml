@@ -1,4 +1,6 @@
+# List all the checks.
 checks:
+  # Check the format of commit message
   - check: message
     regex: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)'
     error: "The commit message should be structured as follows:\n\n
@@ -6,6 +8,11 @@ checks:
     [optional body]\n
     [optional footer(s)]\n\n
     More details please refer to https://www.conventionalcommits.org"
+  # Check local branch naming
   - check: branch
     regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)'
     error: 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/'
+  # Check committer email address
+  - check: email
+    regex: '^\S+@rs.\S+$'
+    error: 'Your email address is not a gmail'

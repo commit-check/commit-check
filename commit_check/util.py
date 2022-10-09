@@ -44,6 +44,19 @@ def get_commit_message() -> list:
     return commit_message
 
 
+def get_committer_email() -> list:
+    committer_email = []
+    try:
+        outputs = cmd_output(
+            'git log --branches --not --remotes --pretty=format:"%ae"',
+        ).splitlines()
+    except CalledProcessError:
+        output = ''
+    for output in outputs:
+        committer_email.append(output)
+    return committer_email
+
+
 def cmd_output(*cmd: str) -> str:
     """Run command
 

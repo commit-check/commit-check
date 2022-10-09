@@ -25,6 +25,11 @@ DEFAULT_CONFIG = {
             'regex': r'^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|',
             'error': 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/',
         },
+        {
+            'check': 'email',
+            'regex': r'/^\S+@\S+\.\S+$/',
+            'error': 'The email address seems invalid',
+        },
     ],
 }
 
