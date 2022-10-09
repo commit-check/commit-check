@@ -57,8 +57,19 @@ def get_parser() -> argparse.ArgumentParser:
         '-e',
         '--email',
         help=(
-            'check committer email address. overwrite the config file if specified. '
+            'check committer author email. overwrite the config file if specified. '
             'by default check general email address.'
+        ),
+        action="store_true",
+        required=False,
+    )
+
+    parser.add_argument(
+        '-n',
+        '--name',
+        help=(
+            'check committer author name. overwrite the config file if specified. '
+            'No check by default'
         ),
         action="store_true",
         required=False,
@@ -92,11 +103,11 @@ def main():
             args.config,
         ) else DEFAULT_CONFIG
         if args.message:
-            commit.check_commit_message(config)
-        if args.branch:
-            branch.check_branch(config)
+            commit.check_commits(config, 'commit_message')
         if args.email:
-            commit.check_committer_email(config)
+            commit.check_commits(config, 'author_email')
+        if args.branch:
+            branch.check_branch(config, 'branch_name')
 
 
 if __name__ == '__main__':

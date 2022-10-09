@@ -12,7 +12,7 @@ Use default config if .commit-check.yml not exist.
 DEFAULT_CONFIG = {
     'checks': [
         {
-            'check': 'message',
+            'check': 'commit_message',
             'regex': r'^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)',
             'error': 'The commit message should be structured as follows:\n\n'
             '<type>[optional scope]: <description>\n'
@@ -21,12 +21,12 @@ DEFAULT_CONFIG = {
             'More details please refer to https://www.conventionalcommits.org',
         },
         {
-            'check': 'branch',
+            'check': 'branch_name',
             'regex': r'^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|',
             'error': 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/',
         },
         {
-            'check': 'email',
+            'check': 'author_email',
             'regex': r'/^\S+@\S+\.\S+$/',
             'error': 'The email address seems invalid',
         },

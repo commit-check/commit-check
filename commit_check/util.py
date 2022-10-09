@@ -44,17 +44,24 @@ def get_commit_message() -> list:
     return commit_message
 
 
-def get_committer_email() -> list:
-    committer_email = []
+def get_commits_info(format_string) -> list:
+    """Get commits information
+    %s  - subject
+    %ae - author email
+    %an - author name
+
+    :returns: A `list` info not be pushed to remote.
+    """
+    committer_info = []
     try:
         outputs = cmd_output(
-            'git log --branches --not --remotes --pretty=format:"%ae"',
+            f'git log --branches --not --remotes --pretty=format:"%{format_string}"',
         ).splitlines()
     except CalledProcessError:
         output = ''
     for output in outputs:
-        committer_email.append(output)
-    return committer_email
+        committer_info.append(output)
+    return committer_info
 
 
 def cmd_output(*cmd: str) -> str:

@@ -8,7 +8,7 @@ from commit_check.util import get_branch_name, print_error_message
 def check_branch(config) -> bool:
     checks = config['checks']
     for check in checks:
-        if check['check'] == 'branch':
+        if check['check'] == 'branch_name':
             if check['regex'] == "":
                 print(
                     f"{YELLOW}Not found regex for branch naming. skip checking.{RESET_COLOR}",
