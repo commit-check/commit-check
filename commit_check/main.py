@@ -65,8 +65,8 @@ def get_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        '-n',
-        '--name',
+        '-a',
+        '--author-name',
         help=(
             'check committer author name. overwrite the config file if specified. '
             'No check by default'
@@ -106,6 +106,8 @@ def main():
             commit.check_commits(config, 'commit_message')
         if args.email:
             commit.check_commits(config, 'author_email')
+        if args.author_name:
+            commit.check_commits(config, 'author_name')
         if args.branch:
             branch.check_branch(config, 'branch_name')
 

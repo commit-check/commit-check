@@ -113,17 +113,21 @@ def print_error_message(check: str, regex: str, error: str, checkpoint: str):
     print("                                                                  ")
     print("Commit rejected.                                                  ")
     print("                                                                  ")
-    if check == "message":
+    if check == "commit_message":
         print(
             f"Invalid commit message => {RED}{checkpoint}{RESET_COLOR} ", end='',
         )
-    elif check == "branch":
+    elif check == "branch_name":
         print(
             f"Invalid branch name => {RED}{checkpoint}{RESET_COLOR} ", end='',
         )
-    elif check == "email":
+    elif check == "author_email":
         print(
             f"Invalid email address => {RED}{checkpoint}{RESET_COLOR} ", end='',
+        )
+    elif check == "author_name":
+        print(
+            f"Invalid author name => {RED}{checkpoint}{RESET_COLOR} ", end='',
         )
     else:
         print(f"commit-check does not support {check} yet.")
