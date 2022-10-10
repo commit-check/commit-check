@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 # WORKDIR option is set by the github action to the environment variable GITHUB_WORKSPACE.
 # See https://docs.github.com/en/actions/creating-actions/dockerfile-support-for-github-actions#workdir
