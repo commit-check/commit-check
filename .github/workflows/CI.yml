@@ -1,0 +1,95 @@
+name: "CI"
+
+on:
+  push:
+    paths:
+      - "**.py"
+      - "**requirements*.txt"
+      - pyproject.toml
+      - ".github/workflows/CI.yml"
+      - "!docs/**"
+  pull_request:
+    types: opened
+    paths:
+      - "**.py"
+      - "**requirements*.txt"
+      - pyproject.toml
+      - ".github/workflows/CI.yml"
+      - "!docs/**"
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-dev.txt
+          pip install -e .
+      - name: Run pre-commit
+        run: |
+          pre-commit run --all-files
+          pre-commit try-repo .
+      - name: Build wheel
+        run: python3 -m pip wheel --no-deps -w dist .
+      - name: Upload wheel as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: commit-check_wheel
+          path: ${{ github.workspace }}/dist/*.whl
+      - name: Retag latest commit for testing
+        run: |
+          git config user.name 'github-actions'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag --delete latest || true
+          git push --delete origin latest || true
+          git tag -a latest -m 'Retag latest commit'
+          git push origin latest
+      # - name: Test commit-check github action
+      #   uses: commit-check/commit-check@latest
+      #   id: commit-check
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     commit: true
+      #     branch: true
+      # - name: Collect Coverage
+      #   run: coverage run -m pytest
+
+      # - run: coverage report && coverage xml
+      # - uses: codecov/codecov-action@v3
+      #   with:
+      #     files: ./coverage.xml
+      #     fail_ci_if_error: true # optional (default = false)
+      #     verbose: true # optional (default = false)
+
+  install:
+    needs: [build-test]
+    strategy:
+      fail-fast: false
+      matrix:
+        py: ['3.7', '3.8', '3.9', '3.10']
+        os: ['windows-latest', ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.py }}
+
+      - name: download wheel artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: commit-check_wheel
+          path: dist
+
+      - name: Install commit-check
+        # using a wildcard as filename on Windows requires a bash shell
+        shell: bash
+        run: python3 -m pip install dist/*.whl
+
+      - name: Print commit check help
+        run: commit-check -h

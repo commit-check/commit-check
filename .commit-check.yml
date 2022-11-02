@@ -1,0 +1,23 @@
+# List all the checks.
+# Supports commit_message, branch_name, author_email, author_name and more.
+checks:
+  # Check git commit message formatting
+  - check: commit_message
+    regex: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)'
+    error: "The commit message should be structured as follows:\n\n
+    <type>[optional scope]: <description>\n
+    [optional body]\n
+    [optional footer(s)]\n\n
+    More details please refer to https://www.conventionalcommits.org"
+  # Check git branch name
+  - check: branch_name
+    regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)'
+    error: 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/'
+   # Check git committer name
+  - check: author_name
+    regex: '^\S+@gmail.\S+$'
+    error: 'Your email address is not a gmail'
+  # Check git committer email
+  - check: author_email
+    regex: r'^([a-zA-Z]{2,}\s[a-zA-Z]{1,}'?-?[a-zA-Z]{2,}\s?([a-zA-Z]{1,})?)'
+    error: 'Your name seems invalid'

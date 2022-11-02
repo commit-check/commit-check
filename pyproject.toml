@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=61", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "commit-check"
+description = "Check commit message formatting, branch nanming, referencing Jira tickets, and more"
+readme = "README.md"
+keywords = ["message", "branch", "formatting", "naming", "referencing"]
+license = {text = "MIT License"}
+authors = [
+    { name = "Peter Shen", email = "xianpeng.shen@gmail.com" },
+]
+dependencies = ["pyyaml"]
+classifiers = [
+    # https://pypi.org/pypi?%3Aaction=list_classifiers
+    "Development Status :: 1 - Planning",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Information Technology",
+    "Natural Language :: English",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Build Tools",
+]
+dynamic = ["version"]
+
+[project.scripts]
+commit-check = "commit_check.main:main"
+
+[project.urls]
+source =  "https://github.com/commit-check/commit-check"
+tracker = "https://github.com/commit-check/commit-check/issues"
+
+# ... other project metadata fields as specified in:
+#     https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
+
+[tool.setuptools]
+zip-safe = false
+packages = ["commit_check"]
+
+[tool.setuptools_scm]
+# It would be nice to include the commit hash in the version, but that
+# can't be done in a PEP 440-compatible way.
+version_scheme= "no-guess-dev"
+# Test PyPI does not support local versions.
+local_scheme = "no-local-version"
+fallback_version = "0.0.0"
+
+[tool.mypy]
+show_error_codes = true
+show_column_numbers = true
+
+[tool.coverage]
+omit = [
+    # don't include tests in coverage
+    "tests/*",
+]

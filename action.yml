@@ -1,0 +1,28 @@
+name: Commit Check
+description: Check commit message formatting, branch naming, referencing Jira tickets, and more
+author: shenxianpeng
+branding:
+  icon: "check-circle"
+  color: "green"
+inputs:
+  message:
+    description: prevents unconventional commits from being committed.
+    required: false
+    default: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)'
+  branch:
+    description: prevents unconventional branch from being pushed to remote repo.
+    required: false
+    default: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)'
+outputs:
+  checks-failed:
+    description: An integer that can be used as a boolean value to indicate if all checks failed.
+runs:
+  using: "composite"
+  steps:
+    - name: Install action dependencies
+      shell: bash
+      run: python3 -m pip install git@github.com:commit-check/commit-check.git@main
+    - name: Run commit-check
+      id: commit-check
+      shell: bash
+      run: commit-check --message --branch
