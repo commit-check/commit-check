@@ -131,7 +131,7 @@ def print_error_message(check: str, regex: str, error: str, checkpoint: str):
         )
     else:
         print(f"commit-check does not support {check} yet.")
-        SystemExit(1)
+        raise SystemExit(1)
     print(f"\nIt does't match regex: {regex}")
     print("")
     print(error)
