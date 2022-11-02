@@ -11,7 +11,7 @@ checks:
     More details please refer to https://www.conventionalcommits.org"
   # Check git branch name
   - check: branch_name
-    regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)'
+    regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)'
     error: 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/'
    # Check git committer name
   - check: author_name
