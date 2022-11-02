@@ -74,7 +74,7 @@ Make sure `pre-commit` is [installed](https://pre-commit.com/#install).
 default_install_hook_types: [pre-commit, commit-msg]
 
 -   repo: https://github.com/commit-check/commit-check
-    rev: v1.0.0
+    rev: v0.1.0
     hooks:
     -   id: check-message
     -   id: check-branch

@@ -36,22 +36,8 @@ repos:
     -   id: mypy
         additional_dependencies: [types-all]
         exclude: ^testing/resources/
--   repo: local
+-   repo: https://github.com/commit-check/commit-check
+    rev: v0.1.0
     hooks:
     -   id: check-message
-        name: check message formatting
-        description: prevents unconventional commits from being committed.
-        entry: commit-check
-        args: ["--message"]
-        pass_filenames: false
-        language: python
-        always_run: true
-        stages: [commit-msg]
     -   id: check-branch
-        name: check branch naming
-        description: prevents unconventional branch from being pushed to remote repo.
-        entry: commit-check
-        args: ["--branch"]
-        pass_filenames: false
-        language: python
-        always_run: true
