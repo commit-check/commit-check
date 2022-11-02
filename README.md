@@ -1,5 +1,11 @@
 # Commit Check
 
+[![PyPI](https://img.shields.io/pypi/v/commit-check)](https://pypi.org/project/commit-check/)
+[![CI](https://github.com/commit-check/commit-check/actions/workflows/CI.yml/badge.svg)](https://github.com/commit-check/commit-check/actions/workflows/CI.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=commit-check_commit-check)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
+<!-- [![PyPI - Downloads](https://img.shields.io/pypi/dw/commit-check)](https://pypi.org/project/commit-check/) -->
+
 Check commit message formatting, branch naming, referencing Jira tickets, and more
 
 ## About
@@ -74,7 +80,7 @@ Make sure `pre-commit` is [installed](https://pre-commit.com/#install).
 default_install_hook_types: [pre-commit, commit-msg]
 
 -   repo: https://github.com/commit-check/commit-check
-    rev: v1.0.0
+    rev: v0.1.0
     hooks:
     -   id: check-message
     -   id: check-branch
@@ -88,7 +94,7 @@ name: commit-check
 on: pull_request
 
 jobs:
-  cpp-linter:
+  commit-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
