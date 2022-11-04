@@ -20,9 +20,10 @@ runs:
       id: commit-check
       shell: bash
       run: |
-        if [ ${{ inputs.message }} == 'true' ]; then
+        pip install commit-check
+        if [ "${{ inputs.message }}" == "true" ]; then
           commit-check --message
         fi
-        if [ ${{ inputs.branch }} == 'true' ]; then
+        if [ "${{ inputs.branch }} " == "true" ]; then
           commit-check --branch
         fi
