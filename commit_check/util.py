@@ -27,24 +27,7 @@ def get_branch_name() -> str:
     return branch_name.strip()
 
 
-def get_commit_message(number: int = 1) -> list:
-    """Identify latest commit message on local.
-
-    :returns: A `list` message not be pushed to remote.
-    """
-    commit_message = []
-    try:
-        outputs = cmd_output(
-            f'git log -n {number} --pretty=format:"%s"',
-        ).splitlines()
-    except CalledProcessError:
-        output = ''
-    for output in outputs:
-        commit_message.append(output)
-    return commit_message
-
-
-def get_commits_info(format_string) -> list:
+def get_commits_info(format_string: str, number: int = 1) -> list:
     """Get commits information
     %s  - subject
     %ae - author email
@@ -55,7 +38,7 @@ def get_commits_info(format_string) -> list:
     committer_info = []
     try:
         outputs = cmd_output(
-            f'git log --branches --not --remotes --pretty=format:"%{format_string}"',
+            f'git log -n {number} --pretty=format:"%{format_string}"',
         ).splitlines()
     except CalledProcessError:
         output = ''
