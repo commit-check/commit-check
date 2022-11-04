@@ -38,4 +38,4 @@ repos:
     rev: v0
     hooks:
     -   id: check-message
-    # -   id: check-branch
+    -   id: check-branch
