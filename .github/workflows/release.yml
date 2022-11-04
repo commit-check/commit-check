@@ -65,5 +65,5 @@ jobs:
       run: |
         git tag --delete v0 || true
         git push --delete origin v0 || true
-        git tag -a v2 -m 'Retag v0'
+        git tag -a v0 -m 'Retag v0'
         git push origin v0

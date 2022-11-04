@@ -4,12 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "**.py"
-      - "**requirements*.txt"
-      - pyproject.toml
-      - ".github/workflows/CI.yml"
-      - "!docs/**"
   pull_request:
     types: opened
     paths:
@@ -18,6 +12,7 @@ on:
       - pyproject.toml
       - ".github/workflows/CI.yml"
       - "!docs/**"
+  workflow_dispatch:
 
 jobs:
   build-test:
