@@ -5,7 +5,7 @@
   args: ["--message"]
   pass_filenames: false
   language: python
-  always_run: true
+  stages: [commit-msg]
 - id: check-branch
   name: check branch naming
   description: prevents unconventional branch from being pushed to remote repo.
@@ -13,4 +13,3 @@
   args: ["--branch"]
   pass_filenames: false
   language: python
-  always_run: true

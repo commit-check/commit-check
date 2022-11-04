@@ -1,0 +1,16 @@
+name: commit-check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  commit-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: commit-check/commit-check@v0
+        id: check
+        with:
+          message: true
+          branch: true

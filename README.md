@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: commit-check/commit-check@v1
+      - uses: commit-check/commit-check@v0
         id: check
         with:
           message: true
