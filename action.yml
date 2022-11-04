@@ -8,14 +8,11 @@ inputs:
   message:
     description: prevents unconventional commits from being committed.
     required: false
-    default: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)'
+    default: 'true'
   branch:
     description: prevents unconventional branch from being pushed to remote repo.
     required: false
-    default: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)'
-outputs:
-  checks-failed:
-    description: An integer that can be used as a boolean value to indicate if all checks failed.
+    default: 'true'
 runs:
   using: "composite"
   steps:
@@ -25,4 +22,10 @@ runs:
     - name: Run commit-check
       id: commit-check
       shell: bash
-      run: commit-check --message --branch
+      run: |
+        if [ ${{ inputs.message }} == 'true' ]; then
+          commit-check --message
+        fi
+        if [ ${{ inputs.branch }} == 'true' ]; then
+          commit-check --branch
+        fi

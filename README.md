@@ -99,16 +99,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: commit-check/commit-check@v1
-        id: linter
+        id: check
         with:
-          message: file
-          branch: file
-
-      - name: Fail fast?!
-        if: steps.commit-check.outputs.checks-failed > 0
-        run: echo "commit-check failed!"
-        # for actual deployment
-        # run: exit 1
+          message: true
+          branch: true
 ```
 
 ## Example
