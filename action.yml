@@ -16,9 +16,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install action dependencies
-      shell: bash
-      run: python3 -m pip install git@github.com:commit-check/commit-check.git@main
     - name: Run commit-check
       id: commit-check
       shell: bash
