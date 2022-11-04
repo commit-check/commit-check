@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-test:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -36,22 +36,6 @@ jobs:
         with:
           name: commit-check_wheel
           path: ${{ github.workspace }}/dist/*.whl
-      - name: Retag latest commit for testing
-        run: |
-          git config user.name 'github-actions'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git tag --delete latest || true
-          git push --delete origin latest || true
-          git tag -a latest -m 'Retag latest commit'
-          git push origin latest
-      # - name: Test commit-check github action
-      #   uses: commit-check/commit-check@latest
-      #   id: commit-check
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     commit: true
-      #     branch: true
       # - name: Collect Coverage
       #   run: coverage run -m pytest
 
@@ -63,7 +47,7 @@ jobs:
       #     verbose: true # optional (default = false)
 
   install:
-    needs: [build-test]
+    needs: [build]
     strategy:
       fail-fast: false
       matrix:
