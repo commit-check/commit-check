@@ -43,6 +43,8 @@ def get_commits_info(format_string: str, number: int = 1) -> list:
     except CalledProcessError:
         output = ''
     for output in outputs:
+        if "Merge " in output:
+            continue # skip Merge 2066d into 4d89f
         committer_info.append(output)
     return committer_info
 
