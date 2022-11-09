@@ -38,6 +38,12 @@ On macOS, it can also be installed via homebrew:
 
 TODO
 
+Install from git repo
+
+```bash
+pip install git+https://github.com/commit-check/commit-check.git@main
+```
+
 ```
 brew install commit-check
 ```
