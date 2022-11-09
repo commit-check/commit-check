@@ -21,7 +21,8 @@ def get_branch_name() -> str:
     :returns: A `str` describing the current branch name.
     """
     try:
-        branch_name = cmd_output('git rev-parse --abbrev-ref HEAD')
+        commands = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
+        branch_name = cmd_output(commands)
     except CalledProcessError:
         branch_name = ''
     return branch_name.strip()
@@ -37,9 +38,8 @@ def get_commits_info(format_string: str, number: int = 1) -> list:
     """
     committer_info = []
     try:
-        outputs = cmd_output(
-            f'git log -n {number} --pretty=format:"%{format_string}"',
-        ).splitlines()
+        commands = ['git', 'log', '-n', f'{number}', f"--pretty=format:%{format_string}"]
+        outputs = cmd_output(commands).splitlines()
     except CalledProcessError:
         output = ''
     for output in outputs:
@@ -49,19 +49,18 @@ def get_commits_info(format_string: str, number: int = 1) -> list:
     return committer_info
 
 
-def cmd_output(*cmd: str) -> str:
+def cmd_output(commands: list) -> str:
     """Run command
 
     :returns: Get `str` message.
     """
-    process = subprocess.Popen(
-        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8',
+    result = subprocess.run(
+        commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8',
     )
-    stdout, stderr = process.communicate()
-    if process.returncode == 0 and stdout is not None:
-        return stdout
-    elif stderr != '':
-        return stderr
+    if result.returncode == 0 and result.stdout is not None:
+        return result.stdout
+    elif result.stderr != '':
+        return result.stderr
     else:
         return ''
 
