@@ -38,7 +38,10 @@ def get_commits_info(format_string: str, number: int = 1) -> list:
     """
     committer_info = []
     try:
-        commands = ['git', 'log', '-n', f'{number}', f"--pretty=format:%{format_string}"]
+        commands = [
+            'git', 'log', '-n',
+            f'{number}', f"--pretty=format:%{format_string}",
+        ]
         outputs = cmd_output(commands).splitlines()
     except CalledProcessError:
         output = ''
@@ -55,7 +58,7 @@ def cmd_output(commands: list) -> str:
     :returns: Get `str` message.
     """
     result = subprocess.run(
-        commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8',
+        commands, capture_output=True, encoding='utf-8',
     )
     if result.returncode == 0 and result.stdout is not None:
         return result.stdout
