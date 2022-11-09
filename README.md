@@ -34,18 +34,16 @@ User installation
 pip install -U commit-check
 ```
 
-On macOS, it can also be installed via homebrew:
+TODO: On macOS, it can also be installed via homebrew:
 
-TODO
+```
+brew install commit-check
+```
 
 Install from git repo
 
 ```bash
 pip install git+https://github.com/commit-check/commit-check.git@main
-```
-
-```
-brew install commit-check
 ```
 
 ## Usage
