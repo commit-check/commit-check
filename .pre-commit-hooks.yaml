@@ -2,14 +2,14 @@
   name: check message formatting
   description: prevents unconventional commits from being committed.
   entry: commit-check
-  args: ["--message"]
+  args: [--message]
   pass_filenames: false
   language: python
-  stages: [commit-msg]
+  stages: [prepare-commit-msg]
 - id: check-branch
   name: check branch naming
   description: prevents unconventional branch from being pushed to remote repo.
   entry: commit-check
-  args: ["--branch"]
+  args: [--branch]
   pass_filenames: false
   language: python

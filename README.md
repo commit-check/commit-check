@@ -80,11 +80,19 @@ If you want to skip the `commit-check`, you can use the option `-n` or `--no-ver
 
 Make sure `pre-commit` is [installed](https://pre-commit.com/#install).
 
+Install the commit-msg hook in your project repo.
+
+```bash
+pre-commit install --hook-type prepare-commit-msg
+```
+
+Or have `default_install_hook_types: [pre-commit, prepare-commit-msg]` in your `.pre-commit-config.yaml`.
+
 ```yaml
-default_install_hook_types: [pre-commit, commit-msg]
+default_install_hook_types: [pre-commit, prepare-commit-msg]
 
 -   repo: https://github.com/commit-check/commit-check
-    rev: v0.1.1
+    rev: v0.1.4
     hooks:
     -   id: check-message
     -   id: check-branch
