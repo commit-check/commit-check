@@ -7,7 +7,7 @@ on:
     inputs:
       tag:
         description: 'which tag to update to'
-        default: 'v0'
+        default: 'latest'
         required: true
       ref:
         description: 'which branch to update the tag on'
@@ -32,10 +32,10 @@ jobs:
         git push --delete origin ${{ inputs.tag }} || true
         git tag -a ${{ inputs.tag }} -m 'Retag ${{ inputs.tag }}'
         git push origin ${{ inputs.tag }}
-    - name: Update tag to v0
+    - name: Update tag to latest
       if: github.event.inputs.tag == ''
       run: |
-        git tag --delete v0 || true
-        git push --delete origin v0 || true
-        git tag -a v0 -m 'Retag v0'
-        git push origin v0
+        git tag --delete latest || true
+        git push --delete origin latest || true
+        git tag -a latest -m 'Retag latest'
+        git push origin latest
