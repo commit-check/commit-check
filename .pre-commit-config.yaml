@@ -1,11 +1,14 @@
+# https://pre-commit.com/
+default_install_hook_types: [pre-commit, post-commit]
+
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.3.0
     hooks:
-    -   id: trailing-whitespace
-    -   id: end-of-file-fixer
     -   id: check-yaml
-    -   id: debug-statements
+    -   id: check-toml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
     -   id: name-tests-test
     -   id: requirements-txt-fixer
 -   repo: https://github.com/PyCQA/flake8
@@ -20,8 +23,9 @@ repos:
     -   id: mypy
         additional_dependencies: [types-all]
         exclude: ^testing/resources/
--   repo: https://github.com/commit-check/commit-check
+-   repo: https://github.com/commit-check/commit-check.git
     rev: v0.1.4
     hooks:
     -   id: check-message
+        stages: [post-commit]
     -   id: check-branch
