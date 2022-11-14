@@ -18,13 +18,13 @@ repos:
         args: [--max-line-length=100, --ignore=E501]
         exclude: ^commit_check/__init__.py
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.982
+    rev: v0.990
     hooks:
     -   id: mypy
         additional_dependencies: [types-all]
         exclude: ^testing/resources/
 -   repo: https://github.com/commit-check/commit-check.git
-    rev: v0.1.4
+    rev: latest
     hooks:
     -   id: check-message
         stages: [post-commit]
