@@ -15,7 +15,7 @@ DEFAULT_CONFIG = {
     'checks': [
         {
             'check': 'commit_message',
-            'regex': r'^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)',
+            'regex': r'^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)',
             'error': 'The commit message should be structured as follows:\n\n'
             '<type>[optional scope]: <description>\n'
             '[optional body]\n'
