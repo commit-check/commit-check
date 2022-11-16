@@ -13,7 +13,7 @@ def check_commit(config) -> int:
                     f"{YELLOW}Not found regex for commit message. skip checking.{RESET_COLOR}",
                 )
                 return PASS
-            commit_message = get_commits_info("s")
+            commit_message = str(get_commits_info("s"))
             result = re.match(check['regex'], commit_message)
             if result is None:
                 print_error_message(

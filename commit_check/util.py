@@ -66,7 +66,6 @@ def get_config(config_name: str) -> str:
     return config_value.strip()
 
 
-
 def cmd_output(commands: list) -> str:
     """Run command
 
