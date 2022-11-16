@@ -8,7 +8,7 @@ import subprocess
 import yaml
 from pathlib import PurePath
 from subprocess import CalledProcessError
-from commit_check import RED, RESET_COLOR
+from commit_check import RED, GREEN, RESET_COLOR
 
 
 def get_branch_name() -> str:
@@ -30,9 +30,10 @@ def get_branch_name() -> str:
 
 def get_commits_info(format_string: str, number: int = 1) -> list:
     """Get commits information
-    %s  - subject
-    %ae - author email
-    %an - author name
+    format_string could be
+        %s  - subject
+        %ae - author email
+        %an - author name
 
     :returns: A `list` info not be pushed to remote.
     """
@@ -50,6 +51,19 @@ def get_commits_info(format_string: str, number: int = 1) -> list:
             continue  # skip Merge 2066d into 4d89f
         committer_info.append(output)
     return committer_info
+
+
+def get_config(config_name: str) -> str:
+    """Get git config.
+
+    :returns: A `str` of the config value
+    """
+    try:
+        commands = ['git', 'config', f"{config_name}"]
+        config_value = cmd_output(commands)
+    except CalledProcessError:
+        config_value = ''
+    return config_value.strip()
 
 
 def cmd_output(commands: list) -> str:
@@ -82,7 +96,7 @@ def validate_config(path_to_config: str) -> dict:
     return configuration
 
 
-def print_error_message(check: str, regex: str, error: str, checkpoint: str):
+def print_error_message(check_type: str, regex: str, error: str, error_point: str):
     """Print error message.
 
     : returns: Give error messages to user
@@ -100,25 +114,36 @@ def print_error_message(check: str, regex: str, error: str, checkpoint: str):
     print("                                                                  ")
     print("Commit rejected.                                                  ")
     print("                                                                  ")
-    if check == "commit_message":
+    if check_type == "commit_message":
         print(
-            f"Invalid commit message => {RED}{checkpoint}{RESET_COLOR} ", end='',
+            f"Invalid commit message => {RED}{error_point}{RESET_COLOR} ", end='',
         )
-    elif check == "branch_name":
+    elif check_type == "branch_name":
         print(
-            f"Invalid branch name => {RED}{checkpoint}{RESET_COLOR} ", end='',
+            f"Invalid branch name => {RED}{error_point}{RESET_COLOR} ", end='',
         )
-    elif check == "author_email":
+    elif check_type == "author_name":
         print(
-            f"Invalid email address => {RED}{checkpoint}{RESET_COLOR} ", end='',
+            f"Invalid author name => {RED}{error_point}{RESET_COLOR} ", end='',
         )
-    elif check == "author_name":
+    elif check_type == "author_email":
         print(
-            f"Invalid author name => {RED}{checkpoint}{RESET_COLOR} ", end='',
+            f"Invalid email address => {RED}{error_point}{RESET_COLOR} ", end='',
         )
     else:
-        print(f"commit-check does not support {check} yet.")
+        print(f"commit-check does not support {check_type} yet.")
         raise SystemExit(1)
     print(f"\nIt does't match regex: {regex}")
     print("")
     print(error)
+
+
+def print_suggestion(suggest: str):
+    if suggest:
+        print(
+            f"Suggest to run => {GREEN}{suggest}{RESET_COLOR} ", end='',
+        )
+    else:
+        print(f"commit-check does not support {suggest} yet.")
+        raise SystemExit(1)
+    print('\n')
