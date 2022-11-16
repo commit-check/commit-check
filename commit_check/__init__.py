@@ -2,6 +2,7 @@
 
 VERSION = '0.1.0'
 RED = '\033[0;31m'
+GREEN = "\033[32m"
 YELLOW = '\033[93m'
 RESET_COLOR = '\033[0m'
 
@@ -21,11 +22,13 @@ DEFAULT_CONFIG = {
             '[optional body]\n'
             '[optional footer(s)]\n\n'
             'More details please refer to https://www.conventionalcommits.org',
+            'suggest': 'git commit --amend'
         },
         {
             'check': 'branch_name',
             'regex': r'^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)',
             'error': 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/',
+            'suggest': 'git checkout -b new_branch_name',
         },
         {
             'check': 'author_email',
