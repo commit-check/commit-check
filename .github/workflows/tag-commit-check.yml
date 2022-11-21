@@ -1,4 +1,4 @@
-name: Tag
+name: Tag and Commit Check
 
 on:
   push:
@@ -16,9 +16,7 @@ on:
 
 jobs:
   tag:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
     - name: Config git name and email
@@ -39,3 +37,13 @@ jobs:
         git push --delete origin latest || true
         git tag -a latest -m 'Retag latest'
         git push origin latest
+
+  commit-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: commit-check/commit-check@latest
+        id: check
+        with:
+          message: true
+          branch: true
