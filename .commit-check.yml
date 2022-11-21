@@ -10,7 +10,7 @@ checks:
     More details please refer to https://www.conventionalcommits.org"
     suggest: 'git commit --amend'
   - check: branch_name
-    regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)'
+    regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)'
     error: 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/'
     suggest: 'git checkout -b new_branch_name'
   - check: author_name

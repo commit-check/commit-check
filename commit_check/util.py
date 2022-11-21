@@ -28,29 +28,24 @@ def get_branch_name() -> str:
     return branch_name.strip()
 
 
-def get_commits_info(format_string: str, number: int = 1) -> list:
-    """Get commits information
+def get_commits_info(format_string: str) -> str:
+    """Get latest commits information
     format_string could be
         %s  - subject
         %ae - author email
         %an - author name
 
-    :returns: A `list` info not be pushed to remote.
+    :returns: A `str`.
     """
-    committer_info = []
     try:
         commands = [
             'git', 'log', '-n',
-            f'{number}', f"--pretty=format:%{format_string}",
+            '-1', f"--pretty=format:%{format_string}",
         ]
-        outputs = cmd_output(commands).splitlines()
+        output = str(cmd_output(commands).splitlines())
     except CalledProcessError:
         output = ''
-    for output in outputs:
-        if "Merge " in output:
-            continue  # skip Merge 2066d into 4d89f
-        committer_info.append(output)
-    return committer_info
+    return output
 
 
 def get_config(config_name: str) -> str:

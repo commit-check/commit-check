@@ -66,7 +66,7 @@ checks:
 
     More please refer to https://www.conventionalcommits.org"
   - check: branch
-    regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)'
+    regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)'
     error: "Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/"
 ```
 
