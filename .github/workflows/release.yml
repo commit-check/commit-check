@@ -43,3 +43,13 @@ jobs:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: twine upload dist/commit_check*
+
+    - name: Build docker image
+      run:
+        tag=`ls dist/commit_check* | cut -d - -f 2`
+        docker build -f Dockerfile -t commit-check:$tag
+        echo $CR_PAT | docker login ghcr.io -u shenxianpeng --password-stdin
+      env:
+          CR_PAT: ${{ secrets.CR_PAT }}
+    - name: Publish image to container registry
+      run: docker push ghcr.io/commit-check/commit-check:$tag
