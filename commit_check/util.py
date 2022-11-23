@@ -39,8 +39,7 @@ def get_commits_info(format_string: str) -> str:
     """
     try:
         commands = [
-            'git', 'log', '-n',
-            '-1', f"--pretty=format:%{format_string}",
+            'git', 'log', '-n', '1', f"--pretty=format:%{format_string}",
         ]
         output = str(cmd_output(commands).splitlines())
     except CalledProcessError:
