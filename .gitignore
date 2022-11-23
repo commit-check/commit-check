@@ -4,3 +4,4 @@ commit_check.egg-info
 venv
 UNKNOWN.egg-info
 dist
+build
