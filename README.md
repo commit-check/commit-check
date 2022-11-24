@@ -3,7 +3,8 @@
 [![PyPI](https://img.shields.io/pypi/v/commit-check)](https://pypi.org/project/commit-check/)
 [![CI](https://github.com/commit-check/commit-check/actions/workflows/CI.yml/badge.svg)](https://github.com/commit-check/commit-check/actions/workflows/CI.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=commit-check_commit-check)
-[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/commit-check/commit-check/main.svg)](https://results.pre-commit.ci/latest/github/commit-check/commit-check/main)
+
 <!-- [![PyPI - Downloads](https://img.shields.io/pypi/dw/commit-check)](https://pypi.org/project/commit-check/) -->
 
 Check commit message formatting, branch naming, referencing Jira tickets, and more
