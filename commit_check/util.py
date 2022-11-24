@@ -41,7 +41,7 @@ def get_commits_info(format_string: str) -> str:
         commands = [
             'git', 'log', '-n', '1', f"--pretty=format:%{format_string}",
         ]
-        output = str(cmd_output(commands).splitlines())
+        output = cmd_output(commands)
     except CalledProcessError:
         output = ''
     return output
@@ -63,10 +63,10 @@ def get_config(config_name: str) -> str:
 def cmd_output(commands: list) -> str:
     """Run command
 
-    :returns: Get `str` message.
+    :returns: Get `str` output.
     """
     result = subprocess.run(
-        commands, capture_output=True, encoding='utf-8',
+        commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8'
     )
     if result.returncode == 0 and result.stdout is not None:
         return result.stdout
