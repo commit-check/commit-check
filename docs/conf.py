@@ -113,11 +113,7 @@ def setup(app: Sphinx):
         parser = get_parser()
         parser.print_help(help_out)
         output = help_out.getvalue()
-    # first_line = re.search(r"^options:\s*\n", output, re.MULTILINE)
-    # if first_line is None:
-    #     raise OSError("unrecognized output from `commit-check -h`")
-    # output = output[first_line.end(0) :]
-    doc = "Command Line Interface Options\n==============================\n\n"
+    doc = "commit-check --help\n==============================\n\n"
     CLI_OPT_NAME = re.compile(r"^\s*(\-\w)\s?[A-Z_]*,\s(\-\-.*?)\s")
     for line in output.splitlines():
         match = CLI_OPT_NAME.search(line)
