@@ -5,3 +5,8 @@ venv
 UNKNOWN.egg-info
 dist
 build
+tests/__pycache__
+
+# docs
+docs/_build
+docs/cli_args.rst

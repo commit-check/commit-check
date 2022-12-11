@@ -15,7 +15,10 @@ from . import RESET_COLOR, YELLOW, VERSION, CONFIG_FILE, DEFAULT_CONFIG, PASS, F
 
 def get_parser() -> argparse.ArgumentParser:
     """Get and parser to interpret CLI args."""
-    parser = argparse.ArgumentParser(prog='commit-check')
+    parser = argparse.ArgumentParser(
+        prog='commit-check',
+        description="Check commit message formatting, branch naming, commit author, email, and more"
+    )
 
     parser.add_argument(
         '-v',
@@ -107,9 +110,9 @@ def main() -> int:
         if args.message:
             retval = commit.check_commit(config)
         if args.author_name:
-            retval = git_config.check_config(config, "author_name")
+            retval = git_config.check_git_config(config, "author_name")
         if args.author_email:
-            retval = git_config.check_config(config, "author_email")
+            retval = git_config.check_git_config(config, "author_email")
         if args.branch:
             retval = branch.check_branch(config)
     return retval
