@@ -1,0 +1,50 @@
+commit-check --help
+==============================
+
+usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-e] [-a] [-n]
+
+Check commit message formatting, branch naming, commit author, email, and more
+
+options:
+
+.. std:option:: -h, --help
+
+  -h, --help            show this help message and exit
+
+.. std:option:: -v, --version
+
+  -v, --version         show program's version number and exit
+
+.. std:option:: -c, --config
+
+  -c CONFIG, --config CONFIG
+                        path to alternate config file. default is the current
+                        path
+
+.. std:option:: -m, --message
+
+  -m, --message         check commit message formatting convention. overwrite
+                        the config file if specified. by default follow
+                        conventional commits
+                        https://www.conventionalcommits.org
+
+.. std:option:: -b, --branch
+
+  -b, --branch          check git branch naming convention. overwrite the
+                        config file if specified. by default follow bitbucket
+                        branching model.
+
+.. std:option:: -e, --author-email
+
+  -e, --author-email    check committer author email. overwrite the config
+                        file if specified. by default check general email
+                        address.
+
+.. std:option:: -a, --author-name
+
+  -a, --author-name     check committer author name. overwrite the config file
+                        if specified. No check by default
+
+.. std:option:: -n, --no-verify
+
+  -n, --no-verify       bypasses all commit checks

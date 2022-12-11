@@ -1,0 +1,620 @@
+
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="">
+    
+    
+      
+        <title>commit-check</title>
+      
+    
+    
+      
+        
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+        <link rel="stylesheet" type="text/css" href="_static/google_fonts.css" />
+        <link rel="stylesheet" type="text/css" href="_static/stylesheets/sphinx_immaterial_theme.c067037dd3d9452f1.min.css" />
+        <link rel="stylesheet" type="text/css" href="_static/extra_css.css" />
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="light-blue" data-md-color-accent="deep-purple">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#about" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="#" title="commit-check" class="md-header__button md-logo" aria-label="commit-check" data-md-component="logo">
+      <img src="_static/logo.jpg" alt="logo">
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            commit-check
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Commit Check
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="light-blue" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5Z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="light-blue" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9v1Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/commit-check/commit-check" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    commit-check
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+    
+  
+
+
+  <li class="md-tabs__item">
+    <a href="#" class="md-tabs__link md-tabs__link--active">
+      <span class="md-ellipsis">Commit Check</span>
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="cli_args.html" class="md-tabs__link">
+      <span class="md-ellipsis">commit-<wbr>check –help</span>
+    </a>
+  </li>
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="#" title="commit-check" class="md-nav__button md-logo" aria-label="commit-check" data-md-component="logo">
+      <img src="_static/logo.jpg" alt="logo">
+    </a>
+    commit-check
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/commit-check/commit-check" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    commit-check
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+    
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      <a href="#" class="md-nav__link md-nav__link--active">
+        <span class="md-ellipsis">Commit Check</span>
+      </a>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cli_args.html" class="md-nav__link">
+        <span class="md-ellipsis">commit-<wbr>check –help</span>
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary">
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#about" class="md-nav__link">
+    <span class="md-ellipsis">About</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">Installation</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">Usage</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">Example</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#versioning" class="md-nav__link">
+    <span class="md-ellipsis">Versioning</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#have-question-or-feedback" class="md-nav__link">
+    <span class="md-ellipsis">Have question or feedback?</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    <span class="md-ellipsis">License</span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset" role="main">
+                  
+
+
+<h1 id="commit-check">Commit Check<a class="headerlink" href="#commit-check" title="Permalink to this heading">¶</a></h1>
+<a class="reference external image-reference" href="https://pypi.org/project/commit-check/"><img alt="PyPI" src="https://img.shields.io/pypi/v/commit-check" /></a>
+<a class="reference external image-reference" href="https://github.com/commit-check/commit-check/actions/workflows/CI.yml"><img alt="CI" src="https://github.com/commit-check/commit-check/actions/workflows/CI.yml/badge.svg" /></a>
+<a class="reference external image-reference" href="https://sonarcloud.io/summary/new_code?id=commit-check_commit-check"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&amp;metric=alert_status" /></a>
+<a class="reference external image-reference" href="https://results.pre-commit.ci/latest/github/commit-check/commit-check/main"><img alt="pre-commit.ci status" src="https://results.pre-commit.ci/badge/github/commit-check/commit-check/main.svg" /></a>
+<p>Check commit message formatting, branch naming, referencing Jira tickets, and more</p>
+<h2 id="about">About<a class="headerlink" href="#about" title="Permalink to this heading">¶</a></h2>
+<p>commit-check is a tool designed for teams.</p>
+<p>Its main purpose is to standardize the format of commit messages and branch naming.</p>
+<p>The reason behind it is that it is easier to read and enforces writing descriptive commits.
+Besides that, having conventional commits and branch naming makes it possible to parse them and use them for something else, like:</p>
+<ul class="simple">
+<li><p>triggering specific types of builds</p></li>
+<li><p>generating automatically the version or a changelog</p></li>
+<li><p>easy to identify branch according to the branch type</p></li>
+</ul>
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
+<p>Global installation</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>sudo pip3 install -U commit-check
+</code></pre></div>
+</div>
+<p>User installation</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip install -U commit-check
+</code></pre></div>
+</div>
+<p>TODO: On macOS, it can also be installed via homebrew:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>brew install commit-check
+</code></pre></div>
+</div>
+<p>Install from git repo</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip install git+https://github.com/commit-check/commit-check.git@main
+</code></pre></div>
+</div>
+<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h2>
+<p>Add .commit-check.yml</p>
+<p>Create a config file <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code> under your repository, e.g. <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/.commit-check.yml">.commit-check.yml</a></p>
+<p>The content of the config file should be in the following format.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">checks</span><span class="p">:</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">check</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span><span class="w"></span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">regex</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?:</span><span class="nv"> </span><span class="s">([\w</span><span class="nv"> </span><span class="s">])+([\s\S]*)&#39;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">error</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;type&gt;:</span><span class="nv"> </span><span class="s">&lt;description&gt;</span><span class="w"></span>
+
+<span class="w">    </span><span class="s">For</span><span class="nv"> </span><span class="s">Example.</span><span class="nv"> </span><span class="s">feat:</span><span class="nv"> </span><span class="s">Support</span><span class="nv"> </span><span class="s">new</span><span class="nv"> </span><span class="s">feature</span><span class="nv"> </span><span class="s">xxxx</span><span class="w"></span>
+
+<span class="w">    </span><span class="s">Between</span><span class="nv"> </span><span class="s">type</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">description</span><span class="nv"> </span><span class="s">MUST</span><span class="nv"> </span><span class="s">have</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">colon</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">space.</span><span class="w"></span>
+
+<span class="w">    </span><span class="s">More</span><span class="nv"> </span><span class="s">please</span><span class="nv"> </span><span class="s">refer</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">https://www.conventionalcommits.org&quot;</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">check</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">branch</span><span class="w"></span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">regex</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)&#39;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">error</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Branches</span><span class="nv"> </span><span class="s">must</span><span class="nv"> </span><span class="s">begin</span><span class="nv"> </span><span class="s">with</span><span class="nv"> </span><span class="s">these</span><span class="nv"> </span><span class="s">types:</span><span class="nv"> </span><span class="s">bugfix/</span><span class="nv"> </span><span class="s">feature/</span><span class="nv"> </span><span class="s">release/</span><span class="nv"> </span><span class="s">hotfix/</span><span class="nv"> </span><span class="s">task/&quot;</span><span class="w"></span>
+</code></pre></div>
+</div>
+<p>Use default configuration</p>
+<ul class="simple">
+<li><p>If you do not set <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code>, <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> will use the default configuration.
+i.e. the commit message will follow the rules of <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>,
+branch naming follow bitbucket <a class="reference external" href="https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/">branching model</a>.</p></li>
+<li><p>If you want to skip the <code class="docutils literal notranslate"><span class="pre">commit-check</span></code>, you can use the option <code class="docutils literal notranslate"><span class="pre">-n</span></code> or <code class="docutils literal notranslate"><span class="pre">--no-verify</span></code>.</p></li>
+</ul>
+<p>Integrating with pre-commit</p>
+<div class="tip admonition">
+<p class="admonition-title">Tip</p>
+<p>Make sure <code class="docutils literal notranslate"><span class="pre">pre-commit</span></code> is <a class="reference external" href="https://pre-commit.com/#install">installed</a>.</p>
+</div>
+<p>Install the commit-msg hook in your project repo.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pre-commit install --hook-type prepare-commit-msg
+</code></pre></div>
+</div>
+<p>Or have <code class="docutils literal notranslate"><span class="pre">default_install_hook_types:</span> <span class="pre">[pre-commit,</span> <span class="pre">prepare-commit-msg]</span></code> in your <code class="docutils literal notranslate"><span class="pre">.pre-commit-config.yaml</span></code>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">default_install_hook_types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pre-commit</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">prepare-commit-msg</span><span class="p p-Indicator">]</span><span class="w"></span>
+
+<span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/commit-check/commit-check</span><span class="w"></span>
+<span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v0.1.4</span><span class="w"></span>
+<span class="w">    </span><span class="nt">hooks</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-message</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-branch</span><span class="w"></span>
+</code></pre></div>
+</div>
+<p>Integrating with GitHub Action</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">commit-check</span><span class="w"></span>
+
+<span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pull_request</span><span class="w"></span>
+
+<span class="nt">jobs</span><span class="p">:</span><span class="w"></span>
+<span class="nt">commit-check</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span><span class="w"></span>
+<span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v3</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">commit-check/commit-check@v0</span><span class="w"></span>
+<span class="w">        </span><span class="l l-Scalar l-Scalar-Plain">id</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check</span><span class="w"></span>
+<span class="w">        </span><span class="l l-Scalar l-Scalar-Plain">with</span><span class="p p-Indicator">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
+<span class="w">        </span><span class="nt">branch</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
+</code></pre></div>
+</div>
+<h2 id="example">Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h2>
+<p>Check commit message failed</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
+
+<span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>
+/ ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\</span>
+__<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> H <span class="o">)</span>/__  __<span class="se">\(</span> E <span class="o">)</span>/__  __<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> K <span class="o">)</span>/__
+<span class="o">(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)</span>
+<span class="o">||</span> E <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> O <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>
+_.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;.</span>
+<span class="s1">(.-./`-&#39;</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="s1">&#39;\.-.)(.-./`-`\.-.)</span>
+<span class="s1">`-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;</span>
+
+<span class="s1">Commit rejected.</span>
+
+<span class="s1">Invalid commit message. it does&#39;</span>t match regex: ^<span class="o">(</span>build<span class="p">|</span>chore<span class="p">|</span>ci<span class="p">|</span>docs<span class="p">|</span>feat<span class="p">|</span>fix<span class="p">|</span>perf<span class="p">|</span>refactor<span class="p">|</span>revert<span class="p">|</span>style<span class="p">|</span><span class="nb">test</span><span class="o">){</span><span class="m">1</span><span class="o">}(</span><span class="se">\\</span><span class="o">([</span><span class="se">\\</span>w<span class="se">\\</span>-<span class="se">\\</span>.<span class="o">]</span>+<span class="se">\\</span><span class="o">))</span>?<span class="o">(</span>!<span class="o">)</span>?: <span class="o">([</span><span class="se">\\</span>w <span class="o">])</span>+<span class="o">([</span><span class="se">\\</span>s<span class="se">\\</span>S<span class="o">]</span>*<span class="o">)</span>
+
+The commit message should be structured as follows:
+
+&lt;type&gt;<span class="o">[</span>optional scope<span class="o">]</span>: &lt;description&gt;
+<span class="o">[</span>optional body<span class="o">]</span>
+<span class="o">[</span>optional footer<span class="o">(</span>s<span class="o">)]</span>
+
+More details please refer to https://www.conventionalcommits.org
+</code></pre></div>
+</div>
+<p>Check branch naming failed</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
+
+<span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>
+/ ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\</span>
+__<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> H <span class="o">)</span>/__  __<span class="se">\(</span> E <span class="o">)</span>/__  __<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> K <span class="o">)</span>/__
+<span class="o">(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)</span>
+<span class="o">||</span> E <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> O <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>
+_.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;.</span>
+<span class="s1">(.-./`-&#39;</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="s1">&#39;\.-.)(.-./`-`\.-.)</span>
+<span class="s1">`-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;</span>
+
+<span class="s1">Commit rejected.</span>
+
+<span class="s1">Invalid branch name. it does&#39;</span>t match regex: ^<span class="o">(</span>bugfix<span class="p">|</span>feature<span class="p">|</span>release<span class="p">|</span>hotfix<span class="p">|</span>task<span class="o">)</span><span class="se">\/</span>.+<span class="p">|</span><span class="o">(</span>master<span class="o">)</span><span class="p">|</span><span class="o">(</span>main<span class="o">)</span>
+
+Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/ or master main
+</code></pre></div>
+</div>
+<h2 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permalink to this heading">¶</a></h2>
+<p>Versioning follows <a class="reference external" href="https://semver.org/">Semantic Versioning</a>.</p>
+<h2 id="have-question-or-feedback">Have question or feedback?<a class="headerlink" href="#have-question-or-feedback" title="Permalink to this heading">¶</a></h2>
+<p>To provide feedback (requesting a feature or reporting a bug) please post to <a class="reference external" href="https://github.com/commit-check/commit-check/issues">issues</a>.</p>
+<h2 id="license">License<a class="headerlink" href="#license" title="Permalink to this heading">¶</a></h2>
+<p>The scripts and documentation in this project are released under the <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/LICENSE">MIT License</a></p>
+<a class="reference external image-reference" href="https://ko-fi.com/H2H85WC9L"><img alt="ko-fi" src="https://ko-fi.com/img/githubbutton_sm.svg" /></a>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+      
+        
+        <a href="cli_args.html" class="md-footer__link md-footer__link--next" aria-label="Next: commit-check –help" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              commit-check –help
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  
+  
+  <div class="md-footer-meta md-typeset">
+    
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-footer-copyright__highlight">
+        &#169; Copyright 2022, shenxianpeng.
+        
+    </div>
+  
+    Created using
+    <a href="https://www.sphinx-doc.org/" target="_blank" rel="noopener">Sphinx</a>
+    5.3.0.
+     and
+    <a href="https://github.com/jbms/sphinx-immaterial/" target="_blank" rel="noopener">Sphinx-Immaterial</a>
+  
+</div>
+      
+    </div>
+    
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.top", "navigation.tabs", "navigation.tabs.sticky", "toc.sticky", "toc.follow", "search.share"], "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="_static/javascripts/bundle.444abb77.min.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    
+  </body>
+</html>
