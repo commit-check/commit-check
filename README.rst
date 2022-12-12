@@ -61,6 +61,7 @@ Install from git repo
 
     pip install git+https://github.com/commit-check/commit-check.git@main
 
+More about ``commit-check --help`` please see `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
 
 Usage
 -----
@@ -93,7 +94,6 @@ Use default configuration
 - If you do not set ``.commit-check.yml``, ``commit-check`` will use the default configuration.
   i.e. the commit message will follow the rules of `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_,
   branch naming follow bitbucket `branching model <https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/>`_.
-- If you want to skip the ``commit-check``, you can use the option ``-n`` or ``--no-verify``.
 
 Integrating with pre-commit
 
