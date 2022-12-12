@@ -395,12 +395,12 @@
 <h2 id="about">About<a class="headerlink" href="#about" title="Permalink to this heading">¶</a></h2>
 <p>commit-check is a tool designed for teams.</p>
 <p>Its main purpose is to standardize the format of commit messages and branch naming.</p>
-<p>The reason behind it is that it is easier to read and enforces writing descriptive commits.
-Besides that, having conventional commits and branch naming makes it possible to parse them and use them for something else, like:</p>
+<p>The reason behind it is and makes it possible, like:</p>
 <ul class="simple">
-<li><p>triggering specific types of builds</p></li>
-<li><p>generating automatically the version or a changelog</p></li>
-<li><p>easy to identify branch according to the branch type</p></li>
+<li><p>writing descriptive commit is easy to read</p></li>
+<li><p>identify branch according to the branch type</p></li>
+<li><p>triggering specific type of commit/branch CI build</p></li>
+<li><p>automatically generate changelogs</p></li>
 </ul>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
 <p>Global installation</p>
@@ -483,47 +483,47 @@ branch naming follow bitbucket <a class="reference external" href="https://suppo
 </div>
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h2>
 <p>Check commit message failed</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code> Commit rejected by Commit-Check.
 
-<span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>
-/ ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\</span>
-__<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> H <span class="o">)</span>/__  __<span class="se">\(</span> E <span class="o">)</span>/__  __<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> K <span class="o">)</span>/__
+  <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>
+   / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\</span>
+ __<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> H <span class="o">)</span>/__  __<span class="se">\(</span> E <span class="o">)</span>/__  __<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> K <span class="o">)</span>/__
 <span class="o">(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)</span>
-<span class="o">||</span> E <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> O <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>
-_.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;.</span>
-<span class="s1">(.-./`-&#39;</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="s1">&#39;\.-.)(.-./`-`\.-.)</span>
-<span class="s1">`-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;</span>
+   <span class="o">||</span> E <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> O <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>
+ _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;.</span>
+<span class="s1"> (.-./`-&#39;</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="s1">&#39;\.-.)(.-./`-`\.-.)</span>
+<span class="s1"> `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;</span>
 
-<span class="s1">Commit rejected.</span>
+<span class="s1"> Commit rejected.</span>
 
-<span class="s1">Invalid commit message. it does&#39;</span>t match regex: ^<span class="o">(</span>build<span class="p">|</span>chore<span class="p">|</span>ci<span class="p">|</span>docs<span class="p">|</span>feat<span class="p">|</span>fix<span class="p">|</span>perf<span class="p">|</span>refactor<span class="p">|</span>revert<span class="p">|</span>style<span class="p">|</span><span class="nb">test</span><span class="o">){</span><span class="m">1</span><span class="o">}(</span><span class="se">\\</span><span class="o">([</span><span class="se">\\</span>w<span class="se">\\</span>-<span class="se">\\</span>.<span class="o">]</span>+<span class="se">\\</span><span class="o">))</span>?<span class="o">(</span>!<span class="o">)</span>?: <span class="o">([</span><span class="se">\\</span>w <span class="o">])</span>+<span class="o">([</span><span class="se">\\</span>s<span class="se">\\</span>S<span class="o">]</span>*<span class="o">)</span>
+<span class="s1"> Invalid commit message. it does&#39;</span>t match regex: ^<span class="o">(</span>build<span class="p">|</span>chore<span class="p">|</span>ci<span class="p">|</span>docs<span class="p">|</span>feat<span class="p">|</span>fix<span class="p">|</span>perf<span class="p">|</span>refactor<span class="p">|</span>revert<span class="p">|</span>style<span class="p">|</span><span class="nb">test</span><span class="o">){</span><span class="m">1</span><span class="o">}(</span><span class="se">\\</span><span class="o">([</span><span class="se">\\</span>w<span class="se">\\</span>-<span class="se">\\</span>.<span class="o">]</span>+<span class="se">\\</span><span class="o">))</span>?<span class="o">(</span>!<span class="o">)</span>?: <span class="o">([</span><span class="se">\\</span>w <span class="o">])</span>+<span class="o">([</span><span class="se">\\</span>s<span class="se">\\</span>S<span class="o">]</span>*<span class="o">)</span>
 
-The commit message should be structured as follows:
+ The commit message should be structured as follows:
 
-&lt;type&gt;<span class="o">[</span>optional scope<span class="o">]</span>: &lt;description&gt;
-<span class="o">[</span>optional body<span class="o">]</span>
-<span class="o">[</span>optional footer<span class="o">(</span>s<span class="o">)]</span>
+ &lt;type&gt;<span class="o">[</span>optional scope<span class="o">]</span>: &lt;description&gt;
+ <span class="o">[</span>optional body<span class="o">]</span>
+ <span class="o">[</span>optional footer<span class="o">(</span>s<span class="o">)]</span>
 
-More details please refer to https://www.conventionalcommits.org
+ More details please refer to https://www.conventionalcommits.org
 </code></pre></div>
 </div>
 <p>Check branch naming failed</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code> Commit rejected by Commit-Check.
 
-<span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>
-/ ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\</span>
-__<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> H <span class="o">)</span>/__  __<span class="se">\(</span> E <span class="o">)</span>/__  __<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> K <span class="o">)</span>/__
+  <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>
+   / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\</span>
+ __<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> H <span class="o">)</span>/__  __<span class="se">\(</span> E <span class="o">)</span>/__  __<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> K <span class="o">)</span>/__
 <span class="o">(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)</span>
-<span class="o">||</span> E <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> O <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>
-_.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;.</span>
-<span class="s1">(.-./`-&#39;</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="s1">&#39;\.-.)(.-./`-`\.-.)</span>
-<span class="s1">`-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;</span>
+   <span class="o">||</span> E <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> O <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>
+ _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;.</span>
+<span class="s1"> (.-./`-&#39;</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="s1">&#39;\.-.)(.-./`-`\.-.)</span>
+<span class="s1"> `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;</span>
 
-<span class="s1">Commit rejected.</span>
+<span class="s1"> Commit rejected.</span>
 
-<span class="s1">Invalid branch name. it does&#39;</span>t match regex: ^<span class="o">(</span>bugfix<span class="p">|</span>feature<span class="p">|</span>release<span class="p">|</span>hotfix<span class="p">|</span>task<span class="o">)</span><span class="se">\/</span>.+<span class="p">|</span><span class="o">(</span>master<span class="o">)</span><span class="p">|</span><span class="o">(</span>main<span class="o">)</span>
+<span class="s1"> Invalid branch name. it does&#39;</span>t match regex: ^<span class="o">(</span>bugfix<span class="p">|</span>feature<span class="p">|</span>release<span class="p">|</span>hotfix<span class="p">|</span>task<span class="o">)</span><span class="se">\/</span>.+<span class="p">|</span><span class="o">(</span>master<span class="o">)</span><span class="p">|</span><span class="o">(</span>main<span class="o">)</span>
 
-Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/ or master main
+ Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/ or master main
 </code></pre></div>
 </div>
 <h2 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permalink to this heading">¶</a></h2>
