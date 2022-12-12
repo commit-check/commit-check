@@ -61,7 +61,7 @@ Install from git repo
 
     pip install git+https://github.com/commit-check/commit-check.git@main
 
-More about ``commit-check --help`` please see `docs <https://commit-check.github.io/commit-check/cli_args.html>`_
+More about ``commit-check --help`` please see `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
 
 Usage
 -----
