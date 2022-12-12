@@ -1,6 +1,7 @@
 commit_check/__pycache__/
 commit_check.egg-info
 .mypy_cache
+.vscode
 venv
 UNKNOWN.egg-info
 dist

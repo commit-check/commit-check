@@ -26,12 +26,12 @@ commit-check is a tool designed for teams.
 
 Its main purpose is to standardize the format of commit messages and branch naming.
 
-The reason behind it is that it is easier to read and enforces writing descriptive commits.
-Besides that, having conventional commits and branch naming makes it possible to parse them and use them for something else, like:
+The reason behind it is and makes it possible, like:
 
-- triggering specific types of builds
-- generating automatically the version or a changelog
-- easy to identify branch according to the branch type
+- writing descriptive commit is easy to read
+- identify branch according to the branch type
+- triggering specific type of commit/branch CI build
+- automatically generate changelogs
 
 Installation
 ------------
@@ -149,11 +149,11 @@ Check commit message failed
 
     Commit rejected by Commit-Check.
 
-    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-    / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+     (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+      / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
     __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
-    (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-    || E ||      || R ||      || R ||      || O ||      || R ||
+   (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
+      || E ||      || R ||      || R ||      || O ||      || R ||
     _.' `-' '._  _.' `-' '._  _.' `-' '._  _.' `-' '._  _.' `-' '.
     (.-./`-'\.-.)(.-./`-`\.-.)(.-./`-`\.-.)(.-./`-'\.-.)(.-./`-`\.-.)
     `-'     `-'  `-'     `-'  `-'     `-'  `-'     `-'  `-'     `-'
@@ -177,11 +177,11 @@ Check branch naming failed
 
     Commit rejected by Commit-Check.
 
-    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-    / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+     (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+      / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
     __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
-    (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-    || E ||      || R ||      || R ||      || O ||      || R ||
+   (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
+      || E ||      || R ||      || R ||      || O ||      || R ||
     _.' `-' '._  _.' `-' '._  _.' `-' '._  _.' `-' '._  _.' `-' '.
     (.-./`-'\.-.)(.-./`-`\.-.)(.-./`-`\.-.)(.-./`-'\.-.)(.-./`-`\.-.)
     `-'     `-'  `-'     `-'  `-'     `-'  `-'     `-'  `-'     `-'
