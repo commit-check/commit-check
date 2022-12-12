@@ -419,6 +419,7 @@
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip install git+https://github.com/commit-check/commit-check.git@main
 </code></pre></div>
 </div>
+<p>More about <code class="docutils literal notranslate"><span class="pre">commit-check</span> <span class="pre">--help</span></code> please see <a class="reference external" href="https://commit-check.github.io/commit-check/cli_args.html">docs</a>.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h2>
 <p>Add .commit-check.yml</p>
 <p>Create a config file <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code> under your repository, e.g. <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/.commit-check.yml">.commit-check.yml</a></p>
@@ -443,7 +444,6 @@
 <li><p>If you do not set <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code>, <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> will use the default configuration.
 i.e. the commit message will follow the rules of <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>,
 branch naming follow bitbucket <a class="reference external" href="https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/">branching model</a>.</p></li>
-<li><p>If you want to skip the <code class="docutils literal notranslate"><span class="pre">commit-check</span></code>, you can use the option <code class="docutils literal notranslate"><span class="pre">-n</span></code> or <code class="docutils literal notranslate"><span class="pre">--no-verify</span></code>.</p></li>
 </ul>
 <p>Integrating with pre-commit</p>
 <div class="tip admonition">
