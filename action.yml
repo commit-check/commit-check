@@ -32,7 +32,7 @@ runs:
       id: commit-check
       shell: bash
       run: |
-        pip install commit-check
+        pip install git+https://github.com/commit-check/commit-check.git@${{ github.ref }}
         args=""
         if [ "${{ inputs.message }}" == "true" ]; then
           args="$args --message"
