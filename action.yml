@@ -6,13 +6,25 @@ branding:
   color: "green"
 inputs:
   message:
-    description: prevents unconventional commits from being committed.
+    description: check commit message formatting convention
     required: false
     default: 'true'
   branch:
-    description: prevents unconventional branch from being pushed to remote repo.
+    description: check git branch naming convention
     required: false
     default: 'true'
+  author-name:
+    description: check committer author name
+    required: false
+    default: 'true'
+  author-email:
+    description: check committer author email
+    required: false
+    default: 'true'
+  dry-run:
+    description: run checks without failing
+    required: false
+    default: 'false'
 runs:
   using: "composite"
   steps:
@@ -26,4 +38,13 @@ runs:
         fi
         if [ "${{ inputs.branch }} " == "true" ]; then
           commit-check --branch
+        fi
+        if [ "${{ inputs.author-name }} " == "true" ]; then
+          commit-check --author-name
+        fi
+        if [ "${{ inputs.author-email }} " == "true" ]; then
+          commit-check --author-email
+        fi
+        if [ "${{ inputs.dry-run }} " == "true" ]; then
+          commit-check --dry-run
         fi
