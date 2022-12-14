@@ -8,45 +8,53 @@ inputs:
   message:
     description: check commit message formatting convention
     required: false
-    default: 'true'
+    default: true
   branch:
     description: check git branch naming convention
     required: false
-    default: 'true'
+    default: true
   author-name:
     description: check committer author name
     required: false
-    default: 'true'
+    default: true
   author-email:
     description: check committer author email
     required: false
-    default: 'true'
+    default: true
   dry-run:
     description: run checks without failing
     required: false
-    default: 'false'
+    default: false
 runs:
   using: "composite"
   steps:
+    - name: Install action dependencies
+      shell: bash
+      run: |
+        if [[ "${{runner.os}}" == "Linux" ]]; then
+          # https://github.com/pypa/setuptools/issues/3269
+          export DEB_PYTHON_INSTALL_LAYOUT=deb
+        fi
+        python3 -m pip install git+https://github.com/commit-check/commit-check.git@main
     - name: Run commit-check
       id: commit-check
       shell: bash
       run: |
-        pip install git+https://github.com/commit-check/commit-check.git@${{ github.ref }}
         args=""
         if [ "${{ inputs.message }}" == "true" ]; then
-          args="$args --message"
+          args="$args --message "
         fi
-        if [ "${{ inputs.branch }} " == "true" ]; then
-          args="$args --branch"
+        if [ "${{ inputs.branch }}" == "true" ]; then
+          args="$args --branch "
         fi
-        if [ "${{ inputs.author-name }} " == "true" ]; then
-          args="$args --author-name"
+        if [ "${{ inputs.author-name }}" == "true" ]; then
+          args="$args --author-name "
         fi
-        if [ "${{ inputs.author-email }} " == "true" ]; then
-           args="$args --author-email"
+        if [ "${{ inputs.author-email }}" == "true" ]; then
+           args="$args --author-email "
         fi
-        if [ "${{ inputs.dry-run }} " == "true" ]; then
-          args="$args --dry-run"
+        if [ "${{ inputs.dry-run }}" == "true" ]; then
+          args="$args --dry-run "
         fi
+        echo "input args: $args"
         commit-check $args
