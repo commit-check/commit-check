@@ -1,7 +1,7 @@
 commit-check --help
 ==============================
 
-usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-e] [-a] [-d]
+usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-a] [-e] [-d]
 
 Check commit message formatting, branch naming, commit author, email, and more
 
@@ -28,13 +28,13 @@ options:
 
   -b, --branch          check git branch naming convention
 
-.. std:option:: -e, --author-email
-
-  -e, --author-email    check committer author email
-
 .. std:option:: -a, --author-name
 
   -a, --author-name     check committer author name
+
+.. std:option:: -e, --author-email
+
+  -e, --author-email    check committer author email
 
 .. std:option:: -d, --dry-run
 
