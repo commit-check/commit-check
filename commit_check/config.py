@@ -1,7 +1,7 @@
 """Check git configuration"""
 import re
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import get_config, print_error_message, print_suggestion
+from commit_check.util import get_commits_info, print_error_message, print_suggestion
 
 
 def check_git_config(config, check_type) -> int:
@@ -14,10 +14,10 @@ def check_git_config(config, check_type) -> int:
                 )
                 return PASS
             if check_type == "author_name":
-                config_name = "user.name"
+                format_str = "an"
             if check_type == 'author_email':
-                config_name = "user.email"
-            config_value = get_config(config_name)
+                format_str = "ae"
+            config_value = str(get_commits_info(format_str))
             result = re.match(check['regex'], config_value)
             if result is None:
                 print_error_message(

@@ -30,10 +30,10 @@ def get_branch_name() -> str:
 
 def get_commits_info(format_string: str) -> str:
     """Get latest commits information
-    format_string could be
-        %s  - subject
-        %ae - author email
-        %an - author name
+    :param format_string: could be
+        - s  - subject
+        - an - author name
+        - ae - author email
 
     :returns: A `str`.
     """
@@ -47,21 +47,9 @@ def get_commits_info(format_string: str) -> str:
     return output
 
 
-def get_config(config_name: str) -> str:
-    """Get git config.
-
-    :returns: A `str` of the config value
-    """
-    try:
-        commands = ['git', 'config', f"{config_name}"]
-        config_value = cmd_output(commands)
-    except CalledProcessError:
-        config_value = ''
-    return config_value.strip()
-
-
 def cmd_output(commands: list) -> str:
     """Run command
+    :param commands: list of commands
 
     :returns: Get `str` output.
     """
@@ -78,6 +66,7 @@ def cmd_output(commands: list) -> str:
 
 def validate_config(path_to_config: str) -> dict:
     """Validate config file.
+    :param path_to_config: path to config file
 
     :returns: Get `dict` value if exist else get empty.
     """
@@ -92,8 +81,12 @@ def validate_config(path_to_config: str) -> dict:
 
 def print_error_message(check_type: str, regex: str, error: str, error_point: str):
     """Print error message.
+    :param check_type:
+    :param regex:
+    :param error:
+    :param error_point:
 
-    : returns: Give error messages to user
+    :returns: Give error messages to user
     """
     print("Commit rejected by Commit-Check.                                  ")
     print("                                                                  ")
@@ -132,7 +125,10 @@ def print_error_message(check_type: str, regex: str, error: str, error_point: st
     print(error)
 
 
-def print_suggestion(suggest: str):
+def print_suggestion(suggest: str) -> None:
+    """Print suggestion to user
+    :param suggest: what message to print out
+    """
     if suggest:
         print(
             f"Suggest to run => {GREEN}{suggest}{RESET_COLOR} ", end='',

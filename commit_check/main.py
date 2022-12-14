@@ -51,17 +51,17 @@ def get_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        '-e',
-        '--author-email',
-        help='check committer author email',
+        '-a',
+        '--author-name',
+        help='check committer author name',
         action="store_true",
         required=False,
     )
 
     parser.add_argument(
-        '-a',
-        '--author-name',
-        help='check committer author name',
+        '-e',
+        '--author-email',
+        help='check committer author email',
         action="store_true",
         required=False,
     )
