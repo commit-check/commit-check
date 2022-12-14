@@ -37,16 +37,18 @@ runs:
         if [ "${{ inputs.message }}" == "true" ]; then
           args="$args --message"
         fi
-        if [ "${{ inputs.branch }} " == "true" ]; then
+        if [ "${{ inputs.branch }}" == "true" ]; then
           args="$args --branch"
         fi
-        if [ "${{ inputs.author-name }} " == "true" ]; then
+        if [ "${{ inputs.author-name }}" == "true" ]; then
           args="$args --author-name"
         fi
-        if [ "${{ inputs.author-email }} " == "true" ]; then
+        if [ "${{ inputs.author-email }}" == "true" ]; then
            args="$args --author-email"
         fi
-        if [ "${{ inputs.dry-run }} " == "true" ]; then
+        if [ "${{ inputs.dry-run }}" == "true" ]; then
           args="$args --dry-run"
         fi
         commit-check $args
+
+        exit $?
