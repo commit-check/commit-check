@@ -486,47 +486,49 @@ branch naming follow bitbucket <a class="reference external" href="https://suppo
 <p>Please see <a class="reference external" href="https://github.com/commit-check/commit-check-action">commit-check/commit-check-action</a></p>
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h2>
 <p>Check commit message failed</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code> Commit rejected by Commit-Check.
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
-  <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>
-   / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\</span>
- __<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> H <span class="o">)</span>/__  __<span class="se">\(</span> E <span class="o">)</span>/__  __<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> K <span class="o">)</span>/__
-<span class="o">(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)</span>
-   <span class="o">||</span> E <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> O <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>
- _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;.</span>
-<span class="s1"> (.-./`-&#39;</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="s1">&#39;\.-.)(.-./`-`\.-.)</span>
-<span class="s1"> `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;</span>
+  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+ __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
+   || E ||      || R ||      || R ||      || O ||      || R ||
+ _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
+(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
+ `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
-<span class="s1"> Commit rejected.</span>
+Invalid commit message =&gt; test
+It doesn&#39;t match regex: ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)
 
-<span class="s1"> Invalid commit message. it does&#39;</span>t match regex: ^<span class="o">(</span>build<span class="p">|</span>chore<span class="p">|</span>ci<span class="p">|</span>docs<span class="p">|</span>feat<span class="p">|</span>fix<span class="p">|</span>perf<span class="p">|</span>refactor<span class="p">|</span>revert<span class="p">|</span>style<span class="p">|</span><span class="nb">test</span><span class="o">){</span><span class="m">1</span><span class="o">}(</span><span class="se">\\</span><span class="o">([</span><span class="se">\\</span>w<span class="se">\\</span>-<span class="se">\\</span>.<span class="o">]</span>+<span class="se">\\</span><span class="o">))</span>?<span class="o">(</span>!<span class="o">)</span>?: <span class="o">([</span><span class="se">\\</span>w <span class="o">])</span>+<span class="o">([</span><span class="se">\\</span>s<span class="se">\\</span>S<span class="o">]</span>*<span class="o">)</span>
+The commit message should be structured as follows:
 
- The commit message should be structured as follows:
+&lt;type&gt;[optional scope]: &lt;description&gt;
+[optional body]
+[optional footer(s)]
 
- &lt;type&gt;<span class="o">[</span>optional scope<span class="o">]</span>: &lt;description&gt;
- <span class="o">[</span>optional body<span class="o">]</span>
- <span class="o">[</span>optional footer<span class="o">(</span>s<span class="o">)]</span>
-
- More details please refer to https://www.conventionalcommits.org
+More details please refer to https://www.conventionalcommits.org
+Suggest to run =&gt; git commit --amend
 </code></pre></div>
 </div>
 <p>Check branch naming failed</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code> Commit rejected by Commit-Check.
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
-  <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>    <span class="o">(</span>c<span class="o">)</span>.-.<span class="o">(</span>c<span class="o">)</span>
-   / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\ </span>     / ._. <span class="se">\</span>
- __<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> H <span class="o">)</span>/__  __<span class="se">\(</span> E <span class="o">)</span>/__  __<span class="se">\(</span> C <span class="o">)</span>/__  __<span class="se">\(</span> K <span class="o">)</span>/__
-<span class="o">(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)(</span>_.-/<span class="s1">&#39;-&#39;</span><span class="se">\-</span>._<span class="o">)</span>
-   <span class="o">||</span> E <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>      <span class="o">||</span> O <span class="o">||</span>      <span class="o">||</span> R <span class="o">||</span>
- _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;._  _.&#39;</span> <span class="sb">`</span>-<span class="s1">&#39; &#39;</span>._  _.<span class="s1">&#39; `-&#39;</span> <span class="s1">&#39;.</span>
-<span class="s1"> (.-./`-&#39;</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="sb">`</span><span class="se">\.</span>-.<span class="o">)(</span>.-./<span class="sb">`</span>-<span class="s1">&#39;\.-.)(.-./`-`\.-.)</span>
-<span class="s1"> `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;  `-&#39;</span>     <span class="sb">`</span>-<span class="s1">&#39;</span>
+  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+ __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
+   || E ||      || R ||      || R ||      || O ||      || R ||
+ _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
+(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
+ `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
-<span class="s1"> Commit rejected.</span>
+Commit rejected.
 
-<span class="s1"> Invalid branch name. it does&#39;</span>t match regex: ^<span class="o">(</span>bugfix<span class="p">|</span>feature<span class="p">|</span>release<span class="p">|</span>hotfix<span class="p">|</span>task<span class="o">)</span><span class="se">\/</span>.+<span class="p">|</span><span class="o">(</span>master<span class="o">)</span><span class="p">|</span><span class="o">(</span>main<span class="o">)</span>
+Invalid branch name =&gt; test
+It doesn&#39;t match regex: ^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)
 
- Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/ or master main
+Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/
+Suggest to run =&gt; git checkout -b type/branch_name
 </code></pre></div>
 </div>
 <h2 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permalink to this heading">¶</a></h2>
