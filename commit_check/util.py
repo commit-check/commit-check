@@ -91,7 +91,7 @@ def print_error_message(check_type: str, regex: str, error: str, error_point: st
     print("Commit rejected by Commit-Check.                                  ")
     print("                                                                  ")
     print(r"  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)  ")
-    print(r"   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \   ") 
+    print(r"   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \   ")
     print(r" __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__ ")
     print(r"(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)")
     print(r"   || E ||      || R ||      || R ||      || O ||      || R ||   ")
