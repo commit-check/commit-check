@@ -1,7 +1,7 @@
 Commit Check
 ============
 
-.. image:: https://img.shields.io/pypi/v/commit-check
+.. image:: https://img.shields.io/pypi/v/commit-check?logo=python&logoColor=white
     :alt: PyPI
     :target: https://pypi.org/project/commit-check/
 
