@@ -1,4 +1,4 @@
-name: "CI"
+name: main
 
 on:
   push:
@@ -39,15 +39,6 @@ jobs:
         with:
           name: commit-check_wheel
           path: ${{ github.workspace }}/dist/*.whl
-
-      - name: Test commit-check action
-        uses: commit-check/commit-check@main
-        with:
-          message: true
-          branch: true
-          author-name: true
-          author-email: true
-          dry-run: true
 
       # - name: Collect Coverage
       #   run: coverage run -m pytest
