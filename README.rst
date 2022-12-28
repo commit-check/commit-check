@@ -33,8 +33,13 @@ The reason behind it is and makes it possible, like:
 - triggering specific type of commit/branch CI build
 - automatically generate changelogs
 
-Installation
-------------
+Usage
+-----
+
+There are a variety of ways you can use commit-check:
+
+Running as CLI
+~~~~~~~~~~~~~~
 
 Global installation
 
@@ -48,23 +53,16 @@ User installation
 
     pip install -U commit-check
 
-
-TODO: On macOS, it can also be installed via homebrew:
-
-.. code-block:: bash
-
-    brew install commit-check
-
 Install from git repo
 
 .. code-block:: bash
 
     pip install git+https://github.com/commit-check/commit-check.git@main
 
-More about ``commit-check --help`` please see `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
+Then you can run ``commit-check`` CLI. More about ``commit-check --help`` please see `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
 
-Usage
------
+pre-commit hook
+~~~~~~~~~~~~~~~
 
 Add .commit-check.yml
 
@@ -88,7 +86,6 @@ The content of the config file should be in the following format.
         regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)'
         error: "Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/"
 
-
 Use default configuration
 
 - If you do not set ``.commit-check.yml``, ``commit-check`` will use the default configuration.
@@ -107,7 +104,6 @@ Install the commit-msg hook in your project repo.
 
     pre-commit install --hook-type prepare-commit-msg
 
-
 Or have ``default_install_hook_types: [pre-commit, prepare-commit-msg]`` in your ``.pre-commit-config.yaml``.
 
 .. code-block:: yaml
@@ -120,8 +116,8 @@ Or have ``default_install_hook_types: [pre-commit, prepare-commit-msg]`` in your
         -   id: check-message
         -   id: check-branch
 
-
-Integrating with GitHub Action
+GitHub Action
+~~~~~~~~~~~~~
 
 .. code-block:: yaml
 
@@ -169,7 +165,6 @@ Check commit message failed
     [optional footer(s)]
 
     More details please refer to https://www.conventionalcommits.org
-
 
 Check branch naming failed
 
