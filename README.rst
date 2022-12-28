@@ -5,9 +5,9 @@ Commit Check
     :alt: PyPI
     :target: https://pypi.org/project/commit-check/
 
-.. image:: https://github.com/commit-check/commit-check/actions/workflows/CI.yml/badge.svg
+.. image:: https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg
     :alt: CI
-    :target: https://github.com/commit-check/commit-check/actions/workflows/CI.yml
+    :target: https://github.com/commit-check/commit-check/actions/workflows/main.yml
 
 .. image:: https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&metric=alert_status
     :alt: Quality Gate Status

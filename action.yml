@@ -1,0 +1,59 @@
+name: Commit Check
+description: Check commit message formatting, branch naming, referencing Jira tickets, and more
+author: shenxianpeng
+branding:
+  icon: "check-circle"
+  color: "green"
+inputs:
+  message:
+    description: check commit message formatting convention
+    required: false
+    default: true
+  branch:
+    description: check git branch naming convention
+    required: false
+    default: true
+  author-name:
+    description: check committer author name
+    required: false
+    default: true
+  author-email:
+    description: check committer author email
+    required: false
+    default: true
+  dry-run:
+    description: run checks without failing
+    required: false
+    default: false
+runs:
+  using: "composite"
+  steps:
+    - name: Install action dependencies
+      shell: bash
+      run: |
+        if [[ "${{runner.os}}" == "Linux" ]]; then
+          # https://github.com/pypa/setuptools/issues/3269
+          export DEB_PYTHON_INSTALL_LAYOUT=deb
+        fi
+        python3 -m pip install -r '${{ github.action_path }}/requirements.txt'
+    - name: Run commit-check
+      id: commit-check
+      shell: bash
+      run: |
+        args=""
+        if [ "${{ inputs.message }}" == "true" ]; then
+          args="$args --message"
+        fi
+        if [ "${{ inputs.branch }}" == "true" ]; then
+          args="$args --branch"
+        fi
+        if [ "${{ inputs.author-name }}" == "true" ]; then
+          args="$args --author-name"
+        fi
+        if [ "${{ inputs.author-email }}" == "true" ]; then
+           args="$args --author-email"
+        fi
+        if [ "${{ inputs.dry-run }}" == "true" ]; then
+          args="$args --dry-run"
+        fi
+        commit-check $args
