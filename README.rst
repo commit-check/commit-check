@@ -59,10 +59,10 @@ Install from git repo
 
     pip install git+https://github.com/commit-check/commit-check.git@main
 
-Then you can run ``commit-check`` CLI. More about ``commit-check --help`` please see `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
+Then you can run ``commit-check`` command line. More about ``commit-check --help`` please see `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
 
-pre-commit hook
-~~~~~~~~~~~~~~~
+Running as pre-commit hook
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Add .commit-check.yml
 
@@ -116,25 +116,10 @@ Or have ``default_install_hook_types: [pre-commit, prepare-commit-msg]`` in your
         -   id: check-message
         -   id: check-branch
 
-GitHub Action
-~~~~~~~~~~~~~
+Running as GitHub Action
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code-block:: yaml
-
-    name: commit-check
-
-    on: pull_request
-
-    jobs:
-    commit-check:
-        runs-on: ubuntu-latest
-        steps:
-        - uses: actions/checkout@v3
-        - uses: commit-check/commit-check@v0
-            id: check
-            with:
-            message: true
-            branch: true
+Please see `commit-check/commit-check-action <https://github.com/commit-check/commit-check-action>`_
 
 Example
 -------
