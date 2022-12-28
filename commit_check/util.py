@@ -95,9 +95,9 @@ def print_error_message(check_type: str, regex: str, error: str, error_point: st
     print(r" __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__ ")
     print(r"(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)")
     print(r"   || E ||      || R ||      || R ||      || O ||      || R ||   ")
-    print(r" _.' `-' '._  _.' `-' '._  _.' `-' '._  _.' `-' '._  _.' `-' '.  ")
-    print(r"(.-./`-'\.-.)(.-./`-`\.-.)(.-./`-`\.-.)(.-./`-'\.-.)(.-./`-`\.-.)")
-    print(r" `-'     `-'  `-'     `-'  `-'     `-'  `-'     `-'  `-'     `-' ")
+    print(r" _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._ ")
+    print(r"(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)")
+    print(r" `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´ ")
     print("                                                                  ")
     print("Commit rejected.                                                  ")
     print("                                                                  ")
@@ -120,7 +120,7 @@ def print_error_message(check_type: str, regex: str, error: str, error_point: st
     else:
         print(f"commit-check does not support {check_type} yet.")
         raise SystemExit(1)
-    print(f"\nIt does't match regex: {regex}")
+    print(f"\nIt doesn't match regex: {regex}")
     print("")
     print(error)
 

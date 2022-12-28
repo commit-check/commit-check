@@ -126,22 +126,21 @@ Example
 
 Check commit message failed
 
-.. code-block:: bash
+.. code-block:: text
 
     Commit rejected by Commit-Check.
 
-     (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-      / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-    __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
-   (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-      || E ||      || R ||      || R ||      || O ||      || R ||
-    _.' `-' '._  _.' `-' '._  _.' `-' '._  _.' `-' '._  _.' `-' '.
-    (.-./`-'\.-.)(.-./`-`\.-.)(.-./`-`\.-.)(.-./`-'\.-.)(.-./`-`\.-.)
-    `-'     `-'  `-'     `-'  `-'     `-'  `-'     `-'  `-'     `-'
+      (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+       / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+     __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+    (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
+       || E ||      || R ||      || R ||      || O ||      || R ||
+     _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
+    (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
+     `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
-    Commit rejected.
-
-    Invalid commit message. it does't match regex: ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)
+    Invalid commit message => test
+    It doesn't match regex: ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)
 
     The commit message should be structured as follows:
 
@@ -150,27 +149,31 @@ Check commit message failed
     [optional footer(s)]
 
     More details please refer to https://www.conventionalcommits.org
+    Suggest to run => git commit --amend
+
 
 Check branch naming failed
 
-.. code-block:: bash
+.. code-block:: text
 
     Commit rejected by Commit-Check.
 
-     (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-      / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-    __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
-   (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-      || E ||      || R ||      || R ||      || O ||      || R ||
-    _.' `-' '._  _.' `-' '._  _.' `-' '._  _.' `-' '._  _.' `-' '.
-    (.-./`-'\.-.)(.-./`-`\.-.)(.-./`-`\.-.)(.-./`-'\.-.)(.-./`-`\.-.)
-    `-'     `-'  `-'     `-'  `-'     `-'  `-'     `-'  `-'     `-'
+      (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+       / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+     __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+    (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
+       || E ||      || R ||      || R ||      || O ||      || R ||
+     _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
+    (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
+     `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
     Commit rejected.
 
-    Invalid branch name. it does't match regex: ^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)
+    Invalid branch name => test
+    It doesn't match regex: ^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)
 
-    Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/ or master main
+    Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/
+    Suggest to run => git checkout -b type/branch_name
 
 
 Versioning

@@ -12,7 +12,7 @@ checks:
   - check: branch_name
     regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)'
     error: 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/'
-    suggest: 'git checkout -b new_branch_name'
+    suggest: 'git checkout -b type/branch_name'
 
   - check: author_name
     regex: r'^([a-zA-Z]{2,}\s[a-zA-Z]{1,}'?-?[a-zA-Z]{2,}\s?([a-zA-Z]{1,})?)'
