@@ -24,7 +24,7 @@ repos:
         additional_dependencies: [types-all]
         exclude: ^testing/resources/
 -   repo: https://github.com/commit-check/commit-check
-    rev: latest
+    rev: v0.2.4
     hooks:
     -   id: check-message
         stages: [post-commit]
