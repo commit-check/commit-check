@@ -81,7 +81,9 @@
 <header class="md-header md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="#" title="commit-check" class="md-header__button md-logo" aria-label="commit-check" data-md-component="logo">
-      <img src="_static/logo.jpg" alt="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
     </a>
     <label class="md-header__button md-icon" for="__drawer">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
@@ -241,7 +243,9 @@
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
     <a href="#" title="commit-check" class="md-nav__button md-logo" aria-label="commit-check" data-md-component="logo">
-      <img src="_static/logo.jpg" alt="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
     </a>
     commit-check
   </label>
@@ -426,15 +430,15 @@
 <p>There are a variety of ways you can use commit-check:</p>
 <h3 id="running-as-cli">Running as CLI<a class="headerlink" href="#running-as-cli" title="Permalink to this heading">¶</a></h3>
 <p>Global installation</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>sudo pip3 install -U commit-check
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>pip3<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>commit-check
 </code></pre></div>
 </div>
 <p>User installation</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip install -U commit-check
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>commit-check
 </code></pre></div>
 </div>
 <p>Install from git repo</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip install git+https://github.com/commit-check/commit-check.git@main
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/commit-check/commit-check.git@main
 </code></pre></div>
 </div>
 <p>Then you can run <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> command line. More about <code class="docutils literal notranslate"><span class="pre">commit-check</span> <span class="pre">--help</span></code> please see <a class="reference external" href="https://commit-check.github.io/commit-check/cli_args.html">docs</a>.</p>
@@ -442,19 +446,19 @@
 <p>Add .commit-check.yml</p>
 <p>Create a config file <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code> under your repository, e.g. <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/.commit-check.yml">.commit-check.yml</a></p>
 <p>The content of the config file should be in the following format.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">checks</span><span class="p">:</span><span class="w"></span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">check</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span><span class="w"></span>
-<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">regex</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?:</span><span class="nv"> </span><span class="s">([\w</span><span class="nv"> </span><span class="s">])+([\s\S]*)&#39;</span><span class="w"></span>
-<span class="w">    </span><span class="nt">error</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;type&gt;:</span><span class="nv"> </span><span class="s">&lt;description&gt;</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">checks</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">check</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">regex</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?:</span><span class="nv"> </span><span class="s">([\w</span><span class="nv"> </span><span class="s">])+([\s\S]*)&#39;</span>
+<span class="w">    </span><span class="nt">error</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;type&gt;:</span><span class="nv"> </span><span class="s">&lt;description&gt;</span>
 
-<span class="w">    </span><span class="s">For</span><span class="nv"> </span><span class="s">Example.</span><span class="nv"> </span><span class="s">feat:</span><span class="nv"> </span><span class="s">Support</span><span class="nv"> </span><span class="s">new</span><span class="nv"> </span><span class="s">feature</span><span class="nv"> </span><span class="s">xxxx</span><span class="w"></span>
+<span class="w">    </span><span class="s">For</span><span class="nv"> </span><span class="s">Example.</span><span class="nv"> </span><span class="s">feat:</span><span class="nv"> </span><span class="s">Support</span><span class="nv"> </span><span class="s">new</span><span class="nv"> </span><span class="s">feature</span><span class="nv"> </span><span class="s">xxxx</span>
 
-<span class="w">    </span><span class="s">Between</span><span class="nv"> </span><span class="s">type</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">description</span><span class="nv"> </span><span class="s">MUST</span><span class="nv"> </span><span class="s">have</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">colon</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">space.</span><span class="w"></span>
+<span class="w">    </span><span class="s">Between</span><span class="nv"> </span><span class="s">type</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">description</span><span class="nv"> </span><span class="s">MUST</span><span class="nv"> </span><span class="s">have</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">colon</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">space.</span>
 
-<span class="w">    </span><span class="s">More</span><span class="nv"> </span><span class="s">please</span><span class="nv"> </span><span class="s">refer</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">https://www.conventionalcommits.org&quot;</span><span class="w"></span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">check</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">branch</span><span class="w"></span>
-<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">regex</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)&#39;</span><span class="w"></span>
-<span class="w">    </span><span class="nt">error</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Branches</span><span class="nv"> </span><span class="s">must</span><span class="nv"> </span><span class="s">begin</span><span class="nv"> </span><span class="s">with</span><span class="nv"> </span><span class="s">these</span><span class="nv"> </span><span class="s">types:</span><span class="nv"> </span><span class="s">bugfix/</span><span class="nv"> </span><span class="s">feature/</span><span class="nv"> </span><span class="s">release/</span><span class="nv"> </span><span class="s">hotfix/</span><span class="nv"> </span><span class="s">task/&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="s">More</span><span class="nv"> </span><span class="s">please</span><span class="nv"> </span><span class="s">refer</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">https://www.conventionalcommits.org&quot;</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">check</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">branch</span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">regex</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)&#39;</span>
+<span class="w">    </span><span class="nt">error</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Branches</span><span class="nv"> </span><span class="s">must</span><span class="nv"> </span><span class="s">begin</span><span class="nv"> </span><span class="s">with</span><span class="nv"> </span><span class="s">these</span><span class="nv"> </span><span class="s">types:</span><span class="nv"> </span><span class="s">bugfix/</span><span class="nv"> </span><span class="s">feature/</span><span class="nv"> </span><span class="s">release/</span><span class="nv"> </span><span class="s">hotfix/</span><span class="nv"> </span><span class="s">task/&quot;</span>
 </code></pre></div>
 </div>
 <p>Use default configuration</p>
@@ -469,17 +473,17 @@ branch naming follow bitbucket <a class="reference external" href="https://suppo
 <p>Make sure <code class="docutils literal notranslate"><span class="pre">pre-commit</span></code> is <a class="reference external" href="https://pre-commit.com/#install">installed</a>.</p>
 </div>
 <p>Install the commit-msg hook in your project repo.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pre-commit install --hook-type prepare-commit-msg
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pre-commit<span class="w"> </span>install<span class="w"> </span>--hook-type<span class="w"> </span>prepare-commit-msg
 </code></pre></div>
 </div>
 <p>Or have <code class="docutils literal notranslate"><span class="pre">default_install_hook_types:</span> <span class="pre">[pre-commit,</span> <span class="pre">prepare-commit-msg]</span></code> in your <code class="docutils literal notranslate"><span class="pre">.pre-commit-config.yaml</span></code>.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">default_install_hook_types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pre-commit</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">prepare-commit-msg</span><span class="p p-Indicator">]</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">default_install_hook_types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pre-commit</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">prepare-commit-msg</span><span class="p p-Indicator">]</span>
 
-<span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/commit-check/commit-check</span><span class="w"></span>
-<span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v0.1.4</span><span class="w"></span>
-<span class="w">    </span><span class="nt">hooks</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-message</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-branch</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/commit-check/commit-check</span>
+<span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v0.1.4</span>
+<span class="w">    </span><span class="nt">hooks</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-message</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-branch</span>
 </code></pre></div>
 </div>
 <h3 id="running-as-github-action">Running as GitHub Action<a class="headerlink" href="#running-as-github-action" title="Permalink to this heading">¶</a></h3>
@@ -599,7 +603,7 @@ Suggest to run =&gt; git checkout -b type/branch_name
   
     Created using
     <a href="https://www.sphinx-doc.org/" target="_blank" rel="noopener">Sphinx</a>
-    5.3.0.
+    6.0.0.
      and
     <a href="https://github.com/jbms/sphinx-immaterial/" target="_blank" rel="noopener">Sphinx-Immaterial</a>
   
