@@ -9,7 +9,7 @@ on:
       - "**.py"
       - "**requirements*.txt"
       - pyproject.toml
-      - ".github/workflows/CI.yml"
+      - ".github/workflows/main.yml"
       - "!docs/**"
   workflow_dispatch:
 
