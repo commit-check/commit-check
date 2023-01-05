@@ -4,8 +4,7 @@ from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
 from commit_check.util import get_commits_info, print_error_message, print_suggestion
 
 
-def check_git_config(config, check_type) -> int:
-    checks = config['checks']
+def check_git_config(checks: dict, check_type: str) -> int:
     for check in checks:
         if check['check'] == check_type:
             if check['regex'] == "":

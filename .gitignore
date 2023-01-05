@@ -7,6 +7,7 @@ UNKNOWN.egg-info
 dist
 build
 tests/__pycache__
+.coverage
 
 # docs
 docs/_build

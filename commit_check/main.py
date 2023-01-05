@@ -93,14 +93,15 @@ def main() -> int:
         config = validate_config(args.config) if validate_config(
             args.config,
         ) else DEFAULT_CONFIG
+        checks = config['checks']
         if args.message:
-            retval = commit.check_commit(config)
+            retval = commit.check_commit(checks)
         if args.author_name:
-            retval = git_config.check_git_config(config, "author_name")
+            retval = git_config.check_git_config(checks, "author_name")
         if args.author_email:
-            retval = git_config.check_git_config(config, "author_email")
+            retval = git_config.check_git_config(checks, "author_email")
         if args.branch:
-            retval = branch.check_branch(config)
+            retval = branch.check_branch(checks)
 
     if args.dry_run:
         retval = PASS
