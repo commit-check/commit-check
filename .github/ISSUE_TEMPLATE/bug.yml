@@ -1,0 +1,29 @@
+name: Bug report
+description: something went wrong
+body:
+  - type: markdown
+    attributes:
+      value: this is for issues for `commit-check`
+  - type: textarea
+    id: freeform
+    attributes:
+      label: describe your issue
+      placeholder: 'I was doing ... I ran ... I expected ... I got ...'
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: commit-check version
+      placeholder: commit-check x.x.x
+    validations:
+      required: true
+  - type: textarea
+    id: configuration
+    attributes:
+      label: .commit-check.yml
+      description: (auto-rendered as yaml, no need for backticks)
+      placeholder: 'checks: ...'
+      render: yaml
+    validations:
+      required: true
