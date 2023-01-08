@@ -17,26 +17,27 @@ Commit Check
     :alt: pre-commit.ci status
     :target: https://results.pre-commit.ci/latest/github/commit-check/commit-check/main
 
+Overview
+--------
+
 Check commit message formatting, branch naming, commit author, email, and more. The open-source alternative to Yet Another Commit Checker.
 
-- Requiring commit message to match regex
-- Requiring branch naming to match regex
-- Requiring committer name and email to match regex
-- Customizing error message
-- Customizing suggest command
+- requiring commit message to match regex
+- requiring branch naming to match regex
+- requiring committer name and email to match regex
+- customizing error message
+- customizing suggest command
 
-About
------
+Purpose
+-------
 
 commit-check is a tool designed for teams.
 
-Its main purpose is to standardize the format of commit messages and branch naming.
-
-The reason behind it is and makes it possible, like:
+Its main purpose is to standardize the format of commit message, branch naming, etc, and makes it possible to:
 
 - writing descriptive commit is easy to read
 - identify branch according to the branch type
-- triggering specific type of commit/branch CI build
+- triggering the specific types of commit/branch CI build
 - automatically generate changelogs
 
 Usage
