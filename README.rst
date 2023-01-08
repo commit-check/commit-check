@@ -17,7 +17,13 @@ Commit Check
     :alt: pre-commit.ci status
     :target: https://results.pre-commit.ci/latest/github/commit-check/commit-check/main
 
-Check commit message formatting, branch naming, referencing Jira tickets, and more
+Check commit message formatting, branch naming, commit author, email, and more. The open-source alternative to Yet Another Commit Checker.
+
+- Requiring commit message to match regex
+- Requiring branch naming to match regex
+- Requiring committer name and email to match regex
+- Customizing error message
+- Customizing suggest command
 
 About
 -----
@@ -75,12 +81,9 @@ The content of the config file should be in the following format.
     checks:
     - check: message
         regex: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)'
-        error: "<type>: <description>
+        error: "<type>[optional scope]: <description>
 
         For Example. feat: Support new feature xxxx
-
-        Between type and description MUST have a colon and space.
-
         More please refer to https://www.conventionalcommits.org"
     - check: branch
         regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)'

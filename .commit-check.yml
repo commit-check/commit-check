@@ -1,5 +1,4 @@
 checks:
-
   - check: commit_message
     regex: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)'
     error: "The commit message should be structured as follows:\n\n
@@ -8,17 +7,14 @@ checks:
     [optional footer(s)]\n\n
     More details please refer to https://www.conventionalcommits.org"
     suggest: 'git commit --amend'
-
   - check: branch_name
     regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)'
     error: 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/'
     suggest: 'git checkout -b type/branch_name'
-
   - check: author_name
     regex: r'^([a-zA-Z]{2,}\s[a-zA-Z]{1,}'?-?[a-zA-Z]{2,}\s?([a-zA-Z]{1,})?)'
     error: 'The user name seems invalid'
     suggest: 'git config user.name "Peter Shen"'
-
   - check: author_email
     regex: '^\S+@\S+\.\S+$'
     error: 'The email address seems invalid'
