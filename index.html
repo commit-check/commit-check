@@ -342,6 +342,33 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">Configuration</span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#use-custom-configuration" class="md-nav__link">
+    <span class="md-ellipsis">Use custom configuration</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-default-configuration" class="md-nav__link">
+    <span class="md-ellipsis">Use default configuration</span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">Usage</span>
   </a>
@@ -350,8 +377,8 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#running-as-cli" class="md-nav__link">
-    <span class="md-ellipsis">Running as CLI</span>
+  <a href="#running-as-github-action" class="md-nav__link">
+    <span class="md-ellipsis">Running as Git<wbr>Hub Action</span>
   </a>
   
 </li>
@@ -364,8 +391,8 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#running-as-github-action" class="md-nav__link">
-    <span class="md-ellipsis">Running as Git<wbr>Hub Action</span>
+  <a href="#running-as-cli" class="md-nav__link">
+    <span class="md-ellipsis">Running as CLI</span>
   </a>
   
 </li>
@@ -440,8 +467,31 @@
 <li><p>triggering the specific types of commit/branch CI build</p></li>
 <li><p>automatically generate changelogs</p></li>
 </ul>
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">¶</a></h2>
+<h3 id="use-custom-configuration">Use custom configuration<a class="headerlink" href="#use-custom-configuration" title="Permalink to this heading">¶</a></h3>
+<p>Create a config file <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code> under your repository root directory, e.g. <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/.commit-check.yml">.commit-check.yml</a></p>
+<h3 id="use-default-configuration">Use default configuration<a class="headerlink" href="#use-default-configuration" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>If you did’t set <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code>, <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> will use the <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py#L15-L39">default configuration</a>.</p></li>
+<li><p>i.e. the commit message will follow the rules of <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>,
+branch naming follow bitbucket <a class="reference external" href="https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/">branching model</a>.</p></li>
+</ul>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h2>
-<p>There are a variety of ways you can use commit-check:</p>
+<p>There are a variety of ways you can use commit-check as follows.</p>
+<h3 id="running-as-github-action">Running as GitHub Action<a class="headerlink" href="#running-as-github-action" title="Permalink to this heading">¶</a></h3>
+<p>Please see <a class="reference external" href="https://github.com/commit-check/commit-check-action">commit-check/commit-check-action</a></p>
+<h3 id="running-as-pre-commit-hook">Running as pre-commit hook<a class="headerlink" href="#running-as-pre-commit-hook" title="Permalink to this heading">¶</a></h3>
+<div class="tip admonition">
+<p class="admonition-title">Tip</p>
+<p>Make sure <code class="docutils literal notranslate"><span class="pre">pre-commit</span></code> is <a class="reference external" href="https://pre-commit.com/#install">installed</a>.</p>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/commit-check/commit-check</span>
+<span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">the tag or revision</span>
+<span class="w">    </span><span class="nt">hooks</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-message</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-branch</span>
+</code></pre></div>
+</div>
 <h3 id="running-as-cli">Running as CLI<a class="headerlink" href="#running-as-cli" title="Permalink to this heading">¶</a></h3>
 <p>Global installation</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>pip3<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>commit-check
@@ -456,49 +506,6 @@
 </code></pre></div>
 </div>
 <p>Then you can run <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> command line. More about <code class="docutils literal notranslate"><span class="pre">commit-check</span> <span class="pre">--help</span></code> please see <a class="reference external" href="https://commit-check.github.io/commit-check/cli_args.html">docs</a>.</p>
-<h3 id="running-as-pre-commit-hook">Running as pre-commit hook<a class="headerlink" href="#running-as-pre-commit-hook" title="Permalink to this heading">¶</a></h3>
-<p>Add .commit-check.yml</p>
-<p>Create a config file <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code> under your repository, e.g. <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/.commit-check.yml">.commit-check.yml</a></p>
-<p>The content of the config file should be in the following format.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">checks</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">check</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span>
-<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">regex</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?:</span><span class="nv"> </span><span class="s">([\w</span><span class="nv"> </span><span class="s">])+([\s\S]*)&#39;</span>
-<span class="w">    </span><span class="nt">error</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;type&gt;[optional</span><span class="nv"> </span><span class="s">scope]:</span><span class="nv"> </span><span class="s">&lt;description&gt;</span>
-
-<span class="w">    </span><span class="s">For</span><span class="nv"> </span><span class="s">Example.</span><span class="nv"> </span><span class="s">feat:</span><span class="nv"> </span><span class="s">Support</span><span class="nv"> </span><span class="s">new</span><span class="nv"> </span><span class="s">feature</span><span class="nv"> </span><span class="s">xxxx</span>
-<span class="w">    </span><span class="s">More</span><span class="nv"> </span><span class="s">please</span><span class="nv"> </span><span class="s">refer</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">https://www.conventionalcommits.org&quot;</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">check</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">branch</span>
-<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">regex</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)&#39;</span>
-<span class="w">    </span><span class="nt">error</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Branches</span><span class="nv"> </span><span class="s">must</span><span class="nv"> </span><span class="s">begin</span><span class="nv"> </span><span class="s">with</span><span class="nv"> </span><span class="s">these</span><span class="nv"> </span><span class="s">types:</span><span class="nv"> </span><span class="s">bugfix/</span><span class="nv"> </span><span class="s">feature/</span><span class="nv"> </span><span class="s">release/</span><span class="nv"> </span><span class="s">hotfix/</span><span class="nv"> </span><span class="s">task/&quot;</span>
-</code></pre></div>
-</div>
-<p>Use default configuration</p>
-<ul class="simple">
-<li><p>If you do not set <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code>, <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> will use the default configuration.
-i.e. the commit message will follow the rules of <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>,
-branch naming follow bitbucket <a class="reference external" href="https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/">branching model</a>.</p></li>
-</ul>
-<p>Integrating with pre-commit</p>
-<div class="tip admonition">
-<p class="admonition-title">Tip</p>
-<p>Make sure <code class="docutils literal notranslate"><span class="pre">pre-commit</span></code> is <a class="reference external" href="https://pre-commit.com/#install">installed</a>.</p>
-</div>
-<p>Install the commit-msg hook in your project repo.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pre-commit<span class="w"> </span>install<span class="w"> </span>--hook-type<span class="w"> </span>prepare-commit-msg
-</code></pre></div>
-</div>
-<p>Or have <code class="docutils literal notranslate"><span class="pre">default_install_hook_types:</span> <span class="pre">[pre-commit,</span> <span class="pre">prepare-commit-msg]</span></code> in your <code class="docutils literal notranslate"><span class="pre">.pre-commit-config.yaml</span></code>.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">default_install_hook_types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pre-commit</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">prepare-commit-msg</span><span class="p p-Indicator">]</span>
-
-<span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/commit-check/commit-check</span>
-<span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v0.1.4</span>
-<span class="w">    </span><span class="nt">hooks</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-message</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-branch</span>
-</code></pre></div>
-</div>
-<h3 id="running-as-github-action">Running as GitHub Action<a class="headerlink" href="#running-as-github-action" title="Permalink to this heading">¶</a></h3>
-<p>Please see <a class="reference external" href="https://github.com/commit-check/commit-check-action">commit-check/commit-check-action</a></p>
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h2>
 <p>Check commit message failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
