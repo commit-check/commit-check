@@ -9,7 +9,7 @@ on:
       - "**.py"
       - "**requirements*.txt"
       - pyproject.toml
-      - ".github/workflows/CI.yml"
+      - ".github/workflows/main.yml"
       - "!docs/**"
   workflow_dispatch:
 
@@ -39,6 +39,11 @@ jobs:
         with:
           name: commit-check_wheel
           path: ${{ github.workspace }}/dist/*.whl
+      - name: Run commit-check
+        run: |
+          python3 -m pip install dist/*.whl
+          commit-check -h
+          commit-check --message --branch --author-email
 
       # - name: Collect Coverage
       #   run: coverage run -m pytest
@@ -70,13 +75,10 @@ jobs:
           name: commit-check_wheel
           path: dist
 
-      - name: Install commit-check
+      - name: Install test
         # using a wildcard as filename on Windows requires a bash shell
         shell: bash
         run: python3 -m pip install dist/*.whl
-
-      - name: Print commit check help
-        run: commit-check -h
 
   docs:
       runs-on: ubuntu-latest
