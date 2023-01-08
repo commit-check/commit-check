@@ -17,26 +17,70 @@ Commit Check
     :alt: pre-commit.ci status
     :target: https://results.pre-commit.ci/latest/github/commit-check/commit-check/main
 
-Check commit message formatting, branch naming, referencing Jira tickets, and more
+Overview
+--------
 
-About
------
+Check commit message formatting, branch naming, commit author, email, and more. The open-source alternative to Yet Another Commit Checker.
+
+- requiring commit message to match regex
+- requiring branch naming to match regex
+- requiring committer name and email to match regex
+- customizing error message
+- customizing suggest command
+
+Purpose
+-------
 
 commit-check is a tool designed for teams.
 
-Its main purpose is to standardize the format of commit messages and branch naming.
-
-The reason behind it is and makes it possible, like:
+Its main purpose is to standardize the format of commit message, branch naming, etc, and makes it possible to:
 
 - writing descriptive commit is easy to read
 - identify branch according to the branch type
-- triggering specific type of commit/branch CI build
+- triggering the specific types of commit/branch CI build
 - automatically generate changelogs
+
+Configuration
+-------------
+
+Use custom configuration
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Create a config file ``.commit-check.yml`` under your repository root directory, e.g. `.commit-check.yml <https://github.com/commit-check/commit-check/blob/main/.commit-check.yml>`_
+
+Use default configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- If you did't set ``.commit-check.yml``, ``commit-check`` will use the `default configuration <https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py#L15-L39>`_.
+
+- i.e. the commit message will follow the rules of `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_,
+  branch naming follow bitbucket `branching model <https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/>`_.
+
 
 Usage
 -----
 
-There are a variety of ways you can use commit-check:
+There are a variety of ways you can use commit-check as follows.
+
+Running as GitHub Action
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Please see `commit-check/commit-check-action <https://github.com/commit-check/commit-check-action>`_
+
+Running as pre-commit hook
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tip::
+
+    Make sure ``pre-commit`` is `installed <https://pre-commit.com/#install>`_.
+
+.. code-block:: yaml
+
+    -   repo: https://github.com/commit-check/commit-check
+        rev: the tag or revision
+        hooks:
+        -   id: check-message
+        -   id: check-branch
 
 Running as CLI
 ~~~~~~~~~~~~~~
@@ -60,66 +104,6 @@ Install from git repo
     pip install git+https://github.com/commit-check/commit-check.git@main
 
 Then you can run ``commit-check`` command line. More about ``commit-check --help`` please see `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
-
-Running as pre-commit hook
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Add .commit-check.yml
-
-Create a config file ``.commit-check.yml`` under your repository, e.g. `.commit-check.yml <https://github.com/commit-check/commit-check/blob/main/.commit-check.yml>`_
-
-The content of the config file should be in the following format.
-
-.. code-block:: yaml
-
-    checks:
-    - check: message
-        regex: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)'
-        error: "<type>: <description>
-
-        For Example. feat: Support new feature xxxx
-
-        Between type and description MUST have a colon and space.
-
-        More please refer to https://www.conventionalcommits.org"
-    - check: branch
-        regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)'
-        error: "Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/"
-
-Use default configuration
-
-- If you do not set ``.commit-check.yml``, ``commit-check`` will use the default configuration.
-  i.e. the commit message will follow the rules of `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_,
-  branch naming follow bitbucket `branching model <https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/>`_.
-
-Integrating with pre-commit
-
-.. tip::
-
-    Make sure ``pre-commit`` is `installed <https://pre-commit.com/#install>`_.
-
-Install the commit-msg hook in your project repo.
-
-.. code-block:: bash
-
-    pre-commit install --hook-type prepare-commit-msg
-
-Or have ``default_install_hook_types: [pre-commit, prepare-commit-msg]`` in your ``.pre-commit-config.yaml``.
-
-.. code-block:: yaml
-
-    default_install_hook_types: [pre-commit, prepare-commit-msg]
-
-    -   repo: https://github.com/commit-check/commit-check
-        rev: v0.1.4
-        hooks:
-        -   id: check-message
-        -   id: check-branch
-
-Running as GitHub Action
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Please see `commit-check/commit-check-action <https://github.com/commit-check/commit-check-action>`_
 
 Example
 -------
