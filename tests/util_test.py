@@ -236,9 +236,9 @@ class TestUtil:
             assert "Suggest to run" in stdout
 
         def test_print_suggestion_exit1(self, capfd):
-            # Must exit with 1 when None passed
+            # Must exit with 1 when "" passed
             with pytest.raises(SystemExit) as e:
-                print_suggestion(None)
+                print_suggestion("")
 
             assert e.value.code == 1
             stdout, _ = capfd.readouterr()
