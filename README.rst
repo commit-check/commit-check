@@ -17,6 +17,10 @@ Commit Check
     :alt: pre-commit.ci status
     :target: https://results.pre-commit.ci/latest/github/commit-check/commit-check/main
 
+.. image:: https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT
+    :alt: CodeCov
+    :target: https://codecov.io/gh/commit-check/commit-check
+
 Overview
 --------
 

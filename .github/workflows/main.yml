@@ -45,15 +45,16 @@ jobs:
           commit-check -h
           commit-check --message --branch --author-email
 
-      # - name: Collect Coverage
-      #   run: coverage run -m pytest
-
-      # - run: coverage report && coverage xml
-      # - uses: codecov/codecov-action@v3
-      #   with:
-      #     files: ./coverage.xml
-      #     fail_ci_if_error: true # optional (default = false)
-      #     verbose: true # optional (default = false)
+      - name: Collect Coverage
+        run: |
+          coverage run -m pytest
+          coverage report && coverage xml
+      - uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          fail_ci_if_error: true # optional (default = false)
+          verbose: true # optional (default = false)
 
   install:
     needs: [build]
