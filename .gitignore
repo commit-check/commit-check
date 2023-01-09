@@ -8,6 +8,7 @@ dist
 build
 tests/__pycache__
 .coverage
+coverage.xml
 
 # docs
 docs/_build
