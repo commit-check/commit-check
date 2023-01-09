@@ -12,9 +12,8 @@ from commit_check.main import get_parser
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 project = "commit-check"
-copyright = "2022, shenxianpeng"
+copyright = "2023, shenxianpeng"
 author = "shenxianpeng"
-release = "0.1.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
