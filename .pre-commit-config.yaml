@@ -25,10 +25,11 @@ repos:
         additional_dependencies: [types-all]
         exclude: ^testing/resources/
 -   repo: https://github.com/commit-check/commit-check
-    rev: v0.2.4
+    rev: v0.3.0
     hooks:
     -   id: check-message
     -   id: check-branch
+    -   id: check-author-email
 -   repo: local
     hooks:
     -   id: pytest
