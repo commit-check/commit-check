@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "commit-check"
-description = "Check commit message formatting, branch nanming, referencing Jira tickets, and more"
-readme = "README.md"
+description = "Check commit message formatting, branch naming, commit author, email, and more."
+readme = "README.rst"
 keywords = ["message", "branch", "formatting", "naming", "referencing"]
 license = {text = "MIT License"}
 authors = [
