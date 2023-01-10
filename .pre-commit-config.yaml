@@ -28,9 +28,10 @@ repos:
     -   id: check-branch
 -   repo: local
     hooks:
-    -   id: pytest-check
-        name: pytest-check
-        entry: pytest
-        language: system
+    -   id: pytest
+        name: pytest
+        entry: pytest .
+        language: python
+        types: [python]
+        additional_dependencies: ["pytest", "pytest-mock"]
         pass_filenames: false
-        always_run: true
