@@ -11,7 +11,7 @@ from subprocess import CalledProcessError, PIPE
 class TestUtil:
     class TestGetBranchName:
         def test_get_branch_name(self, mocker):
-            # Must call cmd_output with gived argument.
+            # Must call cmd_output with given argument.
             m_cmd_output = mocker.patch(
                 "commit_check.util.cmd_output",
                 return_value=" fake_branch_name "
@@ -143,7 +143,7 @@ class TestUtil:
         ]
         )
         def test_cmd_output_err_with_len0_stderr(self, mocker, returncode, stdout, stderr):
-            # Must return empty string when  subprocess.run returns empty stderr.
+            # Must return empty string when subprocess.run returns empty stderr.
             m_subprocess_run = mocker.patch(
                 "subprocess.run",
                 return_value=self.DummyProcessResult(
@@ -196,7 +196,6 @@ class TestUtil:
         ])
         def test_print_error_message(self, capfd, check_type, invalid_type_msg):
             # Must print on stdout with given argument.
-
             dummy_regex = "dummy regex"
             dummy_error_point = "error point"
             dummy_error = "dummy error"

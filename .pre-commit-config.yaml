@@ -1,4 +1,7 @@
 # https://pre-commit.com/
+ci:
+    skip: [pytest]
+
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
@@ -26,3 +29,11 @@ repos:
     hooks:
     -   id: check-message
     -   id: check-branch
+-   repo: local
+    hooks:
+    -   id: pytest
+        name: pytest
+        entry: pytest
+        language: system
+        pass_filenames: false
+        always_run: true
