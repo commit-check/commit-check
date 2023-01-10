@@ -1,0 +1,23 @@
+name: publish image
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'which tag want to build'
+        default: ''
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Build docker image
+      if: github.event.inputs.tag != ''
+      run: |
+        docker build -f Dockerfile --build-arg VERSION=$tag -t commit-check:$tag .
+        echo $CR_PAT | docker login ghcr.io -u shenxianpeng --password-stdin
+      env:
+        CR_PAT: ${{ secrets.CR_PAT }}
+    - name: Publish image to container registry
+      run: docker push ghcr.io/commit-check/commit-check:$tag
