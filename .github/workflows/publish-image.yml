@@ -13,12 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Build docker image
+    - name: Build and publish docker image
       if: github.event.inputs.tag != ''
       run: |
-        docker build -f Dockerfile --build-arg VERSION=$tag -t commit-check:$tag .
+        echo "tag = ${{ github.event.inputs.tag }}"
+        docker build -f Dockerfile --build-arg VERSION=${{ github.event.inputs.tag }} -t commit-check:${{ github.event.inputs.tag }} .
         echo $CR_PAT | docker login ghcr.io -u shenxianpeng --password-stdin
+        docker tag commit-check:${{ github.event.inputs.tag }} ghcr.io/commit-check/commit-check:${{ github.event.inputs.tag }}
+        docker push ghcr.io/commit-check/commit-check:${{ github.event.inputs.tag }}
       env:
         CR_PAT: ${{ secrets.CR_PAT }}
-    - name: Publish image to container registry
-      run: docker push ghcr.io/commit-check/commit-check:$tag
