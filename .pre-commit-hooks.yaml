@@ -1,15 +1,28 @@
 - id: check-message
-  name: check message formatting
-  description: prevents unconventional commits from being committed.
+  name: check commit message
+  description: requiring commit message to match regex
   entry: commit-check
   args: [--message]
   pass_filenames: false
   language: python
-  stages: [post-commit]
 - id: check-branch
   name: check branch naming
-  description: prevents unconventional branch from being pushed to remote repo.
+  description: requiring branch naming to match regex
   entry: commit-check
   args: [--branch]
+  pass_filenames: false
+  language: python
+- id: check-author-name
+  name: check committer name
+  description: requiring committer name to match regex
+  entry: commit-check
+  args: [--author-name]
+  pass_filenames: false
+  language: python
+- id: check-author-email
+  name: check committer email
+  description: requiring committer email to match regex
+  entry: commit-check
+  args: [--author-email]
   pass_filenames: false
   language: python
