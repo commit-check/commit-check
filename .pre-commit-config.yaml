@@ -1,4 +1,7 @@
 # https://pre-commit.com/
+ci:
+    skip: [pytest]
+
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
@@ -30,8 +33,7 @@ repos:
     hooks:
     -   id: pytest
         name: pytest
-        entry: pytest .
-        language: python
-        types: [python]
-        additional_dependencies: ["pytest", "pytest-mock"]
+        entry: pytest
+        language: system
         pass_filenames: false
+        always_run: true
