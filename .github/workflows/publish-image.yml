@@ -17,8 +17,8 @@ jobs:
       if: github.event.inputs.tag != ''
       run: |
         echo "tag = ${{ github.event.inputs.tag }}"
-        docker build -f Dockerfile --build-arg VERSION=$${{ github.event.inputs.tag }} -t commit-check:$${{ github.event.inputs.tag }} .
+        docker build -f Dockerfile --build-arg VERSION=${{ github.event.inputs.tag }} -t commit-check:${{ github.event.inputs.tag }} .
         echo $CR_PAT | docker login ghcr.io -u shenxianpeng --password-stdin
-        docker push ghcr.io/commit-check/commit-check:$${{ github.event.inputs.tag }}
+        docker push ghcr.io/commit-check/commit-check:${{ github.event.inputs.tag }}
       env:
         CR_PAT: ${{ secrets.CR_PAT }}
