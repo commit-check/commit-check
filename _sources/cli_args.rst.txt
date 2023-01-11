@@ -1,9 +1,9 @@
 commit-check --help
 ==============================
 
-usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-a] [-e] [-d]
+usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-d]
 
-Check commit message formatting, branch naming, commit author, email, and more
+Check commit message, branch naming, committer name, email, and more.
 
 options:
 
@@ -18,23 +18,23 @@ options:
 .. std:option:: -c, --config
 
   -c CONFIG, --config CONFIG
-                        path to alternate config file. default is current dir
+                        path to config file. default is .
 
 .. std:option:: -m, --message
 
-  -m, --message         check commit message formatting convention
+  -m, --message         check commit message
 
 .. std:option:: -b, --branch
 
-  -b, --branch          check git branch naming convention
+  -b, --branch          check branch naming
 
-.. std:option:: -a, --author-name
+.. std:option:: -n, --author-name
 
-  -a, --author-name     check committer author name
+  -n, --author-name     check committer's name
 
 .. std:option:: -e, --author-email
 
-  -e, --author-email    check committer author email
+  -e, --author-email    check committer's email
 
 .. std:option:: -d, --dry-run
 

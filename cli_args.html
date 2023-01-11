@@ -355,8 +355,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cmdoption-a" class="md-nav__link">
-    <span title="-a (program option)" class="md-ellipsis">-<wbr>a, --<wbr>author-<wbr>name</span>
+  <a href="#cmdoption-n" class="md-nav__link">
+    <span title="-n (program option)" class="md-ellipsis">-<wbr>n, --<wbr>author-<wbr>name</span>
   </a>
   
 </li>
@@ -442,8 +442,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cmdoption-a" class="md-nav__link">
-    <span title="-a (program option)" class="md-ellipsis">-<wbr>a, --<wbr>author-<wbr>name</span>
+  <a href="#cmdoption-n" class="md-nav__link">
+    <span title="-n (program option)" class="md-ellipsis">-<wbr>n, --<wbr>author-<wbr>name</span>
   </a>
   
 </li>
@@ -477,8 +477,8 @@
 
 
 <h1 id="commit-check-help">commit-check –help<a class="headerlink" href="#commit-check-help" title="Permalink to this heading">¶</a></h1>
-<p>usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-a] [-e] [-d]</p>
-<p>Check commit message formatting, branch naming, commit author, email, and more</p>
+<p>usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-d]</p>
+<p>Check commit message, branch naming, committer name, email, and more.</p>
 <p>options:</p>
 <dl class="std option objdesc">
 <dt class="sig sig-object highlight std" id="cmdoption-h">
@@ -505,7 +505,7 @@
 <span id="cmdoption-config"></span><span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--config</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-c" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="option-list">
 <dt><kbd><span class="option">-c <var>CONFIG</var></span>, <span class="option">--config <var>CONFIG</var></span></kbd></dt>
-<dd><p>path to alternate config file. default is current dir</p>
+<dd><p>path to config file. default is .</p>
 </dd>
 </dl>
 </dd></dl>
@@ -515,7 +515,7 @@
 <span id="cmdoption-message"></span><span class="sig-name descname"><span class="pre">-m</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--message</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-m" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="option-list">
 <dt><kbd><span class="option">-m</span>, <span class="option">--message</span></kbd></dt>
-<dd><p>check commit message formatting convention</p>
+<dd><p>check commit message</p>
 </dd>
 </dl>
 </dd></dl>
@@ -525,17 +525,17 @@
 <span id="cmdoption-branch"></span><span class="sig-name descname"><span class="pre">-b</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--branch</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-b" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="option-list">
 <dt><kbd><span class="option">-b</span>, <span class="option">--branch</span></kbd></dt>
-<dd><p>check git branch naming convention</p>
+<dd><p>check branch naming</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="std option objdesc">
-<dt class="sig sig-object highlight std" id="cmdoption-a">
-<span id="cmdoption-author-name"></span><span class="sig-name descname"><span class="pre">-a</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--author-name</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-a" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object highlight std" id="cmdoption-n">
+<span id="cmdoption-author-name"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--author-name</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-n" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="option-list">
-<dt><kbd><span class="option">-a</span>, <span class="option">--author-name</span></kbd></dt>
-<dd><p>check committer author name</p>
+<dt><kbd><span class="option">-n</span>, <span class="option">--author-name</span></kbd></dt>
+<dd><p>check committer’s name</p>
 </dd>
 </dl>
 </dd></dl>
@@ -545,7 +545,7 @@
 <span id="cmdoption-author-email"></span><span class="sig-name descname"><span class="pre">-e</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--author-email</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-e" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="option-list">
 <dt><kbd><span class="option">-e</span>, <span class="option">--author-email</span></kbd></dt>
-<dd><p>check committer author email</p>
+<dd><p>check committer’s email</p>
 </dd>
 </dl>
 </dd></dl>
@@ -617,7 +617,7 @@
   
     Created using
     <a href="https://www.sphinx-doc.org/" target="_blank" rel="noopener">Sphinx</a>
-    6.1.2.
+    6.1.3.
      and
     <a href="https://github.com/jbms/sphinx-immaterial/" target="_blank" rel="noopener">Sphinx-Immaterial</a>
   
