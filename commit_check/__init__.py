@@ -1,6 +1,5 @@
 """The commit-check package's base module."""
 
-VERSION = '0.1.0'
 RED = '\033[0;31m'
 GREEN = "\033[32m"
 YELLOW = '\033[93m'
@@ -33,7 +32,7 @@ DEFAULT_CONFIG = {
         {
             'check': 'author_email',
             'regex': r'/^\S+@\S+\.\S+$/',
-            'error': 'The email address seems invalid',
+            'error': 'The committer\'s email seems invalid',
         },
     ],
 }

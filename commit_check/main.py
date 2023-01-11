@@ -9,35 +9,35 @@ import argparse
 from commit_check import branch
 from commit_check import commit
 from commit_check import config as git_config
-from commit_check.util import validate_config
-from . import RESET_COLOR, YELLOW, VERSION, CONFIG_FILE, DEFAULT_CONFIG, PASS
+from commit_check.util import validate_config, get_version
+from . import RESET_COLOR, YELLOW, CONFIG_FILE, DEFAULT_CONFIG, PASS
 
 
 def get_parser() -> argparse.ArgumentParser:
     """Get and parser to interpret CLI args."""
     parser = argparse.ArgumentParser(
         prog='commit-check',
-        description="Check commit message formatting, branch naming, commit author, email, and more"
+        description="Check commit message, branch naming, committer name, email, and more."
     )
 
     parser.add_argument(
         '-v',
         '--version',
         action='version',
-        version=f'%(prog)s {VERSION}',
+        version=f'%(prog)s {get_version()}',
     )
 
     parser.add_argument(
         '-c',
         '--config',
         default=CONFIG_FILE,
-        help='path to alternate config file. default is current dir',
+        help='path to config file. default is .',
     )
 
     parser.add_argument(
         '-m',
         '--message',
-        help='check commit message formatting convention',
+        help='check commit message',
         action="store_true",
         required=False,
     )
@@ -45,15 +45,15 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '-b',
         '--branch',
-        help='check git branch naming convention',
+        help='check branch naming',
         action="store_true",
         required=False,
     )
 
     parser.add_argument(
-        '-a',
+        '-n',
         '--author-name',
-        help='check committer author name',
+        help='check committer\'s name',
         action="store_true",
         required=False,
     )
@@ -61,7 +61,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '-e',
         '--author-email',
-        help='check committer author email',
+        help='check committer\'s email',
         action="store_true",
         required=False,
     )

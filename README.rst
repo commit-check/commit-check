@@ -24,7 +24,7 @@ Commit Check
 Overview
 --------
 
-Check commit message formatting, branch naming, commit author, email, and more. The open-source alternative to Yet Another Commit Checker.
+Check commit message formatting, branch naming, committer name, email, and more. The open-source alternative to Yet Another Commit Checker.
 
 - requiring commit message to match regex
 - requiring branch naming to match regex
@@ -178,6 +178,8 @@ License
 -------
 
 The scripts and documentation in this project are released under the `MIT License <https://github.com/commit-check/commit-check/blob/main/LICENSE>`_
+
+If my open source projects are useful for your **product/company** you can also sponsor my work on them ☕
 
 .. image:: https://ko-fi.com/img/githubbutton_sm.svg
     :target: https://ko-fi.com/H2H85WC9L

@@ -13,9 +13,9 @@ checks:
     suggest: 'git checkout -b type/branch_name'
   - check: author_name
     regex: r'^([a-zA-Z]{2,}\s[a-zA-Z]{1,}'?-?[a-zA-Z]{2,}\s?([a-zA-Z]{1,})?)'
-    error: 'The user name seems invalid'
+    error: 'The committer name seems invalid'
     suggest: 'git config user.name "Peter Shen"'
   - check: author_email
     regex: '^\S+@\S+\.\S+$'
-    error: 'The email address seems invalid'
+    error: 'The committer email seems invalid'
     suggest: 'git config user.email xianpeng.shen@gmail.com'
