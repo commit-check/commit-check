@@ -24,10 +24,8 @@ class TestConfig:
                 "re.match",
                 return_value="fake_rematch_resp"
             )
-
-            res = check_git_config(checks, "author_name")
-
-            assert res == PASS
+            retval = check_git_config(checks, "author_name")
+            assert retval == PASS
             assert m_get_commits_info.call_count == 1
             assert m_re_match.call_count == 1
 
@@ -42,10 +40,8 @@ class TestConfig:
                 "re.match",
                 return_value="fake_author_name"
             )
-
-            res = check_git_config(checks, "author_name")
-
-            assert res == PASS
+            retval = check_git_config(checks, "author_name")
+            assert retval == PASS
             assert m_get_commits_info.call_count == 0
             assert m_re_match.call_count == 0
 
@@ -63,10 +59,8 @@ class TestConfig:
                 "re.match",
                 return_value="fake_author_name"
             )
-
-            res = check_git_config(checks, "author_name")
-
-            assert res == PASS
+            retval = check_git_config(checks, "author_name")
+            assert retval == PASS
             assert m_get_commits_info.call_count == 0
             assert m_re_match.call_count == 0
 
@@ -86,10 +80,8 @@ class TestConfig:
                 "re.match",
                 return_value="fake_rematch_resp"
             )
-
-            res = check_git_config(checks, "author_name")
-
-            assert res == PASS
+            retval = check_git_config(checks, "author_name")
+            assert retval == PASS
             assert m_get_commits_info.call_count == 0
             assert m_re_match.call_count == 0
             out, _ = capfd.readouterr()
@@ -117,10 +109,8 @@ class TestConfig:
             m_print_suggestion = mocker.patch(
                 f"{LOCATION}.print_suggestion"
             )
-
-            res = check_git_config(checks, "author_name")
-
-            assert res == FAIL
+            retval = check_git_config(checks, "author_name")
+            assert retval == FAIL
             assert m_get_commits_info.call_count == 1
             assert m_re_match.call_count == 1
             assert m_print_error_message.call_count == 1
@@ -144,10 +134,8 @@ class TestConfig:
                 "re.match",
                 return_value="fake_rematch_resp"
             )
-
-            res = check_git_config(checks, "author_email")
-
-            assert res == PASS
+            retval = check_git_config(checks, "author_email")
+            assert retval == PASS
             assert m_get_commits_info.call_count == 1
             assert m_re_match.call_count == 1
 
@@ -162,10 +150,8 @@ class TestConfig:
                 "re.match",
                 return_value="fake_author_email"
             )
-
-            res = check_git_config(checks, "author_email")
-
-            assert res == PASS
+            retval = check_git_config(checks, "author_email")
+            assert retval == PASS
             assert m_get_commits_info.call_count == 0
             assert m_re_match.call_count == 0
 
@@ -183,10 +169,8 @@ class TestConfig:
                 "re.match",
                 return_value="fake_author_email"
             )
-
-            res = check_git_config(checks, "author_email")
-
-            assert res == PASS
+            retval = check_git_config(checks, "author_email")
+            assert retval == PASS
             assert m_get_commits_info.call_count == 0
             assert m_re_match.call_count == 0
 
@@ -206,10 +190,8 @@ class TestConfig:
                 "re.match",
                 return_value="fake_rematch_resp"
             )
-
-            res = check_git_config(checks, "author_email")
-
-            assert res == PASS
+            retval = check_git_config(checks, "author_email")
+            assert retval == PASS
             assert m_get_commits_info.call_count == 0
             assert m_re_match.call_count == 0
             out, _ = capfd.readouterr()
@@ -237,10 +219,8 @@ class TestConfig:
             m_print_suggestion = mocker.patch(
                 f"{LOCATION}.print_suggestion"
             )
-
-            res = check_git_config(checks, "author_email")
-
-            assert res == FAIL
+            retval = check_git_config(checks, "author_email")
+            assert retval == FAIL
             assert m_get_commits_info.call_count == 1
             assert m_re_match.call_count == 1
             assert m_print_error_message.call_count == 1

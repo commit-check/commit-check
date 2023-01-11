@@ -1,14 +1,45 @@
 import pytest
-from commit_check.util import (get_branch_name,
-                               get_commits_info,
-                               cmd_output,
-                               validate_config,
-                               print_error_message,
-                               print_suggestion)
+from commit_check.util import get_version
+from commit_check.util import get_branch_name
+from commit_check.util import get_commits_info
+from commit_check.util import cmd_output
+from commit_check.util import validate_config
+from commit_check.util import print_error_message
+from commit_check.util import print_suggestion
 from subprocess import CalledProcessError, PIPE
 
 
 class TestUtil:
+    class TestGetVersion:
+        def test_get_version(self, mocker):
+            m_cmd_output = mocker.patch(
+                "commit_check.util.cmd_output",
+                return_value="fake_version"
+            )
+            retval = get_version()
+            assert m_cmd_output.call_count == 1
+            assert m_cmd_output.call_args[0][0] == [
+                "git", "describe", "--tags"
+            ]
+            assert retval == "fake_version"
+
+        def test_get_version_with_exception(self, mocker):
+            m_cmd_output = mocker.patch(
+                "commit_check.util.cmd_output",
+                return_value="fake_version"
+            )
+            dummy_ret_code, dummy_cmd_name = 1, "dcmd"
+            m_cmd_output.side_effect = CalledProcessError(
+                dummy_ret_code,
+                dummy_cmd_name
+            )
+            retval = get_version()
+            assert m_cmd_output.call_count == 1
+            assert m_cmd_output.call_args[0][0] == [
+                "git", "describe", "--tags"
+            ]
+            assert retval == ""
+
     class TestGetBranchName:
         def test_get_branch_name(self, mocker):
             # Must call cmd_output with given argument.
@@ -16,14 +47,12 @@ class TestUtil:
                 "commit_check.util.cmd_output",
                 return_value=" fake_branch_name "
             )
-
-            res = get_branch_name()
-
+            retval = get_branch_name()
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
                 "git", "rev-parse", "--abbrev-ref", "HEAD"
             ]
-            assert res == "fake_branch_name"
+            assert retval == "fake_branch_name"
 
         def test_get_branch_name_with_exception(self, mocker):
             # Must return empty string when exception raises in cmd_output.
@@ -37,14 +66,12 @@ class TestUtil:
                 dummy_ret_code,
                 dummy_cmd_name
             )
-
-            res = get_branch_name()
-
+            retval = get_branch_name()
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
                 "git", "rev-parse", "--abbrev-ref", "HEAD"
             ]
-            assert res == ""
+            assert retval == ""
 
     class TestGetCommitInfo:
         @pytest.mark.parametrize("format_string", [
@@ -59,14 +86,12 @@ class TestUtil:
                 "commit_check.util.cmd_output",
                 return_value=" fake commit message "
             )
-
-            res = get_commits_info(format_string)
-
+            retval = get_commits_info(format_string)
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
                 "git", "log", "-n", "1", f"--pretty=format:%{format_string}"
             ]
-            assert res == " fake commit message "
+            assert retval == " fake commit message "
 
         def test_get_commits_info_with_exception(self, mocker):
             # Must return empty string when exception raises in cmd_output.
@@ -80,15 +105,13 @@ class TestUtil:
                 dummy_ret_code,
                 dummy_cmd_name
             )
-
             format_string = "s"
-            res = get_commits_info(format_string)
-
+            retval = get_commits_info(format_string)
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
                 "git", "log", "-n", "1", f"--pretty=format:%{format_string}"
             ]
-            assert res == ""
+            assert retval == ""
 
     class TestCmdOutput:
         # use DummyProcessResult in this test to access returncode, stdout and stderr attribute
@@ -104,11 +127,9 @@ class TestUtil:
                 "subprocess.run",
                 return_value=self.DummyProcessResult(0, "ok", "")
             )
-
-            res = cmd_output(["dummy_cmd"])
-
+            retval = cmd_output(["dummy_cmd"])
             assert m_subprocess_run.call_count == 1
-            assert res == "ok"
+            assert retval == "ok"
 
         @pytest.mark.parametrize("returncode, stdout, stderr", [
             (1, "ok", "err"),
@@ -123,12 +144,10 @@ class TestUtil:
                 return_value=self.DummyProcessResult(
                     returncode, stdout, stderr)
             )
-
             dummy_cmd = ["dummy_cmd"]
-            res = cmd_output(dummy_cmd)
-
+            retval = cmd_output(dummy_cmd)
             assert m_subprocess_run.call_count == 1
-            assert res == stderr
+            assert retval == stderr
             assert m_subprocess_run.call_args[0][0] == dummy_cmd
             assert m_subprocess_run.call_args[1] == {
                 'encoding': 'utf-8',
@@ -149,12 +168,10 @@ class TestUtil:
                 return_value=self.DummyProcessResult(
                     returncode, stdout, stderr)
             )
-
             dummy_cmd = ["dummy_cmd"]
-            res = cmd_output(dummy_cmd)
-
+            retval = cmd_output(dummy_cmd)
             assert m_subprocess_run.call_count == 1
-            assert res == ""
+            assert retval == ""
             assert m_subprocess_run.call_args[0][0] == dummy_cmd
             assert m_subprocess_run.call_args[1] == {
                 'encoding': 'utf-8',
@@ -171,21 +188,17 @@ class TestUtil:
                 "yaml.safe_load",
                 return_value=dummy_resp
             )
-
-            res = validate_config("dummy_path")
-
+            retval = validate_config("dummy_path")
             assert m_yaml_safe_load.call_count == 1
-            assert res == dummy_resp
+            assert retval == dummy_resp
 
         def test_validate_config_file_not_found(self, mocker):
             # Must return empty dictionary when FileNotFoundError raises in built-in open.
             mocker.patch("builtins.open").side_effect = FileNotFoundError
             m_yaml_safe_load = mocker.patch("yaml.safe_load")
-
-            res = validate_config("dummy_path")
-
+            retval = validate_config("dummy_path")
             assert m_yaml_safe_load.call_count == 0
-            assert res == {}
+            assert retval == {}
 
     class TestPrintErrorMessage:
         @pytest.mark.parametrize("check_type, invalid_type_msg", [
@@ -238,7 +251,6 @@ class TestUtil:
             # Must exit with 1 when "" passed
             with pytest.raises(SystemExit) as e:
                 print_suggestion("")
-
             assert e.value.code == 1
             stdout, _ = capfd.readouterr()
             assert "commit-check does not support" in stdout

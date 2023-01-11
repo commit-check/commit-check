@@ -22,10 +22,8 @@ class TestCommit:
             "re.match",
             return_value="fake_rematch_resp"
         )
-
-        res = check_commit(checks)
-
-        assert res == PASS
+        retval = check_commit(checks)
+        assert retval == PASS
         assert m_get_commits_info.call_count == 1
         assert m_re_match.call_count == 1
 
@@ -40,10 +38,8 @@ class TestCommit:
             "re.match",
             return_value="fake_commits_info"
         )
-
-        res = check_commit(checks)
-
-        assert res == PASS
+        retval = check_commit(checks)
+        assert retval == PASS
         assert m_get_commits_info.call_count == 0
         assert m_re_match.call_count == 0
 
@@ -61,10 +57,8 @@ class TestCommit:
             "re.match",
             return_value="fake_commits_info"
         )
-
-        res = check_commit(checks)
-
-        assert res == PASS
+        retval = check_commit(checks)
+        assert retval == PASS
         assert m_get_commits_info.call_count == 0
         assert m_re_match.call_count == 0
 
@@ -84,10 +78,8 @@ class TestCommit:
             "re.match",
             return_value="fake_rematch_resp"
         )
-
-        res = check_commit(checks)
-
-        assert res == PASS
+        retval = check_commit(checks)
+        assert retval == PASS
         assert m_get_commits_info.call_count == 0
         assert m_re_match.call_count == 0
         out, _ = capfd.readouterr()
@@ -115,10 +107,8 @@ class TestCommit:
         m_print_suggestion = mocker.patch(
             f"{LOCATION}.print_suggestion"
         )
-
-        res = check_commit(checks)
-
-        assert res == FAIL
+        retval = check_commit(checks)
+        assert retval == FAIL
         assert m_get_commits_info.call_count == 1
         assert m_re_match.call_count == 1
         assert m_print_error_message.call_count == 1
