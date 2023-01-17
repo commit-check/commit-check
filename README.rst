@@ -137,7 +137,7 @@ Check commit message failed
     [optional footer(s)]
 
     More details please refer to https://www.conventionalcommits.org
-    Suggest to run => git commit --amend
+    Suggest to run => git commit --amend --no-verify
 
 
 Check branch naming failed

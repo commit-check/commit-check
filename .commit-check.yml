@@ -6,7 +6,7 @@ checks:
     [optional body]\n
     [optional footer(s)]\n\n
     More details please refer to https://www.conventionalcommits.org"
-    suggest: 'git commit --amend'
+    suggest: 'git commit --amend --no-verify'
   - check: branch_name
     regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)'
     error: 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/'

@@ -21,7 +21,7 @@ DEFAULT_CONFIG = {
             '[optional body]\n'
             '[optional footer(s)]\n\n'
             'More details please refer to https://www.conventionalcommits.org',
-            'suggest': 'git commit --amend'
+            'suggest': 'git commit --amend --no-verify'
         },
         {
             'check': 'branch_name',
