@@ -32,8 +32,7 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
-        <link rel="stylesheet" type="text/css" href="_static/google_fonts.css" />
-        <link rel="stylesheet" type="text/css" href="_static/stylesheets/sphinx_immaterial_theme.d4c2e536dfce3a8ff.min.css" />
+        <link rel="stylesheet" type="text/css" href="_static/sphinx_immaterial_theme.7c8731c94d2ad5cc4.min.css" />
         <link rel="stylesheet" type="text/css" href="_static/extra_css.css" />
     <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -81,9 +80,7 @@
 <header class="md-header md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="#" title="commit-check" class="md-header__button md-logo" aria-label="commit-check" data-md-component="logo">
-      
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+      <img src="_static/logo.jpg" alt="logo">
     </a>
     <label class="md-header__button md-icon" for="__drawer">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
@@ -243,9 +240,7 @@
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
     <a href="#" title="commit-check" class="md-nav__button md-logo" aria-label="commit-check" data-md-component="logo">
-      
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+      <img src="_static/logo.jpg" alt="logo">
     </a>
     commit-check
   </label>
@@ -410,6 +405,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#badging-your-repository" class="md-nav__link">
+    <span class="md-ellipsis">Badging your repository</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#versioning" class="md-nav__link">
     <span class="md-ellipsis">Versioning</span>
   </a>
@@ -448,8 +450,8 @@
 <a class="reference external image-reference" href="https://pypi.org/project/commit-check/"><img alt="PyPI" src="https://img.shields.io/pypi/v/commit-check?logo=python&amp;logoColor=white" /></a>
 <a class="reference external image-reference" href="https://github.com/commit-check/commit-check/actions/workflows/main.yml"><img alt="CI" src="https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg" /></a>
 <a class="reference external image-reference" href="https://sonarcloud.io/summary/new_code?id=commit-check_commit-check"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&amp;metric=alert_status" /></a>
-<a class="reference external image-reference" href="https://results.pre-commit.ci/latest/github/commit-check/commit-check/main"><img alt="pre-commit.ci status" src="https://results.pre-commit.ci/badge/github/commit-check/commit-check/main.svg" /></a>
 <a class="reference external image-reference" href="https://codecov.io/gh/commit-check/commit-check"><img alt="CodeCov" src="https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT" /></a>
+<a class="reference external image-reference" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white" /></a>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permalink to this heading">¶</a></h2>
 <p>Check commit message formatting, branch naming, committer name, email, and more. The open-source alternative to Yet Another Commit Checker.</p>
 <ul class="simple">
@@ -554,6 +556,19 @@ Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/
 Suggest to run =&gt; git checkout -b type/branch_name
 </code></pre></div>
 </div>
+<h2 id="badging-your-repository">Badging your repository<a class="headerlink" href="#badging-your-repository" title="Permalink to this heading">¶</a></h2>
+<p>You can add a badge to your repository to show your contributors / users that you use commit-check!</p>
+<a class="reference external image-reference" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white" /></a>
+<p>Markdown</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>[![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white)](https://github.com/commit-check/commit-check)
+</code></pre></div>
+</div>
+<p>reStructuredText</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>.. image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white
+    :target: https://github.com/commit-check/commit-check
+    :alt: commit-check
+</code></pre></div>
+</div>
 <h2 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permalink to this heading">¶</a></h2>
 <p>Versioning follows <a class="reference external" href="https://semver.org/">Semantic Versioning</a>.</p>
 <h2 id="have-question-or-feedback">Have question or feedback?<a class="headerlink" href="#have-question-or-feedback" title="Permalink to this heading">¶</a></h2>
@@ -641,9 +656,8 @@ Suggest to run =&gt; git checkout -b type/branch_name
     
     <script id="__config" type="application/json">{"base": ".", "features": ["navigation.top", "navigation.tabs", "navigation.tabs.sticky", "toc.sticky", "toc.follow", "search.share"], "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
-    
-      <script src="_static/javascripts/bundle.444abb77.min.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+      
+        <script src="_static/sphinx_immaterial_theme.cea6a0c1d5b0618cf.min.js"></script>
     
   </body>
 </html>
