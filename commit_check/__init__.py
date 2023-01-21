@@ -31,7 +31,7 @@ DEFAULT_CONFIG = {
         },
         {
             'check': 'author_email',
-            'regex': r'/^\S+@\S+\.\S+$/',
+            'regex': r'^\S+@\S+\.\S+$',
             'error': 'The committer\'s email seems invalid',
         },
     ],
