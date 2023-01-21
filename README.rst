@@ -5,10 +5,6 @@ Commit Check
     :target: https://pypi.org/project/commit-check/
     :alt: PyPI
 
-.. image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white
-    :target: https://github.com/commit-check/commit-check
-    :alt: commit-check
-
 .. image:: https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg
     :target: https://github.com/commit-check/commit-check/actions/workflows/main.yml
     :alt: CI
@@ -17,13 +13,13 @@ Commit Check
     :target: https://sonarcloud.io/summary/new_code?id=commit-check_commit-check
     :alt: Quality Gate Status
 
-.. image:: https://results.pre-commit.ci/badge/github/commit-check/commit-check/main.svg
-    :target: https://results.pre-commit.ci/latest/github/commit-check/commit-check/main
-    :alt: pre-commit.ci status
-
 .. image:: https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT
     :target: https://codecov.io/gh/commit-check/commit-check
     :alt: CodeCov
+
+.. image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white
+    :target: https://github.com/commit-check/commit-check
+    :alt: commit-check
 
 Overview
 --------
