@@ -2,24 +2,28 @@ Commit Check
 ============
 
 .. image:: https://img.shields.io/pypi/v/commit-check?logo=python&logoColor=white
-    :alt: PyPI
     :target: https://pypi.org/project/commit-check/
+    :alt: PyPI
+
+.. image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white
+    :target: https://github.com/commit-check/commit-check
+    :alt: commit-check
 
 .. image:: https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg
-    :alt: CI
     :target: https://github.com/commit-check/commit-check/actions/workflows/main.yml
+    :alt: CI
 
 .. image:: https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&metric=alert_status
-    :alt: Quality Gate Status
     :target: https://sonarcloud.io/summary/new_code?id=commit-check_commit-check
+    :alt: Quality Gate Status
 
 .. image:: https://results.pre-commit.ci/badge/github/commit-check/commit-check/main.svg
-    :alt: pre-commit.ci status
     :target: https://results.pre-commit.ci/latest/github/commit-check/commit-check/main
+    :alt: pre-commit.ci status
 
 .. image:: https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT
-    :alt: CodeCov
     :target: https://codecov.io/gh/commit-check/commit-check
+    :alt: CodeCov
 
 Overview
 --------
@@ -162,6 +166,30 @@ Check branch naming failed
 
     Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/
     Suggest to run => git checkout -b type/branch_name
+
+
+Badging your repository
+-----------------------
+
+You can add a badge to your repository to show your contributors / users that you use commit-check!
+
+.. image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white
+    :target: https://github.com/commit-check/commit-check
+    :alt: commit-check
+
+Markdown
+
+.. code-block:: text
+
+    [![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white)](https://github.com/commit-check/commit-check)
+
+reStructuredText
+
+.. code-block:: text
+
+    .. image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white
+        :target: https://github.com/commit-check/commit-check
+        :alt: commit-check
 
 
 Versioning
