@@ -23,7 +23,10 @@ def check_git_config(checks: list, check_type: str) -> int:
                     check['check'], check['regex'],
                     check['error'], config_value,
                 )
-                if check['suggest']:
-                    print_suggestion(check['suggest'])
+                try:
+                    if check['suggest']:
+                        print_suggestion(check['suggest'])
+                except KeyError:
+                    pass
                 return FAIL
     return PASS
