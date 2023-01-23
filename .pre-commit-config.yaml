@@ -25,7 +25,7 @@ repos:
         additional_dependencies: [types-all]
         exclude: ^testing/resources/
 -   repo: https://github.com/commit-check/commit-check
-    rev: v0.3.1
+    rev: v0.3.3
     hooks:
     -   id: check-message
     -   id: check-branch
