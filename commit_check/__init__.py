@@ -15,7 +15,7 @@ DEFAULT_CONFIG = {
     'checks': [
         {
             'check': 'commit_message',
-            'regex': r'^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)',
+            'regex': r'^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)',
             'error': 'The commit message should be structured as follows:\n\n'
             '<type>[optional scope]: <description>\n'
             '[optional body]\n'
@@ -27,7 +27,7 @@ DEFAULT_CONFIG = {
             'check': 'branch_name',
             'regex': r'^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)',
             'error': 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/',
-            'suggest': 'git checkout -b new_branch_name',
+            'suggest': 'git checkout -b bugfix/branch_name',
         },
         {
             'check': 'author_email',
