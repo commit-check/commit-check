@@ -9,7 +9,8 @@ import argparse
 from commit_check import branch
 from commit_check import commit
 from commit_check import author
-from commit_check.util import validate_config, get_version, error_handler
+from commit_check.util import validate_config, get_version
+from commit_check.error import error_handler
 from . import RESET_COLOR, YELLOW, CONFIG_FILE, DEFAULT_CONFIG, PASS
 
 
