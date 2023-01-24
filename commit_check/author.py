@@ -23,10 +23,7 @@ def check_author(checks: list, check_type: str) -> int:
                     check['check'], check['regex'],
                     check['error'], config_value,
                 )
-                try:
-                    if check['suggest']:
-                        print_suggestion(check['suggest'])
-                except KeyError:
-                    pass
+                if check['suggest']:
+                    print_suggestion(check['suggest'])
                 return FAIL
     return PASS
