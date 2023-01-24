@@ -1,16 +1,16 @@
 from commit_check import PASS, FAIL
-from commit_check.config import check_git_config
+from commit_check.author import check_author
 
-# The location of check_git_config()
-LOCATION = "commit_check.config"
+# The location of check_author()
+LOCATION = "commit_check.author"
 
 
-class TestConfig:
+class TestAuthor:
     class TestAuthorName:
         # used by get_commits_info mock
-        fake_config_value_an = "fake_author_name"
+        fake_author_value_an = "fake_author_name"
 
-        def test_check_git_config(self, mocker):
+        def test_check_author(self, mocker):
             # Must call get_commits_info, re.match.
             checks = [{
                 "check": "author_name",
@@ -18,34 +18,34 @@ class TestConfig:
             }]
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_an
+                return_value=self.fake_author_value_an
             )
             m_re_match = mocker.patch(
                 "re.match",
                 return_value="fake_rematch_resp"
             )
-            retval = check_git_config(checks, "author_name")
+            retval = check_author(checks, "author_name")
             assert retval == PASS
             assert m_get_commits_info.call_count == 1
             assert m_re_match.call_count == 1
 
-        def test_check_git_config_with_empty_checks(self, mocker):
+        def test_check_author_with_empty_checks(self, mocker):
             # Must NOT call get_commits_info, re.match. with `checks` param with length 0.
             checks = []
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_an
+                return_value=self.fake_author_value_an
             )
             m_re_match = mocker.patch(
                 "re.match",
                 return_value="fake_author_name"
             )
-            retval = check_git_config(checks, "author_name")
+            retval = check_author(checks, "author_name")
             assert retval == PASS
             assert m_get_commits_info.call_count == 0
             assert m_re_match.call_count == 0
 
-        def test_check_git_config_with_different_check(self, mocker):
+        def test_check_author_with_different_check(self, mocker):
             # Must NOT call get_commit_info, re.match with not `author_name`.
             checks = [{
                 "check": "commit_message",
@@ -53,18 +53,18 @@ class TestConfig:
             }]
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_an
+                return_value=self.fake_author_value_an
             )
             m_re_match = mocker.patch(
                 "re.match",
                 return_value="fake_author_name"
             )
-            retval = check_git_config(checks, "author_name")
+            retval = check_author(checks, "author_name")
             assert retval == PASS
             assert m_get_commits_info.call_count == 0
             assert m_re_match.call_count == 0
 
-        def test_check_git_config_with_len0_regex(self, mocker, capfd):
+        def test_check_author_with_len0_regex(self, mocker, capfd):
             # Must NOT call get_commits_info, re.match with `regex` with length 0.
             checks = [
                 {
@@ -74,20 +74,20 @@ class TestConfig:
             ]
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_an
+                return_value=self.fake_author_value_an
             )
             m_re_match = mocker.patch(
                 "re.match",
                 return_value="fake_rematch_resp"
             )
-            retval = check_git_config(checks, "author_name")
+            retval = check_author(checks, "author_name")
             assert retval == PASS
             assert m_get_commits_info.call_count == 0
             assert m_re_match.call_count == 0
             out, _ = capfd.readouterr()
             assert "Not found regex for author_name." in out
 
-        def test_check_git_config_with_result_none(self, mocker):
+        def test_check_author_with_result_none(self, mocker):
             # Must call print_error_message, print_suggestion when re.match returns NONE.
             checks = [{
                 "check": "author_name",
@@ -97,7 +97,7 @@ class TestConfig:
             }]
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_an
+                return_value=self.fake_author_value_an
             )
             m_re_match = mocker.patch(
                 "re.match",
@@ -109,7 +109,7 @@ class TestConfig:
             m_print_suggestion = mocker.patch(
                 f"{LOCATION}.print_suggestion"
             )
-            retval = check_git_config(checks, "author_name")
+            retval = check_author(checks, "author_name")
             assert retval == FAIL
             assert m_get_commits_info.call_count == 1
             assert m_re_match.call_count == 1
@@ -118,9 +118,9 @@ class TestConfig:
 
     class TestAuthorEmail:
         # used by get_commits_info mock
-        fake_config_value_ae = "fake_author_email"
+        fake_author_value_ae = "fake_author_email"
 
-        def test_check_git_config(self, mocker):
+        def test_check_author(self, mocker):
             # Must call get_commits_info, re.match.
             checks = [{
                 "check": "author_email",
@@ -128,34 +128,34 @@ class TestConfig:
             }]
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_ae
+                return_value=self.fake_author_value_ae
             )
             m_re_match = mocker.patch(
                 "re.match",
                 return_value="fake_rematch_resp"
             )
-            retval = check_git_config(checks, "author_email")
+            retval = check_author(checks, "author_email")
             assert retval == PASS
             assert m_get_commits_info.call_count == 1
             assert m_re_match.call_count == 1
 
-        def test_check_git_config_with_empty_checks(self, mocker):
+        def test_check_author_with_empty_checks(self, mocker):
             # Must NOT call get_commits_info, re.match. with `checks` param with length 0.
             checks = []
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_ae
+                return_value=self.fake_author_value_ae
             )
             m_re_match = mocker.patch(
                 "re.match",
                 return_value="fake_author_email"
             )
-            retval = check_git_config(checks, "author_email")
+            retval = check_author(checks, "author_email")
             assert retval == PASS
             assert m_get_commits_info.call_count == 0
             assert m_re_match.call_count == 0
 
-        def test_check_git_config_with_different_check(self, mocker):
+        def test_check_author_with_different_check(self, mocker):
             # Must NOT call get_commit_info, re.match with not `author_email`.
             checks = [{
                 "check": "commit_message",
@@ -163,18 +163,18 @@ class TestConfig:
             }]
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_ae
+                return_value=self.fake_author_value_ae
             )
             m_re_match = mocker.patch(
                 "re.match",
                 return_value="fake_author_email"
             )
-            retval = check_git_config(checks, "author_email")
+            retval = check_author(checks, "author_email")
             assert retval == PASS
             assert m_get_commits_info.call_count == 0
             assert m_re_match.call_count == 0
 
-        def test_check_git_config_with_len0_regex(self, mocker, capfd):
+        def test_check_author_with_len0_regex(self, mocker, capfd):
             # Must NOT call get_commits_info, re.match with `regex` with length 0.
             checks = [
                 {
@@ -184,20 +184,20 @@ class TestConfig:
             ]
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_ae
+                return_value=self.fake_author_value_ae
             )
             m_re_match = mocker.patch(
                 "re.match",
                 return_value="fake_rematch_resp"
             )
-            retval = check_git_config(checks, "author_email")
+            retval = check_author(checks, "author_email")
             assert retval == PASS
             assert m_get_commits_info.call_count == 0
             assert m_re_match.call_count == 0
             out, _ = capfd.readouterr()
             assert "Not found regex for author_email." in out
 
-        def test_check_git_config_with_result_none(self, mocker):
+        def test_check_author_with_result_none(self, mocker):
             # Must call print_error_message, print_suggestion when re.match returns NONE.
             checks = [{
                 "check": "author_email",
@@ -207,7 +207,7 @@ class TestConfig:
             }]
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_ae
+                return_value=self.fake_author_value_ae
             )
             m_re_match = mocker.patch(
                 "re.match",
@@ -219,7 +219,7 @@ class TestConfig:
             m_print_suggestion = mocker.patch(
                 f"{LOCATION}.print_suggestion"
             )
-            retval = check_git_config(checks, "author_email")
+            retval = check_author(checks, "author_email")
             assert retval == FAIL
             assert m_get_commits_info.call_count == 1
             assert m_re_match.call_count == 1
