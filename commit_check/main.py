@@ -9,7 +9,7 @@ import argparse
 from commit_check import branch
 from commit_check import commit
 from commit_check import author
-from commit_check.util import validate_config, get_version
+from commit_check.util import validate_config, get_version, error_handler
 from . import RESET_COLOR, YELLOW, CONFIG_FILE, DEFAULT_CONFIG, PASS
 
 
@@ -90,18 +90,19 @@ def main() -> int:
         )
         parser.print_help()
     else:
-        config = validate_config(args.config) if validate_config(
-            args.config,
-        ) else DEFAULT_CONFIG
-        checks = config['checks']
-        if args.message:
-            retval = commit.check_commit(checks)
-        if args.author_name:
-            retval = author.check_author(checks, "author_name")
-        if args.author_email:
-            retval = author.check_author(checks, "author_email")
-        if args.branch:
-            retval = branch.check_branch(checks)
+        with error_handler():
+            config = validate_config(args.config) if validate_config(
+                args.config,
+            ) else DEFAULT_CONFIG
+            checks = config['checks']
+            if args.message:
+                retval = commit.check_commit(checks)
+            if args.author_name:
+                retval = author.check_author(checks, "author_name")
+            if args.author_email:
+                retval = author.check_author(checks, "author_email")
+            if args.branch:
+                retval = branch.check_branch(checks)
 
     if args.dry_run:
         retval = PASS
