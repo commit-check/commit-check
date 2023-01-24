@@ -1,11 +1,11 @@
 from commit_check import PASS, FAIL
 from commit_check.author import check_author
 
-# The location of check_git_config()
+# The location of check_author()
 LOCATION = "commit_check.author"
 
 
-class TestConfig:
+class TestAuthor:
     class TestAuthorName:
         # used by get_commits_info mock
         fake_author_value_an = "fake_author_name"
@@ -118,7 +118,7 @@ class TestConfig:
 
     class TestAuthorEmail:
         # used by get_commits_info mock
-        fake_config_value_ae = "fake_author_email"
+        fake_author_value_ae = "fake_author_email"
 
         def test_check_author(self, mocker):
             # Must call get_commits_info, re.match.
@@ -128,7 +128,7 @@ class TestConfig:
             }]
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_ae
+                return_value=self.fake_author_value_ae
             )
             m_re_match = mocker.patch(
                 "re.match",
@@ -144,7 +144,7 @@ class TestConfig:
             checks = []
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_ae
+                return_value=self.fake_author_value_ae
             )
             m_re_match = mocker.patch(
                 "re.match",
@@ -163,7 +163,7 @@ class TestConfig:
             }]
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_ae
+                return_value=self.fake_author_value_ae
             )
             m_re_match = mocker.patch(
                 "re.match",
@@ -184,7 +184,7 @@ class TestConfig:
             ]
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_ae
+                return_value=self.fake_author_value_ae
             )
             m_re_match = mocker.patch(
                 "re.match",
@@ -207,7 +207,7 @@ class TestConfig:
             }]
             m_get_commits_info = mocker.patch(
                 f"{LOCATION}.get_commits_info",
-                return_value=self.fake_config_value_ae
+                return_value=self.fake_author_value_ae
             )
             m_re_match = mocker.patch(
                 "re.match",
