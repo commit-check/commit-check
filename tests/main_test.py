@@ -7,7 +7,7 @@ CMD = "commit-check"
 
 
 class TestMain:
-    @pytest.mark.parametrize("argv, check_commit_call_count, check_branch_call_count, check_git_config_call_count", [
+    @pytest.mark.parametrize("argv, check_commit_call_count, check_branch_call_count, check_author_call_count", [
         ([CMD, "--message"], 1, 0, 0),
         ([CMD, "--branch"], 0, 1, 0),
         ([CMD, "--author-name"], 0, 0, 1),
@@ -31,7 +31,7 @@ class TestMain:
             argv,
             check_commit_call_count,
             check_branch_call_count,
-            check_git_config_call_count
+            check_author_call_count
     ):
         mocker.patch(
             "commit_check.main.validate_config",
@@ -45,14 +45,14 @@ class TestMain:
         m_check_branch = mocker.patch(
             "commit_check.branch.check_branch"
         )
-        m_check_git_config = mocker.patch(
-            "commit_check.config.check_git_config"
+        m_check_author = mocker.patch(
+            "commit_check.author.check_author"
         )
         sys.argv = argv
         main()
         assert m_check_commit.call_count == check_commit_call_count
         assert m_check_branch.call_count == check_branch_call_count
-        assert m_check_git_config.call_count == check_git_config_call_count
+        assert m_check_author.call_count == check_author_call_count
 
     def test_main_help(self, mocker, capfd):
         mocker.patch(
@@ -67,15 +67,15 @@ class TestMain:
         m_check_branch = mocker.patch(
             "commit_check.branch.check_branch"
         )
-        m_check_git_config = mocker.patch(
-            "commit_check.config.check_git_config"
+        m_check_author = mocker.patch(
+            "commit_check.author.check_author"
         )
         sys.argv = ["commit-check", "--h"]
         with pytest.raises(SystemExit):
             main()
         assert m_check_commit.call_count == 0
         assert m_check_branch.call_count == 0
-        assert m_check_git_config.call_count == 0
+        assert m_check_author.call_count == 0
         stdout, _ = capfd.readouterr()
         assert "usage: " in stdout
 
@@ -92,15 +92,15 @@ class TestMain:
         m_check_branch = mocker.patch(
             "commit_check.branch.check_branch"
         )
-        m_check_git_config = mocker.patch(
-            "commit_check.config.check_git_config"
+        m_check_author = mocker.patch(
+            "commit_check.author.check_author"
         )
         sys.argv = ["commit-check", "--v"]
         with pytest.raises(SystemExit):
             main()
         assert m_check_commit.call_count == 0
         assert m_check_branch.call_count == 0
-        assert m_check_git_config.call_count == 0
+        assert m_check_author.call_count == 0
 
     def test_main_validate_config_ret_none(self, mocker):
         mocker.patch(
@@ -112,7 +112,7 @@ class TestMain:
             "commit_check.branch.check_branch"
         )
         mocker.patch(
-            "commit_check.config.check_git_config"
+            "commit_check.author.check_author"
         )
         sys.argv = ["commit-check", "--message"]
         main()
