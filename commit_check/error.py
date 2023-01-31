@@ -49,6 +49,8 @@ def log_and_exit(msg: str, ret_code: int, exc: BaseException, formatted: str) ->
             file.write(f'{log_ctx}\n')
 
     if os.access(store_dir, os.W_OK):
+        with open(log_path, 'w'):
+            pass
         write_line('### version information')
         write_line('```')
         write_line(f'commit-check --version: {commit_check_version}')
