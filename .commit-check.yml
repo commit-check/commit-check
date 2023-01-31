@@ -19,3 +19,7 @@ checks:
     regex: '^\S+@\S+\.\S+$'
     error: 'The committer email seems invalid'
     suggest: 'git config user.email xianpeng.shen@gmail.com'
+
+excludes:
+  exclude: author_name
+  regex: '.*\[bot]'

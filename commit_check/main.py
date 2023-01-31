@@ -95,15 +95,19 @@ def main() -> int:
             config = validate_config(args.config) if validate_config(
                 args.config,
             ) else DEFAULT_CONFIG
-            checks = config['checks']
-            if args.message:
-                retval = commit.check_commit(checks)
-            if args.author_name:
-                retval = author.check_author(checks, "author_name")
-            if args.author_email:
-                retval = author.check_author(checks, "author_email")
-            if args.branch:
-                retval = branch.check_branch(checks)
+            if "checks" in config.keys():
+                checks = config['checks']
+                if args.message:
+                    retval = commit.check_commit(checks)
+                if args.author_name:
+                    retval = author.check_author(checks, "author_name")
+                if args.author_email:
+                    retval = author.check_author(checks, "author_email")
+                if args.branch:
+                    retval = branch.check_branch(checks)
+            if "excludes" in config.keys():
+                excludes = config['excludes']
+                print(excludes)
 
     if args.dry_run:
         retval = PASS
