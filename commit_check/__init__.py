@@ -30,9 +30,16 @@ DEFAULT_CONFIG = {
             'suggest': 'git checkout -b bugfix/branch_name',
         },
         {
+            'check': 'author_name',
+            'regex': r'^[a-z ,.\'-]+$|.*(\[bot])',
+            'error': 'The committer name seems invalid',
+            'suggest': 'git config user.name "Peter Shen"',
+        },
+        {
             'check': 'author_email',
             'regex': r'^\S+@\S+\.\S+$',
             'error': 'The committer\'s email seems invalid',
+            'suggest': 'git config user.email petershen@example.com',
         },
     ],
 }

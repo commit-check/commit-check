@@ -6,16 +6,16 @@ checks:
     [optional body]\n
     [optional footer(s)]\n\n
     More details please refer to https://www.conventionalcommits.org"
-    suggest: 'git commit --amend --no-verify'
+    suggest: git commit --amend --no-verify
   - check: branch_name
-    regex: '^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)'
-    error: 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/'
-    suggest: 'git checkout -b type/branch_name'
+    regex: ^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)
+    error: "Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/"
+    suggest: git checkout -b type/branch_name
   - check: author_name
-    regex: r'^([a-zA-Z]{2,}\s[a-zA-Z]{1,}'?-?[a-zA-Z]{2,}\s?([a-zA-Z]{1,})?)'
-    error: 'The committer name seems invalid'
-    suggest: 'git config user.name "Peter Shen"'
+    regex: ^[a-z ,.\'-]+$|.*(\[bot])
+    error: The committer name seems invalid
+    suggest: git config user.name "Peter Shen"
   - check: author_email
-    regex: '^\S+@\S+\.\S+$'
-    error: 'The committer email seems invalid'
-    suggest: 'git config user.email xianpeng.shen@gmail.com'
+    regex: ^\S+@\S+\.\S+$
+    error: The committer email seems invalid
+    suggest: git config user.email petershen@example.com
