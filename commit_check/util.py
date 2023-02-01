@@ -35,10 +35,10 @@ def get_branch_name() -> str:
     """
     try:
         commands = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
-        branch_name = cmd_output(commands)
+        branch = cmd_output(commands)
     except CalledProcessError:
-        branch_name = ''
-    return branch_name.strip()
+        branch = ''
+    return branch.strip()
 
 
 def get_commits_info(format_string: str) -> str:
@@ -114,11 +114,11 @@ def print_error_message(check_type: str, regex: str, error: str, error_point: st
     print("                                                                  ")
     print("Commit rejected.                                                  ")
     print("                                                                  ")
-    if check_type == "commit_message":
+    if check_type == "message":
         print(
             f"Invalid commit message => {RED}{error_point}{RESET_COLOR} ", end='',
         )
-    elif check_type == "branch_name":
+    elif check_type == "branch":
         print(
             f"Invalid branch name => {RED}{error_point}{RESET_COLOR} ", end='',
         )

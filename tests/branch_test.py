@@ -11,7 +11,7 @@ class TestBranch:
     def test_check_branch(self, mocker):
         # Must call get_branch_name, re.match at once.
         checks = [{
-            "check": "branch_name",
+            "check": "branch",
             "regex": "dummy_regex"
         }]
         m_get_branch_name = mocker.patch(
@@ -44,9 +44,9 @@ class TestBranch:
         assert m_re_match.call_count == 0
 
     def test_check_branch_with_different_check(self, mocker):
-        # Must NOT call get_branch_name, re.match with not `branch_name`.
+        # Must NOT call get_branch_name, re.match with not `branch`.
         checks = [{
-            "check": "commit_message",
+            "check": "message",
             "regex": "dummy_regex"
         }]
         m_get_branch_name = mocker.patch(
@@ -66,7 +66,7 @@ class TestBranch:
         # Must NOT call get_branch_name, re.match with `regex` with length 0.
         checks = [
             {
-                "check": "branch_name",
+                "check": "branch",
                 "regex": ""
             }
         ]
@@ -88,7 +88,7 @@ class TestBranch:
     def test_check_branch_with_result_none(self, mocker):
         # Must call print_error_message, print_suggestion when re.match returns NONE.
         checks = [{
-            "check": "branch_name",
+            "check": "branch",
             "regex": "dummy_regex",
             "error": "error",
             "suggest": "suggest"

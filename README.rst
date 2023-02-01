@@ -161,7 +161,7 @@ Check branch naming failed
     It doesn't match regex: ^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)
 
     Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/
-    Suggest to run => git checkout -b type/branch_name
+    Suggest to run => git checkout -b type/branch
 
 
 Badging your repository
