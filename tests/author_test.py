@@ -48,7 +48,7 @@ class TestAuthor:
         def test_check_author_with_different_check(self, mocker):
             # Must NOT call get_commit_info, re.match with not `author_name`.
             checks = [{
-                "check": "commit_message",
+                "check": "message",
                 "regex": "dummy_regex"
             }]
             m_get_commits_info = mocker.patch(
@@ -158,7 +158,7 @@ class TestAuthor:
         def test_check_author_with_different_check(self, mocker):
             # Must NOT call get_commit_info, re.match with not `author_email`.
             checks = [{
-                "check": "commit_message",
+                "check": "message",
                 "regex": "dummy_regex"
             }]
             m_get_commits_info = mocker.patch(

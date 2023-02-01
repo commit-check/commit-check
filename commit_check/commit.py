@@ -6,18 +6,18 @@ from commit_check.util import get_commits_info, print_error_message, print_sugge
 
 def check_commit(checks: list) -> int:
     for check in checks:
-        if check['check'] == 'commit_message':
+        if check['check'] == 'message':
             if check['regex'] == "":
                 print(
                     f"{YELLOW}Not found regex for commit message. skip checking.{RESET_COLOR}",
                 )
                 return PASS
-            commit_message = str(get_commits_info("s"))
-            result = re.match(check['regex'], commit_message)
+            message = str(get_commits_info("s"))
+            result = re.match(check['regex'], message)
             if result is None:
                 print_error_message(
                     check['check'], check['regex'],
-                    check['error'], commit_message,
+                    check['error'], message,
                 )
                 if check['suggest']:
                     print_suggestion(check['suggest'])

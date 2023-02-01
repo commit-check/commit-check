@@ -202,8 +202,8 @@ class TestUtil:
 
     class TestPrintErrorMessage:
         @pytest.mark.parametrize("check_type, invalid_type_msg", [
-            ("commit_message", "Invalid commit message"),
-            ("branch_name", "Invalid branch name"),
+            ("message", "Invalid commit message"),
+            ("branch", "Invalid branch name"),
             ("author_name", "Invalid author name"),
             ("author_email", "Invalid email address"),
         ])

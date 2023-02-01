@@ -11,7 +11,7 @@ class TestCommit:
     def test_check_commit(self, mocker):
         # Must call get_commits_info, re.match.
         checks = [{
-            "check": "commit_message",
+            "check": "message",
             "regex": "dummy_regex"
         }]
         m_get_commits_info = mocker.patch(
@@ -44,9 +44,9 @@ class TestCommit:
         assert m_re_match.call_count == 0
 
     def test_check_commit_with_different_check(self, mocker):
-        # Must NOT call get_commit_info, re.match with not `commit_message`.
+        # Must NOT call get_commit_info, re.match with not `message`.
         checks = [{
-            "check": "branch_name",
+            "check": "branch",
             "regex": "dummy_regex"
         }]
         m_get_commits_info = mocker.patch(
@@ -66,7 +66,7 @@ class TestCommit:
         # Must NOT call get_commits_info, re.match with `regex` with length 0.
         checks = [
             {
-                "check": "commit_message",
+                "check": "message",
                 "regex": ""
             }
         ]
@@ -88,7 +88,7 @@ class TestCommit:
     def test_check_commit_with_result_none(self, mocker):
         # Must call print_error_message, print_suggestion when re.match returns NONE.
         checks = [{
-            "check": "commit_message",
+            "check": "message",
             "regex": "dummy_regex",
             "error": "error",
             "suggest": "suggest"

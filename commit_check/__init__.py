@@ -14,7 +14,7 @@ Use default config if .commit-check.yml not exist.
 DEFAULT_CONFIG = {
     'checks': [
         {
-            'check': 'commit_message',
+            'check': 'message',
             'regex': r'^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)',
             'error': 'The commit message should be structured as follows:\n\n'
             '<type>[optional scope]: <description>\n'
@@ -24,10 +24,10 @@ DEFAULT_CONFIG = {
             'suggest': 'git commit --amend --no-verify'
         },
         {
-            'check': 'branch_name',
+            'check': 'branch',
             'regex': r'^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)',
             'error': 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/',
-            'suggest': 'git checkout -b bugfix/branch_name',
+            'suggest': 'git checkout -b bugfix/branch',
         },
         {
             'check': 'author_name',
