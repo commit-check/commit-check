@@ -31,7 +31,7 @@ DEFAULT_CONFIG = {
         },
         {
             'check': 'author_name',
-            'regex': r'^[a-z ,.\'-]+$|.*(\[bot])',
+            'regex': r'^[A-Za-z ,.\'-]+$|.*(\[bot])',
             'error': 'The committer name seems invalid',
             'suggest': 'git config user.name "Peter Shen"',
         },
