@@ -201,10 +201,4 @@ To provide feedback (requesting a feature or reporting a bug) please post to `is
 License
 -------
 
-The scripts and documentation in this project are released under the `MIT License <https://github.com/commit-check/commit-check/blob/main/LICENSE>`_
-
-If my open source projects are useful for your **product/company** you can also sponsor my work on them ☕
-
-.. image:: https://ko-fi.com/img/githubbutton_sm.svg
-    :target: https://ko-fi.com/H2H85WC9L
-    :alt: ko-fi
+This project is released under the `MIT License <https://github.com/commit-check/commit-check/blob/main/LICENSE>`_
