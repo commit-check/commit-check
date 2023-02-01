@@ -35,10 +35,10 @@ def get_branch_name() -> str:
     """
     try:
         commands = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
-        branch = cmd_output(commands)
+        branch_name = cmd_output(commands)
     except CalledProcessError:
-        branch = ''
-    return branch.strip()
+        branch_name = ''
+    return branch_name.strip()
 
 
 def get_commits_info(format_string: str) -> str:

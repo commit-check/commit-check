@@ -27,7 +27,7 @@ DEFAULT_CONFIG = {
             'check': 'branch',
             'regex': r'^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)',
             'error': 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/',
-            'suggest': 'git checkout -b bugfix/branch',
+            'suggest': 'git checkout -b bugfix/branch_name',
         },
         {
             'check': 'author_name',

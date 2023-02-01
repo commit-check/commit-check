@@ -12,12 +12,12 @@ def check_commit(checks: list) -> int:
                     f"{YELLOW}Not found regex for commit message. skip checking.{RESET_COLOR}",
                 )
                 return PASS
-            message = str(get_commits_info("s"))
-            result = re.match(check['regex'], message)
+            commit_message = str(get_commits_info("s"))
+            result = re.match(check['regex'], commit_message)
             if result is None:
                 print_error_message(
                     check['check'], check['regex'],
-                    check['error'], message,
+                    check['error'], commit_message,
                 )
                 if check['suggest']:
                     print_suggestion(check['suggest'])

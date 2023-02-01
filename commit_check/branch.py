@@ -12,12 +12,12 @@ def check_branch(checks: list) -> int:
                     f"{YELLOW}Not found regex for branch naming. skip checking.{RESET_COLOR}",
                 )
                 return PASS
-            branch = get_branch_name()
-            result = re.match(check['regex'], branch)
+            branch_name = get_branch_name()
+            result = re.match(check['regex'], branch_name)
             if result is None:
                 print_error_message(
                     check['check'], check['regex'],
-                    check['error'], branch,
+                    check['error'], branch_name,
                 )
                 if check['suggest']:
                     print_suggestion(check['suggest'])
