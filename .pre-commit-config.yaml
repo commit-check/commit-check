@@ -1,5 +1,7 @@
 # https://pre-commit.com/
 ci:
+    autofix_commit_msg: 'chore: auto fixes from pre-commit.com hooks'
+    autoupdate_commit_msg: 'chore: pre-commit autoupdate'
     skip: [pytest]
 
 repos:
