@@ -10,7 +10,7 @@ checks:
   - check: branch
     regex: ^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)
     error: "Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/"
-    suggest: git checkout -b type/branch
+    suggest: git checkout -b type/branch_name
   - check: author_name
     regex: ^[a-z ,.\'-]+$|.*(\[bot])
     error: The committer name seems invalid
