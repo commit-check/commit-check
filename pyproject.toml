@@ -14,7 +14,7 @@ authors = [
 dependencies = ["pyyaml"]
 classifiers = [
     # https://pypi.org/pypi?%3Aaction=list_classifiers
-    "Development Status :: 1 - Planning",
+    "Development Status :: 4 - Beta",
     "License :: OSI Approved :: MIT License",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
