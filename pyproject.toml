@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "commit-check"
 description = "Check commit message formatting, branch naming, commit author, email, and more."
 readme = "README.rst"
-keywords = ["message", "branch", "formatting", "naming", "referencing"]
+keywords = ["commit conventions", "conventional commits", "branch naming", "commit-check", "message", "lint message"]
 license = {text = "MIT License"}
 authors = [
     { name = "Peter Shen", email = "xianpeng.shen@gmail.com" },
@@ -17,14 +17,16 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: MIT License",
     "Intended Audience :: Developers",
-    "Intended Audience :: System Administrators",
-    "Intended Audience :: Information Technology",
     "Natural Language :: English",
-    "Operating System :: Microsoft :: Windows",
-    "Operating System :: POSIX :: Linux",
-    "Operating System :: MacOS",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Topic :: Utilities"  ,
     "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dynamic = ["version"]
 
