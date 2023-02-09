@@ -392,6 +392,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#running-as-git-hooks" class="md-nav__link">
+    <span class="md-ellipsis">Running as Git Hooks</span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -509,6 +516,18 @@ branch naming follow bitbucket <a class="reference external" href="https://suppo
 </code></pre></div>
 </div>
 <p>Then you can run <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> command line. More about <code class="docutils literal notranslate"><span class="pre">commit-check</span> <span class="pre">--help</span></code> please see <a class="reference external" href="https://commit-check.github.io/commit-check/cli_args.html">docs</a>.</p>
+<h3 id="running-as-git-hooks">Running as Git Hooks<a class="headerlink" href="#running-as-git-hooks" title="Permalink to this heading">¶</a></h3>
+<p>To configure the hook, you need to create a new script file in the <code class="docutils literal notranslate"><span class="pre">.git/hooks/</span></code> directory of your Git repository.</p>
+<p>Here is an example script that you can use to set up the hook:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="ch">#!/bin/sh</span>
+commit-check<span class="w"> </span>--message<span class="w"> </span>--branch<span class="w"> </span>--author-name<span class="w"> </span>--author-email
+</code></pre></div>
+</div>
+<p>Save the script file to <code class="docutils literal notranslate"><span class="pre">pre-push</span></code> and make it executable by running the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>chmod<span class="w"> </span>+x<span class="w"> </span>.git/hooks/pre-push
+</code></pre></div>
+</div>
+<p>Then when you run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span></code> command, this push hook will be run automatically.</p>
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h2>
 <p>Check commit message failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
