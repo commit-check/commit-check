@@ -109,6 +109,26 @@ Install from git repo
 
 Then you can run ``commit-check`` command line. More about ``commit-check --help`` please see `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
 
+Running as Git Hooks
+~~~~~~~~~~~~~~~~~~~~
+
+To configure the hook, you need to create a new script file in the ``.git/hooks/`` directory of your Git repository.
+
+Here is an example script that you can use to set up the hook:
+
+.. code-block:: bash
+
+    #!/bin/sh
+    commit-check --message --branch --author-name --author-email
+
+Save the script file to ``pre-push`` and make it executable by running the following command:
+
+.. code-block:: bash
+
+    chmod +x .git/hooks/pre-push
+
+Then when you run ``git push`` command, this push hook will be run automatically.
+
 Example
 -------
 
