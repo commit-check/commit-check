@@ -47,7 +47,7 @@ jobs:
 
       - name: Collect Coverage
         run: |
-          coverage run --source . -m pytest
+          coverage run --source commit_check -m pytest
           coverage report && coverage xml
       - uses: codecov/codecov-action@v3
         with:
