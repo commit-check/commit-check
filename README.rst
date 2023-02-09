@@ -109,8 +109,8 @@ Install from git repo
 
 Then you can run ``commit-check`` command line. More about ``commit-check --help`` please see `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
 
-
-Configure Git Hooks
+Running as Git Hooks
+~~~~~~~~~~~~~~~~~~~~
 
 To configure the hook, you need to create a new script file in the ``.git/hooks/`` directory of your Git repository.
 
