@@ -97,7 +97,7 @@ def main() -> int:
             ) else DEFAULT_CONFIG
             checks = config['checks']
             if args.message:
-                retval = commit.check_commit(checks)
+                retval = commit.check_commit_msg(checks)
             if args.author_name:
                 retval = author.check_author(checks, "author_name")
             if args.author_email:
