@@ -5,7 +5,7 @@
 The module containing main entrypoint function.
 """
 import argparse
-
+import os
 from commit_check import branch
 from commit_check import commit
 from commit_check import author
@@ -96,6 +96,9 @@ def main() -> int:
                 args.config,
             ) else DEFAULT_CONFIG
             checks = config['checks']
+            print("========================")
+            print(os.environ.get("GIT_HOOK_MODE"))
+            print("========================")
             if args.message:
                 retval = commit.check_commit_msg(checks)
             if args.author_name:
