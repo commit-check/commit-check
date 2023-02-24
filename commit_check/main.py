@@ -5,7 +5,6 @@
 The module containing main entrypoint function.
 """
 import argparse
-import os, sys
 from commit_check import branch
 from commit_check import commit
 from commit_check import author

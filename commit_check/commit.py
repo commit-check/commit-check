@@ -20,7 +20,7 @@ def check_commit_msg(checks: list) -> int:
                 commit_msg_file = PurePath(git_dir, "COMMIT_EDITMSG")
                 with open(commit_msg_file, 'r') as f:
                     commit_msg = f.read()
-            else: # check the message of the last commit
+            else:  # check the message of the last commit
                 commit_msg = str(get_commits_info("s"))
             result = re.match(check['regex'], commit_msg)
             if result is None:
