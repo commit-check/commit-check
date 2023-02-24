@@ -15,7 +15,7 @@ def check_commit_msg(checks: list) -> int:
                 )
                 return PASS
             if os.environ.get("COMMIT_CHECK") == "1":
-                dot_git_dir = cmd_output(['git', 'rev-parse', '--git-dir'])
+                dot_git_dir = cmd_output(['git', 'rev-parse', '--git-dir']).strip()
                 commit_msg_file = PurePath(dot_git_dir, "COMMIT_EDITMSG")
                 with open(commit_msg_file, 'r') as f:
                     commit_msg = f.read()
