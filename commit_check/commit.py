@@ -1,9 +1,9 @@
 """Check git commit message formatting"""
 import re
 import os
-import sys
+from pathlib import PurePath
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import get_commits_info, print_error_message, print_suggestion
+from commit_check.util import cmd_output, get_commits_info, print_error_message, print_suggestion
 
 
 def check_commit_msg(checks: list) -> int:
@@ -15,7 +15,8 @@ def check_commit_msg(checks: list) -> int:
                 )
                 return PASS
             if os.environ.get("COMMIT_CHECK") == "1":
-                commit_msg_file = sys.argv[1]
+                dot_git_dir = cmd_output(['git, rev-parse, --git-dir'])
+                commit_msg_file = PurePath(dot_git_dir, "COMMIT_EDITMSG")
                 with open(commit_msg_file, 'r') as f:
                     commit_msg = f.read()
             else:

@@ -97,11 +97,6 @@ def main() -> int:
             ) else DEFAULT_CONFIG
             checks = config['checks']
             if args.message:
-                print("========================")
-                print(os.environ.get("COMMIT_CHECK"))
-                print("========================")
-                print(sys.argv[1])
-                print("========================")
                 retval = commit.check_commit_msg(checks)
             if args.author_name:
                 retval = author.check_author(checks, "author_name")
