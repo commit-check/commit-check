@@ -1,7 +1,7 @@
 - id: check-message
   name: check commit message
   description: requiring commit message to match regex
-  entry: env COMMIT_CHECK=1 commit-check
+  entry: env IS_PRE_COMMIT=1 commit-check
   args: [--message]
   pass_filenames: false
   language: python

@@ -14,12 +14,13 @@ def check_commit_msg(checks: list) -> int:
                     f"{YELLOW}Not found regex for commit message. skip checking.{RESET_COLOR}",
                 )
                 return PASS
-            if os.environ.get("COMMIT_CHECK") == "1":
-                dot_git_dir = cmd_output(['git', 'rev-parse', '--git-dir']).strip()
-                commit_msg_file = PurePath(dot_git_dir, "COMMIT_EDITMSG")
+            # check the message of the current commit
+            if os.environ.get("IS_PRE_COMMIT") == "1":
+                git_dir = cmd_output(['git', 'rev-parse', '--git-dir']).strip()
+                commit_msg_file = PurePath(git_dir, "COMMIT_EDITMSG")
                 with open(commit_msg_file, 'r') as f:
                     commit_msg = f.read()
-            else:
+            else: # check the message of the last commit
                 commit_msg = str(get_commits_info("s"))
             result = re.match(check['regex'], commit_msg)
             if result is None:
