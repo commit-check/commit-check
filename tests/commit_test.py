@@ -1,9 +1,9 @@
 from commit_check import PASS, FAIL
-from commit_check.commit import check_commit
+from commit_check.commit import check_commit_msg
 
 # used by get_commits_info mock
 FAKE_BRANCH_NAME = "fake_commits_info"
-# The location of check_commit()
+# The location of check_commit_msg()
 LOCATION = "commit_check.commit"
 
 
@@ -22,7 +22,7 @@ class TestCommit:
             "re.match",
             return_value="fake_rematch_resp"
         )
-        retval = check_commit(checks)
+        retval = check_commit_msg(checks)
         assert retval == PASS
         assert m_get_commits_info.call_count == 1
         assert m_re_match.call_count == 1
@@ -38,7 +38,7 @@ class TestCommit:
             "re.match",
             return_value="fake_commits_info"
         )
-        retval = check_commit(checks)
+        retval = check_commit_msg(checks)
         assert retval == PASS
         assert m_get_commits_info.call_count == 0
         assert m_re_match.call_count == 0
@@ -57,7 +57,7 @@ class TestCommit:
             "re.match",
             return_value="fake_commits_info"
         )
-        retval = check_commit(checks)
+        retval = check_commit_msg(checks)
         assert retval == PASS
         assert m_get_commits_info.call_count == 0
         assert m_re_match.call_count == 0
@@ -78,7 +78,7 @@ class TestCommit:
             "re.match",
             return_value="fake_rematch_resp"
         )
-        retval = check_commit(checks)
+        retval = check_commit_msg(checks)
         assert retval == PASS
         assert m_get_commits_info.call_count == 0
         assert m_re_match.call_count == 0
@@ -107,7 +107,7 @@ class TestCommit:
         m_print_suggestion = mocker.patch(
             f"{LOCATION}.print_suggestion"
         )
-        retval = check_commit(checks)
+        retval = check_commit_msg(checks)
         assert retval == FAIL
         assert m_get_commits_info.call_count == 1
         assert m_re_match.call_count == 1

@@ -31,16 +31,16 @@ repos:
     hooks:
     -   id: codespell
 -   repo: https://github.com/commit-check/commit-check
-    rev: bugfix/check-commit-msg
+    rev: v0.5.2
     hooks:
     -   id: check-message
     -   id: check-branch
     -   id: check-author-email
-# -   repo: local
-#     hooks:
-#     -   id: pytest
-#         name: pytest
-#         entry: pytest
-#         language: system
-#         pass_filenames: false
-#         always_run: true
+-   repo: local
+    hooks:
+    -   id: pytest
+        name: pytest
+        entry: pytest
+        language: system
+        pass_filenames: false
+        always_run: true
