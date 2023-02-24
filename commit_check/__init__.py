@@ -21,25 +21,25 @@ DEFAULT_CONFIG = {
             '[optional body]\n'
             '[optional footer(s)]\n\n'
             'More details please refer to https://www.conventionalcommits.org',
-            'suggest': 'git commit --amend --no-verify'
+            'suggest': 'please check your commit message whether matches above regex'
         },
         {
             'check': 'branch',
             'regex': r'^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)',
             'error': 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/',
-            'suggest': 'git checkout -b bugfix/branch_name',
+            'suggest': 'run command `git checkout -b type/branch_name`',
         },
         {
             'check': 'author_name',
             'regex': r'^[A-Za-z ,.\'-]+$|.*(\[bot])',
             'error': 'The committer name seems invalid',
-            'suggest': 'git config user.name "Peter Shen"',
+            'suggest': 'run command `git config user.name "Your Name"`',
         },
         {
             'check': 'author_email',
             'regex': r'^\S+@\S+\.\S+$',
             'error': 'The committer\'s email seems invalid',
-            'suggest': 'git config user.email petershen@example.com',
+            'suggest': 'run command `git config user.email yourname@example.com`',
         },
     ],
 }
