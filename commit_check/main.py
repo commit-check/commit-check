@@ -98,7 +98,7 @@ def main() -> int:
             checks = config['checks']
             if args.message:
                 print("========================")
-                print(os.environ.get("GIT_HOOK_MODE"))
+                print(os.environ.get("COMMIT_CHECK"))
                 print("========================")
                 print(sys.argv[1])
                 print("========================")

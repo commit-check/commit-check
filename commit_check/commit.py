@@ -14,7 +14,7 @@ def check_commit_msg(checks: list) -> int:
                     f"{YELLOW}Not found regex for commit message. skip checking.{RESET_COLOR}",
                 )
                 return PASS
-            if os.environ.get("COMMIT_CHECK") == 1:
+            if os.environ.get("COMMIT_CHECK") == "1":
                 commit_msg_file = sys.argv[1]
                 with open(commit_msg_file, 'r') as f:
                     commit_msg = f.read()
