@@ -41,7 +41,7 @@ class TestMain:
                 ]
             }
         )
-        m_check_commit = mocker.patch("commit_check.commit.check_commit")
+        m_check_commit = mocker.patch("commit_check.commit.check_commit_msg")
         m_check_branch = mocker.patch(
             "commit_check.branch.check_branch"
         )
@@ -63,7 +63,7 @@ class TestMain:
                 ]
             }
         )
-        m_check_commit = mocker.patch("commit_check.commit.check_commit")
+        m_check_commit = mocker.patch("commit_check.commit.check_commit_msg")
         m_check_branch = mocker.patch(
             "commit_check.branch.check_branch"
         )
@@ -88,7 +88,7 @@ class TestMain:
                 ]
             }
         )
-        m_check_commit = mocker.patch("commit_check.commit.check_commit")
+        m_check_commit = mocker.patch("commit_check.commit.check_commit_msg")
         m_check_branch = mocker.patch(
             "commit_check.branch.check_branch"
         )
@@ -107,7 +107,7 @@ class TestMain:
             "commit_check.main.validate_config",
             return_value={}
         )
-        m_check_commit = mocker.patch("commit_check.commit.check_commit")
+        m_check_commit = mocker.patch("commit_check.commit.check_commit_msg")
         mocker.patch(
             "commit_check.branch.check_branch"
         )

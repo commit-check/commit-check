@@ -245,7 +245,7 @@ class TestUtil:
             # Must print on stdout with given argument.
             print_suggestion("dummy suggest")
             stdout, _ = capfd.readouterr()
-            assert "Suggest to run" in stdout
+            assert "Suggest:" in stdout
 
         def test_print_suggestion_exit1(self, capfd):
             # Must exit with 1 when "" passed

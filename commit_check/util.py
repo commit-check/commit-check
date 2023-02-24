@@ -144,7 +144,7 @@ def print_suggestion(suggest: str) -> None:
     """
     if suggest:
         print(
-            f"Suggest to run => {GREEN}{suggest}{RESET_COLOR} ", end='',
+            f"Suggest: {GREEN}{suggest}{RESET_COLOR} ", end='',
         )
     else:
         print(f"commit-check does not support {suggest} yet.")
