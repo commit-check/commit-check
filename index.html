@@ -497,9 +497,11 @@ branch naming follow bitbucket <a class="reference external" href="https://suppo
 </div>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/commit-check/commit-check</span>
 <span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">the tag or revision</span>
-<span class="w">    </span><span class="nt">hooks</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">hooks</span><span class="p">:</span><span class="w"> </span><span class="c1"># support hooks</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-message</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-branch</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-author-name</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-author-email</span>
 </code></pre></div>
 </div>
 <h3 id="running-as-cli">Running as CLI<a class="headerlink" href="#running-as-cli" title="Permalink to this heading">¶</a></h3>
@@ -551,7 +553,7 @@ The commit message should be structured as follows:
 [optional footer(s)]
 
 More details please refer to https://www.conventionalcommits.org
-Suggest to run =&gt; git commit --amend --no-verify
+Suggest: please check your commit message whether matches above regex
 </code></pre></div>
 </div>
 <p>Check branch naming failed</p>
@@ -572,7 +574,7 @@ Invalid branch name =&gt; test
 It doesn&#39;t match regex: ^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)
 
 Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/
-Suggest to run =&gt; git checkout -b type/branch_name
+Suggest: run command `git checkout -b type/branch_name`
 </code></pre></div>
 </div>
 <h2 id="badging-your-repository">Badging your repository<a class="headerlink" href="#badging-your-repository" title="Permalink to this heading">¶</a></h2>
