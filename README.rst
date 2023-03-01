@@ -82,9 +82,11 @@ Running as pre-commit hook
 
     -   repo: https://github.com/commit-check/commit-check
         rev: the tag or revision
-        hooks:
+        hooks: # support hooks
         -   id: check-message
         -   id: check-branch
+        -   id: check-author-name
+        -   id: check-author-email
 
 Running as CLI
 ~~~~~~~~~~~~~~
@@ -157,7 +159,7 @@ Check commit message failed
     [optional footer(s)]
 
     More details please refer to https://www.conventionalcommits.org
-    Suggest to run => git commit --amend --no-verify
+    Suggest: please check your commit message whether matches above regex
 
 
 Check branch naming failed
@@ -181,7 +183,7 @@ Check branch naming failed
     It doesn't match regex: ^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)
 
     Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/
-    Suggest to run => git checkout -b type/branch_name
+    Suggest: run command `git checkout -b type/branch_name`
 
 
 Badging your repository
