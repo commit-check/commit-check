@@ -1,3 +1,4 @@
+import os
 from commit_check import PASS, FAIL
 from commit_check.commit import check_commit_msg
 
@@ -8,7 +9,8 @@ LOCATION = "commit_check.commit"
 
 
 class TestCommit:
-    def test_check_commit(self, mocker):
+
+    def test_check_commit_without_env(self, mocker):
         # Must call get_commits_info, re.match.
         checks = [{
             "check": "message",
@@ -22,6 +24,26 @@ class TestCommit:
             "re.match",
             return_value="fake_rematch_resp"
         )
+        retval = check_commit_msg(checks)
+        assert retval == PASS
+        assert m_get_commits_info.call_count == 0
+        assert m_re_match.call_count == 1
+
+    def test_check_commit_with_env(self, mocker):
+        # Must call get_commits_info, re.match.
+        checks = [{
+            "check": "message",
+            "regex": "dummy_regex"
+        }]
+        m_get_commits_info = mocker.patch(
+            f"{LOCATION}.get_commits_info",
+            return_value=FAKE_BRANCH_NAME
+        )
+        m_re_match = mocker.patch(
+            "re.match",
+            return_value="fake_rematch_resp"
+        )
+        os.environ["IS_PRE_COMMIT"] = "1"
         retval = check_commit_msg(checks)
         assert retval == PASS
         assert m_get_commits_info.call_count == 1
