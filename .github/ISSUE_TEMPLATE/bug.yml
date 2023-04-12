@@ -17,7 +17,7 @@ body:
       label: commit-check version
       placeholder: commit-check x.x.x
     validations:
-      required: true
+      required: false
   - type: textarea
     id: configuration
     attributes:
@@ -26,4 +26,4 @@ body:
       placeholder: 'checks: ...'
       render: yaml
     validations:
-      required: true
+      required: false
