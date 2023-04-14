@@ -26,7 +26,7 @@ class TestCommit:
         )
         retval = check_commit_msg(checks)
         assert retval == PASS
-        assert m_get_commits_info.call_count == 0
+        assert m_get_commits_info.call_count == 1
         assert m_re_match.call_count == 1
 
     def test_check_commit_with_env(self, mocker):

@@ -25,6 +25,9 @@ def check_commit_msg(checks: list) -> int:
                 except FileNotFoundError:
                     # check the message of the last commit
                     commit_msg = str(get_commits_info("s"))
+            else:
+                # check the message of the last commit
+                commit_msg = str(get_commits_info("s"))
             result = re.match(check['regex'], commit_msg)
             if result is None:
                 print_error_message(
