@@ -7,7 +7,6 @@ on:
   pull_request:
     paths:
       - "**.py"
-      - "**requirements*.txt"
       - pyproject.toml
       - ".github/workflows/main.yml"
       - "!docs/**"
