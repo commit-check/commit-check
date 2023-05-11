@@ -33,11 +33,19 @@ jobs:
 
       - name: Build wheel
         run: python3 -m pip wheel --no-deps -w dist .
+      - name: Generate SBOM
+        run: |
+          curl -Lo $RUNNER_TEMP/sbom-tool https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-linux-x64
+          chmod +x $RUNNER_TEMP/sbom-tool
+          $RUNNER_TEMP/sbom-tool generate -b ./dist -bc . -pn Test -pv 1.0.0 -ps commit-check -nsb https://sbom.commit-check.com -V Verbose
       - name: Upload wheel as artifact
         uses: actions/upload-artifact@v3
         with:
           name: commit-check_wheel
-          path: ${{ github.workspace }}/dist/*.whl
+          path: |
+            ${{ github.workspace }}/dist/*.whl
+            ${{ github.workspace }}/dist/_manifest/*
+
       - name: Run commit-check
         run: |
           python3 -m pip install dist/*.whl
