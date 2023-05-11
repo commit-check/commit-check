@@ -38,7 +38,7 @@ jobs:
         with:
           name: commit-check_wheel
           path: ${{ github.workspace }}/dist/*.whl
-      
+
       - name: Generate SBOM
         run: |
           curl -Lo sbom-tool https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-linux-x64
