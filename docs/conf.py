@@ -49,7 +49,6 @@ html_title = "commit-check"
 html_theme_options = {
     "repo_url": "https://github.com/commit-check/commit-check",
     "repo_name": "commit-check",
-    "repo_type": "github",
     "palette": [
         {
             "media": "(prefers-color-scheme: light)",
