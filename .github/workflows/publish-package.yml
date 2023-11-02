@@ -10,7 +10,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     outputs:
-      hash: ${{ steps.hash.outputs.hash }}
+      hashes: ${{ steps.hash.outputs.hashes }}
     steps:
     - uses: actions/checkout@v4
       # use fetch --all for setuptools_scm to work
@@ -30,16 +30,12 @@ jobs:
         # Check distribution
         twine check dist/commit_check*
 
-    # Generate hashes used for provenance.
-    - name: Generate hash
+    - name: Generate subject
       id: hash
       run: |
         cd dist
         HASHES=$(sha256sum commit_check* | base64 -w0)
         echo "hashes=$HASHES" >> "$GITHUB_OUTPUT"
-    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
-      with:
-        path: ./dist/commit_check*
 
     - name: Publish package to TestPyPI
       if: github.event_name == 'workflow_dispatch' && github.repository == 'commit-check/commit-check'
@@ -65,6 +61,6 @@ jobs:
     # Can't pin with hash due to how this workflow works.
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
     with:
-      base64-subjects: ${{ needs.publish.outputs.hash }}
+      base64-subjects: ${{ needs.publish.outputs.hashes }}
       upload-assets: true # Optional: Upload to a new release
       continue-on-error: true
