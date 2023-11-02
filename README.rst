@@ -21,6 +21,10 @@ Commit Check
     :target: https://github.com/commit-check/commit-check
     :alt: commit-check
 
+.. image:: https://slsa.dev/images/gh-badge-level3.svg
+    :target: https://slsa.dev
+    :alt: SLSA
+
 Overview
 --------
 

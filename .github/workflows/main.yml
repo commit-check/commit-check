@@ -99,7 +99,7 @@ jobs:
             name: "commit-check_docs"
             path: ${{ github.workspace }}/docs/_build/html
 
-        - name: Upload to github pages
+        - name: Upload docs to github pages
           # only publish doc changes from main branch
           if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
           uses: peaceiris/actions-gh-pages@v3

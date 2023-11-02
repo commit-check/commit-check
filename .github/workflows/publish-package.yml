@@ -4,10 +4,13 @@ on:
   release:
     branches: [main]
     types: [published]
+  workflow_dispatch:
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    outputs:
+      hash: ${{ steps.hash.outputs.hash }}
     steps:
     - uses: actions/checkout@v4
       # use fetch --all for setuptools_scm to work
@@ -27,6 +30,17 @@ jobs:
         # Check distribution
         twine check dist/commit_check*
 
+    # Generate hashes used for provenance.
+    - name: Generate hash
+      id: hash
+      run: |
+        cd dist
+        HASHES=$(sha256sum * | base64 -w0)
+        echo "hashes=$HASHES" >> "$GITHUB_OUTPUT"
+    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+      with:
+        path: ./dist
+
     - name: Publish package to TestPyPI
       if: github.event_name == 'workflow_dispatch' && github.repository == 'commit-check/commit-check'
       env:
@@ -41,3 +55,16 @@ jobs:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: twine upload dist/commit_check*
+
+  provenance:
+    needs: ['publish']
+    permissions:
+      actions: read # To read the workflow path.
+      id-token: write # To sign the provenance.
+      contents: write # To add assets to a release.
+    # Can't pin with hash due to how this workflow works.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
+    with:
+      base64-subjects: ${{ needs.build.outputs.hash }}
+      upload-assets: true # Optional: Upload to a new release
+      continue-on-error: true
