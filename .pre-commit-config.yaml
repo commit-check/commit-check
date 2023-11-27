@@ -21,7 +21,7 @@ repos:
         args: [--max-line-length=100, --ignore=E501]
         exclude: ^commit_check/__init__.py
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.7.0
+    rev: v1.7.1
     hooks:
     -   id: mypy
         additional_dependencies: [types-all]
