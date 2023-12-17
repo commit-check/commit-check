@@ -35,7 +35,7 @@ def get_parser() -> argparse.ArgumentParser:
         required=False,
     )
 
-    parser.add_argument('commit_msg_file', help='commit message file')
+    parser.add_argument('commit_msg_file', nargs='?', help='commit message file')
 
     parser.add_argument(
         '-b',
