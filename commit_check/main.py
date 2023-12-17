@@ -5,10 +5,12 @@
 The module containing main entrypoint function.
 """
 import argparse
+import sys
+from pathlib import PurePath
 from commit_check import branch
 from commit_check import commit
 from commit_check import author
-from commit_check.util import validate_config, get_version
+from commit_check.util import validate_config
 from commit_check.error import error_handler
 from . import RESET_COLOR, YELLOW, CONFIG_FILE, DEFAULT_CONFIG, PASS
 
@@ -18,13 +20,6 @@ def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog='commit-check',
         description="Check commit message, branch naming, committer name, email, and more."
-    )
-
-    parser.add_argument(
-        '-v',
-        '--version',
-        action='version',
-        version=f'%(prog)s {get_version()}',
     )
 
     parser.add_argument(
@@ -39,6 +34,14 @@ def get_parser() -> argparse.ArgumentParser:
         '--message',
         help='check commit message',
         action="store_true",
+        required=False,
+    )
+
+    parser.add_argument(
+        '-f',
+        '--commit_msg_file',
+        help='commit message file',
+        default=sys.argv[1],
         required=False,
     )
 
@@ -96,7 +99,7 @@ def main() -> int:
             ) else DEFAULT_CONFIG
             checks = config['checks']
             if args.message:
-                retval = commit.check_commit_msg(checks)
+                retval = commit.check_commit_msg(checks, args.commit_msg_file)
             if args.author_name:
                 retval = author.check_author(checks, "author_name")
             if args.author_email:

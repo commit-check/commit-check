@@ -1,11 +1,11 @@
 - id: check-message
   name: check commit message
   description: requiring commit message to match regex
-  entry: env IS_PRE_COMMIT=1 commit-check
+  entry: commit-check
   args: [--message]
   pass_filenames: false
   language: python
-  stages: [commit-msg, commit]
+  stages: [commit-msg, prepare-commit-msg]
 - id: check-branch
   name: check branch naming
   description: requiring branch naming to match regex

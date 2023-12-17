@@ -12,18 +12,6 @@ from subprocess import CalledProcessError
 from commit_check import RED, GREEN, RESET_COLOR
 
 
-def get_version() -> str:
-    """Get current tag name
-    :returns: A `str` describing the version.
-    """
-    try:
-        commands = ['git', 'describe', '--tags']
-        version = cmd_output(commands)
-    except CalledProcessError:
-        version = ''
-    return version
-
-
 def get_branch_name() -> str:
     """Identify current branch name.
     .. note::

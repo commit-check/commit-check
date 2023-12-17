@@ -43,7 +43,6 @@ class TestCommit:
             "re.match",
             return_value="fake_rematch_resp"
         )
-        os.environ["IS_PRE_COMMIT"] = "1"
         retval = check_commit_msg(checks)
         assert retval == PASS
         assert m_get_commits_info.call_count == 1
