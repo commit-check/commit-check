@@ -5,8 +5,6 @@
 The module containing main entrypoint function.
 """
 import argparse
-import sys
-from pathlib import PurePath
 from commit_check import branch
 from commit_check import commit
 from commit_check import author
@@ -37,13 +35,7 @@ def get_parser() -> argparse.ArgumentParser:
         required=False,
     )
 
-    parser.add_argument(
-        '-f',
-        '--commit_msg_file',
-        help='commit message file',
-        default=sys.argv[1],
-        required=False,
-    )
+    parser.add_argument('commit_msg_file', help='commit message file')
 
     parser.add_argument(
         '-b',
