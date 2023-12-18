@@ -13,17 +13,12 @@ class TestCommit:
     def test_check_commit_with_empty_checks(self, mocker):
         # Must NOT call get_commits_info, re.match. with `checks` param with length 0.
         checks = []
-        m_get_commits_info = mocker.patch(
-            f"{LOCATION}.get_commits_info",
-            return_value=FAKE_BRANCH_NAME
-        )
         m_re_match = mocker.patch(
             "re.match",
             return_value="fake_commits_info"
         )
         retval = check_commit_msg(checks, MSG_FILE)
         assert retval == PASS
-        assert m_get_commits_info.call_count == 0
         assert m_re_match.call_count == 0
 
     def test_check_commit_with_different_check(self, mocker):
@@ -32,17 +27,12 @@ class TestCommit:
             "check": "branch",
             "regex": "dummy_regex"
         }]
-        m_get_commits_info = mocker.patch(
-            f"{LOCATION}.get_commits_info",
-            return_value=FAKE_BRANCH_NAME
-        )
         m_re_match = mocker.patch(
             "re.match",
             return_value="fake_commits_info"
         )
         retval = check_commit_msg(checks, MSG_FILE)
         assert retval == PASS
-        assert m_get_commits_info.call_count == 0
         assert m_re_match.call_count == 0
 
     def test_check_commit_with_len0_regex(self, mocker, capfd):
@@ -53,17 +43,12 @@ class TestCommit:
                 "regex": ""
             }
         ]
-        m_get_commits_info = mocker.patch(
-            f"{LOCATION}.get_commits_info",
-            return_value=FAKE_BRANCH_NAME
-        )
         m_re_match = mocker.patch(
             "re.match",
             return_value="fake_rematch_resp"
         )
         retval = check_commit_msg(checks, MSG_FILE)
         assert retval == PASS
-        assert m_get_commits_info.call_count == 0
         assert m_re_match.call_count == 0
         out, _ = capfd.readouterr()
         assert "Not found regex for commit message." in out
