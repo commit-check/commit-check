@@ -34,7 +34,7 @@ jobs:
       - name: Build wheel
         run: python3 -m pip wheel --no-deps -w dist .
       - name: Upload wheel as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: commit-check_wheel
           path: ${{ github.workspace }}/dist/*.whl
@@ -94,7 +94,7 @@ jobs:
           run: sphinx-build -E -W -b html . _build/html
 
         - name: Save built docs as artifact
-          uses: actions/upload-artifact@v3
+          uses: actions/upload-artifact@v4
           with:
             name: "commit-check_docs"
             path: ${{ github.workspace }}/docs/_build/html
