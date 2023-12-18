@@ -10,7 +10,7 @@ from commit_check import commit
 from commit_check import author
 from commit_check.util import validate_config
 from commit_check.error import error_handler
-from . import RESET_COLOR, YELLOW, CONFIG_FILE, DEFAULT_CONFIG, PASS
+from . import RESET_COLOR, YELLOW, CONFIG_FILE, DEFAULT_CONFIG, PASS, __version__
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -18,6 +18,13 @@ def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog='commit-check',
         description="Check commit message, branch naming, committer name, email, and more."
+    )
+
+    parser.add_argument(
+        '-v',
+        '--version',
+        action='version',
+        version=f'%(prog)s {__version__}',
     )
 
     parser.add_argument(

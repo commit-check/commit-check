@@ -28,6 +28,7 @@ def error_handler() -> Generator[None, None, None]:
 
 def log_and_exit(msg: str, ret_code: int, exc: BaseException, formatted: str) -> None:
     error_msg = f'{msg}: {type(exc).__name__}: {exc}'
+    commit_check_version = cmd_output(['commit-check', '--version'])
     git_version = cmd_output(['git', '--version'])
 
     store_dir = os.environ.get('COMMIT_CHECK_HOME') or os.path.join(
@@ -51,6 +52,7 @@ def log_and_exit(msg: str, ret_code: int, exc: BaseException, formatted: str) ->
         open(log_path, 'w').close()
         write_line('### version information')
         write_line('```')
+        write_line(f'commit-check --version: {commit_check_version}')
         write_line(f'git --version: {git_version}')
         write_line('sys.version:')
         for line in sys.version.splitlines():
