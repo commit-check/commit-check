@@ -5,13 +5,13 @@ from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
 from commit_check.util import cmd_output, get_commits_info, print_error_message, print_suggestion
 
 
-def get_default_commit_msg_file():
+def get_default_commit_msg_file() -> str:
     """Get the default commit message file."""
     git_dir = cmd_output(['git', 'rev-parse', '--git-dir']).strip()
     return str(PurePath(git_dir, "COMMIT_EDITMSG"))
 
 
-def read_commit_msg(commit_msg_file):
+def read_commit_msg(commit_msg_file) -> str:
     """Read the commit message from the specified file."""
     try:
         with open(commit_msg_file, 'r') as f:
