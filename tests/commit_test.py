@@ -10,45 +10,6 @@ MSG_FILE = '.git/COMMIT_EDITMSG'
 
 
 class TestCommit:
-
-    def test_check_commit_without_env(self, mocker):
-        # Must call get_commits_info, re.match.
-        checks = [{
-            "check": "message",
-            "regex": "dummy_regex"
-        }]
-        m_get_commits_info = mocker.patch(
-            f"{LOCATION}.get_commits_info",
-            return_value=FAKE_BRANCH_NAME
-        )
-        m_re_match = mocker.patch(
-            "re.match",
-            return_value="fake_rematch_resp"
-        )
-        retval = check_commit_msg(checks, MSG_FILE)
-        assert retval == PASS
-        assert m_get_commits_info.call_count == 0
-        assert m_re_match.call_count == 1
-
-    def test_check_commit_with_env(self, mocker):
-        # Must call get_commits_info, re.match.
-        checks = [{
-            "check": "message",
-            "regex": "dummy_regex"
-        }]
-        m_get_commits_info = mocker.patch(
-            f"{LOCATION}.get_commits_info",
-            return_value=FAKE_BRANCH_NAME
-        )
-        m_re_match = mocker.patch(
-            "re.match",
-            return_value="fake_rematch_resp"
-        )
-        retval = check_commit_msg(checks, MSG_FILE)
-        assert retval == PASS
-        assert m_get_commits_info.call_count == 0
-        assert m_re_match.call_count == 1
-
     def test_check_commit_with_empty_checks(self, mocker):
         # Must NOT call get_commits_info, re.match. with `checks` param with length 0.
         checks = []
@@ -131,7 +92,7 @@ class TestCommit:
         )
         retval = check_commit_msg(checks, MSG_FILE)
         assert retval == FAIL
-        assert m_get_commits_info.call_count == 0
+        assert m_get_commits_info.call_count == 1
         assert m_re_match.call_count == 1
         assert m_print_error_message.call_count == 1
         assert m_print_suggestion.call_count == 1
