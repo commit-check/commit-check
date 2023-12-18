@@ -76,10 +76,6 @@ class TestCommit:
             "error": "error",
             "suggest": "suggest"
         }]
-        m_get_commits_info = mocker.patch(
-            f"{LOCATION}.get_commits_info",
-            return_value=FAKE_BRANCH_NAME
-        )
         m_re_match = mocker.patch(
             "re.match",
             return_value=None
@@ -92,7 +88,6 @@ class TestCommit:
         )
         retval = check_commit_msg(checks, MSG_FILE)
         assert retval == FAIL
-        assert m_get_commits_info.call_count == 1
         assert m_re_match.call_count == 1
         assert m_print_error_message.call_count == 1
         assert m_print_suggestion.call_count == 1
