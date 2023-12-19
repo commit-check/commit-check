@@ -145,7 +145,7 @@ Check commit message failed
     (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
      `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
-    Invalid commit message => test
+    Type message check failed => my test commit message
     It doesn't match regex: ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)
 
     The commit message should be structured as follows:
@@ -175,7 +175,7 @@ Check branch naming failed
 
     Commit rejected.
 
-    Invalid branch name => test
+    Type branch check failed => my-test-branch
     It doesn't match regex: ^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)
 
     Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/
