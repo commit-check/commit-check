@@ -35,6 +35,7 @@ def get_commits_info(format_string: str) -> str:
         - s  - subject
         - an - author name
         - ae - author email
+        - b  - body
 
     :returns: A `str`.
     """
