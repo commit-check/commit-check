@@ -25,5 +25,5 @@ checks:
 
   - check: commit_signoff
     regex: Signed-off-by
-    error: No Signed-off-by in the latest commit
+    error: Signed-off-by not found in latest commit
     suggest: run command `git commit -m "conventional commit message" --signoff`

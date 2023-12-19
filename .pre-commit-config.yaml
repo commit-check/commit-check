@@ -35,7 +35,8 @@ repos:
     hooks:
     -   id: check-message
     -   id: check-branch
-    -   id: check-author-email
+    # -   id: check-author-email  # uncomment if you need.
+    # -   id: commit-signoff # uncomment if you need.
 -   repo: local
     hooks:
     -   id: pytest
