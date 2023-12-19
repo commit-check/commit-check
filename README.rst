@@ -28,20 +28,11 @@ Commit Check
 Overview
 --------
 
-Check commit message formatting, branch naming, committer name, email, and more. Alternative to Yet Another Commit Checker.
+Commit Check is open source alternative to Yet Another Commit Checker.
 
-- requiring commit message to match regex
-- requiring branch naming to match regex
-- requiring committer name and email to match regex
-- customizing error message
-- customizing suggest command
+It supports checking commit message, branch naming, committer name/email, commit signoff and more (tell me, please) and customizing error message and suggest command.
 
-Purpose
--------
-
-commit-check is a tool designed for teams.
-
-Its main purpose is to standardize the format of commit message, branch naming, etc, and makes it possible to:
+commit-check is a tool designed for teams. Its main purpose is to standardize the format of commit message, branch naming, etc, and makes it possible to:
 
 - writing descriptive commit is easy to read
 - identify branch according to the branch type
@@ -91,6 +82,7 @@ Running as pre-commit hook
         -   id: check-branch
         -   id: check-author-name
         -   id: check-author-email
+        -   id: check-commit-signoff
 
 Running as CLI
 ~~~~~~~~~~~~~~

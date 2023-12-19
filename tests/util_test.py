@@ -170,13 +170,14 @@ class TestUtil:
             assert retval == {}
 
     class TestPrintErrorMessage:
-        @pytest.mark.parametrize("check_type, invalid_type_msg", [
-            ("message", "Invalid commit message"),
-            ("branch", "Invalid branch name"),
-            ("author_name", "Invalid author name"),
-            ("author_email", "Invalid email address"),
+        @pytest.mark.parametrize("check_type, type_failed_msg", [
+            ("message", "Type 'message' check failed"),
+            ("branch", "Type 'branch' check failed"),
+            ("author_name", "Type 'author_name' check failed"),
+            ("author_email", "Type 'author_email' check failed"),
+            ("commit_signoff", "Type 'commit_signoff' check failed"),
         ])
-        def test_print_error_message(self, capfd, check_type, invalid_type_msg):
+        def test_print_error_message(self, capfd, check_type, type_failed_msg):
             # Must print on stdout with given argument.
             dummy_regex = "dummy regex"
             dummy_error_point = "error point"
@@ -190,24 +191,9 @@ class TestUtil:
             stdout, _ = capfd.readouterr()
             assert "Commit rejected by Commit-Check" in stdout
             assert "Commit rejected." in stdout
-            assert invalid_type_msg in stdout
+            assert type_failed_msg in stdout
             assert f"It doesn't match regex: {dummy_regex}" in stdout
             assert dummy_error in stdout
-
-        def test_print_error_message_exit1(self, capfd):
-            # Must exit with 1 when not supported check type passed.
-            with pytest.raises(SystemExit) as e:
-                print_error_message(
-                    "not_supported_check_type",
-                    "",
-                    "",
-                    "not supported check type error"
-                )
-            assert e.value.code == 1
-            stdout, _ = capfd.readouterr()
-            assert "Commit rejected by Commit-Check" in stdout
-            assert "Commit rejected." in stdout
-            assert "commit-check does not support" in stdout
 
     class TestPrintSuggestion:
         def test_print_suggestion(self, capfd):
