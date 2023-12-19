@@ -180,13 +180,13 @@ class TestUtil:
         def test_print_error_message(self, capfd, check_type, type_failed_msg):
             # Must print on stdout with given argument.
             dummy_regex = "dummy regex"
-            dummy_error_point = "error point"
+            dummy_reason = "failure reason"
             dummy_error = "dummy error"
             print_error_message(
                 check_type,
                 dummy_regex,
                 dummy_error,
-                dummy_error_point
+                dummy_reason
             )
             stdout, _ = capfd.readouterr()
             assert "Commit rejected by Commit-Check" in stdout

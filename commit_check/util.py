@@ -80,12 +80,12 @@ def validate_config(path_to_config: str) -> dict:
     return configuration
 
 
-def print_error_message(check_type: str, regex: str, error: str, error_point: str):
+def print_error_message(check_type: str, regex: str, error: str, reason: str):
     """Print error message.
     :param check_type:
     :param regex:
     :param error:
-    :param error_point:
+    :param reason:
 
     :returns: Give error messages to user
     """
@@ -102,7 +102,7 @@ def print_error_message(check_type: str, regex: str, error: str, error_point: st
     print("                                                                  ")
     print("Commit rejected.                                                  ")
     print("                                                                  ")
-    print(f"Type '{check_type}' check failed => {RED}{error_point}{RESET_COLOR} ", end='',)
+    print(f"Type '{check_type}' check failed => {RED}{reason}{RESET_COLOR} ", end='',)
     print("")
     print(f"It doesn't match regex: {regex}")
     print("")
