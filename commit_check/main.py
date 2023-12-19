@@ -8,9 +8,9 @@ import argparse
 from commit_check import branch
 from commit_check import commit
 from commit_check import author
-from commit_check.util import validate_config, get_version
+from commit_check.util import validate_config
 from commit_check.error import error_handler
-from . import RESET_COLOR, YELLOW, CONFIG_FILE, DEFAULT_CONFIG, PASS
+from . import RESET_COLOR, YELLOW, CONFIG_FILE, DEFAULT_CONFIG, PASS, __version__
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -24,7 +24,7 @@ def get_parser() -> argparse.ArgumentParser:
         '-v',
         '--version',
         action='version',
-        version=f'%(prog)s {get_version()}',
+        version=f'%(prog)s {__version__}',
     )
 
     parser.add_argument(
@@ -41,6 +41,8 @@ def get_parser() -> argparse.ArgumentParser:
         action="store_true",
         required=False,
     )
+
+    parser.add_argument('commit_msg_file', nargs='?', help='commit message file')
 
     parser.add_argument(
         '-b',
@@ -96,7 +98,7 @@ def main() -> int:
             ) else DEFAULT_CONFIG
             checks = config['checks']
             if args.message:
-                retval = commit.check_commit_msg(checks)
+                retval = commit.check_commit_msg(checks, args.commit_msg_file)
             if args.author_name:
                 retval = author.check_author(checks, "author_name")
             if args.author_email:

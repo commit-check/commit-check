@@ -1,4 +1,5 @@
 """The commit-check package's base module."""
+from importlib.metadata import version
 
 RED = '\033[0;31m'
 GREEN = "\033[32m"
@@ -50,3 +51,5 @@ Overwrite DEFAULT_CONFIG if `.commit-check.yml` exist.
 """
 
 CONFIG_FILE = '.commit-check.yml'
+
+__version__ = version("commit-check")

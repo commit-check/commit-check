@@ -1,5 +1,4 @@
 import pytest
-from commit_check.util import get_version
 from commit_check.util import get_branch_name
 from commit_check.util import get_commits_info
 from commit_check.util import cmd_output
@@ -10,36 +9,6 @@ from subprocess import CalledProcessError, PIPE
 
 
 class TestUtil:
-    class TestGetVersion:
-        def test_get_version(self, mocker):
-            m_cmd_output = mocker.patch(
-                "commit_check.util.cmd_output",
-                return_value="fake_version"
-            )
-            retval = get_version()
-            assert m_cmd_output.call_count == 1
-            assert m_cmd_output.call_args[0][0] == [
-                "git", "describe", "--tags"
-            ]
-            assert retval == "fake_version"
-
-        def test_get_version_with_exception(self, mocker):
-            m_cmd_output = mocker.patch(
-                "commit_check.util.cmd_output",
-                return_value="fake_version"
-            )
-            dummy_ret_code, dummy_cmd_name = 1, "dcmd"
-            m_cmd_output.side_effect = CalledProcessError(
-                dummy_ret_code,
-                dummy_cmd_name
-            )
-            retval = get_version()
-            assert m_cmd_output.call_count == 1
-            assert m_cmd_output.call_args[0][0] == [
-                "git", "describe", "--tags"
-            ]
-            assert retval == ""
-
     class TestGetBranchName:
         def test_get_branch_name(self, mocker):
             # Must call cmd_output with given argument.
