@@ -2,8 +2,12 @@ commit-check --help
 ==============================
 
 usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-d]
+                    [commit_msg_file]
 
 Check commit message, branch naming, committer name, email, and more.
+
+positional arguments:
+  commit_msg_file       commit message file
 
 options:
 
