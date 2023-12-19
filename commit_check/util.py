@@ -9,7 +9,7 @@ import subprocess
 import yaml
 from pathlib import PurePath
 from subprocess import CalledProcessError
-from commit_check import RED, GREEN, RESET_COLOR
+from commit_check import RED, GREEN, YELLOW, RESET_COLOR
 
 
 def get_branch_name() -> str:
@@ -105,7 +105,7 @@ def print_error_message(check_type: str, regex: str, error: str, reason: str):
     print("                                                                  ")
     print("Commit rejected.                                                  ")
     print("                                                                  ")
-    print(f"Type '{check_type}' check failed => {RED}{reason}{RESET_COLOR} ", end='',)
+    print(f"Type {YELLOW}{check_type}{RESET_COLOR} check failed => {RED}{reason}{RESET_COLOR} ", end='',)
     print("")
     print(f"It doesn't match regex: {regex}")
     print("")

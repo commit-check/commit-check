@@ -171,11 +171,11 @@ class TestUtil:
 
     class TestPrintErrorMessage:
         @pytest.mark.parametrize("check_type, type_failed_msg", [
-            ("message", "Type 'message' check failed"),
-            ("branch", "Type 'branch' check failed"),
-            ("author_name", "Type 'author_name' check failed"),
-            ("author_email", "Type 'author_email' check failed"),
-            ("commit_signoff", "Type 'commit_signoff' check failed"),
+            ("message", "check failed =>"),
+            ("branch", "check failed =>"),
+            ("author_name", "check failed =>"),
+            ("author_email", "check failed =>"),
+            ("commit_signoff", "check failed =>"),
         ])
         def test_print_error_message(self, capfd, check_type, type_failed_msg):
             # Must print on stdout with given argument.
@@ -191,6 +191,7 @@ class TestUtil:
             stdout, _ = capfd.readouterr()
             assert "Commit rejected by Commit-Check" in stdout
             assert "Commit rejected." in stdout
+            assert check_type in stdout
             assert type_failed_msg in stdout
             assert f"It doesn't match regex: {dummy_regex}" in stdout
             assert dummy_error in stdout
