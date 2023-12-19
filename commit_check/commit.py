@@ -57,12 +57,12 @@ def check_commit_signoff(checks: list) -> int:
                 return PASS
 
             commit_msg = get_commits_info("s")
-            commit_msg_body = get_commits_info("b")
+            commit_hash = get_commits_info("H")
             result = re.match(check['regex'], commit_msg)
             if result is None:
                 print_error_message(
                     check['check'], check['regex'],
-                    check['error'], commit_msg_body,
+                    check['error'], commit_hash,
                 )
                 if check['suggest']:
                     print_suggestion(check['suggest'])

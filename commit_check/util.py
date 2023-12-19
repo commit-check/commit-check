@@ -36,6 +36,8 @@ def get_commits_info(format_string: str) -> str:
         - an - author name
         - ae - author email
         - b  - body
+        - H  - commit hash
+    more: https://git-scm.com/docs/pretty-formats
 
     :returns: A `str`.
     """
