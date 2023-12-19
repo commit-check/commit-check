@@ -3,7 +3,7 @@
   description: requiring commit message to match regex
   entry: commit-check
   args: [--message]
-  pass_filenames: false
+  pass_filenames: true
   language: python
   stages: [commit-msg, prepare-commit-msg]
 - id: check-branch
