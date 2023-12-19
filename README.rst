@@ -30,7 +30,7 @@ Overview
 
 Commit Check is open source alternative to Yet Another Commit Checker.
 
-It supports checking commit message, branch naming, committer name/email, commit signoff and more (tell me, please) and customizing error message and suggest command.
+It supports checking commit message, branch naming, committer name/email, commit signoff and customizing error message and suggest command (tell me more, please).
 
 commit-check is a tool designed for teams. Its main purpose is to standardize the format of commit message, branch naming, etc, and makes it possible to:
 
@@ -50,7 +50,7 @@ Create a config file ``.commit-check.yml`` under your repository root directory,
 Use default configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- If you did't set ``.commit-check.yml``, ``commit-check`` will use the `default configuration <https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py#L15-L39>`_.
+- If you did't set ``.commit-check.yml``, ``commit-check`` will use the `default configuration <https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py>`_.
 
 - i.e. the commit message will follow the rules of `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_,
   branch naming follow bitbucket `branching model <https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/>`_.
