@@ -28,20 +28,11 @@ Commit Check
 Overview
 --------
 
-Check commit message formatting, branch naming, committer name, email, and more. Alternative to Yet Another Commit Checker.
+Commit Check is open source alternative to Yet Another Commit Checker.
 
-- requiring commit message to match regex
-- requiring branch naming to match regex
-- requiring committer name and email to match regex
-- customizing error message
-- customizing suggest command
+It supports checking commit message, branch naming, committer name/email, commit signoff and customizing error message and suggest command (tell me more, please).
 
-Purpose
--------
-
-commit-check is a tool designed for teams.
-
-Its main purpose is to standardize the format of commit message, branch naming, etc, and makes it possible to:
+commit-check is a tool designed for teams. Its main purpose is to standardize the format of commit message, branch naming, etc, and makes it possible to:
 
 - writing descriptive commit is easy to read
 - identify branch according to the branch type
@@ -59,7 +50,7 @@ Create a config file ``.commit-check.yml`` under your repository root directory,
 Use default configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- If you did't set ``.commit-check.yml``, ``commit-check`` will use the `default configuration <https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py#L15-L39>`_.
+- If you did't set ``.commit-check.yml``, ``commit-check`` will use the `default configuration <https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py>`_.
 
 - i.e. the commit message will follow the rules of `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_,
   branch naming follow bitbucket `branching model <https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/>`_.
@@ -91,6 +82,7 @@ Running as pre-commit hook
         -   id: check-branch
         -   id: check-author-name
         -   id: check-author-email
+        -   id: check-commit-signoff
 
 Running as CLI
 ~~~~~~~~~~~~~~
@@ -153,7 +145,7 @@ Check commit message failed
     (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
      `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
-    Invalid commit message => test
+    Type message check failed => my test commit message
     It doesn't match regex: ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)
 
     The commit message should be structured as follows:
@@ -183,7 +175,7 @@ Check branch naming failed
 
     Commit rejected.
 
-    Invalid branch name => test
+    Type branch check failed => my-test-branch
     It doesn't match regex: ^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)
 
     Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/

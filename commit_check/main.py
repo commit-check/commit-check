@@ -10,7 +10,7 @@ from commit_check import commit
 from commit_check import author
 from commit_check.util import validate_config
 from commit_check.error import error_handler
-from . import RESET_COLOR, YELLOW, CONFIG_FILE, DEFAULT_CONFIG, PASS, __version__
+from . import CONFIG_FILE, DEFAULT_CONFIG, PASS, __version__
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -31,7 +31,7 @@ def get_parser() -> argparse.ArgumentParser:
         '-c',
         '--config',
         default=CONFIG_FILE,
-        help='path to config file. default is .',
+        help='path to config file. default is . (current directory)',
     )
 
     parser.add_argument(
@@ -69,6 +69,14 @@ def get_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        '-s',
+        '--commit-signoff',
+        help='check committer\'s signature',
+        action="store_true",
+        required=False,
+    )
+
+    parser.add_argument(
         '-d',
         '--dry-run',
         help='run checks without failing',
@@ -85,26 +93,21 @@ def main() -> int:
     args = parser.parse_args()
     retval = PASS
 
-    if not any([args.message, args.branch, args.author_name, args.author_email]):
-        print(
-            f'\n{YELLOW}Nothing to do because `--message`, `--branch`, `--author-name`, `--author-email`',
-            f'was not specified.{RESET_COLOR}\n',
-        )
-        parser.print_help()
-    else:
-        with error_handler():
-            config = validate_config(args.config) if validate_config(
-                args.config,
-            ) else DEFAULT_CONFIG
-            checks = config['checks']
-            if args.message:
-                retval = commit.check_commit_msg(checks, args.commit_msg_file)
-            if args.author_name:
-                retval = author.check_author(checks, "author_name")
-            if args.author_email:
-                retval = author.check_author(checks, "author_email")
-            if args.branch:
-                retval = branch.check_branch(checks)
+    with error_handler():
+        config = validate_config(args.config) if validate_config(
+            args.config,
+        ) else DEFAULT_CONFIG
+        checks = config['checks']
+        if args.message:
+            retval = commit.check_commit_msg(checks, args.commit_msg_file)
+        if args.author_name:
+            retval = author.check_author(checks, "author_name")
+        if args.author_email:
+            retval = author.check_author(checks, "author_email")
+        if args.branch:
+            retval = branch.check_branch(checks)
+        if args.commit_signoff:
+            retval = commit.check_commit_signoff(checks)
 
     if args.dry_run:
         retval = PASS

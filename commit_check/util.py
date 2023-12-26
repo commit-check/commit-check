@@ -9,7 +9,7 @@ import subprocess
 import yaml
 from pathlib import PurePath
 from subprocess import CalledProcessError
-from commit_check import RED, GREEN, RESET_COLOR
+from commit_check import RED, GREEN, YELLOW, RESET_COLOR
 
 
 def get_branch_name() -> str:
@@ -35,6 +35,9 @@ def get_commits_info(format_string: str) -> str:
         - s  - subject
         - an - author name
         - ae - author email
+        - b  - body
+        - H  - commit hash
+    more: https://git-scm.com/docs/pretty-formats
 
     :returns: A `str`.
     """
@@ -80,12 +83,12 @@ def validate_config(path_to_config: str) -> dict:
     return configuration
 
 
-def print_error_message(check_type: str, regex: str, error: str, error_point: str):
+def print_error_message(check_type: str, regex: str, error: str, reason: str):
     """Print error message.
     :param check_type:
     :param regex:
     :param error:
-    :param error_point:
+    :param reason:
 
     :returns: Give error messages to user
     """
@@ -102,26 +105,9 @@ def print_error_message(check_type: str, regex: str, error: str, error_point: st
     print("                                                                  ")
     print("Commit rejected.                                                  ")
     print("                                                                  ")
-    if check_type == "message":
-        print(
-            f"Invalid commit message => {RED}{error_point}{RESET_COLOR} ", end='',
-        )
-    elif check_type == "branch":
-        print(
-            f"Invalid branch name => {RED}{error_point}{RESET_COLOR} ", end='',
-        )
-    elif check_type == "author_name":
-        print(
-            f"Invalid author name => {RED}{error_point}{RESET_COLOR} ", end='',
-        )
-    elif check_type == "author_email":
-        print(
-            f"Invalid email address => {RED}{error_point}{RESET_COLOR} ", end='',
-        )
-    else:
-        print(f"commit-check does not support {check_type} yet.")
-        raise SystemExit(1)
-    print(f"\nIt doesn't match regex: {regex}")
+    print(f"Type {YELLOW}{check_type}{RESET_COLOR} check failed => {RED}{reason}{RESET_COLOR} ", end='',)
+    print("")
+    print(f"It doesn't match regex: {regex}")
     print("")
     print(error)
 

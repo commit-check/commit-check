@@ -27,3 +27,10 @@
   args: [--author-email]
   pass_filenames: false
   language: python
+- id: check-commit-signoff
+  name: check committer signoff
+  description: requiring committer to add a Signed-off-by trailer
+  entry: commit-check
+  args: [--commit-signoff]
+  pass_filenames: false
+  language: python
