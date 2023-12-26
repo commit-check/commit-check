@@ -21,7 +21,7 @@ repos:
         args: [--max-line-length=100, --ignore=E501]
         exclude: ^commit_check/__init__.py
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.7.1
+    rev: v1.8.0
     hooks:
     -   id: mypy
         additional_dependencies: [types-all]
@@ -31,7 +31,7 @@ repos:
     hooks:
     -   id: codespell
 -   repo: https://github.com/commit-check/commit-check
-    rev: edbdde6f1592cb6d20da3c171262a54158773f12
+    rev: v0.6.3
     hooks:
     -   id: check-message
     -   id: check-branch
