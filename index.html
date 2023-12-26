@@ -330,13 +330,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#purpose" class="md-nav__link">
-    <span class="md-ellipsis">Purpose</span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">Configuration</span>
   </a>
@@ -461,17 +454,9 @@
 <a class="reference external image-reference" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white" /></a>
 <a class="reference external image-reference" href="https://slsa.dev"><img alt="SLSA" src="https://slsa.dev/images/gh-badge-level3.svg" /></a>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
-<p>Check commit message formatting, branch naming, committer name, email, and more. Alternative to Yet Another Commit Checker.</p>
-<ul class="simple">
-<li><p>requiring commit message to match regex</p></li>
-<li><p>requiring branch naming to match regex</p></li>
-<li><p>requiring committer name and email to match regex</p></li>
-<li><p>customizing error message</p></li>
-<li><p>customizing suggest command</p></li>
-</ul>
-<h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Link to this heading">¶</a></h2>
-<p>commit-check is a tool designed for teams.</p>
-<p>Its main purpose is to standardize the format of commit message, branch naming, etc, and makes it possible to:</p>
+<p>Commit Check is open source alternative to Yet Another Commit Checker.</p>
+<p>It supports checking commit message, branch naming, committer name/email, commit signoff and customizing error message and suggest command (tell me more, please).</p>
+<p>commit-check is a tool designed for teams. Its main purpose is to standardize the format of commit message, branch naming, etc, and makes it possible to:</p>
 <ul class="simple">
 <li><p>writing descriptive commit is easy to read</p></li>
 <li><p>identify branch according to the branch type</p></li>
@@ -483,7 +468,7 @@
 <p>Create a config file <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code> under your repository root directory, e.g. <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/.commit-check.yml">.commit-check.yml</a></p>
 <h3 id="use-default-configuration">Use default configuration<a class="headerlink" href="#use-default-configuration" title="Link to this heading">¶</a></h3>
 <ul class="simple">
-<li><p>If you did’t set <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code>, <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> will use the <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py#L15-L39">default configuration</a>.</p></li>
+<li><p>If you did’t set <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code>, <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> will use the <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py">default configuration</a>.</p></li>
 <li><p>i.e. the commit message will follow the rules of <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>,
 branch naming follow bitbucket <a class="reference external" href="https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/">branching model</a>.</p></li>
 </ul>
@@ -503,6 +488,7 @@ branch naming follow bitbucket <a class="reference external" href="https://suppo
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-branch</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-author-name</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-author-email</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-commit-signoff</span>
 </code></pre></div>
 </div>
 <h3 id="running-as-cli">Running as CLI<a class="headerlink" href="#running-as-cli" title="Link to this heading">¶</a></h3>
@@ -544,7 +530,7 @@ commit-check<span class="w"> </span>--message<span class="w"> </span>--branch<sp
 (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
-Invalid commit message =&gt; test
+Type message check failed =&gt; my test commit message
 It doesn&#39;t match regex: ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)
 
 The commit message should be structured as follows:
@@ -571,7 +557,7 @@ Suggest: please check your commit message whether matches above regex
 
 Commit rejected.
 
-Invalid branch name =&gt; test
+Type branch check failed =&gt; my-test-branch
 It doesn&#39;t match regex: ^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)
 
 Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/

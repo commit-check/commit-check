@@ -364,6 +364,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cmdoption-s" class="md-nav__link">
+    <span title="-s (program option)" class="md-ellipsis">-<wbr>s, --<wbr>commit-<wbr>signoff</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#cmdoption-d" class="md-nav__link">
     <span title="-d (program option)" class="md-ellipsis">-<wbr>d, --<wbr>dry-<wbr>run</span>
   </a>
@@ -451,6 +458,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cmdoption-s" class="md-nav__link">
+    <span title="-s (program option)" class="md-ellipsis">-<wbr>s, --<wbr>commit-<wbr>signoff</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#cmdoption-d" class="md-nav__link">
     <span title="-d (program option)" class="md-ellipsis">-<wbr>d, --<wbr>dry-<wbr>run</span>
   </a>
@@ -473,7 +487,7 @@
 
 <h1 id="commit-check-help">commit-check –help<a class="headerlink" href="#commit-check-help" title="Link to this heading">¶</a></h1>
 <dl class="simple">
-<dt>usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-d]</dt><dd><p>[commit_msg_file]</p>
+<dt>usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-s] [-d]</dt><dd><p>[commit_msg_file]</p>
 </dd>
 </dl>
 <p>Check commit message, branch naming, committer name, email, and more.</p>
@@ -507,7 +521,7 @@
 <span id="cmdoption-config"></span><span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--config</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-c" title="Link to this definition">¶</a></dt>
 <dd><dl class="option-list">
 <dt><kbd><span class="option">-c <var>CONFIG</var></span>, <span class="option">--config <var>CONFIG</var></span></kbd></dt>
-<dd><p>path to config file. default is .</p>
+<dd><p>path to config file. default is . (current directory)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -548,6 +562,16 @@
 <dd><dl class="option-list">
 <dt><kbd><span class="option">-e</span>, <span class="option">--author-email</span></kbd></dt>
 <dd><p>check committer’s email</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option objdesc">
+<dt class="sig sig-object highlight std" id="cmdoption-s">
+<span id="cmdoption-commit-signoff"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--commit-signoff</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-s" title="Link to this definition">¶</a></dt>
+<dd><dl class="option-list">
+<dt><kbd><span class="option">-s</span>, <span class="option">--commit-signoff</span></kbd></dt>
+<dd><p>check committer’s signature</p>
 </dd>
 </dl>
 </dd></dl>
