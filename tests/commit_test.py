@@ -10,23 +10,8 @@ MSG_FILE = '.git/COMMIT_EDITMSG'
 
 
 def test_get_default_commit_msg_file(mocker):
-    m_commit_msg_file = mocker.patch(
-        "commit_check.util.cmd_output",
-        return_value="git_dir_output"
-    )
     retval = get_default_commit_msg_file()
     assert retval == ".git/COMMIT_EDITMSG"
-    m_commit_msg_file.call_count == 1
-
-
-def test_get_default_commit_msg_file_not_found(mocker):
-    m_commit_msg_file = mocker.patch(
-        "commit_check.util.cmd_output",
-        return_value="git_dir_output"
-    )
-    retval = get_default_commit_msg_file()
-    assert retval == ".git/COMMIT_EDITMSG"
-    m_commit_msg_file.call_count == 1
 
 
 def test_read_commit_msg_from_existing_file(tmp_path):
