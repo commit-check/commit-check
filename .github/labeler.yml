@@ -1,0 +1,4 @@
+# Add 'dependencies' label to pre-commit config files within the entire repository
+dependencies:
+- changed-files:
+  - any-glob-to-any-file: '.pre-commit*.yml'
