@@ -4,6 +4,5 @@
 
 tasks:
   - before: pip install -r requirements-dev.txt
-    # prepare-commit-msg is used by hook id: check-message from .pre-commit-config.yaml
-    init: pre-commit install --install-hooks -t pre-commit -t prepare-commit-msg
+    init: pre-commit install
     command: pip install -e .
