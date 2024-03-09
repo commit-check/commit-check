@@ -1,7 +1,7 @@
 from commit_check import PASS, FAIL
 from commit_check.commit import check_commit_msg, get_default_commit_msg_file, read_commit_msg, check_commit_signoff
 
-# used by get_commits_info mock
+# used by get_commit_info mock
 FAKE_BRANCH_NAME = "fake_commits_info"
 # The location of check_commit_msg()
 LOCATION = "commit_check.commit"
@@ -25,7 +25,7 @@ def test_read_commit_msg_from_existing_file(tmp_path):
 
 
 def test_read_commit_msg_file_not_found(mocker):
-    m_commits_info = mocker.patch('commit_check.util.get_commits_info', return_value='mocked_commits_info')
+    m_commits_info = mocker.patch('commit_check.util.get_commit_info', return_value='mocked_commits_info')
     read_commit_msg("non_existent_file.txt")
     assert m_commits_info.call_count == 0
 

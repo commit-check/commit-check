@@ -1,6 +1,6 @@
 import pytest
 from commit_check.util import get_branch_name
-from commit_check.util import get_commits_info
+from commit_check.util import get_commit_info
 from commit_check.util import cmd_output
 from commit_check.util import validate_config
 from commit_check.util import print_error_message
@@ -49,20 +49,20 @@ class TestUtil:
             ("ae"),
         ]
         )
-        def test_get_commits_info(self, mocker, format_string):
-            # Must call get_commits_info with given argument.
+        def test_get_commit_info(self, mocker, format_string):
+            # Must call get_commit_info with given argument.
             m_cmd_output = mocker.patch(
                 "commit_check.util.cmd_output",
                 return_value=" fake commit message "
             )
-            retval = get_commits_info(format_string)
+            retval = get_commit_info(format_string)
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
                 "git", "log", "-n", "1", f"--pretty=format:%{format_string}"
             ]
             assert retval == " fake commit message "
 
-        def test_get_commits_info_with_exception(self, mocker):
+        def test_get_commit_info_with_exception(self, mocker):
             # Must return empty string when exception raises in cmd_output.
             m_cmd_output = mocker.patch(
                 "commit_check.util.cmd_output",
@@ -75,7 +75,7 @@ class TestUtil:
                 dummy_cmd_name
             )
             format_string = "s"
-            retval = get_commits_info(format_string)
+            retval = get_commit_info(format_string)
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
                 "git", "log", "-n", "1", f"--pretty=format:%{format_string}"

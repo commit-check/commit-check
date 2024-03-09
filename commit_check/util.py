@@ -29,7 +29,7 @@ def get_branch_name() -> str:
     return branch_name.strip()
 
 
-def get_commits_info(format_string: str) -> str:
+def get_commit_info(format_string: str, sha: str = "HEAD") -> str:
     """Get latest commits information
     :param format_string: could be
         - s  - subject
@@ -43,7 +43,7 @@ def get_commits_info(format_string: str) -> str:
     """
     try:
         commands = [
-            'git', 'log', '-n', '1', f"--pretty=format:%{format_string}",
+            'git', 'log', '-n', '1', f"--pretty=format:%{format_string}", f"{sha}",
         ]
         output = cmd_output(commands)
     except CalledProcessError:
