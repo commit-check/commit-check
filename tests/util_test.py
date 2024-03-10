@@ -58,7 +58,7 @@ class TestUtil:
             retval = get_commit_info(format_string)
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
-                "git", "log", "-n", "1", f"--pretty=format:%{format_string}"
+                "git", "log", "-n", "1", f"--pretty=format:%{format_string}", "HEAD"
             ]
             assert retval == " fake commit message "
 
@@ -78,7 +78,7 @@ class TestUtil:
             retval = get_commit_info(format_string)
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
-                "git", "log", "-n", "1", f"--pretty=format:%{format_string}"
+                "git", "log", "-n", "1", f"--pretty=format:%{format_string}", "HEAD"
             ]
             assert retval == ""
 
