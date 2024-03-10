@@ -44,7 +44,7 @@ DEFAULT_CONFIG = {
         },
         {
             'check': 'commit_signoff',
-            'regex': 'Signed-off-by',
+            'regex': r'Signed-off-by:.*[A-Za-z0-9]\s+<[\w\.]+@([\w-]+\.)+[\w-]{2,4}>',
             'error': 'Signed-off-by not found in latest commit',
             'suggest': 'run command `git commit -m "conventional commit message" --signoff`',
         },

@@ -2,7 +2,7 @@
 import re
 from pathlib import PurePath
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import cmd_output, get_commits_info, print_error_message, print_suggestion
+from commit_check.util import cmd_output, get_commit_info, print_error_message, print_suggestion
 
 
 def get_default_commit_msg_file() -> str:
@@ -17,11 +17,12 @@ def read_commit_msg(commit_msg_file) -> str:
         with open(commit_msg_file, 'r') as f:
             return f.read()
     except FileNotFoundError:
-        return str(get_commits_info("s"))
+        # Commit message is composed by subject and body
+        return str(get_commit_info("s") + "\n\n" + get_commit_info("b"))
 
 
-def check_commit_msg(checks: list, commit_msg_file: str) -> int:
-    if not commit_msg_file:
+def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
+    if commit_msg_file is None or commit_msg_file == "":
         commit_msg_file = get_default_commit_msg_file()
 
     commit_msg = read_commit_msg(commit_msg_file)
@@ -47,7 +48,10 @@ def check_commit_msg(checks: list, commit_msg_file: str) -> int:
     return PASS
 
 
-def check_commit_signoff(checks: list) -> int:
+def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
+    if commit_msg_file is None or commit_msg_file == "":
+        commit_msg_file = get_default_commit_msg_file()
+
     for check in checks:
         if check['check'] == 'commit_signoff':
             if check['regex'] == "":
@@ -56,9 +60,9 @@ def check_commit_signoff(checks: list) -> int:
                 )
                 return PASS
 
-            commit_msg = get_commits_info("s")
-            commit_hash = get_commits_info("H")
-            result = re.match(check['regex'], commit_msg)
+            commit_msg = read_commit_msg(commit_msg_file)
+            commit_hash = get_commit_info("H")
+            result = re.search(check['regex'], commit_msg)
             if result is None:
                 print_error_message(
                     check['check'], check['regex'],
