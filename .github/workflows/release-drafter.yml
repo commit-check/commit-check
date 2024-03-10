@@ -1,9 +1,14 @@
+# https://github.com/release-drafter/release-drafter
 name: Release Drafter
 
 on:
   push:
     branches:
       - "main"
+  pull_request:
+    types: [opened, reopened, synchronize]
+  pull_request_target:
+    types: [opened, reopened, synchronize]
   workflow_dispatch:
 
 jobs:
@@ -13,4 +18,4 @@ jobs:
       # Drafts your next Release notes as Pull Requests are merged into the default branch
       - uses: release-drafter/release-drafter@v6
         env:
-          GITHUB_TOKEN: ${{ secrets.COMMIT_CHECK_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
