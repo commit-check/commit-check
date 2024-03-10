@@ -104,8 +104,8 @@ def test_check_commit_signoff(mocker):
         "error": "error",
         "suggest": "suggest"
     }]
-    m_re_match = mocker.patch(
-        "re.match",
+    m_re_search = mocker.patch(
+        "re.search",
         return_value=None
     )
     m_print_error_message = mocker.patch(
@@ -116,7 +116,7 @@ def test_check_commit_signoff(mocker):
     )
     retval = check_commit_signoff(checks)
     assert retval == FAIL
-    assert m_re_match.call_count == 1
+    assert m_re_search.call_count == 1
     assert m_print_error_message.call_count == 1
     assert m_print_suggestion.call_count == 1
 
