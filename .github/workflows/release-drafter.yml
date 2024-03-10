@@ -1,9 +1,14 @@
+# https://github.com/release-drafter/release-drafter
 name: Release Drafter
 
 on:
   push:
     branches:
       - "main"
+  pull_request:
+    types: [opened, reopened, synchronize]
+  pull_request_target:
+    types: [opened, reopened, synchronize]
   workflow_dispatch:
 
 jobs:
