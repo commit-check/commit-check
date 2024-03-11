@@ -37,7 +37,7 @@ It is a powerful, free solution for individuals and teams aiming to standardize 
 - triggering the specific types of commit/branch CI build
 - automatically generate changelogs
 
-If you're using Bitbucket, it's an open source alternative to Yet Another Commit Checker.
+If you're using Bitbucket, it's an open source alternative to `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_.
 
 Configuration
 -------------
