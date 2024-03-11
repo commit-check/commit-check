@@ -339,14 +339,14 @@
         
           <li class="md-nav__item">
   <a href="#use-custom-configuration" class="md-nav__link">
-    <span class="md-ellipsis">Use custom configuration</span>
+    <span class="md-ellipsis">Use Custom Configuration</span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
   <a href="#use-default-configuration" class="md-nav__link">
-    <span class="md-ellipsis">Use default configuration</span>
+    <span class="md-ellipsis">Use Default Configuration</span>
   </a>
   
 </li>
@@ -454,26 +454,25 @@
 <a class="reference external image-reference" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white" /></a>
 <a class="reference external image-reference" href="https://slsa.dev"><img alt="SLSA" src="https://slsa.dev/images/gh-badge-level3.svg" /></a>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
-<p>Commit Check is open source alternative to Yet Another Commit Checker.</p>
-<p>It supports checking commit message, branch naming, committer name/email, commit signoff and customizing error message and suggest command (tell me more, please).</p>
-<p>commit-check is a tool designed for teams. Its main purpose is to standardize the format of commit message, branch naming, etc, and makes it possible to:</p>
+<p>Commit Check supports checking commit messages, branch naming, committer name/email, commit signoff, customizing error messages, suggested commands and more.</p>
+<p>It is a powerful, free solution for individuals and teams aiming to standardize commit message formatting and branch naming, including</p>
 <ul class="simple">
 <li><p>writing descriptive commit is easy to read</p></li>
 <li><p>identify branch according to the branch type</p></li>
 <li><p>triggering the specific types of commit/branch CI build</p></li>
 <li><p>automatically generate changelogs</p></li>
 </ul>
+<p>If you’re using Bitbucket, it’s an open source alternative to Yet Another Commit Checker.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
-<h3 id="use-custom-configuration">Use custom configuration<a class="headerlink" href="#use-custom-configuration" title="Link to this heading">¶</a></h3>
-<p>Create a config file <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code> under your repository root directory, e.g. <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/.commit-check.yml">.commit-check.yml</a></p>
-<h3 id="use-default-configuration">Use default configuration<a class="headerlink" href="#use-default-configuration" title="Link to this heading">¶</a></h3>
+<h3 id="use-custom-configuration">Use Custom Configuration<a class="headerlink" href="#use-custom-configuration" title="Link to this heading">¶</a></h3>
+<p>Create a config file <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code> under your repository’s root directory, e.g., <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/.commit-check.yml">.commit-check.yml</a></p>
+<h3 id="use-default-configuration">Use Default Configuration<a class="headerlink" href="#use-default-configuration" title="Link to this heading">¶</a></h3>
 <ul class="simple">
-<li><p>If you did’t set <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code>, <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> will use the <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py">default configuration</a>.</p></li>
-<li><p>i.e. the commit message will follow the rules of <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>,
-branch naming follow bitbucket <a class="reference external" href="https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/">branching model</a>.</p></li>
+<li><p>If you don’t set <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code>, Commit Check will use the <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py">default configuration</a>.</p></li>
+<li><p>The commit message will follow the rules of <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>,
+branch naming follow Bitbucket’s <a class="reference external" href="https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/">branching model</a>.</p></li>
 </ul>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h2>
-<p>There are a variety of ways you can use commit-check as follows.</p>
 <h3 id="running-as-github-action">Running as GitHub Action<a class="headerlink" href="#running-as-github-action" title="Link to this heading">¶</a></h3>
 <p>Please see <a class="reference external" href="https://github.com/commit-check/commit-check-action">commit-check/commit-check-action</a></p>
 <h3 id="running-as-pre-commit-hook">Running as pre-commit hook<a class="headerlink" href="#running-as-pre-commit-hook" title="Link to this heading">¶</a></h3>
@@ -492,33 +491,32 @@ branch naming follow bitbucket <a class="reference external" href="https://suppo
 </code></pre></div>
 </div>
 <h3 id="running-as-cli">Running as CLI<a class="headerlink" href="#running-as-cli" title="Link to this heading">¶</a></h3>
-<p>Global installation</p>
+<p>Global Installation</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>pip3<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>commit-check
 </code></pre></div>
 </div>
-<p>User installation</p>
+<p>User Installation</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>commit-check
 </code></pre></div>
 </div>
-<p>Install from git repo</p>
+<p>Install from Git Repo</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/commit-check/commit-check.git@main
 </code></pre></div>
 </div>
-<p>Then you can run <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> command line. More about <code class="docutils literal notranslate"><span class="pre">commit-check</span> <span class="pre">--help</span></code> please see <a class="reference external" href="https://commit-check.github.io/commit-check/cli_args.html">docs</a>.</p>
+<p>Then, run <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> from the command line. For more information, see the <a class="reference external" href="https://commit-check.github.io/commit-check/cli_args.html">docs</a>.</p>
 <h3 id="running-as-git-hooks">Running as Git Hooks<a class="headerlink" href="#running-as-git-hooks" title="Link to this heading">¶</a></h3>
-<p>To configure the hook, you need to create a new script file in the <code class="docutils literal notranslate"><span class="pre">.git/hooks/</span></code> directory of your Git repository.</p>
-<p>Here is an example script that you can use to set up the hook:</p>
+<p>To configure the hook, create a script file in the <code class="docutils literal notranslate"><span class="pre">.git/hooks/</span></code> directory.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="ch">#!/bin/sh</span>
 commit-check<span class="w"> </span>--message<span class="w"> </span>--branch<span class="w"> </span>--author-name<span class="w"> </span>--author-email
 </code></pre></div>
 </div>
-<p>Save the script file to <code class="docutils literal notranslate"><span class="pre">pre-push</span></code> and make it executable by running the following command:</p>
+<p>Save the script file as <code class="docutils literal notranslate"><span class="pre">pre-push</span></code> and make it executable:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>chmod<span class="w"> </span>+x<span class="w"> </span>.git/hooks/pre-push
 </code></pre></div>
 </div>
-<p>Then when you run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span></code> command, this push hook will be run automatically.</p>
+<p>Now, <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span></code> will trigger this hook automatically.</p>
 <h2 id="example">Example<a class="headerlink" href="#example" title="Link to this heading">¶</a></h2>
-<p>Check commit message failed</p>
+<p>Check Commit Message Failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
   (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
@@ -543,7 +541,7 @@ More details please refer to https://www.conventionalcommits.org
 Suggest: please check your commit message whether matches above regex
 </code></pre></div>
 </div>
-<p>Check branch naming failed</p>
+<p>Check Branch Naming Failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
   (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
@@ -565,7 +563,7 @@ Suggest: run command `git checkout -b type/branch_name`
 </code></pre></div>
 </div>
 <h2 id="badging-your-repository">Badging your repository<a class="headerlink" href="#badging-your-repository" title="Link to this heading">¶</a></h2>
-<p>You can add a badge to your repository to show your contributors / users that you use commit-check!</p>
+<p>You can add a badge to your repository to show that you use commit-check!</p>
 <a class="reference external image-reference" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white" /></a>
 <p>Markdown</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>[![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white)](https://github.com/commit-check/commit-check)
@@ -580,7 +578,7 @@ Suggest: run command `git checkout -b type/branch_name`
 <h2 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Link to this heading">¶</a></h2>
 <p>Versioning follows <a class="reference external" href="https://semver.org/">Semantic Versioning</a>.</p>
 <h2 id="have-question-or-feedback">Have question or feedback?<a class="headerlink" href="#have-question-or-feedback" title="Link to this heading">¶</a></h2>
-<p>To provide feedback (requesting a feature or reporting a bug) please post to <a class="reference external" href="https://github.com/commit-check/commit-check/issues">issues</a>.</p>
+<p>Please post to <a class="reference external" href="https://github.com/commit-check/commit-check/issues">issues</a> for feedback, feature requests, or bug reports.</p>
 <h2 id="license">License<a class="headerlink" href="#license" title="Link to this heading">¶</a></h2>
 <p>This project is released under the <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/LICENSE">MIT License</a></p>
 <div class="toctree-wrapper compound">
