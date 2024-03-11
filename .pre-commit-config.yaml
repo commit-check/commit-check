@@ -35,6 +35,7 @@ repos:
     rev: v0.7.1
     hooks:
     -   id: check-message
-    -   id: check-branch
-    # -   id: check-author-email  # uncomment if you need.
-    # -   id: commit-signoff # uncomment if you need.
+    # -   id: check-branch          # uncomment if you need.
+    # -   id: check-author-name     # uncomment if you need.
+    # -   id: check-author-email    # uncomment if you need.
+    # -   id: commit-signoff        # uncomment if you need.
