@@ -2,7 +2,6 @@
 ci:
     autofix_commit_msg: 'ci: auto fixes from pre-commit.com hooks'
     autoupdate_commit_msg: 'ci: pre-commit autoupdate'
-    skip: [pytest]
 
 # prepare-commit-msg is used by hook id: check-message
 default_install_hook_types: [pre-commit, prepare-commit-msg]
