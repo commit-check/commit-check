@@ -28,38 +28,36 @@ Commit Check
 Overview
 --------
 
-Commit Check is open source alternative to Yet Another Commit Checker.
+Commit Check supports checking commit messages, branch naming, committer name/email, commit signoff, customizing error messages, suggested commands and more.
 
-It supports checking commit message, branch naming, committer name/email, commit signoff and customizing error message and suggest command (tell me more, please).
-
-commit-check is a tool designed for teams. Its main purpose is to standardize the format of commit message, branch naming, etc, and makes it possible to:
+It is a powerful, free solution for individuals and teams aiming to standardize commit message formatting and branch naming, including
 
 - writing descriptive commit is easy to read
 - identify branch according to the branch type
 - triggering the specific types of commit/branch CI build
 - automatically generate changelogs
 
+If you're using Bitbucket, it's an open source alternative to Yet Another Commit Checker.
+
 Configuration
 -------------
 
-Use custom configuration
+Use Custom Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Create a config file ``.commit-check.yml`` under your repository root directory, e.g. `.commit-check.yml <https://github.com/commit-check/commit-check/blob/main/.commit-check.yml>`_
+Create a config file ``.commit-check.yml`` under your repository's root directory, e.g., `.commit-check.yml <https://github.com/commit-check/commit-check/blob/main/.commit-check.yml>`_
 
-Use default configuration
+Use Default Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- If you did't set ``.commit-check.yml``, ``commit-check`` will use the `default configuration <https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py>`_.
+- If you don't set ``.commit-check.yml``, Commit Check will use the `default configuration <https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py>`_.
 
-- i.e. the commit message will follow the rules of `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_,
-  branch naming follow bitbucket `branching model <https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/>`_.
+- The commit message will follow the rules of `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_,
+  branch naming follow Bitbucket's `branching model <https://support.atlassian.com/bitbucket-cloud/docs/configure-a-projects-branching-model/>`_.
 
 
 Usage
 -----
-
-There are a variety of ways you can use commit-check as follows.
 
 Running as GitHub Action
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -87,50 +85,48 @@ Running as pre-commit hook
 Running as CLI
 ~~~~~~~~~~~~~~
 
-Global installation
+Global Installation
 
 .. code-block:: bash
 
     sudo pip3 install -U commit-check
 
-User installation
+User Installation
 
 .. code-block:: bash
 
     pip install -U commit-check
 
-Install from git repo
+Install from Git Repo
 
 .. code-block:: bash
 
     pip install git+https://github.com/commit-check/commit-check.git@main
 
-Then you can run ``commit-check`` command line. More about ``commit-check --help`` please see `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
+Then, run ``commit-check`` from the command line. For more information, see the `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
 
 Running as Git Hooks
 ~~~~~~~~~~~~~~~~~~~~
 
-To configure the hook, you need to create a new script file in the ``.git/hooks/`` directory of your Git repository.
-
-Here is an example script that you can use to set up the hook:
+To configure the hook, create a script file in the ``.git/hooks/`` directory.
 
 .. code-block:: bash
 
     #!/bin/sh
     commit-check --message --branch --author-name --author-email
 
-Save the script file to ``pre-push`` and make it executable by running the following command:
+Save the script file as ``pre-push`` and make it executable:
 
 .. code-block:: bash
 
     chmod +x .git/hooks/pre-push
 
-Then when you run ``git push`` command, this push hook will be run automatically.
+Now, ``git push`` will trigger this hook automatically.
 
 Example
 -------
 
-Check commit message failed
+Check Commit Message Failed
 
 .. code-block:: text
 
@@ -158,7 +154,7 @@ Check commit message failed
     Suggest: please check your commit message whether matches above regex
 
 
-Check branch naming failed
+Check Branch Naming Failed
 
 .. code-block:: text
 
@@ -185,7 +181,7 @@ Check branch naming failed
 Badging your repository
 -----------------------
 
-You can add a badge to your repository to show your contributors / users that you use commit-check!
+You can add a badge to your repository to show that you use commit-check!
 
 .. image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white
     :target: https://github.com/commit-check/commit-check
@@ -214,7 +210,7 @@ Versioning follows `Semantic Versioning <https://semver.org/>`_.
 Have question or feedback?
 --------------------------
 
-To provide feedback (requesting a feature or reporting a bug) please post to `issues <https://github.com/commit-check/commit-check/issues>`_.
+Please post to `issues <https://github.com/commit-check/commit-check/issues>`_ for feedback, feature requests, or bug reports.
 
 License
 -------
