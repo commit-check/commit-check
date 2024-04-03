@@ -1,7 +1,6 @@
 name: "Pull Request Labeler"
 on:
-  pull_request_target:
-  workflow_dispatch:
+- pull_request_target
 
 jobs:
   labeler:
@@ -10,8 +9,4 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
     - uses: actions/labeler@v5
-      with:
-        sync-labels: true
-        configuration-path: .github/labeler.yml

@@ -1,4 +1,6 @@
-# Add 'dependencies' label to pre-commit config files within the entire repository
+# Add 'dependencies' label for any changes by pre-commit ci.
 dependencies:
 - changed-files:
-  - any-glob-to-any-file: '.pre-commit-\w*.yaml'
+  - any-glob-to-any-file: .pre-commit-config.yaml
+  - base-branch: ['main']
+  - head-branch: ['pre-commit-ci-update-config']
