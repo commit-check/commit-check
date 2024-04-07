@@ -1,29 +1,31 @@
 Commit Check
 ============
 
-.. image:: https://img.shields.io/pypi/v/commit-check?logo=python&logoColor=white
+.. |pypi-version| image:: https://img.shields.io/pypi/v/commit-check?logo=python&logoColor=white
     :target: https://pypi.org/project/commit-check/
     :alt: PyPI
 
-.. image:: https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg
+.. |ci-badge| image:: https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg
     :target: https://github.com/commit-check/commit-check/actions/workflows/main.yml
     :alt: CI
 
-.. image:: https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&metric=alert_status
+.. |sonar-badge| image:: https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&metric=alert_status
     :target: https://sonarcloud.io/summary/new_code?id=commit-check_commit-check
     :alt: Quality Gate Status
 
-.. image:: https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT
+.. |codecov-badge| image:: https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT
     :target: https://codecov.io/gh/commit-check/commit-check
     :alt: CodeCov
 
-.. image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white
+.. |commit-check-badge| image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white
     :target: https://github.com/commit-check/commit-check
     :alt: commit-check
 
-.. image:: https://slsa.dev/images/gh-badge-level3.svg
+.. |slsa-badge| image:: https://slsa.dev/images/gh-badge-level3.svg
     :target: https://slsa.dev
     :alt: SLSA
+
+|pypi-version| |ci-badge| |sonar-badge| |codecov-badge| |commit-check-badge| |slsa-badge|
 
 Overview
 --------
