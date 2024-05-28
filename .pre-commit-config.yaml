@@ -28,7 +28,7 @@ repos:
         additional_dependencies: [types-all]
         exclude: ^testing/resources/
 -   repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.3.0
     hooks:
     -   id: codespell
 -   repo: https://github.com/commit-check/commit-check
