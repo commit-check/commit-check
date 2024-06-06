@@ -30,6 +30,11 @@ jobs:
         # Check distribution
         twine check dist/commit_check*
 
+    - name: Create attestations
+    - uses: actions/attest-build-provenance@v1
+      with:
+        subject-path: "dist/commit_check*"
+
     - name: Generate subject
       id: hash
       run: |
