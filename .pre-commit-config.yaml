@@ -16,13 +16,13 @@ repos:
     -   id: name-tests-test
     -   id: requirements-txt-fixer
 -   repo: https://github.com/PyCQA/flake8
-    rev: 7.1.0
+    rev: 7.1.1
     hooks:
     -   id: flake8
         args: [--max-line-length=100, --ignore=E501]
         exclude: ^commit_check/__init__.py
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.0
+    rev: v1.11.1
     hooks:
     -   id: mypy
         additional_dependencies: [types-all]
