@@ -25,7 +25,7 @@ repos:
     rev: v1.11.1
     hooks:
     -   id: mypy
-        additional_dependencies: [types-all]
+        additional_dependencies: [types-PyYAML]
         exclude: ^testing/resources/
 -   repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
