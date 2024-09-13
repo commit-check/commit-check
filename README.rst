@@ -55,7 +55,7 @@ Use Default Configuration
 - If you don't set ``.commit-check.yml``, Commit Check will use the `default configuration <https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py>`_.
 
 - The commit message will follow the rules of `Conventional Commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_,
-  branch naming follow the rules of `Conventional Branch <https://conventional-branch.github.io/posts/#summary>`_.
+  branch naming follow the rules of `Conventional Branch <https://conventional-branch.github.io/#summary>`_.
 
 
 Usage
