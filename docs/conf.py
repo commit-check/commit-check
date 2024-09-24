@@ -4,6 +4,7 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 import re
+import datetime
 from pathlib import Path
 import io
 from sphinx.application import Sphinx
@@ -12,7 +13,7 @@ from commit_check.main import get_parser
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 project = "commit-check"
-copyright = "2023, shenxianpeng"
+copyright = f"{datetime.date.today().year}, shenxianpeng"
 author = "shenxianpeng"
 
 # -- General configuration ---------------------------------------------------
