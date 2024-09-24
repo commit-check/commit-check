@@ -30,24 +30,12 @@ Commit Check
 Overview
 --------
 
-Commit Check supports checking commit messages, branch naming, committer name/email, commit signoff, customizing error messages, suggested commands and more.
+**Commit Check** is a free, powerful tool that enforces commit metadata standards, including commit message, branch naming, committer name/email, and commit signoff. Fully customizable with error messages and suggested commands, it ensures compliance across teams.
 
-It is a powerful, free solution for individuals and teams aiming to standardize commit message formatting and branch naming, including
-
-- writing descriptive commit is easy to read
-- identify branch according to the branch type
-- triggering the specific types of commit/branch CI build
-- automatically generate changelogs
-
-If you're using Bitbucket, it's an open source alternative to `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_.
+As an alternative to GitHub Enerprise  `Metadata restrictions <https://docs.github.com/en/enterprise-server@3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions>`_ and Bitbucket's paid puglin `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_, Commit Check stands out by integrating DevOps principles and Infrastructure as Code (IaC).
 
 Configuration
 -------------
-
-Use Custom Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Create a config file ``.commit-check.yml`` under your repository's root directory, e.g., `.commit-check.yml <https://github.com/commit-check/commit-check/blob/main/.commit-check.yml>`_
 
 Use Default Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -57,6 +45,10 @@ Use Default Configuration
 - The commit message will follow the rules of `Conventional Commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_,
   branch naming follow the rules of `Conventional Branch <https://conventional-branch.github.io/#summary>`_.
 
+Use Custom Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Create a config file ``.commit-check.yml`` under your repository's root directory, e.g., `.commit-check.yml <https://github.com/commit-check/commit-check/blob/main/.commit-check.yml>`_
 
 Usage
 -----
