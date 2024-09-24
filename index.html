@@ -338,15 +338,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#use-custom-configuration" class="md-nav__link">
-    <span class="md-ellipsis">Use Custom Configuration</span>
+  <a href="#use-default-configuration" class="md-nav__link">
+    <span class="md-ellipsis">Use Default Configuration</span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#use-default-configuration" class="md-nav__link">
-    <span class="md-ellipsis">Use Default Configuration</span>
+  <a href="#use-custom-configuration" class="md-nav__link">
+    <span class="md-ellipsis">Use Custom Configuration</span>
   </a>
   
 </li>
@@ -449,24 +449,17 @@
 <h1 id="commit-check">Commit Check<a class="headerlink" href="#commit-check" title="Link to this heading">¶</a></h1>
 <p><a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="PyPI" src="https://img.shields.io/pypi/v/commit-check?logo=python&amp;logoColor=white" /></a> <a class="reference external" href="https://github.com/commit-check/commit-check/actions/workflows/main.yml"><img alt="CI" src="https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg" /></a> <a class="reference external" href="https://sonarcloud.io/summary/new_code?id=commit-check_commit-check"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&amp;metric=alert_status" /></a> <a class="reference external" href="https://codecov.io/gh/commit-check/commit-check"><img alt="CodeCov" src="https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT" /></a> <a class="reference external" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white" /></a> <a class="reference external" href="https://slsa.dev"><img alt="SLSA" src="https://slsa.dev/images/gh-badge-level3.svg" /></a></p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
-<p>Commit Check supports checking commit messages, branch naming, committer name/email, commit signoff, customizing error messages, suggested commands and more.</p>
-<p>It is a powerful, free solution for individuals and teams aiming to standardize commit message formatting and branch naming, including</p>
-<ul class="simple">
-<li><p>writing descriptive commit is easy to read</p></li>
-<li><p>identify branch according to the branch type</p></li>
-<li><p>triggering the specific types of commit/branch CI build</p></li>
-<li><p>automatically generate changelogs</p></li>
-</ul>
-<p>If you’re using Bitbucket, it’s an open source alternative to <a class="reference external" href="https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&amp;hosting=datacenter">Yet Another Commit Checker</a>.</p>
+<p><strong>Commit Check</strong> is a free, powerful tool that enforces commit metadata standards, including commit message, branch naming, committer name/email, and commit signoff. Fully customizable with error messages and suggested commands, it ensures compliance across teams.</p>
+<p>As an alternative to GitHub Enerprise  <a class="reference external" href="https://docs.github.com/en/enterprise-server&#64;3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions">Metadata restrictions</a> and Bitbucket’s paid puglin <a class="reference external" href="https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&amp;hosting=datacenter">Yet Another Commit Checker</a>, Commit Check stands out by integrating DevOps principles and Infrastructure as Code (IaC).</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
-<h3 id="use-custom-configuration">Use Custom Configuration<a class="headerlink" href="#use-custom-configuration" title="Link to this heading">¶</a></h3>
-<p>Create a config file <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code> under your repository’s root directory, e.g., <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/.commit-check.yml">.commit-check.yml</a></p>
 <h3 id="use-default-configuration">Use Default Configuration<a class="headerlink" href="#use-default-configuration" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>If you don’t set <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code>, Commit Check will use the <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py">default configuration</a>.</p></li>
 <li><p>The commit message will follow the rules of <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">Conventional Commits</a>,
 branch naming follow the rules of <a class="reference external" href="https://conventional-branch.github.io/#summary">Conventional Branch</a>.</p></li>
 </ul>
+<h3 id="use-custom-configuration">Use Custom Configuration<a class="headerlink" href="#use-custom-configuration" title="Link to this heading">¶</a></h3>
+<p>Create a config file <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code> under your repository’s root directory, e.g., <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/.commit-check.yml">.commit-check.yml</a></p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h2>
 <h3 id="running-as-github-action">Running as GitHub Action<a class="headerlink" href="#running-as-github-action" title="Link to this heading">¶</a></h3>
 <p>Please see <a class="reference external" href="https://github.com/commit-check/commit-check-action">commit-check/commit-check-action</a></p>
