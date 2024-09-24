@@ -6,15 +6,15 @@ build-backend = "setuptools.build_meta"
 name = "commit-check"
 description = "Check commit message formatting, branch naming, commit author, email, and more."
 readme = "README.rst"
-keywords = ["commit conventions", "conventional commits", "branch naming", "commit-check", "message", "lint message"]
+keywords = ["commit conventions", "conventional commits", "conventional branch", "branch naming", "commit-check", "message", "lint message", "devops"]
 license = {text = "MIT License"}
 authors = [
-    { name = "Peter Shen", email = "xianpeng.shen@gmail.com" },
+    { name = "Xianpeng Shen", email = "xianpeng.shen@gmail.com" },
 ]
 dependencies = ["pyyaml"]
 classifiers = [
     # https://pypi.org/pypi?%3Aaction=list_classifiers
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: MIT License",
     "Intended Audience :: Developers",
     "Natural Language :: English",
