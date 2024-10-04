@@ -166,9 +166,9 @@ Check Branch Naming Failed
     Commit rejected.
 
     Type branch check failed => my-test-branch
-    It doesn't match regex: ^(bugfix|feature|release|hotfix|task)\/.+|(master)|(main)|(HEAD)|(PR-.+)
+    It doesn't match regex: ^(bugfix|feature|release|hotfix|task|chore)\/.+|(master)|(main)|(HEAD)|(PR-.+)
 
-    Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/
+    Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/ chore/
     Suggest: run command `git checkout -b type/branch_name`
 
 
