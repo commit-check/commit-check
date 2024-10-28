@@ -38,13 +38,13 @@ DEFAULT_CONFIG = {
         },
         {
             'check': 'author_email',
-            'regex': r'^\S+@\S+\.\S+$',
+            'regex': r'^.+@.+$',
             'error': 'The committer\'s email seems invalid',
             'suggest': 'run command `git config user.email yourname@example.com`',
         },
         {
             'check': 'commit_signoff',
-            'regex': r'Signed-off-by:.*[A-Za-z0-9]\s+<[\w\.]+@([\w-]+\.)+[\w-]{2,4}>',
+            'regex': r'Signed-off-by:.*[A-Za-z0-9]\s+<.+@.+>',
             'error': 'Signed-off-by not found in latest commit',
             'suggest': 'run command `git commit -m "conventional commit message" --signoff`',
         },
