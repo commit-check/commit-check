@@ -49,7 +49,7 @@ jobs:
         run: |
           coverage run --source commit_check -m pytest
           coverage report && coverage xml
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4.6.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
