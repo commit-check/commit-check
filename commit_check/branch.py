@@ -23,3 +23,17 @@ def check_branch(checks: list) -> int:
                     print_suggestion(check['suggest'])
                 return FAIL
     return PASS
+
+
+def check_merge_base(checks: list) -> int:
+    for check in checks:
+        if check['check'] == 'merge_base':
+            if check['regex'] == "":
+                print(
+                    f"{YELLOW}Not found regex for checking merge base. skip checking.{RESET_COLOR}",
+                )
+                return PASS
+            result = re.match(check['regex'], get_branch_name())
+            if result is None:
+                return FAIL
+    return PASS

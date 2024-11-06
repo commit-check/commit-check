@@ -51,6 +51,20 @@ def get_commit_info(format_string: str, sha: str = "HEAD") -> str:
     return output
 
 
+def check_ancestors(base_branch: str, sha: str) -> bool:
+    """Check ancestors for a given commit.
+    :param base_branch: base branch
+    :param sha: commit hash. default is HEAD
+
+    :returns: Get 0 if there is ancestor else 1.
+    """
+    try:
+        commands = ['git', 'merge-base', f'{base_branch}^..{sha}']
+        output = cmd_output(commands)
+    except CalledProcessError:
+        output = ''
+    return output.split()
+
 def cmd_output(commands: list) -> str:
     """Run command
     :param commands: list of commands

@@ -4,6 +4,7 @@ __pycache__
 .mypy_cache
 .vscode
 venv
+.venv
 UNKNOWN.egg-info
 dist
 build
