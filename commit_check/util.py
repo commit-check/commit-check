@@ -51,7 +51,7 @@ def get_commit_info(format_string: str, sha: str = "HEAD") -> str:
     return output
 
 
-def git_merge_base(target_branch: str, sha: str) -> bool:
+def git_merge_base(target_branch: str, sha: str) -> int:
     """Check ancestors for a given commit.
     :param target_branch: target branch
     :param sha: commit hash. default is HEAD
@@ -66,6 +66,7 @@ def git_merge_base(target_branch: str, sha: str) -> bool:
         return result.returncode
     except CalledProcessError:
         return 1
+
 
 def cmd_output(commands: list) -> str:
     """Run command

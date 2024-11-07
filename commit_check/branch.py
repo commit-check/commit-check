@@ -34,6 +34,6 @@ def check_merge_base(checks: list) -> int:
                 )
                 return PASS
             result = git_merge_base(check['regex'], 'HEAD')
-            if result is None:
+            if result == 1:
                 return FAIL
     return PASS
