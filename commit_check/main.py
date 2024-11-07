@@ -77,6 +77,14 @@ def get_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        '-mb',
+        '--merge-base',
+        help='check common ancestors',
+        action="store_true",
+        required=False,
+    )
+
+    parser.add_argument(
         '-d',
         '--dry-run',
         help='run checks without failing',
@@ -108,6 +116,8 @@ def main() -> int:
             retval = branch.check_branch(checks)
         if args.commit_signoff:
             retval = commit.check_commit_signoff(checks)
+        if args.merge_base:
+            retval = branch.check_merge_base(checks)
 
     if args.dry_run:
         retval = PASS

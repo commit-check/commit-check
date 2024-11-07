@@ -48,6 +48,12 @@ DEFAULT_CONFIG = {
             'error': 'Signed-off-by not found in latest commit',
             'suggest': 'run command `git commit -m "conventional commit message" --signoff`',
         },
+        {
+            'check': 'merge_base',
+            'regex': 'main', # target branch
+            'error': 'No merge base found between HEAD and target branch',
+            'suggest': 'run command `git merge-base main HEAD`',
+        },
     ],
 }
 
