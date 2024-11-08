@@ -51,7 +51,7 @@ DEFAULT_CONFIG = {
         {
             'check': 'merge_base',
             'regex': 'main', # target branch
-            'error': 'No merge base found between HEAD and target branch',
+            'error': 'Current branch is not up to date with main',
             'suggest': 'run command `git merge-base main HEAD`',
         },
     ],

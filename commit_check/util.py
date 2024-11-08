@@ -59,13 +59,13 @@ def git_merge_base(target_branch: str, sha: str) -> int:
     :returns: Get 0 if there is ancestor else 1.
     """
     try:
-        commands = ['git', 'merge-base', '--is-ancestor', f'origin/{target_branch}', f'{sha}']
+        commands = ['git', 'merge-base', '--is-ancestor', f'{target_branch}', f'{sha}']
         result = subprocess.run(
             commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8'
         )
         return result.returncode
     except CalledProcessError:
-        return 1
+        return 128
 
 
 def cmd_output(commands: list) -> str:
