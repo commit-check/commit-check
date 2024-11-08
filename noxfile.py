@@ -1,5 +1,5 @@
 import nox
-from pathlib import Path
+import glob
 
 nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = ["lint"]
@@ -39,7 +39,8 @@ def build(session):
 
 @nox.session(name="install-wheel", requires=["build"])
 def install_wheel(session):
-    session.install(str(*Path("dist").glob("*.whl")))
+    whl_file = glob.glob("dist/*.whl")
+    session.install(str(whl_file[0]))
 
 
 # @nox.session(name="commit-check", requires=["install-wheel"])
