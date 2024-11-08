@@ -37,7 +37,7 @@ def build(session):
     session.run("python3", "-m", "pip", "wheel", "--no-deps", "-w", "dist", ".")
 
 
-@nox.session(name="install-wheel")
+@nox.session(name="install-wheel", requires=["build"])
 def install_wheel(session):
     session.install(str(*Path("dist").glob("*.whl")))
 
