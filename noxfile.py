@@ -45,8 +45,13 @@ def install_wheel(session):
 # @nox.session(name="commit-check", requires=["install-wheel"])
 @nox.session(name="commit-check", requires=["install-wheel"])
 def commit_check(session):
-    session.run("commit-check", "-h")
-    session.run("commit-check", "--message", "--branch", "--author-email")
+    session.run(
+        "commit-check",
+        "--message",
+        "--branch",
+        "--author-email",
+        "--merge-base",
+    )
 
 
 @nox.session(requires=["install-wheel"])
