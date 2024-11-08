@@ -26,6 +26,14 @@ def check_branch(checks: list) -> int:
 
 
 def check_merge_base(checks: list) -> int:
+    """Check if the current branch is based on the latest target branch.
+
+    Args:
+        checks: List of check configurations containing merge_base rules
+
+    Returns:
+        PASS if merge base check succeeds, FAIL otherwise
+    """
     for check in checks:
         if check['check'] == 'merge_base':
             if check['regex'] == "":
@@ -35,5 +43,13 @@ def check_merge_base(checks: list) -> int:
                 return PASS
             result = git_merge_base(check['regex'], 'HEAD')
             if result == 1:
+                print_error_message(
+                    check['check'],
+                    check['regex'],
+                    f"Branch is not up to date with {check['regex']}",
+                    'HEAD'
+                )
+                if check.get('suggest'):
+                    print_suggestion(f"Run 'git rebase {check['regex']}' to update your branch")
                 return FAIL
     return PASS
