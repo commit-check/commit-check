@@ -219,4 +219,4 @@ class TestUtil:
                 return_value=0
             )
             retval = git_merge_base("main", "HEAD")
-            assert retval == 0
+            assert retval == m_cmd_output.returncode
