@@ -50,7 +50,6 @@ def commit_check(session):
         "--message",
         "--branch",
         "--author-email",
-        "--merge-base",
     )
 
 
