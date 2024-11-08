@@ -100,14 +100,18 @@ def validate_config(path_to_config: str) -> dict:
     return configuration
 
 
-def print_error_message(check_type: str, regex: str, error: str, reason: str):
-    """Print error message.
-    :param check_type:
-    :param regex:
-    :param error:
-    :param reason:
+def track_print_call(func):
+    def wrapper(*args, **kwargs):
+        wrapper.has_been_called = True
+        return func(*args, **kwargs)
+    wrapper.has_been_called = False  # Initialize as False
+    return wrapper
 
-    :returns: Give error messages to user
+
+@track_print_call
+def print_error_head():
+    """Print error message.
+    :returns: Print error head to user
     """
     print("Commit rejected by Commit-Check.                                  ")
     print("                                                                  ")
@@ -122,10 +126,20 @@ def print_error_message(check_type: str, regex: str, error: str, reason: str):
     print("                                                                  ")
     print("Commit rejected.                                                  ")
     print("                                                                  ")
+
+
+def print_error_message(check_type: str, regex: str, error: str, reason: str):
+    """Print error message.
+    :param check_type:
+    :param regex:
+    :param error:
+    :param reason:
+
+    :returns: Give error messages to user
+    """
     print(f"Type {YELLOW}{check_type}{RESET_COLOR} check failed => {RED}{reason}{RESET_COLOR} ", end='',)
     print("")
     print(f"It doesn't match regex: {regex}")
-    print("")
     print(error)
 
 
