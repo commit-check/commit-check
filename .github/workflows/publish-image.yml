@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'which tag want to build'
+        description: 'Which tag want to build'
         default: ''
-        required: true
+        required: false
 
 jobs:
   publish:
