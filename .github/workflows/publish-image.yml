@@ -19,7 +19,7 @@ jobs:
     - name: Build to check Dockerfile
       if: github.event.inputs.tag == ''
       run: |
-        docker build -f Dockerfile --build-arg VERSION=0.0.1 -t commit-check:0.0.1 .
+        docker build -f Dockerfile -t commit-check .
     - name: Build and publish docker image
       if: github.event.inputs.tag != ''
       run: |
