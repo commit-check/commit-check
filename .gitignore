@@ -11,6 +11,8 @@ build
 tests/__pycache__
 .coverage
 coverage.xml
+.nox
+_build/
 
 # docs
 docs/_build

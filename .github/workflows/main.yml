@@ -21,34 +21,29 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-
-      - name: Install dependencies
-        run: |
-          pip install -r requirements-dev.txt
-          pip install -e .
+      # TODO: waiting 
+      - run: pip install git+https://github.com/wntrblm/nox.git@main --force-reinstall
 
       - name: Run pre-commit
         run: |
-          pre-commit run --all-files
-          pre-commit try-repo .
+          nox -s lint
+          nox -s test-hook
 
       - name: Build wheel
-        run: python3 -m pip wheel --no-deps -w dist .
+        run: nox -s build
+
       - name: Upload wheel as artifact
         uses: actions/upload-artifact@v4
         with:
           name: commit-check_wheel
           path: ${{ github.workspace }}/dist/*.whl
+
       - name: Run commit-check
-        run: |
-          python3 -m pip install dist/*.whl
-          commit-check -h
-          commit-check --message --branch --author-email
+        run: nox -s commit-check
 
       - name: Collect Coverage
-        run: |
-          coverage run --source commit_check -m pytest
-          coverage report && coverage xml
+        run: nox -s coverage
+
       - uses: codecov/codecov-action@v4.6.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -77,9 +72,7 @@ jobs:
           path: dist
 
       - name: Install test
-        # using a wildcard as filename on Windows requires a bash shell
-        shell: bash
-        run: python3 -m pip install dist/*.whl
+        run: nox -s install-wheel
 
   docs:
       runs-on: ubuntu-latest
@@ -88,11 +81,9 @@ jobs:
         - uses: actions/setup-python@v5
           with:
             python-version: "3.10"
-        - run: python -m pip install . -r docs/requirements.txt
 
         - name: Build docs
-          working-directory: docs
-          run: sphinx-build -E -W -b html . _build/html
+          run: nox -s docs
 
         - name: Save built docs as artifact
           uses: actions/upload-artifact@v4
