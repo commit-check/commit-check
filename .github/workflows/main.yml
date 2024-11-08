@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-      # TODO: waiting 
+      # TODO: waiting
       - run: pip install git+https://github.com/wntrblm/nox.git@main --force-reinstall
 
       - name: Run pre-commit
