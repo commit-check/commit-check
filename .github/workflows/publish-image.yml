@@ -1,18 +1,25 @@
 name: publish image
 
 on:
+  push:
+    paths:
+      - 'Dockerfile'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'which tag want to build'
+        description: 'Which tag want to build'
         default: ''
-        required: true
+        required: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Build to check Dockerfile
+      if: github.event.inputs.tag == ''
+      run: |
+        docker build -f Dockerfile -t commit-check .
     - name: Build and publish docker image
       if: github.event.inputs.tag != ''
       run: |
