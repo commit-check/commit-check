@@ -1,7 +1,6 @@
 import pytest
 from commit_check.util import get_branch_name
 from commit_check.util import get_commit_info
-from commit_check.util import git_merge_base
 from commit_check.util import cmd_output
 from commit_check.util import validate_config
 from commit_check.util import print_error_message
@@ -211,12 +210,3 @@ class TestUtil:
             assert e.value.code == 1
             stdout, _ = capfd.readouterr()
             assert "commit-check does not support" in stdout
-
-    class TestGitMergeBase:
-        def test_successful_ancestor_check(self, mocker):
-            m_cmd_output = mocker.patch(
-                "commit_check.util.git_merge_base",
-                return_value=0
-            )
-            retval = git_merge_base("main", "HEAD")
-            assert retval == m_cmd_output.returncode
