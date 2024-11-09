@@ -30,7 +30,7 @@ checks:
 
   - check: merge_base
     regex: (main|master|develop|devel)
-    error: Current branch is not up to date with main
+    error: Current branch is not up to date with target branch
     suggest: |
       Please ensure your branch is up to date with the target branch by running:
       git fetch origin main

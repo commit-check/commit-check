@@ -39,6 +39,7 @@ def check_merge_base(checks: list) -> int:
                 print(
                     f"{YELLOW}Not found target branch for checking merge base. skip checking.{RESET_COLOR}",
                 )
+                return PASS
             result = git_merge_base(check['regex'], 'HEAD')
             if result != 0:
                 branch_name = get_branch_name()

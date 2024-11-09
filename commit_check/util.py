@@ -56,7 +56,7 @@ def git_merge_base(target_branch: str, current_branch: str) -> int:
     :param target_branch: target branch
     :param current_branch: default is HEAD
 
-    :returns: Get 0 if there is ancestor else 1.
+    :returns: 0 if ancestor exists, 1 if not, 128 if git command fails.
     """
     try:
         commands = ['git', 'merge-base', '--is-ancestor', f'{target_branch}', f'{current_branch}']
