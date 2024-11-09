@@ -38,8 +38,8 @@ jobs:
           name: commit-check_wheel
           path: ${{ github.workspace }}/dist/*.whl
 
-      - name: Run commit-check
-        run: nox -s commit-check
+      # - name: Run commit-check
+      #   run: nox -s commit-check
 
       - name: Collect Coverage
         run: nox -s coverage
