@@ -29,7 +29,7 @@ checks:
     suggest: run command `git commit -m "conventional commit message" --signoff`
 
   - check: merge_base
-    regex: main # configurable target branch, defaults to main
+    regex: (main|master|develop|devel)
     error: Current branch is not up to date with main
     suggest: |
       Please ensure your branch is up to date with the target branch by running:
