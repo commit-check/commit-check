@@ -1,7 +1,7 @@
 """Check git author name and email"""
 import re
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import get_commit_info, print_error_head, print_error_message, print_suggestion
+from commit_check.util import get_commit_info, print_error_header, print_error_message, print_suggestion
 
 
 def check_author(checks: list, check_type: str) -> int:
@@ -19,8 +19,8 @@ def check_author(checks: list, check_type: str) -> int:
             config_value = str(get_commit_info(format_str))
             result = re.match(check['regex'], config_value)
             if result is None:
-                if not print_error_head.has_been_called:
-                    print_error_head()
+                if not print_error_header.has_been_called:
+                    print_error_header()
                 print_error_message(
                     check['check'], check['regex'],
                     check['error'], config_value,

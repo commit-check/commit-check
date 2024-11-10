@@ -18,6 +18,8 @@ REQUIREMENTS = {
 @nox.session()
 def lint(session):
     session.install("pre-commit")
+    # only need pre-commit hook for local development
+    session.run("pre-commit", "install", "--hook-type", "pre-commit")
     if session.posargs:
         args = session.posargs + ["--all-files"]
     else:

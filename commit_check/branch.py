@@ -1,7 +1,7 @@
 """Check git branch naming convention."""
 import re
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import get_branch_name, git_merge_base, print_error_head, print_error_message, print_suggestion
+from commit_check.util import get_branch_name, git_merge_base, print_error_header, print_error_message, print_suggestion
 
 
 def check_branch(checks: list) -> int:
@@ -15,8 +15,8 @@ def check_branch(checks: list) -> int:
             branch_name = get_branch_name()
             result = re.match(check['regex'], branch_name)
             if result is None:
-                if not print_error_head.has_been_called:
-                    print_error_head()
+                if not print_error_header.has_been_called:
+                    print_error_header()
                 print_error_message(
                     check['check'], check['regex'],
                     check['error'], branch_name,
@@ -43,8 +43,8 @@ def check_merge_base(checks: list) -> int:
             result = git_merge_base(check['regex'], 'HEAD')
             if result != 0:
                 branch_name = get_branch_name()
-                if not print_error_head.has_been_called:
-                    print_error_head()
+                if not print_error_header.has_been_called:
+                    print_error_header()
                 print_error_message(
                     check['check'], check['regex'],
                     check['error'], branch_name,

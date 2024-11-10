@@ -109,7 +109,7 @@ def track_print_call(func):
 
 
 @track_print_call
-def print_error_head():
+def print_error_header():
     """Print error message.
     :returns: Print error head to user
     """

@@ -3,6 +3,7 @@ from commit_check.util import get_branch_name
 from commit_check.util import get_commit_info
 from commit_check.util import cmd_output
 from commit_check.util import validate_config
+from commit_check.util import print_error_header
 from commit_check.util import print_error_message
 from commit_check.util import print_suggestion
 from subprocess import CalledProcessError, PIPE
@@ -170,6 +171,13 @@ class TestUtil:
             assert retval == {}
 
     class TestPrintErrorMessage:
+        def test_print_error_header(self, capfd):
+            # Must print on stdout with given argument.
+            print_error_header()
+            stdout, _ = capfd.readouterr()
+            assert "Commit rejected by Commit-Check" in stdout
+            assert "Commit rejected." in stdout
+
         @pytest.mark.parametrize("check_type, type_failed_msg", [
             ("message", "check failed =>"),
             ("branch", "check failed =>"),
@@ -189,8 +197,6 @@ class TestUtil:
                 dummy_reason
             )
             stdout, _ = capfd.readouterr()
-            assert "Commit rejected by Commit-Check" in stdout
-            assert "Commit rejected." in stdout
             assert check_type in stdout
             assert type_failed_msg in stdout
             assert f"It doesn't match regex: {dummy_regex}" in stdout
