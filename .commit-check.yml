@@ -29,11 +29,6 @@ checks:
     suggest: run command `git commit -m "conventional commit message" --signoff`
 
   - check: merge_base
-    regex: (main|master|develop|devel)
+    regex: main # it can be master, develop, devel etc based on your project.
     error: Current branch is not up to date with target branch
-    suggest: |
-      Please ensure your branch is up to date with the target branch by running:
-      git fetch origin main
-      git rebase origin/main
-      # If you encounter conflicts, resolve them and continue with:
-      git rebase --continue
+    suggest: please ensure your branch is rebased with the target branch
