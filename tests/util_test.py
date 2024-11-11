@@ -1,5 +1,7 @@
 import pytest
+import subprocess
 from commit_check.util import get_branch_name
+from commit_check.util import git_merge_base
 from commit_check.util import get_commit_info
 from commit_check.util import cmd_output
 from commit_check.util import validate_config
@@ -7,6 +9,7 @@ from commit_check.util import print_error_header
 from commit_check.util import print_error_message
 from commit_check.util import print_suggestion
 from subprocess import CalledProcessError, PIPE
+from unittest.mock import MagicMock
 
 
 class TestUtil:
@@ -42,6 +45,30 @@ class TestUtil:
                 "git", "rev-parse", "--abbrev-ref", "HEAD"
             ]
             assert retval == ""
+
+    class TestGitMergeBase:
+        def test_git_merge_base_ancestor_exists(self, mocker):
+            mock_run = mocker.patch('subprocess.run')
+            mock_run.return_value = MagicMock(returncode=0)
+            result = git_merge_base('main', 'feature')
+            mock_run.assert_called_once_with(['git', 'merge-base', '--is-ancestor', 'main', 'feature'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
+            assert result == 0
+
+        def test_git_merge_base_no_ancestor(self, mocker):
+            mock_run = mocker.patch('subprocess.run')
+            mock_run.return_value = MagicMock(returncode=1)
+
+            result = git_merge_base('main', 'feature')
+
+            mock_run.assert_called_once_with(['git', 'merge-base', '--is-ancestor', 'main', 'feature'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
+            assert result == 1
+
+        def test_git_merge_base_with_exception(self, mocker):
+            mock_run = mocker.patch('subprocess.run')
+            mock_run.return_value = MagicMock(returncode=128)
+            mock_run.side_effect = CalledProcessError(128, 'git merge-base')
+            result = git_merge_base('main', 'feature')
+            assert result == 128
 
     class TestGetCommitInfo:
         @pytest.mark.parametrize("format_string", [
