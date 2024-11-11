@@ -48,6 +48,12 @@ DEFAULT_CONFIG = {
             'error': 'Signed-off-by not found in latest commit',
             'suggest': 'run command `git commit -m "conventional commit message" --signoff`',
         },
+        {
+            'check': 'merge_base',
+            'regex': r'main', # it can be master, develop, devel etc based on your project.
+            'error': 'Current branch is not up to date with target branch',
+            'suggest': 'please ensure your branch is rebased with the target branch',
+        },
     ],
 }
 

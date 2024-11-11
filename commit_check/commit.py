@@ -2,7 +2,7 @@
 import re
 from pathlib import PurePath
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import cmd_output, get_commit_info, print_error_message, print_suggestion
+from commit_check.util import cmd_output, get_commit_info, print_error_header, print_error_message, print_suggestion
 
 
 def get_default_commit_msg_file() -> str:
@@ -37,6 +37,8 @@ def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
         if check['check'] == 'message':
             result = re.match(check['regex'], commit_msg)
             if result is None:
+                if not print_error_header.has_been_called:
+                    print_error_header()
                 print_error_message(
                     check['check'], check['regex'],
                     check['error'], commit_msg,
@@ -64,6 +66,8 @@ def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
             commit_hash = get_commit_info("H")
             result = re.search(check['regex'], commit_msg)
             if result is None:
+                if not print_error_header.has_been_called:
+                    print_error_header()
                 print_error_message(
                     check['check'], check['regex'],
                     check['error'], commit_hash,

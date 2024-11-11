@@ -4,12 +4,15 @@ __pycache__
 .mypy_cache
 .vscode
 venv
+.venv
 UNKNOWN.egg-info
 dist
 build
 tests/__pycache__
 .coverage
 coverage.xml
+.nox
+_build/
 
 # docs
 docs/_build
