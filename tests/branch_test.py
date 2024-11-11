@@ -115,32 +115,36 @@ class TestCheckBranch:
 
 
 class TestCheckMergeBase:
-    def test_check_merge_base_pass(self, mocker):
-        # Must call get_merge_base at once.
-        checks = [{
-            "check": "merge_base",
-            "regex": "main",
-            "error": "error",
-            "suggest": "suggest",
-        }]
-        mocker.patch(
-            f"{LOCATION}.check_merge_base",
-            return_value=0
-        )
+    def test_check_merge_base_with_empty_checks(self, mocker):
+        checks = []
+        m_check_merge = mocker.patch(f"{LOCATION}.check_merge_base")
         retval = check_merge_base(checks)
         assert retval == PASS
+        assert m_check_merge.call_count == 0
 
-    def test_check_merge_base_fail(self, mocker):
-        # Must call get_merge_base at once.
+    def test_check_merge_base_with_different_check(self, mocker):
+        checks = [{
+            "check": "branch",
+            "regex": "main"
+        }]
+        m_check_merge = mocker.patch(f"{LOCATION}.check_merge_base")
+        retval = check_merge_base(checks)
+        assert retval == PASS
+        assert m_check_merge.call_count == 0
+
+    def test_check_merge_base_fail_with_messages(self, mocker, capfd):
         checks = [{
             "check": "merge_base",
-            "regex": "abcdefg",
-            "error": "error",
-            "suggest": "suggest",
+            "regex": "develop",
+            "error": "Current branch is not",
+            "suggest": "Please rebase"
         }]
-        mocker.patch(
-            f"{LOCATION}.check_merge_base",
-            return_value=1
-        )
+        mocker.patch(f"{LOCATION}.check_merge_base", return_value=1)
+        m_print_error = mocker.patch(f"{LOCATION}.print_error_message")
+        m_print_suggest = mocker.patch(f"{LOCATION}.print_suggestion")
+
         retval = check_merge_base(checks)
         assert retval == FAIL
+        assert "Current branch is not" in m_print_error.call_args[0][2]
+        assert "Please rebase" in m_print_suggest.call_args[0][0]
+        print(m_print_error)

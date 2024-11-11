@@ -40,14 +40,14 @@ def check_merge_base(checks: list) -> int:
                     f"{YELLOW}Not found target branch for checking merge base. skip checking.{RESET_COLOR}",
                 )
                 return PASS
-            result = git_merge_base(check['regex'], 'HEAD')
+            current_branch = get_branch_name()
+            result = git_merge_base(check['regex'], current_branch)
             if result != 0:
-                branch_name = get_branch_name()
                 if not print_error_header.has_been_called:
                     print_error_header()
                 print_error_message(
                     check['check'], check['regex'],
-                    check['error'], branch_name,
+                    check['error'], current_branch,
                 )
                 if check['suggest']:
                     print_suggestion(check['suggest'])
