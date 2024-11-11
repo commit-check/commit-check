@@ -147,4 +147,3 @@ class TestCheckMergeBase:
         assert retval == FAIL
         assert "Current branch is not" in m_print_error.call_args[0][2]
         assert "Please rebase" in m_print_suggest.call_args[0][0]
-        print(m_print_error)
