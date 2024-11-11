@@ -47,28 +47,28 @@ class TestUtil:
             assert retval == ""
 
     class TestGitMergeBase:
-        def test_git_merge_base_ancestor_exists(self, mocker):
-            mock_run = mocker.patch('subprocess.run')
-            mock_run.return_value = MagicMock(returncode=0)
-            result = git_merge_base('main', 'feature')
-            mock_run.assert_called_once_with(['git', 'merge-base', '--is-ancestor', 'main', 'feature'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
-            assert result == 0
+        @pytest.mark.parametrize("returncode,expected", [
+            (0, 0),  # ancestor exists
+            (1, 1),  # no ancestor
+            (128, 128),  # error case
+        ])
+        def test_git_merge_base(self, mocker, returncode, expected):
+            mock_run = mocker.patch("subprocess.run")
+            if returncode == 128:
+                mock_run.side_effect = CalledProcessError(returncode, "git merge-base")
+            else:
+                mock_result = MagicMock()
+                mock_result.returncode = returncode
+                mock_run.return_value = mock_result
 
-        def test_git_merge_base_no_ancestor(self, mocker):
-            mock_run = mocker.patch('subprocess.run')
-            mock_run.return_value = MagicMock(returncode=1)
+            result = git_merge_base("main", "feature")
 
-            result = git_merge_base('main', 'feature')
+            mock_run.assert_called_once_with(
+                ["git", "merge-base", "--is-ancestor", "main", "feature"],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8'
+            )
 
-            mock_run.assert_called_once_with(['git', 'merge-base', '--is-ancestor', 'main', 'feature'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
-            assert result == 1
-
-        def test_git_merge_base_with_exception(self, mocker):
-            mock_run = mocker.patch('subprocess.run')
-            mock_run.return_value = MagicMock(returncode=128)
-            mock_run.side_effect = CalledProcessError(128, 'git merge-base')
-            result = git_merge_base('main', 'feature')
-            assert result == 128
+            assert result == expected
 
     class TestGetCommitInfo:
         @pytest.mark.parametrize("format_string", [
