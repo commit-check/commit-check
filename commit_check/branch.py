@@ -49,7 +49,7 @@ def check_merge_base(checks: list) -> int:
                     check['check'], check['regex'],
                     check['error'], branch_name,
                 )
-                if check('suggest'):
-                    print_suggestion(check('suggest'))
+                if check['suggest']:
+                    print_suggestion(check['suggest'])
                 return FAIL
     return PASS

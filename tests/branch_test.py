@@ -1,13 +1,12 @@
 from commit_check import PASS, FAIL
-from commit_check.branch import check_branch
+from commit_check.branch import check_branch, check_merge_base
 
 # used by get_branch_name mock
 FAKE_BRANCH_NAME = "fake_branch_name"
-# The location of check_branch()
 LOCATION = "commit_check.branch"
 
 
-class TestBranch:
+class TestCheckBranch:
     def test_check_branch(self, mocker):
         # Must call get_branch_name, re.match at once.
         checks = [{
@@ -113,3 +112,35 @@ class TestBranch:
         assert m_re_match.call_count == 1
         assert m_print_error_message.call_count == 1
         assert m_print_suggestion.call_count == 1
+
+
+class TestCheckMergeBase:
+    def test_check_merge_base_pass(self, mocker):
+        # Must call get_merge_base at once.
+        checks = [{
+            "check": "merge_base",
+            "regex": "main",
+            "error": "error",
+            "suggest": "suggest",
+        }]
+        mocker.patch(
+            f"{LOCATION}.check_merge_base",
+            return_value=0
+        )
+        retval = check_merge_base(checks)
+        assert retval == PASS
+
+    def test_check_merge_base_fail(self, mocker):
+        # Must call get_merge_base at once.
+        checks = [{
+            "check": "merge_base",
+            "regex": "abcdefg",
+            "error": "error",
+            "suggest": "suggest",
+        }]
+        mocker.patch(
+            f"{LOCATION}.check_merge_base",
+            return_value=1
+        )
+        retval = check_merge_base(checks)
+        assert retval == FAIL
