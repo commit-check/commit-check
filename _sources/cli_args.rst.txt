@@ -1,7 +1,7 @@
 commit-check --help
 ==============================
 
-usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-s] [-d]
+usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-s] [-mb] [-d]
                     [commit_msg_file]
 
 Check commit message, branch naming, committer name, email, and more.
@@ -43,6 +43,7 @@ options:
 .. std:option:: -s, --commit-signoff
 
   -s, --commit-signoff  check committer's signature
+  -mb, --merge-base     check common ancestors
 
 .. std:option:: -d, --dry-run
 
