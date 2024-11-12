@@ -43,7 +43,7 @@ options:
 .. std:option:: -s, --commit-signoff
 
   -s, --commit-signoff  check committer's signature
-  -mb, --merge-base     check common ancestors
+  -mb, --merge-base     check branch is rebased onto target branch
 
 .. std:option:: -d, --dry-run
 
