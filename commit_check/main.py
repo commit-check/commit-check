@@ -79,7 +79,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '-mb',
         '--merge-base',
-        help='check common ancestors',
+        help='check branch is rebased onto target branch',
         action="store_true",
         required=False,
     )
