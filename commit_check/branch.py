@@ -40,8 +40,9 @@ def check_merge_base(checks: list) -> int:
                     f"{YELLOW}Not found target branch for checking merge base. skip checking.{RESET_COLOR}",
                 )
                 return PASS
+            target_branch = check['regex'] if "origin/" in check['regex'] else f"origin/{check['regex']}"
             current_branch = get_branch_name()
-            result = git_merge_base(check['regex'], current_branch)
+            result = git_merge_base(target_branch, current_branch)
             if result != 0:
                 if not print_error_header.has_been_called:
                     print_error_header()
