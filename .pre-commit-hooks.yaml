@@ -34,3 +34,10 @@
   args: [--commit-signoff]
   pass_filenames: false
   language: python
+- id: check-merge-base
+  name: check merge base
+  description: requiring to rebase current branch onto target branch
+  entry: commit-check
+  args: [--merge-base]
+  pass_filenames: false
+  language: python

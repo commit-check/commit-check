@@ -32,7 +32,7 @@ Overview
 
 **Commit Check** is a free, powerful tool that enforces commit metadata standards, including commit message, branch naming, committer name/email, and commit signoff. Fully customizable with error messages and suggested commands, it ensures compliance across teams.
 
-As an alternative to GitHub Enerprise  `Metadata restrictions <https://docs.github.com/en/enterprise-server@3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions>`_ and Bitbucket's paid puglin `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_, Commit Check stands out by integrating DevOps principles and Infrastructure as Code (IaC).
+As an alternative to GitHub Enterprise  `Metadata restrictions <https://docs.github.com/en/enterprise-server@3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions>`_ and Bitbucket's paid puglin `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_, Commit Check stands out by integrating DevOps principles and Infrastructure as Code (IaC).
 
 Configuration
 -------------
@@ -75,6 +75,7 @@ Running as pre-commit hook
         -   id: check-author-name
         -   id: check-author-email
         -   id: check-commit-signoff
+        -   id: check-merge-base
 
 Running as CLI
 ~~~~~~~~~~~~~~
@@ -107,7 +108,7 @@ To configure the hook, create a script file in the ``.git/hooks/`` directory.
 .. code-block:: bash
 
     #!/bin/sh
-    commit-check --message --branch --author-name --author-email
+    commit-check --message --branch --author-name --author-email --commit-signoff --merge-base
 
 Save the script file as ``pre-push`` and make it executable:
 
