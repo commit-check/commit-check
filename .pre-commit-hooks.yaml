@@ -1,6 +1,6 @@
 - id: check-message
   name: check commit message
-  description: requiring commit message to match regex
+  description: ensures commit message to match regex
   entry: commit-check
   args: [--message]
   pass_filenames: true
@@ -8,35 +8,35 @@
   stages: [commit-msg, prepare-commit-msg]
 - id: check-branch
   name: check branch naming
-  description: requiring branch naming to match regex
+  description: ensures branch naming to match regex
   entry: commit-check
   args: [--branch]
   pass_filenames: false
   language: python
 - id: check-author-name
   name: check committer name
-  description: requiring committer name to match regex
+  description: ensures committer name to match regex
   entry: commit-check
   args: [--author-name]
   pass_filenames: false
   language: python
 - id: check-author-email
   name: check committer email
-  description: requiring committer email to match regex
+  description: ensures committer email to match regex
   entry: commit-check
   args: [--author-email]
   pass_filenames: false
   language: python
 - id: check-commit-signoff
   name: check committer signoff
-  description: requiring committer to add a Signed-off-by trailer
+  description: ensures committer to add a Signed-off-by trailer
   entry: commit-check
   args: [--commit-signoff]
   pass_filenames: false
   language: python
 - id: check-merge-base
   name: check merge base
-  description: requiring to rebase current branch onto target branch
+  description: ensures current branch is rebased onto target branch
   entry: commit-check
   args: [--merge-base]
   pass_filenames: false
