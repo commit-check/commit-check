@@ -75,7 +75,7 @@ Running as pre-commit hook
         -   id: check-author-name
         -   id: check-author-email
         -   id: check-commit-signoff
-        -   id: check-merge-base # requires download all history
+        -   id: check-merge-base # requires download all git history
 
 Running as CLI
 ~~~~~~~~~~~~~~
