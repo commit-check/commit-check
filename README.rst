@@ -70,12 +70,12 @@ Running as pre-commit hook
     -   repo: https://github.com/commit-check/commit-check
         rev: the tag or revision
         hooks: # support hooks
-        -   id: check-message  # it requires hook prepare-commit-msg
+        -   id: check-message  # requires hook prepare-commit-msg
         -   id: check-branch
         -   id: check-author-name
         -   id: check-author-email
         -   id: check-commit-signoff
-        -   id: check-merge-base
+        -   id: check-merge-base # requires download all git history
 
 Running as CLI
 ~~~~~~~~~~~~~~
