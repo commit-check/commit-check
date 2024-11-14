@@ -32,11 +32,11 @@ repos:
     hooks:
     -   id: codespell
 -   repo: https://github.com/commit-check/commit-check
-    rev: v0.9.1
+    rev: v0.9.2
     hooks:
     -   id: check-message
     # -   id: check-branch          # uncomment if you need.
     -   id: check-author-name     # uncomment if you need.
     -   id: check-author-email    # uncomment if you need.
     # -   id: commit-signoff        # uncomment if you need.
-    # -   id: check-merge-base      # uncomment if you need.
+    -   id: check-merge-base      # uncomment if you need.
