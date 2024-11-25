@@ -65,6 +65,13 @@ def coverage(session):
 
 @nox.session()
 def docs(session):
-    session.install("-e", ".")
+    session.install(".")
     session.install("-r", REQUIREMENTS["docs"])
     session.run("sphinx-build", "-E", "-W", "-b", "html", "docs", "_build/html")
+
+
+@nox.session(name="docs-live")
+def docs_live(session):
+    session.install(".")
+    session.install("-r", REQUIREMENTS["docs"], "sphinx-autobuild")
+    session.run("sphinx-autobuild", "-b", "html", "docs", "_build/html")
