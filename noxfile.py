@@ -2,7 +2,6 @@ import nox
 import glob
 
 nox.options.reuse_existing_virtualenvs = True
-nox.options.reuse_venv = True
 nox.options.sessions = ["lint"]
 
 REQUIREMENTS = {
