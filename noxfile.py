@@ -52,8 +52,9 @@ def commit_check(session):
     session.run("commit-check", "--message", "--branch", "--author-email")
 
 
-@nox.session(requires=["install-wheel"])
+@nox.session()
 def coverage(session):
+    session.install(".")
     session.run("coverage", "run", "--source", "commit_check", "-m", "pytest")
     session.run("coverage", "report")
     session.run("coverage", "xml")
