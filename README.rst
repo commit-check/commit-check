@@ -30,9 +30,11 @@ Commit Check
 Overview
 --------
 
-**Commit Check** is a free, powerful tool that enforces commit metadata standards, including commit message, branch naming, committer name/email, and commit signoff. Fully customizable with error messages and suggested commands, it ensures compliance across teams.
+**Commit Check** is a free, powerful tool that enforces commit metadata standards, including commit message, branch naming, committer name/email, commit signoff and more.
 
-As an alternative to GitHub Enterprise  `Metadata restrictions <https://docs.github.com/en/enterprise-server@3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions>`_ and Bitbucket's paid puglin `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_, Commit Check stands out by integrating DevOps principles and Infrastructure as Code (IaC).
+Fully customizable with error messages and suggested commands, it ensures compliance across teams.
+
+As an alternative to GitHub Enterprise `Metadata restrictions <https://docs.github.com/en/enterprise-server@3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions>`_ and Bitbucket's paid plugin `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_, Commit Check stands out by integrating DevOps principles and Infrastructure as Code (IaC).
 
 Configuration
 -------------
@@ -70,7 +72,7 @@ Running as pre-commit hook
     -   repo: https://github.com/commit-check/commit-check
         rev: the tag or revision
         hooks: # support hooks
-        -   id: check-message  # requires hook prepare-commit-msg
+        -   id: check-message  # requires prepare-commit-msg hook
         -   id: check-branch
         -   id: check-author-name
         -   id: check-author-email
@@ -80,25 +82,25 @@ Running as pre-commit hook
 Running as CLI
 ~~~~~~~~~~~~~~
 
-Global Installation
+Install globally
 
 .. code-block:: bash
 
     sudo pip3 install -U commit-check
 
-User Installation
+Install locally
 
 .. code-block:: bash
 
     pip install -U commit-check
 
-Install from Git Repo
+Install from source code
 
 .. code-block:: bash
 
     pip install git+https://github.com/commit-check/commit-check.git@main
 
-Then, run ``commit-check`` from the command line. For more information, see the `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
+Then, run ``commit-check --help`` from the command line. For more information, see the `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
 
 Running as Git Hooks
 ~~~~~~~~~~~~~~~~~~~~
@@ -118,8 +120,8 @@ Save the script file as ``pre-push`` and make it executable:
 
 Now, ``git push`` will trigger this hook automatically.
 
-Example
--------
+Examples
+--------
 
 Check Commit Message Failed
 
@@ -155,22 +157,45 @@ Check Branch Naming Failed
 
     Commit rejected by Commit-Check.
 
-      (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-       / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-     __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+    / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+    __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
     (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-       || E ||      || R ||      || R ||      || O ||      || R ||
-     _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
+    || E ||      || R ||      || R ||      || O ||      || R ||
+    _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
     (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-     `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+    `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
     Commit rejected.
 
-    Type branch check failed => my-test-branch
+    Type branch check failed => patch-1
     It doesn't match regex: ^(bugfix|feature|release|hotfix|task|chore)\/.+|(master)|(main)|(HEAD)|(PR-.+)
-
     Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/ chore/
     Suggest: run command `git checkout -b type/branch_name`
+
+
+Check Commit Signature Failed
+
+.. code-block:: text
+
+    Commit rejected by Commit-Check.
+
+    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+    / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+    __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+    (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
+    || E ||      || R ||      || R ||      || O ||      || R ||
+    _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
+    (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
+    `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+
+    Commit rejected.
+
+    Type commit_signoff check failed => c92ce259ff041c91859c7fb61afdbb391e769d0f
+    It doesn't match regex: Signed-off-by:.*[A-Za-z0-9]\s+<.+@.+>
+    Signed-off-by not found in latest commit
+    Suggest: run command `git commit -m "conventional commit message" --signoff`
+
 
 
 Badging your repository

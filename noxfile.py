@@ -2,7 +2,6 @@ import nox
 import glob
 
 nox.options.reuse_existing_virtualenvs = True
-nox.options.reuse_venv = True
 nox.options.sessions = ["lint"]
 
 REQUIREMENTS = {
@@ -42,23 +41,20 @@ def build(session):
 
 @nox.session(name="install-wheel", requires=["build"])
 def install_wheel(session):
+    session.run("python3", "-m", "pip", "wheel", "--no-deps", "-w", "dist", ".")
     whl_file = glob.glob("dist/*.whl")
     session.install(str(whl_file[0]))
 
 
-# @nox.session(name="commit-check", requires=["install-wheel"])
-@nox.session(name="commit-check", requires=["install-wheel"])
+@nox.session(name="commit-check")
 def commit_check(session):
-    session.run(
-        "commit-check",
-        "--message",
-        "--branch",
-        "--author-email",
-    )
+    session.install(".")
+    session.run("commit-check", "--message", "--branch", "--author-email")
 
 
-@nox.session(requires=["install-wheel"])
+@nox.session()
 def coverage(session):
+    session.install(".")
     session.run("coverage", "run", "--source", "commit_check", "-m", "pytest")
     session.run("coverage", "report")
     session.run("coverage", "xml")
@@ -66,6 +62,13 @@ def coverage(session):
 
 @nox.session()
 def docs(session):
-    session.install("-e", ".")
+    session.install(".")
     session.install("-r", REQUIREMENTS["docs"])
     session.run("sphinx-build", "-E", "-W", "-b", "html", "docs", "_build/html")
+
+
+@nox.session(name="docs-live")
+def docs_live(session):
+    session.install(".")
+    session.install("-r", REQUIREMENTS["docs"], "sphinx-autobuild")
+    session.run("sphinx-autobuild", "-b", "html", "docs", "_build/html")
