@@ -120,8 +120,8 @@ Save the script file as ``pre-push`` and make it executable:
 
 Now, ``git push`` will trigger this hook automatically.
 
-Example
--------
+Examples
+--------
 
 Check Commit Message Failed
 
