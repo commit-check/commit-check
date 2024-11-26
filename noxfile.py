@@ -34,26 +34,17 @@ def test_hook(session):
     session.run("pre-commit", "try-repo", ".")
 
 
-@nox.session()
-def build(session):
-    session.run("python3", "-m", "pip", "wheel", "--no-deps", "-w", "dist", ".")
-
-
-@nox.session(name="install-wheel", requires=["build"])
+@nox.session(name="install-wheel")
 def install_wheel(session):
+    session.run("python3", "-m", "pip", "wheel", "--no-deps", "-w", "dist", ".")
     whl_file = glob.glob("dist/*.whl")
     session.install(str(whl_file[0]))
 
 
-# @nox.session(name="commit-check", requires=["install-wheel"])
-@nox.session(name="commit-check", requires=["install-wheel"])
+@nox.session(name="commit-check")
 def commit_check(session):
-    session.run(
-        "commit-check",
-        "--message",
-        "--branch",
-        "--author-email",
-    )
+    session.install(".")
+    session.run("commit-check", "--message", "--branch", "--author-email")
 
 
 @nox.session(requires=["install-wheel"])
