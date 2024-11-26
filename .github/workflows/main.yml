@@ -83,7 +83,6 @@ jobs:
         - run: pip install -r requirements-dev.txt
 
         - name: Build docs
-          working-directory: docs
           run: nox -s docs
 
         - name: Save built docs as artifact
