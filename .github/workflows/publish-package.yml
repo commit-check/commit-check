@@ -33,7 +33,7 @@ jobs:
         twine check dist/commit_check*
 
     - name: Create attestations
-      uses: actions/attest-build-provenance@v1
+      uses: actions/attest-build-provenance@v2
       with:
         subject-path: "dist/commit_check*"
 
