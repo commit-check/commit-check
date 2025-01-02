@@ -15,7 +15,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -77,7 +77,7 @@ jobs:
         run: nox -s install-wheel
 
   docs:
-      runs-on: ubuntu-latest
+      runs-on: ubuntu-24.04
       steps:
         - uses: actions/checkout@v4
           with:
@@ -94,7 +94,7 @@ jobs:
           uses: actions/upload-artifact@v4
           with:
             name: "commit-check_docs"
-            path: ${{ github.workspace }}/docs/_build/html
+            path: ${{ github.workspace }}/_build/html
 
         - name: Upload docs to github pages
           # only publish doc changes from main branch
