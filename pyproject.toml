@@ -11,6 +11,7 @@ license = {text = "MIT License"}
 authors = [
     { name = "Xianpeng Shen", email = "xianpeng.shen@gmail.com" },
 ]
+requires-python = ">=3.8"
 dependencies = ["pyyaml"]
 classifiers = [
     # https://pypi.org/pypi?%3Aaction=list_classifiers

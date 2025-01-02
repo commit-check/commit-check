@@ -54,14 +54,16 @@ jobs:
       fail-fast: false
       matrix:
         py: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
-        os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
+        os: ['windows-latest', 'ubuntu-24.04', 'macos-latest']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.py }}
-      - run: pip install -r requirements-dev.txt
+      - run: |
+          pip install --upgrade pip
+          pip install -r requirements-dev.txt
 
       - name: Download wheel artifact
         uses: actions/download-artifact@v4
@@ -100,4 +102,4 @@ jobs:
           uses: peaceiris/actions-gh-pages@v4
           with:
             github_token: ${{ secrets.GITHUB_TOKEN }}
-            publish_dir: ./docs/_build/html
+            publish_dir: ./_build/html
