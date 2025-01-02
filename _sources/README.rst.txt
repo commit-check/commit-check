@@ -9,15 +9,13 @@ From the root directory of the repository, do the following to steps
 
    .. code-block:: text
 
-       pip install -r docs/requirements.txt
-
-   On Linux, you may need to use ``pip3`` instead.
+       pip install nox
 
 2. Build the docs
 
    .. code-block:: text
 
-       sphinx-build docs docs/_build/html
+       nox -s docs
 
-   Browse the files in docs/_build/html with your internet browser to see the rendered
+   Browse the files in /_build/html with your internet browser to see the rendered
    output.
