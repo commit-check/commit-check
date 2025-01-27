@@ -22,13 +22,13 @@ repos:
         args: [--max-line-length=100, --ignore=E501]
         exclude: ^commit_check/__init__.py
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.14.0
+    rev: v1.14.1
     hooks:
     -   id: mypy
         additional_dependencies: [types-PyYAML]
         exclude: ^testing/resources/
 -   repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.0
     hooks:
     -   id: codespell
 -   repo: https://github.com/commit-check/commit-check
