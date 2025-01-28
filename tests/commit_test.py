@@ -42,7 +42,7 @@ def test_check_commit_msg_no_commit_msg_file(mocker):
 
     checks = [{"regex": ".*", "check": "message", "error": "Invalid", "suggest": None}]
 
-    result = check_commit_msg(checks, commit_msg_file=None)
+    result = check_commit_msg(checks, commit_msg_file="")
 
     mock_get_default_commit_msg_file.assert_called_once()
     mock_read_commit_msg.assert_called_once_with(".git/COMMIT_EDITMSG")
