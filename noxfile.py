@@ -55,6 +55,7 @@ def commit_check(session):
 @nox.session()
 def coverage(session):
     session.install(".")
+    session.install("-r", REQUIREMENTS["dev"])
     session.run("coverage", "run", "--source", "commit_check", "-m", "pytest")
     session.run("coverage", "report")
     session.run("coverage", "xml")

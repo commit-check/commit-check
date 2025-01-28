@@ -16,7 +16,7 @@ def check_branch(checks: list) -> int:
             result = re.match(check['regex'], branch_name)
             if result is None:
                 if not print_error_header.has_been_called:
-                    print_error_header()
+                    print_error_header() # pragma: no cover
                 print_error_message(
                     check['check'], check['regex'],
                     check['error'], branch_name,
@@ -45,7 +45,7 @@ def check_merge_base(checks: list) -> int:
             result = git_merge_base(target_branch, current_branch)
             if result != 0:
                 if not print_error_header.has_been_called:
-                    print_error_header()
+                    print_error_header() # pragma: no cover
                 print_error_message(
                     check['check'], check['regex'],
                     check['error'], current_branch,

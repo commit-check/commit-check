@@ -122,6 +122,17 @@ class TestCheckMergeBase:
         assert retval == PASS
         assert m_check_merge.call_count == 0
 
+
+    def test_check_merge_base_with_empty_regex(self, mocker):
+        checks = [{
+            "check": "merge_base",
+            "regex": ""
+        }]
+        m_check_merge = mocker.patch(f"{LOCATION}.check_merge_base")
+        retval = check_merge_base(checks)
+        assert retval == PASS
+        assert m_check_merge.call_count == 0
+
     def test_check_merge_base_with_different_check(self, mocker):
         checks = [{
             "check": "branch",
