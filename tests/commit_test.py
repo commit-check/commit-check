@@ -30,6 +30,25 @@ def test_read_commit_msg_file_not_found(mocker):
     assert m_commits_info.call_count == 0
 
 
+def test_check_commit_msg_no_commit_msg_file(mocker):
+    mock_get_default_commit_msg_file = mocker.patch(
+        "commit_check.commit.get_default_commit_msg_file",
+        return_value=".git/COMMIT_EDITMSG"
+    )
+    mock_read_commit_msg = mocker.patch(
+        "commit_check.commit.read_commit_msg",
+        return_value="Sample commit message"
+    )
+
+    checks = [{"regex": ".*", "check": "message", "error": "Invalid", "suggest": None}]
+
+    result = check_commit_msg(checks, commit_msg_file=None)
+
+    mock_get_default_commit_msg_file.assert_called_once()
+    mock_read_commit_msg.assert_called_once_with(".git/COMMIT_EDITMSG")
+    assert result == 0
+
+
 def test_check_commit_with_empty_checks(mocker):
     checks = []
     m_re_match = mocker.patch(
