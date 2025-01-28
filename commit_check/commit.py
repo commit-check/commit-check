@@ -38,7 +38,7 @@ def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
             result = re.match(check['regex'], commit_msg)
             if result is None:
                 if not print_error_header.has_been_called:
-                    print_error_header()
+                    print_error_header() # pragma: no cover
                 print_error_message(
                     check['check'], check['regex'],
                     check['error'], commit_msg,
