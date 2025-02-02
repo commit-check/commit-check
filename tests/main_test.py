@@ -174,7 +174,6 @@ class TestMain:
                 return author_email_result
 
         mocker.patch("commit_check.author.check_author", side_effect=author_side_effect)
-        mocker.patch("commit_check.author.check_author", side_effect=author_side_effect)
 
         sys.argv = argv
         assert main() == final_result
