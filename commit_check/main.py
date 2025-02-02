@@ -10,7 +10,7 @@ from commit_check import commit
 from commit_check import author
 from commit_check.util import validate_config
 from commit_check.error import error_handler
-from . import CONFIG_FILE, DEFAULT_CONFIG, PASS, __version__
+from . import CONFIG_FILE, DEFAULT_CONFIG, PASS, FAIL, __version__
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -99,7 +99,7 @@ def main() -> int:
     """The main entrypoint of commit-check program."""
     parser = get_parser()
     args = parser.parse_args()
-    retval = PASS
+    check_results: list[int] = []
 
     with error_handler():
         config = validate_config(args.config) if validate_config(
@@ -107,21 +107,22 @@ def main() -> int:
         ) else DEFAULT_CONFIG
         checks = config['checks']
         if args.message:
-            retval = commit.check_commit_msg(checks, args.commit_msg_file)
+            check_results.append(commit.check_commit_msg(checks, args.commit_msg_file))
         if args.author_name:
-            retval = author.check_author(checks, "author_name")
+            check_results.append(author.check_author(checks, "author_name"))
         if args.author_email:
-            retval = author.check_author(checks, "author_email")
+            check_results.append(author.check_author(checks, "author_email"))
         if args.branch:
-            retval = branch.check_branch(checks)
+            check_results.append(branch.check_branch(checks))
         if args.commit_signoff:
-            retval = commit.check_commit_signoff(checks)
+            check_results.append(commit.check_commit_signoff(checks))
         if args.merge_base:
-            retval = branch.check_merge_base(checks)
+            check_results.append(branch.check_merge_base(checks))
 
     if args.dry_run:
-        retval = PASS
-    return retval
+        return PASS
+
+    return PASS if all(val == PASS for val in check_results) else FAIL
 
 
 if __name__ == '__main__':
