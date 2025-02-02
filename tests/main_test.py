@@ -166,7 +166,7 @@ class TestMain:
 
         # this is messy. why isn't this a private implementation detail with a
         # public check_author_name and check_author email?
-        def author_side_effect(_, check_type: str) -> int:
+        def author_side_effect(_, check_type: str) -> int:  # type: ignore[return]
             assert check_type in ("author_name", "author_email")
             if check_type == "author_name":
                 return author_name_result
