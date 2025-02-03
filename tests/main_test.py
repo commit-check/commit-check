@@ -1,7 +1,7 @@
 import sys
 import pytest
 from commit_check.main import main
-from commit_check import DEFAULT_CONFIG
+from commit_check import DEFAULT_CONFIG, PASS, FAIL
 
 CMD = "commit-check"
 
@@ -115,3 +115,65 @@ class TestMain:
         main()
         assert m_check_commit.call_count == 1
         assert m_check_commit.call_args[0][0] == DEFAULT_CONFIG["checks"]
+
+    @pytest.mark.parametrize(
+        "argv, message_result, branch_result, author_name_result, author_email_result, commit_signoff_result, merge_base_result, final_result",
+        [
+            ([CMD, "--message"], PASS, PASS, PASS, PASS, PASS, PASS, PASS),
+            ([CMD, "--message"], FAIL, PASS, PASS, PASS, PASS, PASS, FAIL),
+            ([CMD, "--message", "--commit-signoff"], FAIL, PASS, PASS, PASS, PASS, PASS, FAIL,),
+            ([CMD, "--message", "--commit-signoff"], PASS, PASS, PASS, PASS, FAIL, PASS, FAIL,),
+            ([CMD, "--message", "--author-name", "--author-email"], PASS, PASS, PASS, PASS, PASS, PASS, PASS,),
+            ([CMD, "--message", "--author-name", "--author-email"], FAIL, PASS, PASS, PASS, PASS, PASS, FAIL,),
+            ([CMD, "--message", "--author-name", "--author-email"], PASS, PASS, FAIL, PASS, PASS, PASS, FAIL,),
+            ([CMD, "--message", "--author-name", "--author-email"], PASS, PASS, PASS, FAIL, PASS, PASS, FAIL,),
+            ([CMD, "--message", "--author-name", "--author-email"], PASS, PASS, FAIL, FAIL, PASS, PASS, FAIL,),
+            ([CMD, "--message", "--branch", "--author-name", "--author-email", "--commit-signoff", "--merge-base", ], PASS, PASS, PASS, PASS, PASS, PASS, PASS,),
+            ([CMD, "--message", "--branch", "--author-name", "--author-email", "--commit-signoff", "--merge-base", ], FAIL, FAIL, FAIL, FAIL, FAIL, FAIL, FAIL,),
+            ([CMD, "--message", "--branch", "--author-name", "--author-email", "--commit-signoff", "--merge-base", ], FAIL, PASS, PASS, PASS, PASS, PASS, FAIL,),
+            ([CMD, "--dry-run"], FAIL, FAIL, FAIL, FAIL, FAIL, FAIL, PASS),
+        ],
+    )
+    def test_main_multiple_checks(
+        self,
+        mocker,
+        argv,
+        message_result,
+        branch_result,
+        author_name_result,
+        author_email_result,
+        commit_signoff_result,
+        merge_base_result,
+        final_result,
+    ):
+        mocker.patch(
+            "commit_check.main.validate_config",
+            return_value={},
+        )
+
+        mocker.patch(
+            "commit_check.commit.check_commit_msg", return_value=message_result
+        )
+        mocker.patch(
+            "commit_check.commit.check_commit_signoff",
+            return_value=commit_signoff_result,
+        )
+
+        mocker.patch("commit_check.branch.check_branch", return_value=branch_result)
+        mocker.patch(
+            "commit_check.branch.check_merge_base", return_value=merge_base_result
+        )
+
+        # this is messy. why isn't this a private implementation detail with a
+        # public check_author_name and check_author email?
+        def author_side_effect(_, check_type: str) -> int:  # type: ignore[return]
+            assert check_type in ("author_name", "author_email")
+            if check_type == "author_name":
+                return author_name_result
+            elif check_type == "author_email":
+                return author_email_result
+
+        mocker.patch("commit_check.author.check_author", side_effect=author_side_effect)
+
+        sys.argv = argv
+        assert main() == final_result
