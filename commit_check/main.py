@@ -99,6 +99,10 @@ def main() -> int:
     """The main entrypoint of commit-check program."""
     parser = get_parser()
     args = parser.parse_args()
+
+    if args.dry_run:
+        return PASS
+
     check_results: list[int] = []
 
     with error_handler():
@@ -118,9 +122,6 @@ def main() -> int:
             check_results.append(commit.check_commit_signoff(checks))
         if args.merge_base:
             check_results.append(branch.check_merge_base(checks))
-
-    if args.dry_run:
-        return PASS
 
     return PASS if all(val == PASS for val in check_results) else FAIL
 
