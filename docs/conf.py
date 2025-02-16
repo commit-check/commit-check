@@ -19,7 +19,6 @@ author = "shenxianpeng"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 extensions = [
-    "sphinx_immaterial",
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
@@ -40,7 +39,7 @@ default_role = "any"
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "sphinx_immaterial"
+html_theme = "furo"
 html_static_path = ["_static"]
 html_logo = "_static/logo.jpg"
 # html_favicon = "_static/favicon.ico"
