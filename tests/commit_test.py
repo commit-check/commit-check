@@ -48,6 +48,7 @@ def test_check_commit_msg_no_commit_msg_file(mocker):
     mock_read_commit_msg.assert_called_once_with(".git/COMMIT_EDITMSG")
     assert result == 0
 
+
 def test_check_commit_msg_with_emoji_commit_msg_file_using_defaults(mocker):
     mock_get_default_commit_msg_file = mocker.patch(
         "commit_check.commit.get_default_commit_msg_file",
@@ -56,6 +57,25 @@ def test_check_commit_msg_with_emoji_commit_msg_file_using_defaults(mocker):
     mock_read_commit_msg = mocker.patch(
         "commit_check.commit.read_commit_msg",
         return_value="fix: 🐛 sample"
+    )
+
+    checks = [next(c for c in DEFAULT_CONFIG['checks'] if c['check'] == 'message')]
+
+    result = check_commit_msg(checks, commit_msg_file="")
+
+    mock_get_default_commit_msg_file.assert_called_once()
+    mock_read_commit_msg.assert_called_once_with(".git/COMMIT_EDITMSG")
+    assert result == 0
+
+
+def test_check_commit_msg_with_grapheme_cluster_emoji_commit_msg_file_using_defaults(mocker):
+    mock_get_default_commit_msg_file = mocker.patch(
+        "commit_check.commit.get_default_commit_msg_file",
+        return_value=".git/COMMIT_EDITMSG"
+    )
+    mock_read_commit_msg = mocker.patch(
+        "commit_check.commit.read_commit_msg",
+        return_value="docs: 📚️ mention commit-check and rulesets" # watch out emoji is U+1F4DA followed by U+FE0F
     )
 
     checks = [next(c for c in DEFAULT_CONFIG['checks'] if c['check'] == 'message')]

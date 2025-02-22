@@ -16,7 +16,7 @@ DEFAULT_CONFIG = {
     'checks': [
         {
             'check': 'message',
-            'regex': r'^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F700-\U0001F77F\U0001F780-\U0001F7FF\U0001F800-\U0001F8FF\U0001F900-\U0001F9FF\U0001FA00-\U0001FA6F\U0001FA70-\U0001FAFF\u2600-\u26FF\u2700-\u27BF] )?([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)',
+            'regex': r'^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\u2600-\u26FF\u2700-\u27BF\U0001F000-\U0001F02F\U0001F0A0-\U0001F0FF\U0001F100-\U0001F1FF\U0001F300-\U0001F5FF\U0001F600-\U0001F64F\U0001F680-\U0001F6FF\U0001F900-\U0001F9FF]\uFE0F? )?([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)',
             'error': 'The commit message should be structured as follows:\n\n'
             '<type>[optional scope]: <description>\n'
             '[optional body]\n'
