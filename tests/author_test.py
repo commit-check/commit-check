@@ -9,6 +9,7 @@ class TestAuthor:
     class TestAuthorName:
         # used by get_commit_info mock
         fake_author_value_an = "fake_author_name"
+        fake_accented_author_value_an = "fáké_áúthór_námé"
 
         def test_check_author(self, mocker):
             # Must call get_commit_info, re.match.
@@ -19,6 +20,25 @@ class TestAuthor:
             m_get_commit_info = mocker.patch(
                 f"{LOCATION}.get_commit_info",
                 return_value=self.fake_author_value_an
+            )
+            m_re_match = mocker.patch(
+                "re.match",
+                return_value="fake_rematch_resp"
+            )
+            retval = check_author(checks, "author_name")
+            assert retval == PASS
+            assert m_get_commit_info.call_count == 1
+            assert m_re_match.call_count == 1
+
+        def test_check_author_with_accented_letters(self, mocker):
+            # Must call get_commit_info, re.match.
+            checks = [{
+                "check": "author_name",
+                "regex": "dummy_regex"
+            }]
+            m_get_commit_info = mocker.patch(
+                f"{LOCATION}.get_commit_info",
+                return_value=self.fake_accented_author_value_an
             )
             m_re_match = mocker.patch(
                 "re.match",
