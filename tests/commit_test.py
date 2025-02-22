@@ -1,4 +1,4 @@
-from commit_check import PASS, FAIL
+from commit_check import PASS, FAIL, DEFAULT_CONFIG
 from commit_check.commit import check_commit_msg, get_default_commit_msg_file, read_commit_msg, check_commit_signoff
 
 # used by get_commit_info mock
@@ -41,6 +41,24 @@ def test_check_commit_msg_no_commit_msg_file(mocker):
     )
 
     checks = [{"regex": ".*", "check": "message", "error": "Invalid", "suggest": None}]
+
+    result = check_commit_msg(checks, commit_msg_file="")
+
+    mock_get_default_commit_msg_file.assert_called_once()
+    mock_read_commit_msg.assert_called_once_with(".git/COMMIT_EDITMSG")
+    assert result == 0
+
+def test_check_commit_msg_with_emoji_commit_msg_file_using_defaults(mocker):
+    mock_get_default_commit_msg_file = mocker.patch(
+        "commit_check.commit.get_default_commit_msg_file",
+        return_value=".git/COMMIT_EDITMSG"
+    )
+    mock_read_commit_msg = mocker.patch(
+        "commit_check.commit.read_commit_msg",
+        return_value="fix: 🐛 sample"
+    )
+
+    checks = [next(c for c in DEFAULT_CONFIG['checks'] if c['check'] == 'message')]
 
     result = check_commit_msg(checks, commit_msg_file="")
 
