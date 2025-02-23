@@ -32,7 +32,7 @@ DEFAULT_CONFIG = {
         },
         {
             'check': 'author_name',
-            'regex': r'^[A-Za-z ,.\'-]+$|.*(\[bot])',
+            'regex': r'^[A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u017F\u0180-\u024F ,.\'-]+$|.*(\[bot])',
             'error': 'The committer name seems invalid',
             'suggest': 'run command `git config user.name "Your Name"`',
         },
