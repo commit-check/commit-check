@@ -53,7 +53,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        py: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
+        py: ['3.9', '3.10', '3.11', '3.12', '3.13']
         os: ['windows-latest', 'ubuntu-24.04', 'macos-latest']
     runs-on: ${{ matrix.os }}
     steps:
