@@ -66,5 +66,5 @@ def docs(session):
 @nox.session(name="docs-live")
 def docs_live(session):
     session.install(".")
-    session.install("-r", '.[docs]', "sphinx-autobuild")
+    session.install('.[docs]', "sphinx-autobuild")
     session.run("sphinx-autobuild", "-b", "html", "docs", "_build/html")
