@@ -4,11 +4,6 @@ import glob
 nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = ["lint"]
 
-REQUIREMENTS = {
-    "dev": "requirements-dev.txt",
-    "docs": "docs/requirements.txt",
-}
-
 # -----------------------------------------------------------------------------
 # Development Commands
 # -----------------------------------------------------------------------------
@@ -55,7 +50,7 @@ def commit_check(session):
 @nox.session()
 def coverage(session):
     session.install(".")
-    session.install("-r", REQUIREMENTS["dev"])
+    session.install("-r", '.[dev]')
     session.run("coverage", "run", "--source", "commit_check", "-m", "pytest")
     session.run("coverage", "report")
     session.run("coverage", "xml")
@@ -64,12 +59,12 @@ def coverage(session):
 @nox.session()
 def docs(session):
     session.install(".")
-    session.install("-r", REQUIREMENTS["docs"])
+    session.install("-r", '.[docs]')
     session.run("sphinx-build", "-E", "-W", "-b", "html", "docs", "_build/html")
 
 
 @nox.session(name="docs-live")
 def docs_live(session):
     session.install(".")
-    session.install("-r", REQUIREMENTS["docs"], "sphinx-autobuild")
+    session.install("-r", '.[docs]', "sphinx-autobuild")
     session.run("sphinx-autobuild", "-b", "html", "docs", "_build/html")
