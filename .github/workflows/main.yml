@@ -22,6 +22,11 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Install nox
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install nox
+
       - name: Run pre-commit
         run: |
           nox -s lint
