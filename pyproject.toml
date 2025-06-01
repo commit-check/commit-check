@@ -43,7 +43,7 @@ tracker = "https://github.com/commit-check/commit-check/issues"
 [project.optional-dependencies]
 dev = ['nox']
 test = ['coverage', 'pytest', 'pytest-mock']
-docs = ['sphinx-immaterial']
+docs = ['sphinx-immaterial', 'sphinx-autobuild']
 
 [tool.setuptools]
 zip-safe = false
