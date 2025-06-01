@@ -3,6 +3,6 @@
 # and commit this file to your remote git repository to share the goodness with others.
 
 tasks:
-  - before: pip install --upgrade pip && pip install -r requirements-dev.txt
+  - before: pip install --upgrade pip
     init: pre-commit install
-    command: pip install -e .
+    command: pip install -e .[dev]
