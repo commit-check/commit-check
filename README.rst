@@ -42,15 +42,14 @@ Configuration
 Use Default Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- If you don't set ``.commit-check.yml``, Commit Check will use the `default configuration <https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py>`_.
+- **Commit Check** uses a `default configuration <https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py>`_ if you do not provide a ``.commit-check.yml`` file.
 
-- The commit message will follow the rules of `Conventional Commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_,
-  branch naming follow the rules of `Conventional Branch <https://conventional-branch.github.io/#summary>`_.
+- The default configuration enforces commit message rules based on the `Conventional Commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_ specification and branch naming rules based on the `Conventional Branch <https://conventional-branch.github.io/#summary>`_ convention.
 
 Use Custom Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Create a config file ``.commit-check.yml`` under your repository's root directory, e.g., `.commit-check.yml <https://github.com/commit-check/commit-check/blob/main/.commit-check.yml>`_
+To customize the behavior, create a config file ``.commit-check.yml`` under your repository's root directory, e.g., `.commit-check.yml <https://github.com/commit-check/commit-check/blob/main/.commit-check.yml>`_
 
 Usage
 -----
