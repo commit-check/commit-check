@@ -34,10 +34,14 @@ def has_commits() -> bool:
     :returns: `True` if there are commits, `False` otherwise.
     """
     try:
-        commands = ['git', 'rev-parse', '--verify', 'HEAD']
-        cmd_output(commands)
+        subprocess.run(
+            ["git", "rev-parse", "--verify", "HEAD"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True
+        )
         return True
-    except CalledProcessError:
+    except subprocess.CalledProcessError:
         return False
 
 def get_commit_info(format_string: str, sha: str = "HEAD") -> str:
