@@ -1,6 +1,7 @@
 import pytest
 import subprocess
 from commit_check.util import get_branch_name
+from commit_check.util import has_commits
 from commit_check.util import git_merge_base
 from commit_check.util import get_commit_info
 from commit_check.util import cmd_output
@@ -46,6 +47,43 @@ class TestUtil:
             ]
             assert retval == ""
 
+    class TestHasCommits:
+        def test_has_commits_true(self, mocker):
+            # Must return True when git rev-parse HEAD succeeds
+            m_subprocess_run = mocker.patch(
+                "subprocess.run",
+                return_value=None
+            )
+            retval = has_commits()
+            assert m_subprocess_run.call_count == 1
+            assert m_subprocess_run.call_args[0][0] == [
+                "git", "rev-parse", "--verify", "HEAD"
+            ]
+            assert m_subprocess_run.call_args[1] == {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'check': True
+            }
+            assert retval is True
+
+        def test_has_commits_false(self, mocker):
+            # Must return False when git rev-parse HEAD fails
+            m_subprocess_run = mocker.patch(
+                "subprocess.run",
+                side_effect=subprocess.CalledProcessError(128, "git rev-parse")
+            )
+            retval = has_commits()
+            assert m_subprocess_run.call_count == 1
+            assert m_subprocess_run.call_args[0][0] == [
+                "git", "rev-parse", "--verify", "HEAD"
+            ]
+            assert m_subprocess_run.call_args[1] == {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'check': True
+            }
+            assert retval is False
+
     class TestGitMergeBase:
         @pytest.mark.parametrize("returncode,expected", [
             (0, 0),  # ancestor exists
@@ -78,20 +116,45 @@ class TestUtil:
         ]
         )
         def test_get_commit_info(self, mocker, format_string):
-            # Must call get_commit_info with given argument.
+            # Must call get_commit_info with given argument when there are commits.
+            m_has_commits = mocker.patch(
+                "commit_check.util.has_commits",
+                return_value=True
+            )
             m_cmd_output = mocker.patch(
                 "commit_check.util.cmd_output",
                 return_value=" fake commit message "
             )
             retval = get_commit_info(format_string)
+            assert m_has_commits.call_count == 1
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
                 "git", "log", "-n", "1", f"--pretty=format:%{format_string}", "HEAD"
             ]
             assert retval == " fake commit message "
 
+        def test_get_commit_info_no_commits(self, mocker):
+            # Must return 'Repo has no commits yet.' when there are no commits.
+            m_has_commits = mocker.patch(
+                "commit_check.util.has_commits",
+                return_value=False
+            )
+            m_cmd_output = mocker.patch(
+                "commit_check.util.cmd_output",
+                return_value=" fake commit message "
+            )
+            format_string = "s"
+            retval = get_commit_info(format_string)
+            assert m_has_commits.call_count == 1
+            assert m_cmd_output.call_count == 0  # Should not call cmd_output
+            assert retval == "Repo has no commits yet."
+
         def test_get_commit_info_with_exception(self, mocker):
             # Must return empty string when exception raises in cmd_output.
+            m_has_commits = mocker.patch(
+                "commit_check.util.has_commits",
+                return_value=True
+            )
             m_cmd_output = mocker.patch(
                 "commit_check.util.cmd_output",
                 return_value=" fake commit message "
@@ -104,6 +167,7 @@ class TestUtil:
             )
             format_string = "s"
             retval = get_commit_info(format_string)
+            assert m_has_commits.call_count == 1
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
                 "git", "log", "-n", "1", f"--pretty=format:%{format_string}", "HEAD"
