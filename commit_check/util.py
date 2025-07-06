@@ -29,6 +29,21 @@ def get_branch_name() -> str:
     return branch_name.strip()
 
 
+def has_commits() -> bool:
+    """Check if there are any commits in the current branch.
+    :returns: `True` if there are commits, `False` otherwise.
+    """
+    try:
+        subprocess.run(
+            ["git", "rev-parse", "--verify", "HEAD"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
 def get_commit_info(format_string: str, sha: str = "HEAD") -> str:
     """Get latest commits information
     :param format_string: could be
@@ -41,6 +56,8 @@ def get_commit_info(format_string: str, sha: str = "HEAD") -> str:
 
     :returns: A `str`.
     """
+    if has_commits() is False:
+        return 'Repo has no commits yet.'
     try:
         commands = [
             'git', 'log', '-n', '1', f"--pretty=format:%{format_string}", f"{sha}",
