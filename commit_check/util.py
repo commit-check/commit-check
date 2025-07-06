@@ -57,7 +57,7 @@ def get_commit_info(format_string: str, sha: str = "HEAD") -> str:
     :returns: A `str`.
     """
     if has_commits() is False:
-        return 'No commits found.'
+        return 'Repo has no commits yet.'
     try:
         commands = [
             'git', 'log', '-n', '1', f"--pretty=format:%{format_string}", f"{sha}",
