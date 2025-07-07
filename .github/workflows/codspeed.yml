@@ -1,5 +1,8 @@
 name: CodSpeed
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
