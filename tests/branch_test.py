@@ -1,3 +1,4 @@
+import pytest
 from commit_check import PASS, FAIL
 from commit_check.branch import check_branch, check_merge_base
 
@@ -7,6 +8,7 @@ LOCATION = "commit_check.branch"
 
 
 class TestCheckBranch:
+    @pytest.mark.benchmark
     def test_check_branch(self, mocker):
         # Must call get_branch_name, re.match at once.
         checks = [{
@@ -26,6 +28,7 @@ class TestCheckBranch:
         assert m_get_branch_name.call_count == 1
         assert m_re_match.call_count == 1
 
+    @pytest.mark.benchmark
     def test_check_branch_with_empty_checks(self, mocker):
         # Must NOT call get_branch_name, re.match with `checks` param with length 0.
         checks = []
@@ -42,6 +45,7 @@ class TestCheckBranch:
         assert m_get_branch_name.call_count == 0
         assert m_re_match.call_count == 0
 
+    @pytest.mark.benchmark
     def test_check_branch_with_different_check(self, mocker):
         # Must NOT call get_branch_name, re.match with not `branch`.
         checks = [{
@@ -61,6 +65,7 @@ class TestCheckBranch:
         assert m_get_branch_name.call_count == 0
         assert m_re_match.call_count == 0
 
+    @pytest.mark.benchmark
     def test_check_branch_with_len0_regex(self, mocker, capfd):
         # Must NOT call get_branch_name, re.match with `regex` with length 0.
         checks = [
@@ -84,6 +89,7 @@ class TestCheckBranch:
         out, _ = capfd.readouterr()
         assert "Not found regex for branch naming." in out
 
+    @pytest.mark.benchmark
     def test_check_branch_with_result_none(self, mocker):
         # Must call print_error_message, print_suggestion when re.match returns NONE.
         checks = [{
@@ -115,6 +121,7 @@ class TestCheckBranch:
 
 
 class TestCheckMergeBase:
+    @pytest.mark.benchmark
     def test_check_merge_base_with_empty_checks(self, mocker):
         checks = []
         m_check_merge = mocker.patch(f"{LOCATION}.check_merge_base")
@@ -122,7 +129,7 @@ class TestCheckMergeBase:
         assert retval == PASS
         assert m_check_merge.call_count == 0
 
-
+    @pytest.mark.benchmark
     def test_check_merge_base_with_empty_regex(self, mocker):
         checks = [{
             "check": "merge_base",
@@ -133,6 +140,7 @@ class TestCheckMergeBase:
         assert retval == PASS
         assert m_check_merge.call_count == 0
 
+    @pytest.mark.benchmark
     def test_check_merge_base_with_different_check(self, mocker):
         checks = [{
             "check": "branch",
@@ -143,6 +151,7 @@ class TestCheckMergeBase:
         assert retval == PASS
         assert m_check_merge.call_count == 0
 
+    @pytest.mark.benchmark
     def test_check_merge_base_fail_with_messages(self, mocker, capfd):
         checks = [{
             "check": "merge_base",

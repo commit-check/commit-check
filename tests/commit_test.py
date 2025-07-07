@@ -1,3 +1,4 @@
+import pytest
 from commit_check import PASS, FAIL
 from commit_check.commit import check_commit_msg, get_default_commit_msg_file, read_commit_msg, check_commit_signoff
 
@@ -9,11 +10,13 @@ LOCATION = "commit_check.commit"
 MSG_FILE = '.git/COMMIT_EDITMSG'
 
 
+@pytest.mark.benchmark
 def test_get_default_commit_msg_file(mocker):
     retval = get_default_commit_msg_file()
     assert retval == ".git/COMMIT_EDITMSG"
 
 
+@pytest.mark.benchmark
 def test_read_commit_msg_from_existing_file(tmp_path):
     # Create a temporary file with a known content
     commit_msg_content = "Test commit message content."
@@ -24,12 +27,14 @@ def test_read_commit_msg_from_existing_file(tmp_path):
     assert result == commit_msg_content
 
 
+@pytest.mark.benchmark
 def test_read_commit_msg_file_not_found(mocker):
     m_commits_info = mocker.patch('commit_check.util.get_commit_info', return_value='mocked_commits_info')
     read_commit_msg("non_existent_file.txt")
     assert m_commits_info.call_count == 0
 
 
+@pytest.mark.benchmark
 def test_check_commit_msg_no_commit_msg_file(mocker):
     mock_get_default_commit_msg_file = mocker.patch(
         "commit_check.commit.get_default_commit_msg_file",
@@ -49,6 +54,7 @@ def test_check_commit_msg_no_commit_msg_file(mocker):
     assert result == 0
 
 
+@pytest.mark.benchmark
 def test_check_commit_with_empty_checks(mocker):
     checks = []
     m_re_match = mocker.patch(
@@ -60,6 +66,7 @@ def test_check_commit_with_empty_checks(mocker):
     assert m_re_match.call_count == 0
 
 
+@pytest.mark.benchmark
 def test_check_commit_with_different_check(mocker):
     checks = [{
         "check": "branch",
@@ -74,6 +81,7 @@ def test_check_commit_with_different_check(mocker):
     assert m_re_match.call_count == 0
 
 
+@pytest.mark.benchmark
 def test_check_commit_with_len0_regex(mocker, capfd):
     checks = [
         {
@@ -92,6 +100,7 @@ def test_check_commit_with_len0_regex(mocker, capfd):
     assert "Not found regex for commit message." in out
 
 
+@pytest.mark.benchmark
 def test_check_commit_with_result_none(mocker):
     checks = [{
         "check": "message",
@@ -116,6 +125,7 @@ def test_check_commit_with_result_none(mocker):
     assert m_print_suggestion.call_count == 1
 
 
+@pytest.mark.benchmark
 def test_check_commit_signoff(mocker):
     checks = [{
         "check": "commit_signoff",
@@ -140,6 +150,7 @@ def test_check_commit_signoff(mocker):
     assert m_print_suggestion.call_count == 1
 
 
+@pytest.mark.benchmark
 def test_check_commit_signoff_with_empty_regex(mocker):
     checks = [{
         "check": "commit_signoff",
@@ -156,6 +167,7 @@ def test_check_commit_signoff_with_empty_regex(mocker):
     assert m_re_match.call_count == 0
 
 
+@pytest.mark.benchmark
 def test_check_commit_signoff_with_empty_checks(mocker):
     checks = []
     m_re_match = mocker.patch(

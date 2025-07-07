@@ -3,6 +3,7 @@ import pytest
 from commit_check.error import error_handler, log_and_exit
 
 
+@pytest.mark.benchmark
 def test_error_handler_RuntimeError():
     with pytest.raises(SystemExit) as exit_info:
         with error_handler():
@@ -10,6 +11,7 @@ def test_error_handler_RuntimeError():
     assert exit_info.value.code == 1
 
 
+@pytest.mark.benchmark
 def test_error_handler_KeyboardInterrupt():
     with pytest.raises(SystemExit) as exit_info:
         with error_handler():
@@ -17,6 +19,7 @@ def test_error_handler_KeyboardInterrupt():
     assert exit_info.value.code == 130
 
 
+@pytest.mark.benchmark
 def test_error_handler_unexpected_error():
     with pytest.raises(SystemExit) as exit_info:
         with error_handler():
@@ -24,6 +27,7 @@ def test_error_handler_unexpected_error():
     assert exit_info.value.code == 3
 
 
+@pytest.mark.benchmark
 def test_error_handler_cannot_access(mocker):
     with pytest.raises(SystemExit):
         store_dir = "/fake/commit-check"
@@ -50,6 +54,7 @@ def test_error_handler_cannot_access(mocker):
         mock_open().write.assert_any_call(f"Failed to write to log at {log_path}\n")
 
 
+@pytest.mark.benchmark
 @pytest.mark.xfail
 def test_log_and_exit(monkeypatch):
     monkeypatch.setenv("COMMIT_CHECK_HOME", "")

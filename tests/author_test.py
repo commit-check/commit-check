@@ -1,3 +1,4 @@
+import pytest
 from commit_check import PASS, FAIL
 from commit_check.author import check_author
 
@@ -11,6 +12,7 @@ class TestAuthor:
         fake_author_value_an = "fake_author_name"
         fake_accented_author_value_an = "fáké_áúthór_námé"
 
+        @pytest.mark.benchmark
         def test_check_author(self, mocker):
             # Must call get_commit_info, re.match.
             checks = [{
@@ -30,6 +32,7 @@ class TestAuthor:
             assert m_get_commit_info.call_count == 1
             assert m_re_match.call_count == 1
 
+        @pytest.mark.benchmark
         def test_check_author_with_accented_letters(self, mocker):
             # Must call get_commit_info, re.match.
             checks = [{
@@ -49,6 +52,7 @@ class TestAuthor:
             assert m_get_commit_info.call_count == 1
             assert m_re_match.call_count == 1
 
+        @pytest.mark.benchmark
         def test_check_author_with_empty_checks(self, mocker):
             # Must NOT call get_commit_info, re.match. with `checks` param with length 0.
             checks = []
@@ -65,6 +69,7 @@ class TestAuthor:
             assert m_get_commit_info.call_count == 0
             assert m_re_match.call_count == 0
 
+        @pytest.mark.benchmark
         def test_check_author_with_different_check(self, mocker):
             # Must NOT call get_commit_info, re.match with not `author_name`.
             checks = [{
@@ -84,6 +89,7 @@ class TestAuthor:
             assert m_get_commit_info.call_count == 0
             assert m_re_match.call_count == 0
 
+        @pytest.mark.benchmark
         def test_check_author_with_len0_regex(self, mocker, capfd):
             # Must NOT call get_commit_info, re.match with `regex` with length 0.
             checks = [
@@ -107,6 +113,7 @@ class TestAuthor:
             out, _ = capfd.readouterr()
             assert "Not found regex for author_name." in out
 
+        @pytest.mark.benchmark
         def test_check_author_with_result_none(self, mocker):
             # Must call print_error_message, print_suggestion when re.match returns NONE.
             checks = [{
@@ -140,6 +147,7 @@ class TestAuthor:
         # used by get_commit_info mock
         fake_author_value_ae = "fake_author_email"
 
+        @pytest.mark.benchmark
         def test_check_author(self, mocker):
             # Must call get_commit_info, re.match.
             checks = [{
@@ -159,6 +167,7 @@ class TestAuthor:
             assert m_get_commit_info.call_count == 1
             assert m_re_match.call_count == 1
 
+        @pytest.mark.benchmark
         def test_check_author_with_empty_checks(self, mocker):
             # Must NOT call get_commit_info, re.match. with `checks` param with length 0.
             checks = []
@@ -175,6 +184,7 @@ class TestAuthor:
             assert m_get_commit_info.call_count == 0
             assert m_re_match.call_count == 0
 
+        @pytest.mark.benchmark
         def test_check_author_with_different_check(self, mocker):
             # Must NOT call get_commit_info, re.match with not `author_email`.
             checks = [{
@@ -194,6 +204,7 @@ class TestAuthor:
             assert m_get_commit_info.call_count == 0
             assert m_re_match.call_count == 0
 
+        @pytest.mark.benchmark
         def test_check_author_with_len0_regex(self, mocker, capfd):
             # Must NOT call get_commit_info, re.match with `regex` with length 0.
             checks = [
@@ -217,6 +228,7 @@ class TestAuthor:
             out, _ = capfd.readouterr()
             assert "Not found regex for author_email." in out
 
+        @pytest.mark.benchmark
         def test_check_author_with_result_none(self, mocker):
             # Must call print_error_message, print_suggestion when re.match returns NONE.
             checks = [{
