@@ -7,6 +7,7 @@ CMD = "commit-check"
 
 
 class TestMain:
+    @pytest.mark.benchmark
     @pytest.mark.parametrize("argv, check_commit_call_count, check_branch_call_count, check_author_call_count, check_commit_signoff_call_count, check_merge_base_call_count", [
         ([CMD, "--message"], 1, 0, 0, 0, 0),
         ([CMD, "--branch"], 0, 1, 0, 0, 0),
@@ -53,6 +54,7 @@ class TestMain:
         assert m_check_commit_signoff.call_count == check_commit_signoff_call_count
         assert m_check_merge_base.call_count == check_merge_base_call_count
 
+    @pytest.mark.benchmark
     def test_main_help(self, mocker, capfd):
         mocker.patch(
             "commit_check.main.validate_config",
@@ -78,6 +80,7 @@ class TestMain:
         stdout, _ = capfd.readouterr()
         assert "usage: " in stdout
 
+    @pytest.mark.benchmark
     def test_main_version(self, mocker):
         mocker.patch(
             "commit_check.main.validate_config",
@@ -101,6 +104,7 @@ class TestMain:
         assert m_check_commit_signoff.call_count == 0
         assert m_check_merge_base.call_count == 0
 
+    @pytest.mark.benchmark
     def test_main_validate_config_ret_none(self, mocker):
         mocker.patch(
             "commit_check.main.validate_config",
@@ -116,6 +120,7 @@ class TestMain:
         assert m_check_commit.call_count == 1
         assert m_check_commit.call_args[0][0] == DEFAULT_CONFIG["checks"]
 
+    @pytest.mark.benchmark
     @pytest.mark.parametrize(
         "argv, message_result, branch_result, author_name_result, author_email_result, commit_signoff_result, merge_base_result, final_result",
         [

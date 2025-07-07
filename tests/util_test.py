@@ -15,6 +15,7 @@ from unittest.mock import MagicMock
 
 class TestUtil:
     class TestGetBranchName:
+        @pytest.mark.benchmark
         def test_get_branch_name(self, mocker):
             # Must call cmd_output with given argument.
             m_cmd_output = mocker.patch(
@@ -28,6 +29,7 @@ class TestUtil:
             ]
             assert retval == "fake_branch_name"
 
+        @pytest.mark.benchmark
         def test_get_branch_name_with_exception(self, mocker):
             # Must return empty string when exception raises in cmd_output.
             m_cmd_output = mocker.patch(
@@ -48,6 +50,7 @@ class TestUtil:
             assert retval == ""
 
     class TestHasCommits:
+        @pytest.mark.benchmark
         def test_has_commits_true(self, mocker):
             # Must return True when git rev-parse HEAD succeeds
             m_subprocess_run = mocker.patch(
@@ -66,6 +69,7 @@ class TestUtil:
             }
             assert retval is True
 
+        @pytest.mark.benchmark
         def test_has_commits_false(self, mocker):
             # Must return False when git rev-parse HEAD fails
             m_subprocess_run = mocker.patch(
@@ -85,6 +89,7 @@ class TestUtil:
             assert retval is False
 
     class TestGitMergeBase:
+        @pytest.mark.benchmark
         @pytest.mark.parametrize("returncode,expected", [
             (0, 0),  # ancestor exists
             (1, 1),  # no ancestor
@@ -109,6 +114,7 @@ class TestUtil:
             assert result == expected
 
     class TestGetCommitInfo:
+        @pytest.mark.benchmark
         @pytest.mark.parametrize("format_string", [
             ("s"),
             ("an"),
@@ -133,6 +139,7 @@ class TestUtil:
             ]
             assert retval == " fake commit message "
 
+        @pytest.mark.benchmark
         def test_get_commit_info_no_commits(self, mocker):
             # Must return 'Repo has no commits yet.' when there are no commits.
             m_has_commits = mocker.patch(
@@ -149,6 +156,7 @@ class TestUtil:
             assert m_cmd_output.call_count == 0  # Should not call cmd_output
             assert retval == "Repo has no commits yet."
 
+        @pytest.mark.benchmark
         def test_get_commit_info_with_exception(self, mocker):
             # Must return empty string when exception raises in cmd_output.
             m_has_commits = mocker.patch(
@@ -182,6 +190,7 @@ class TestUtil:
                 self.stdout = stdout
                 self.stderr = stderr
 
+        @pytest.mark.benchmark
         def test_cmd_output(self, mocker):
             # Must subprocess.run with given argument.
             m_subprocess_run = mocker.patch(
@@ -192,6 +201,7 @@ class TestUtil:
             assert m_subprocess_run.call_count == 1
             assert retval == "ok"
 
+        @pytest.mark.benchmark
         @pytest.mark.parametrize("returncode, stdout, stderr", [
             (1, "ok", "err"),
             (0, None, "err"),
@@ -216,6 +226,7 @@ class TestUtil:
                 "stdout": PIPE
             }
 
+        @pytest.mark.benchmark
         @pytest.mark.parametrize("returncode, stdout, stderr", [
             (1, "ok", ""),
             (0, None, ""),
@@ -241,6 +252,7 @@ class TestUtil:
             }
 
     class TestValidateConfig:
+        @pytest.mark.benchmark
         def test_validate_config(self, mocker):
             # Must call yaml.safe_load.
             mocker.patch("builtins.open")
@@ -253,6 +265,7 @@ class TestUtil:
             assert m_yaml_safe_load.call_count == 1
             assert retval == dummy_resp
 
+        @pytest.mark.benchmark
         def test_validate_config_file_not_found(self, mocker):
             # Must return empty dictionary when FileNotFoundError raises in built-in open.
             mocker.patch("builtins.open").side_effect = FileNotFoundError
@@ -262,6 +275,7 @@ class TestUtil:
             assert retval == {}
 
     class TestPrintErrorMessage:
+        @pytest.mark.benchmark
         def test_print_error_header(self, capfd):
             # Must print on stdout with given argument.
             print_error_header()
@@ -269,6 +283,7 @@ class TestUtil:
             assert "Commit rejected by Commit-Check" in stdout
             assert "Commit rejected." in stdout
 
+        @pytest.mark.benchmark
         @pytest.mark.parametrize("check_type, type_failed_msg", [
             ("message", "check failed =>"),
             ("branch", "check failed =>"),
@@ -294,12 +309,14 @@ class TestUtil:
             assert dummy_error in stdout
 
     class TestPrintSuggestion:
+        @pytest.mark.benchmark
         def test_print_suggestion(self, capfd):
             # Must print on stdout with given argument.
             print_suggestion("dummy suggest")
             stdout, _ = capfd.readouterr()
             assert "Suggest:" in stdout
 
+        @pytest.mark.benchmark
         def test_print_suggestion_exit1(self, capfd):
             # Must exit with 1 when "" passed
             with pytest.raises(SystemExit) as e:
