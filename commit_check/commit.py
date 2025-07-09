@@ -24,7 +24,7 @@ def read_commit_msg(commit_msg_file) -> str:
 def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
     """Check commit message against the provided checks."""
     if has_commits() is False:
-        return PASS
+        return PASS # pragma: no cover
 
     if commit_msg_file is None or commit_msg_file == "":
         commit_msg_file = get_default_commit_msg_file()
@@ -56,7 +56,7 @@ def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
 
 def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
     if has_commits() is False:
-        return PASS
+        return PASS # pragma: no cover
 
     if commit_msg_file is None or commit_msg_file == "":
         commit_msg_file = get_default_commit_msg_file()

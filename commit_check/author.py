@@ -6,7 +6,7 @@ from commit_check.util import get_commit_info, has_commits, print_error_header, 
 
 def check_author(checks: list, check_type: str) -> int:
     if has_commits() is False:
-        return PASS
+        return PASS # pragma: no cover
 
     for check in checks:
         if check['check'] == check_type:
