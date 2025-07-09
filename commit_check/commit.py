@@ -56,9 +56,6 @@ def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
 
 def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
     if has_commits() is False:
-        print(
-            f"{YELLOW}No commits found in repository. Skipping commit signoff check.{RESET_COLOR}",
-        )
         return PASS
 
     if commit_msg_file is None or commit_msg_file == "":
