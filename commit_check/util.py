@@ -22,8 +22,9 @@ def get_branch_name() -> str:
     :returns: A `str` describing the current branch name.
     """
     try:
-        commands = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
-        branch_name = cmd_output(commands)
+        # Git 2.22 and above supports `git branch --show-current`
+        commands = ['git', 'branch', '--show-current']
+        branch_name = cmd_output(commands) or "HEAD"
     except CalledProcessError:
         branch_name = ''
     return branch_name.strip()

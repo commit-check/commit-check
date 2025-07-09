@@ -25,7 +25,7 @@ class TestUtil:
             retval = get_branch_name()
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
-                "git", "rev-parse", "--abbrev-ref", "HEAD"
+                "git", "branch", "--show-current"
             ]
             assert retval == "fake_branch_name"
 
@@ -45,7 +45,7 @@ class TestUtil:
             retval = get_branch_name()
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
-                "git", "rev-parse", "--abbrev-ref", "HEAD"
+                "git", "branch", "--show-current"
             ]
             assert retval == ""
 
