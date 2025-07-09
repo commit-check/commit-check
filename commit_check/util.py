@@ -24,7 +24,7 @@ def get_branch_name() -> str:
     try:
         # Git 2.22 and above supports `git branch --show-current`
         commands = ['git', 'branch', '--show-current']
-        branch_name = cmd_output(commands)
+        branch_name = cmd_output(commands) or "HEAD"
     except CalledProcessError:
         branch_name = ''
     return branch_name.strip()
