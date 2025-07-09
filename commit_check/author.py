@@ -1,10 +1,13 @@
 """Check git author name and email"""
 import re
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import get_commit_info, print_error_header, print_error_message, print_suggestion
+from commit_check.util import get_commit_info, has_commits, print_error_header, print_error_message, print_suggestion
 
 
 def check_author(checks: list, check_type: str) -> int:
+    if has_commits() is False:
+        return PASS
+
     for check in checks:
         if check['check'] == check_type:
             if check['regex'] == "":

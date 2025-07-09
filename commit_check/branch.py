@@ -1,7 +1,7 @@
 """Check git branch naming convention."""
 import re
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import get_branch_name, git_merge_base, print_error_header, print_error_message, print_suggestion
+from commit_check.util import get_branch_name, git_merge_base, print_error_header, print_error_message, print_suggestion, has_commits
 
 
 def check_branch(checks: list) -> int:
@@ -33,6 +33,9 @@ def check_merge_base(checks: list) -> int:
 
     :returns PASS(0) if merge base check succeeds, FAIL(1) otherwise
     """
+    if has_commits() is False:
+        return PASS
+
     for check in checks:
         if check['check'] == 'merge_base':
             if check['regex'] == "":

@@ -2,7 +2,7 @@
 import re
 from pathlib import PurePath
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import cmd_output, get_commit_info, print_error_header, print_error_message, print_suggestion
+from commit_check.util import cmd_output, get_commit_info, print_error_header, print_error_message, print_suggestion, has_commits
 
 
 def get_default_commit_msg_file() -> str:
@@ -22,6 +22,10 @@ def read_commit_msg(commit_msg_file) -> str:
 
 
 def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
+    """Check commit message against the provided checks."""
+    if has_commits() is False:
+        return PASS
+
     if commit_msg_file is None or commit_msg_file == "":
         commit_msg_file = get_default_commit_msg_file()
 
@@ -51,6 +55,12 @@ def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
 
 
 def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
+    if has_commits() is False:
+        print(
+            f"{YELLOW}No commits found in repository. Skipping commit signoff check.{RESET_COLOR}",
+        )
+        return PASS
+
     if commit_msg_file is None or commit_msg_file == "":
         commit_msg_file = get_default_commit_msg_file()
 
