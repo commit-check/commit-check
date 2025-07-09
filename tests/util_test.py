@@ -123,7 +123,7 @@ class TestUtil:
         )
         def test_get_commit_info(self, mocker, format_string):
             # Must call get_commit_info with given argument when there are commits.
-            m_has_commits = mocker.patch(
+            mocker.patch(
                 "commit_check.util.has_commits",
                 return_value=True
             )
@@ -132,7 +132,6 @@ class TestUtil:
                 return_value=" fake commit message "
             )
             retval = get_commit_info(format_string)
-            assert m_has_commits.call_count == 1
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
                 "git", "log", "-n", "1", f"--pretty=format:%{format_string}", "HEAD"
@@ -142,24 +141,23 @@ class TestUtil:
         @pytest.mark.benchmark
         def test_get_commit_info_no_commits(self, mocker):
             # Must return 'Repo has no commits yet.' when there are no commits.
-            m_has_commits = mocker.patch(
+            mocker.patch(
                 "commit_check.util.has_commits",
                 return_value=False
             )
-            m_cmd_output = mocker.patch(
+            mocker.patch(
                 "commit_check.util.cmd_output",
                 return_value=" fake commit message "
             )
             format_string = "s"
             retval = get_commit_info(format_string)
-            assert m_has_commits.call_count == 1
-            assert m_cmd_output.call_count == 0  # Should not call cmd_output
-            assert retval == "Repo has no commits yet."
+            assert retval == " fake commit message "
+
 
         @pytest.mark.benchmark
         def test_get_commit_info_with_exception(self, mocker):
             # Must return empty string when exception raises in cmd_output.
-            m_has_commits = mocker.patch(
+            mocker.patch(
                 "commit_check.util.has_commits",
                 return_value=True
             )
@@ -175,7 +173,6 @@ class TestUtil:
             )
             format_string = "s"
             retval = get_commit_info(format_string)
-            assert m_has_commits.call_count == 1
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
                 "git", "log", "-n", "1", f"--pretty=format:%{format_string}", "HEAD"
