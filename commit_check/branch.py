@@ -34,7 +34,7 @@ def check_merge_base(checks: list) -> int:
     :returns PASS(0) if merge base check succeeds, FAIL(1) otherwise
     """
     if has_commits() is False:
-        return PASS
+        return PASS # pragma: no cover
 
     for check in checks:
         if check['check'] == 'merge_base':
