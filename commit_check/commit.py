@@ -101,7 +101,7 @@ def check_imperative(checks: list, commit_msg_file: str = "") -> int:
         commit_msg_file = get_default_commit_msg_file()
 
     for check in checks:
-        if check['check'] == 'imperative_mood':
+        if check['check'] == 'imperative':
             commit_msg = read_commit_msg(commit_msg_file)
 
             # Extract the subject line (first line of commit message)
@@ -118,7 +118,7 @@ def check_imperative(checks: list, commit_msg_file: str = "") -> int:
                 description = subject
 
             # Check if the description uses imperative mood
-            if not _is_imperative_mood(description):
+            if not _is_imperative(description):
                 if not print_error_header.has_been_called:
                     print_error_header() # pragma: no cover
                 print_error_message(
@@ -132,7 +132,7 @@ def check_imperative(checks: list, commit_msg_file: str = "") -> int:
     return PASS
 
 
-def _is_imperative_mood(description: str) -> bool:
+def _is_imperative(description: str) -> bool:
     """Check if a description uses imperative mood."""
     if not description:
         return True

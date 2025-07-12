@@ -183,7 +183,7 @@ def test_check_commit_signoff_with_empty_checks(mocker):
 def test_check_imperative_pass(mocker):
     """Test imperative mood check passes for valid imperative mood."""
     checks = [{
-        "check": "imperative_mood",
+        "check": "imperative",
         "regex": "",
         "error": "Commit message should use imperative mood",
         "suggest": "Use imperative mood"
@@ -202,7 +202,7 @@ def test_check_imperative_pass(mocker):
 def test_check_imperative_fail_past_tense(mocker):
     """Test imperative mood check fails for past tense."""
     checks = [{
-        "check": "imperative_mood",
+        "check": "imperative",
         "regex": "",
         "error": "Commit message should use imperative mood",
         "suggest": "Use imperative mood"
@@ -230,7 +230,7 @@ def test_check_imperative_fail_past_tense(mocker):
 def test_check_imperative_fail_present_continuous(mocker):
     """Test imperative mood check fails for present continuous."""
     checks = [{
-        "check": "imperative_mood",
+        "check": "imperative",
         "regex": "",
         "error": "Commit message should use imperative mood",
         "suggest": "Use imperative mood"
@@ -258,7 +258,7 @@ def test_check_imperative_fail_present_continuous(mocker):
 def test_check_imperative_skip_merge_commit(mocker):
     """Test imperative mood check skips merge commits."""
     checks = [{
-        "check": "imperative_mood",
+        "check": "imperative",
         "regex": "",
         "error": "Commit message should use imperative mood",
         "suggest": "Use imperative mood"
@@ -295,7 +295,7 @@ def test_check_imperative_different_check_type(mocker):
 def test_check_imperative_no_commits(mocker):
     """Test imperative mood check passes when there are no commits."""
     checks = [{
-        "check": "imperative_mood",
+        "check": "imperative",
         "regex": "",
         "error": "Commit message should use imperative mood",
         "suggest": "Use imperative mood"
@@ -323,9 +323,9 @@ def test_check_imperative_empty_checks(mocker):
 
 
 @pytest.mark.benchmark
-def test_is_imperative_mood_valid_cases():
-    """Test _is_imperative_mood function with valid imperative mood cases."""
-    from commit_check.commit import _is_imperative_mood
+def test_is_imperative_valid_cases():
+    """Test _is_imperative function with valid imperative mood cases."""
+    from commit_check.commit import _is_imperative
 
     valid_cases = [
         "Add new feature",
@@ -352,13 +352,13 @@ def test_is_imperative_mood_valid_cases():
     ]
 
     for case in valid_cases:
-        assert _is_imperative_mood(case), f"'{case}' should be imperative mood"
+        assert _is_imperative(case), f"'{case}' should be imperative mood"
 
 
 @pytest.mark.benchmark
-def test_is_imperative_mood_invalid_cases():
-    """Test _is_imperative_mood function with invalid imperative mood cases."""
-    from commit_check.commit import _is_imperative_mood
+def test_is_imperative_invalid_cases():
+    """Test _is_imperative function with invalid imperative mood cases."""
+    from commit_check.commit import _is_imperative
 
     invalid_cases = [
         "Added new feature",
@@ -397,4 +397,4 @@ def test_is_imperative_mood_invalid_cases():
     ]
 
     for case in invalid_cases:
-        assert not _is_imperative_mood(case), f"'{case}' should not be imperative mood"
+        assert not _is_imperative(case), f"'{case}' should not be imperative mood"
