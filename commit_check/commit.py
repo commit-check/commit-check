@@ -92,7 +92,7 @@ def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
     return PASS
 
 
-def check_imperative_mood(checks: list, commit_msg_file: str = "") -> int:
+def check_imperative(checks: list, commit_msg_file: str = "") -> int:
     """Check if commit message uses imperative mood."""
     if has_commits() is False:
         return PASS # pragma: no cover

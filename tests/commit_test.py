@@ -1,6 +1,6 @@
 import pytest
 from commit_check import PASS, FAIL
-from commit_check.commit import check_commit_msg, get_default_commit_msg_file, read_commit_msg, check_commit_signoff, check_imperative_mood
+from commit_check.commit import check_commit_msg, get_default_commit_msg_file, read_commit_msg, check_commit_signoff, check_imperative
 
 # used by get_commit_info mock
 FAKE_BRANCH_NAME = "fake_commits_info"
@@ -180,7 +180,7 @@ def test_check_commit_signoff_with_empty_checks(mocker):
 
 
 @pytest.mark.benchmark
-def test_check_imperative_mood_pass(mocker):
+def test_check_imperative_pass(mocker):
     """Test imperative mood check passes for valid imperative mood."""
     checks = [{
         "check": "imperative_mood",
@@ -194,12 +194,12 @@ def test_check_imperative_mood_pass(mocker):
         return_value="feat: Add new feature\n\nThis adds a new feature to the application."
     )
 
-    retval = check_imperative_mood(checks, MSG_FILE)
+    retval = check_imperative(checks, MSG_FILE)
     assert retval == PASS
 
 
 @pytest.mark.benchmark
-def test_check_imperative_mood_fail_past_tense(mocker):
+def test_check_imperative_fail_past_tense(mocker):
     """Test imperative mood check fails for past tense."""
     checks = [{
         "check": "imperative_mood",
@@ -220,14 +220,14 @@ def test_check_imperative_mood_fail_past_tense(mocker):
         f"{LOCATION}.print_suggestion"
     )
 
-    retval = check_imperative_mood(checks, MSG_FILE)
+    retval = check_imperative(checks, MSG_FILE)
     assert retval == FAIL
     assert m_print_error_message.call_count == 1
     assert m_print_suggestion.call_count == 1
 
 
 @pytest.mark.benchmark
-def test_check_imperative_mood_fail_present_continuous(mocker):
+def test_check_imperative_fail_present_continuous(mocker):
     """Test imperative mood check fails for present continuous."""
     checks = [{
         "check": "imperative_mood",
@@ -248,14 +248,14 @@ def test_check_imperative_mood_fail_present_continuous(mocker):
         f"{LOCATION}.print_suggestion"
     )
 
-    retval = check_imperative_mood(checks, MSG_FILE)
+    retval = check_imperative(checks, MSG_FILE)
     assert retval == FAIL
     assert m_print_error_message.call_count == 1
     assert m_print_suggestion.call_count == 1
 
 
 @pytest.mark.benchmark
-def test_check_imperative_mood_skip_merge_commit(mocker):
+def test_check_imperative_skip_merge_commit(mocker):
     """Test imperative mood check skips merge commits."""
     checks = [{
         "check": "imperative_mood",
@@ -269,12 +269,12 @@ def test_check_imperative_mood_skip_merge_commit(mocker):
         return_value="Merge branch 'feature/test' into main"
     )
 
-    retval = check_imperative_mood(checks, MSG_FILE)
+    retval = check_imperative(checks, MSG_FILE)
     assert retval == PASS
 
 
 @pytest.mark.benchmark
-def test_check_imperative_mood_different_check_type(mocker):
+def test_check_imperative_different_check_type(mocker):
     """Test imperative mood check skips different check types."""
     checks = [{
         "check": "message",
@@ -286,13 +286,13 @@ def test_check_imperative_mood_different_check_type(mocker):
         return_value="feat: Added new feature"
     )
 
-    retval = check_imperative_mood(checks, MSG_FILE)
+    retval = check_imperative(checks, MSG_FILE)
     assert retval == PASS
     assert m_read_commit_msg.call_count == 0
 
 
 @pytest.mark.benchmark
-def test_check_imperative_mood_no_commits(mocker):
+def test_check_imperative_no_commits(mocker):
     """Test imperative mood check passes when there are no commits."""
     checks = [{
         "check": "imperative_mood",
@@ -303,12 +303,12 @@ def test_check_imperative_mood_no_commits(mocker):
 
     mocker.patch("commit_check.commit.has_commits", return_value=False)
 
-    retval = check_imperative_mood(checks, MSG_FILE)
+    retval = check_imperative(checks, MSG_FILE)
     assert retval == PASS
 
 
 @pytest.mark.benchmark
-def test_check_imperative_mood_empty_checks(mocker):
+def test_check_imperative_empty_checks(mocker):
     """Test imperative mood check with empty checks list."""
     checks = []
 
@@ -317,7 +317,7 @@ def test_check_imperative_mood_empty_checks(mocker):
         return_value="feat: Added new feature"
     )
 
-    retval = check_imperative_mood(checks, MSG_FILE)
+    retval = check_imperative(checks, MSG_FILE)
     assert retval == PASS
     assert m_read_commit_msg.call_count == 0
 
