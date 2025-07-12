@@ -564,6 +564,7 @@
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-author-email</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-commit-signoff</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-merge-base</span><span class="w"> </span><span class="c1"># requires download all git history</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-imperative</span>
 </code></pre></div>
 </div>
 <h3 id="running-as-cli">Running as CLI<a class="headerlink" href="#running-as-cli" title="Link to this heading">¶</a></h3>
@@ -583,7 +584,7 @@
 <h3 id="running-as-git-hooks">Running as Git Hooks<a class="headerlink" href="#running-as-git-hooks" title="Link to this heading">¶</a></h3>
 <p>To configure the hook, create a script file in the <code class="docutils literal notranslate"><span class="pre">.git/hooks/</span></code> directory.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="ch">#!/bin/sh</span>
-commit-check<span class="w"> </span>--message<span class="w"> </span>--branch<span class="w"> </span>--author-name<span class="w"> </span>--author-email<span class="w"> </span>--commit-signoff<span class="w"> </span>--merge-base
+commit-check<span class="w"> </span>--message<span class="w"> </span>--branch<span class="w"> </span>--author-name<span class="w"> </span>--author-email<span class="w"> </span>--commit-signoff<span class="w"> </span>--merge-base<span class="w"> </span>--imperative
 </code></pre></div>
 </div>
 <p>Save the script file as <code class="docutils literal notranslate"><span class="pre">pre-push</span></code> and make it executable:</p>

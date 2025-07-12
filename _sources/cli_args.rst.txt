@@ -2,6 +2,7 @@ commit-check --help
 ==============================
 
 usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-s] [-mb] [-d]
+                    [-i]
                     [commit_msg_file]
 
 Check commit message, branch naming, committer name, email, and more.
@@ -48,3 +49,7 @@ options:
 .. std:option:: -d, --dry-run
 
   -d, --dry-run         run checks without failing
+
+.. std:option:: -i, --imperative
+
+  -i, --imperative      check commit message uses imperative mood
