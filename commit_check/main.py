@@ -92,6 +92,14 @@ def get_parser() -> argparse.ArgumentParser:
         required=False,
     )
 
+    parser.add_argument(
+        '-i',
+        '--imperative',
+        help='check commit message uses imperative mood',
+        action="store_true",
+        required=False,
+    )
+
     return parser
 
 
@@ -122,6 +130,8 @@ def main() -> int:
             check_results.append(commit.check_commit_signoff(checks))
         if args.merge_base:
             check_results.append(branch.check_merge_base(checks))
+        if args.imperative:
+            check_results.append(commit.check_imperative(checks, args.commit_msg_file))
 
     return PASS if all(val == PASS for val in check_results) else FAIL
 

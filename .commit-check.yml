@@ -32,3 +32,8 @@ checks:
     regex: main # it can be master, develop, devel etc based on your project.
     error: Current branch is not rebased onto target branch
     suggest: Please ensure your branch is rebased with the target branch
+
+  - check: imperative
+    regex: '' # Not used for imperative mood check
+    error: 'Commit message should use imperative mood (e.g., "Add feature" not "Added feature")'
+    suggest: 'Use imperative mood in commit message like "Add", "Fix", "Update", "Remove"'

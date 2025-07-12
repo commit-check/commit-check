@@ -77,6 +77,7 @@ Running as pre-commit hook
         -   id: check-author-email
         -   id: check-commit-signoff
         -   id: check-merge-base # requires download all git history
+        -   id: check-imperative
 
 Running as CLI
 ~~~~~~~~~~~~~~
@@ -109,7 +110,7 @@ To configure the hook, create a script file in the ``.git/hooks/`` directory.
 .. code-block:: bash
 
     #!/bin/sh
-    commit-check --message --branch --author-name --author-email --commit-signoff --merge-base
+    commit-check --message --branch --author-name --author-email --commit-signoff --merge-base --imperative
 
 Save the script file as ``pre-push`` and make it executable:
 

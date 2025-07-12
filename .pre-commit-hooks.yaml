@@ -41,3 +41,10 @@
   args: [--merge-base]
   pass_filenames: false
   language: python
+- id: check-imperative
+  name: check imperative mood
+  description: ensures commit message uses imperative mood
+  entry: commit-check
+  args: [--imperative]
+  pass_filenames: true
+  language: python

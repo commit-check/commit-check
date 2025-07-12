@@ -54,6 +54,12 @@ DEFAULT_CONFIG = {
             'error': 'Current branch is not rebased onto target branch',
             'suggest': 'Please ensure your branch is rebased with the target branch',
         },
+        {
+            'check': 'imperative',
+            'regex': r'',  # Not used for imperative mood check
+            'error': 'Commit message should use imperative mood (e.g., "Add feature" not "Added feature")',
+            'suggest': 'Use imperative mood in commit message like "Add", "Fix", "Update", "Remove"',
+        },
     ],
 }
 
