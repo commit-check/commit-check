@@ -621,14 +621,14 @@ Suggest: please check your commit message whether matches above regex
 <p>Check Branch Naming Failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
-(c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-/ ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-__\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+ __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
 (_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
-|| E ||      || R ||      || R ||      || O ||      || R ||
-_.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
+   || E ||      || R ||      || R ||      || O ||      || R ||
+ _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
 (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-`-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+ `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
 Commit rejected.
 
@@ -641,14 +641,14 @@ Suggest: run command `git checkout -b type/branch_name`
 <p>Check Commit Signature Failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
-(c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-/ ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-__\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+ __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
 (_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
-|| E ||      || R ||      || R ||      || O ||      || R ||
-_.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
+   || E ||      || R ||      || R ||      || O ||      || R ||
+ _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
 (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-`-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+ `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
 Commit rejected.
 
@@ -656,6 +656,26 @@ Type commit_signoff check failed =&gt; c92ce259ff041c91859c7fb61afdbb391e769d0f
 It doesn&#39;t match regex: Signed-off-by:.*[A-Za-z0-9]\s+&lt;.+@.+&gt;
 Signed-off-by not found in latest commit
 Suggest: run command `git commit -m &quot;conventional commit message&quot; --signoff`
+</code></pre></div>
+</div>
+<p>Check Imperative Mood Failed</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
+
+  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+ __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
+   || E ||      || R ||      || R ||      || O ||      || R ||
+ _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
+(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
+ `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+
+Commit rejected.
+
+Type imperative check failed =&gt; Added file
+It doesn&#39;t match regex: imperative mood pattern
+Commit message should use imperative mood (e.g., &quot;Add feature&quot; not &quot;Added feature&quot;)
+Suggest: Use imperative mood in commit message like &quot;Add&quot;, &quot;Fix&quot;, &quot;Update&quot;, &quot;Remove&quot;
 </code></pre></div>
 </div>
 <h2 id="badging-your-repository">Badging your repository<a class="headerlink" href="#badging-your-repository" title="Link to this heading">¶</a></h2>
