@@ -1,6 +1,6 @@
 import pytest
 from commit_check import PASS, FAIL
-from commit_check.commit import check_commit_msg, get_default_commit_msg_file, read_commit_msg, check_commit_signoff
+from commit_check.commit import check_commit_msg, get_default_commit_msg_file, read_commit_msg, check_commit_signoff, check_imperative_mood
 
 # used by get_commit_info mock
 FAKE_BRANCH_NAME = "fake_commits_info"
@@ -177,3 +177,224 @@ def test_check_commit_signoff_with_empty_checks(mocker):
     retval = check_commit_signoff(checks)
     assert retval == PASS
     assert m_re_match.call_count == 0
+
+
+@pytest.mark.benchmark
+def test_check_imperative_mood_pass(mocker):
+    """Test imperative mood check passes for valid imperative mood."""
+    checks = [{
+        "check": "imperative_mood",
+        "regex": "",
+        "error": "Commit message should use imperative mood",
+        "suggest": "Use imperative mood"
+    }]
+
+    mocker.patch(
+        "commit_check.commit.read_commit_msg",
+        return_value="feat: Add new feature\n\nThis adds a new feature to the application."
+    )
+
+    retval = check_imperative_mood(checks, MSG_FILE)
+    assert retval == PASS
+
+
+@pytest.mark.benchmark
+def test_check_imperative_mood_fail_past_tense(mocker):
+    """Test imperative mood check fails for past tense."""
+    checks = [{
+        "check": "imperative_mood",
+        "regex": "",
+        "error": "Commit message should use imperative mood",
+        "suggest": "Use imperative mood"
+    }]
+
+    mocker.patch(
+        "commit_check.commit.read_commit_msg",
+        return_value="feat: Added new feature"
+    )
+
+    m_print_error_message = mocker.patch(
+        f"{LOCATION}.print_error_message"
+    )
+    m_print_suggestion = mocker.patch(
+        f"{LOCATION}.print_suggestion"
+    )
+
+    retval = check_imperative_mood(checks, MSG_FILE)
+    assert retval == FAIL
+    assert m_print_error_message.call_count == 1
+    assert m_print_suggestion.call_count == 1
+
+
+@pytest.mark.benchmark
+def test_check_imperative_mood_fail_present_continuous(mocker):
+    """Test imperative mood check fails for present continuous."""
+    checks = [{
+        "check": "imperative_mood",
+        "regex": "",
+        "error": "Commit message should use imperative mood",
+        "suggest": "Use imperative mood"
+    }]
+
+    mocker.patch(
+        "commit_check.commit.read_commit_msg",
+        return_value="feat: Adding new feature"
+    )
+
+    m_print_error_message = mocker.patch(
+        f"{LOCATION}.print_error_message"
+    )
+    m_print_suggestion = mocker.patch(
+        f"{LOCATION}.print_suggestion"
+    )
+
+    retval = check_imperative_mood(checks, MSG_FILE)
+    assert retval == FAIL
+    assert m_print_error_message.call_count == 1
+    assert m_print_suggestion.call_count == 1
+
+
+@pytest.mark.benchmark
+def test_check_imperative_mood_skip_merge_commit(mocker):
+    """Test imperative mood check skips merge commits."""
+    checks = [{
+        "check": "imperative_mood",
+        "regex": "",
+        "error": "Commit message should use imperative mood",
+        "suggest": "Use imperative mood"
+    }]
+
+    mocker.patch(
+        "commit_check.commit.read_commit_msg",
+        return_value="Merge branch 'feature/test' into main"
+    )
+
+    retval = check_imperative_mood(checks, MSG_FILE)
+    assert retval == PASS
+
+
+@pytest.mark.benchmark
+def test_check_imperative_mood_different_check_type(mocker):
+    """Test imperative mood check skips different check types."""
+    checks = [{
+        "check": "message",
+        "regex": "dummy_regex"
+    }]
+
+    m_read_commit_msg = mocker.patch(
+        "commit_check.commit.read_commit_msg",
+        return_value="feat: Added new feature"
+    )
+
+    retval = check_imperative_mood(checks, MSG_FILE)
+    assert retval == PASS
+    assert m_read_commit_msg.call_count == 0
+
+
+@pytest.mark.benchmark
+def test_check_imperative_mood_no_commits(mocker):
+    """Test imperative mood check passes when there are no commits."""
+    checks = [{
+        "check": "imperative_mood",
+        "regex": "",
+        "error": "Commit message should use imperative mood",
+        "suggest": "Use imperative mood"
+    }]
+
+    mocker.patch("commit_check.commit.has_commits", return_value=False)
+
+    retval = check_imperative_mood(checks, MSG_FILE)
+    assert retval == PASS
+
+
+@pytest.mark.benchmark
+def test_check_imperative_mood_empty_checks(mocker):
+    """Test imperative mood check with empty checks list."""
+    checks = []
+
+    m_read_commit_msg = mocker.patch(
+        "commit_check.commit.read_commit_msg",
+        return_value="feat: Added new feature"
+    )
+
+    retval = check_imperative_mood(checks, MSG_FILE)
+    assert retval == PASS
+    assert m_read_commit_msg.call_count == 0
+
+
+@pytest.mark.benchmark
+def test_is_imperative_mood_valid_cases():
+    """Test _is_imperative_mood function with valid imperative mood cases."""
+    from commit_check.commit import _is_imperative_mood
+
+    valid_cases = [
+        "Add new feature",
+        "Fix bug in authentication",
+        "Update documentation",
+        "Remove deprecated code",
+        "Refactor user service",
+        "Optimize database queries",
+        "Create new component",
+        "Delete unused files",
+        "Improve error handling",
+        "Enhance user experience",
+        "Implement new API",
+        "Configure CI/CD pipeline",
+        "Setup testing framework",
+        "Handle edge cases",
+        "Process user input",
+        "Validate form data",
+        "Transform data format",
+        "Initialize application",
+        "Load configuration",
+        "Save user preferences",
+        "",  # Empty description should pass
+    ]
+
+    for case in valid_cases:
+        assert _is_imperative_mood(case), f"'{case}' should be imperative mood"
+
+
+@pytest.mark.benchmark
+def test_is_imperative_mood_invalid_cases():
+    """Test _is_imperative_mood function with invalid imperative mood cases."""
+    from commit_check.commit import _is_imperative_mood
+
+    invalid_cases = [
+        "Added new feature",
+        "Fixed bug in authentication",
+        "Updated documentation",
+        "Removed deprecated code",
+        "Refactored user service",
+        "Optimized database queries",
+        "Created new component",
+        "Deleted unused files",
+        "Improved error handling",
+        "Enhanced user experience",
+        "Implemented new API",
+        "Adding new feature",
+        "Fixing bug in authentication",
+        "Updating documentation",
+        "Removing deprecated code",
+        "Refactoring user service",
+        "Optimizing database queries",
+        "Creating new component",
+        "Deleting unused files",
+        "Improving error handling",
+        "Enhancing user experience",
+        "Implementing new API",
+        "Adds new feature",
+        "Fixes bug in authentication",
+        "Updates documentation",
+        "Removes deprecated code",
+        "Refactors user service",
+        "Optimizes database queries",
+        "Creates new component",
+        "Deletes unused files",
+        "Improves error handling",
+        "Enhances user experience",
+        "Implements new API",
+    ]
+
+    for case in invalid_cases:
+        assert not _is_imperative_mood(case), f"'{case}' should not be imperative mood"
