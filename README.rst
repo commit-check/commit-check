@@ -109,23 +109,6 @@ To configure the hook, create a script file in the ``.git/hooks/`` directory.
 
 .. code-block:: bash
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     #!/bin/sh
     commit-check --message --branch --author-name --author-email --commit-signoff --merge-base --imperative
 
