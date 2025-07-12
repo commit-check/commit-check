@@ -3,6 +3,12 @@ import re
 from pathlib import PurePath
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
 from commit_check.util import cmd_output, get_commit_info, print_error_header, print_error_message, print_suggestion, has_commits
+from commit_check.imperatives import IMPERATIVES
+
+
+def _load_imperatives() -> set:
+    """Load imperative verbs from imperatives module."""
+    return IMPERATIVES
 
 
 def get_default_commit_msg_file() -> str:
@@ -134,36 +140,8 @@ def _is_imperative_mood(description: str) -> bool:
     # Get the first word of the description
     first_word = description.split()[0].lower()
 
-    # Common non-imperative words (explicit list of bad forms)
-    non_imperative_words = {
-        # Past tense forms
-        'added', 'updated', 'changed', 'modified', 'created', 'deleted', 'removed',
-        'fixed', 'improved', 'refactored', 'optimized', 'enhanced', 'implemented',
-        'configured', 'installed', 'uninstalled', 'upgraded', 'downgraded',
-        'merged', 'rebased', 'committed', 'pushed', 'pulled', 'cloned',
-        'tested', 'deployed', 'released', 'published', 'documented',
-        'formatted', 'linted', 'cleaned', 'organized', 'restructured',
-
-        # Present continuous forms
-        'adding', 'updating', 'changing', 'modifying', 'creating', 'deleting', 'removing',
-        'fixing', 'improving', 'refactoring', 'optimizing', 'enhancing', 'implementing',
-        'configuring', 'installing', 'uninstalling', 'upgrading', 'downgrading',
-        'merging', 'rebasing', 'committing', 'pushing', 'pulling', 'cloning',
-        'testing', 'deploying', 'releasing', 'publishing', 'documenting',
-        'formatting', 'linting', 'cleaning', 'organizing', 'restructuring',
-
-        # Third person singular forms
-        'adds', 'updates', 'changes', 'modifies', 'creates', 'deletes', 'removes',
-        'fixes', 'improves', 'refactors', 'optimizes', 'enhances', 'implements',
-        'configures', 'installs', 'uninstalls', 'upgrades', 'downgrades',
-        'merges', 'rebases', 'commits', 'pushes', 'pulls', 'clones',
-        'tests', 'deploys', 'releases', 'publishes', 'documents',
-        'formats', 'lints', 'cleans', 'organizes', 'restructures',
-    }
-
-    # Check if the first word is in our non-imperative list
-    if first_word in non_imperative_words:
-        return False
+    # Load imperative verbs from file
+    imperatives = _load_imperatives()
 
     # Check for common past tense pattern (-ed ending) but be more specific
     if (first_word.endswith('ed') and len(first_word) > 3 and
@@ -177,12 +155,27 @@ def _is_imperative_mood(description: str) -> bool:
 
     # Check for third person singular (-s ending) but be more specific
     # Only flag if it's clearly a verb in third person singular form
-    if (first_word.endswith('s') and len(first_word) > 3 and
-        not first_word.endswith('ss') and not first_word.endswith('us') and
-        not first_word.endswith('es') and first_word not in {'process', 'access', 'address', 'express', 'suppress', 'compress', 'assess'}):
-        # Additional check: if it's a common noun ending in 's', allow it
+    if first_word.endswith('s') and len(first_word) > 3:
+        # Common nouns ending in 's' that should be allowed
         common_nouns_ending_s = {'process', 'access', 'address', 'progress', 'express', 'stress', 'success', 'class', 'pass', 'mass', 'loss', 'cross', 'gross', 'boss', 'toss', 'less', 'mess', 'dress', 'press', 'bless', 'guess', 'chess', 'glass', 'grass', 'brass'}
-        if first_word not in common_nouns_ending_s:
-            return False
 
+        # Words ending in 'ss' or 'us' are usually not third person singular verbs
+        if first_word.endswith('ss') or first_word.endswith('us'):
+            return True  # Allow these
+
+        # If it's a common noun, allow it
+        if first_word in common_nouns_ending_s:
+            return True
+
+        # Otherwise, it's likely a third person singular verb
+        return False
+
+    # If we have imperatives loaded, check if the first word is imperative
+    if imperatives:
+        # Check if the first word is in our imperative list
+        if first_word in imperatives:
+            return True
+
+    # If word is not in imperatives list, apply some heuristics
+    # If it passes all the negative checks above, it's likely imperative
     return True
