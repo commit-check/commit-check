@@ -38,13 +38,13 @@ def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
     commit_msg = read_commit_msg(commit_msg_file)
 
     for check in checks:
-        if check['regex'] == "":
-            print(
-                f"{YELLOW}Not found regex for commit message. skip checking.{RESET_COLOR}",
-            )
-            return PASS
-
         if check['check'] == 'message':
+            if check['regex'] == "":
+                print(
+                    f"{YELLOW}Not found regex for commit message. skip checking.{RESET_COLOR}",
+                )
+                return PASS
+
             result = re.match(check['regex'], commit_msg)
             if result is None:
                 if not print_error_header.has_been_called:
