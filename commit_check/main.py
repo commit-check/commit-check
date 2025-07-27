@@ -77,6 +77,14 @@ def get_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        '-g',
+        '--gpg-signature',
+        help='check commit GPG signature',
+        action="store_true",
+        required=False,
+    )
+
+    parser.add_argument(
         '-mb',
         '--merge-base',
         help='check branch is rebased onto target branch',
@@ -128,6 +136,8 @@ def main() -> int:
             check_results.append(branch.check_branch(checks))
         if args.commit_signoff:
             check_results.append(commit.check_commit_signoff(checks))
+        if args.gpg_signature:
+            check_results.append(commit.check_commit_gpg_signature(checks))
         if args.merge_base:
             check_results.append(branch.check_merge_base(checks))
         if args.imperative:

@@ -92,6 +92,69 @@ def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
     return PASS
 
 
+def check_commit_gpg_signature(checks: list) -> int:
+    """Check if commit has a valid GPG signature."""
+    if has_commits() is False:
+        return PASS # pragma: no cover
+
+    for check in checks:
+        if check['check'] == 'gpg_signature':
+            # Get GPG signature status using git log --pretty=format:"%G?"
+            try:
+                gpg_status = cmd_output(['git', 'log', '--pretty=format:%G?', '-1']).strip()
+                commit_hash = get_commit_info("H")
+
+                # GPG status codes:
+                # G = good (valid) signature
+                # B = bad signature
+                # U = good signature with unknown validity
+                # X = good signature that has expired
+                # Y = good signature made by an expired key
+                # R = good signature made by a revoked key
+                # E = signature cannot be checked (e.g., missing public key)
+                # N = no signature
+
+                if gpg_status not in ['G', 'U']:  # Only accept good signatures
+                    if not print_error_header.has_been_called:
+                        print_error_header() # pragma: no cover
+
+                    error_msg = check['error']
+                    if gpg_status == 'N':
+                        error_msg = 'Commit is not signed with GPG'
+                    elif gpg_status == 'B':
+                        error_msg = 'Commit has a bad GPG signature'
+                    elif gpg_status == 'E':
+                        error_msg = 'GPG signature cannot be verified (missing public key?)'
+                    elif gpg_status == 'X':
+                        error_msg = 'GPG signature has expired'
+                    elif gpg_status == 'Y':
+                        error_msg = 'GPG signature made by an expired key'
+                    elif gpg_status == 'R':
+                        error_msg = 'GPG signature made by a revoked key'
+
+                    print_error_message(
+                        check['check'], f'GPG Status: {gpg_status}',
+                        error_msg, commit_hash,
+                    )
+                    if check['suggest']:
+                        print_suggestion(check['suggest'])
+                    return FAIL
+
+            except Exception:
+                # If we can't check GPG status, treat as failure
+                if not print_error_header.has_been_called:
+                    print_error_header() # pragma: no cover
+                print_error_message(
+                    check['check'], 'Unknown',
+                    'Unable to check GPG signature status', get_commit_info("H"),
+                )
+                if check['suggest']:
+                    print_suggestion(check['suggest'])
+                return FAIL
+
+    return PASS
+
+
 def check_imperative(checks: list, commit_msg_file: str = "") -> int:
     """Check if commit message uses imperative mood."""
     if has_commits() is False:

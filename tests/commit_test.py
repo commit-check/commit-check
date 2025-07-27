@@ -1,6 +1,6 @@
 import pytest
 from commit_check import PASS, FAIL
-from commit_check.commit import check_commit_msg, get_default_commit_msg_file, read_commit_msg, check_commit_signoff, check_imperative
+from commit_check.commit import check_commit_msg, get_default_commit_msg_file, read_commit_msg, check_commit_signoff, check_commit_gpg_signature, check_imperative
 
 # used by get_commit_info mock
 FAKE_BRANCH_NAME = "fake_commits_info"
@@ -398,3 +398,168 @@ def test_is_imperative_invalid_cases():
 
     for case in invalid_cases:
         assert not _is_imperative(case), f"'{case}' should not be imperative mood"
+
+
+# GPG Signature tests
+@pytest.mark.benchmark
+def test_check_commit_gpg_signature_valid(mocker):
+    """Test GPG signature check passes for good signature."""
+    checks = [{
+        "check": "gpg_signature",
+        "regex": "",
+        "error": "Commit does not have a valid GPG signature",
+        "suggest": "Use git commit -S to sign commits"
+    }]
+
+    mocker.patch("commit_check.util.cmd_output", return_value="G")
+    mocker.patch("commit_check.util.get_commit_info", return_value="abc123")
+
+    retval = check_commit_gpg_signature(checks)
+    assert retval == PASS
+
+
+@pytest.mark.benchmark
+def test_check_commit_gpg_signature_valid_unknown(mocker):
+    """Test GPG signature check passes for good signature with unknown validity."""
+    checks = [{
+        "check": "gpg_signature",
+        "regex": "",
+        "error": "Commit does not have a valid GPG signature",
+        "suggest": "Use git commit -S to sign commits"
+    }]
+
+    mocker.patch("commit_check.util.cmd_output", return_value="U")
+    mocker.patch("commit_check.util.get_commit_info", return_value="abc123")
+
+    retval = check_commit_gpg_signature(checks)
+    assert retval == PASS
+
+
+@pytest.mark.benchmark
+def test_check_commit_gpg_signature_no_signature(mocker):
+    """Test GPG signature check fails for unsigned commit."""
+    checks = [{
+        "check": "gpg_signature",
+        "regex": "",
+        "error": "Commit does not have a valid GPG signature",
+        "suggest": "Use git commit -S to sign commits"
+    }]
+
+    mocker.patch("commit_check.util.cmd_output", return_value="N")
+    mocker.patch("commit_check.util.get_commit_info", return_value="abc123")
+    m_print_error_message = mocker.patch(f"{LOCATION}.print_error_message")
+    m_print_suggestion = mocker.patch(f"{LOCATION}.print_suggestion")
+
+    retval = check_commit_gpg_signature(checks)
+    assert retval == FAIL
+    assert m_print_error_message.call_count == 1
+    assert m_print_suggestion.call_count == 1
+
+
+@pytest.mark.benchmark
+def test_check_commit_gpg_signature_bad_signature(mocker):
+    """Test GPG signature check fails for bad signature."""
+    checks = [{
+        "check": "gpg_signature",
+        "regex": "",
+        "error": "Commit does not have a valid GPG signature",
+        "suggest": "Use git commit -S to sign commits"
+    }]
+
+    mocker.patch("commit_check.util.cmd_output", return_value="B")
+    mocker.patch("commit_check.util.get_commit_info", return_value="abc123")
+    m_print_error_message = mocker.patch(f"{LOCATION}.print_error_message")
+    m_print_suggestion = mocker.patch(f"{LOCATION}.print_suggestion")
+
+    retval = check_commit_gpg_signature(checks)
+    assert retval == FAIL
+    assert m_print_error_message.call_count == 1
+    assert m_print_suggestion.call_count == 1
+
+
+@pytest.mark.benchmark
+def test_check_commit_gpg_signature_expired(mocker):
+    """Test GPG signature check fails for expired signature."""
+    checks = [{
+        "check": "gpg_signature",
+        "regex": "",
+        "error": "Commit does not have a valid GPG signature",
+        "suggest": "Use git commit -S to sign commits"
+    }]
+
+    mocker.patch("commit_check.util.cmd_output", return_value="X")
+    mocker.patch("commit_check.util.get_commit_info", return_value="abc123")
+    m_print_error_message = mocker.patch(f"{LOCATION}.print_error_message")
+    m_print_suggestion = mocker.patch(f"{LOCATION}.print_suggestion")
+
+    retval = check_commit_gpg_signature(checks)
+    assert retval == FAIL
+    assert m_print_error_message.call_count == 1
+    assert m_print_suggestion.call_count == 1
+
+
+@pytest.mark.benchmark
+def test_check_commit_gpg_signature_cannot_check(mocker):
+    """Test GPG signature check fails when signature cannot be verified."""
+    checks = [{
+        "check": "gpg_signature",
+        "regex": "",
+        "error": "Commit does not have a valid GPG signature",
+        "suggest": "Use git commit -S to sign commits"
+    }]
+
+    mocker.patch("commit_check.util.cmd_output", return_value="E")
+    mocker.patch("commit_check.util.get_commit_info", return_value="abc123")
+    m_print_error_message = mocker.patch(f"{LOCATION}.print_error_message")
+    m_print_suggestion = mocker.patch(f"{LOCATION}.print_suggestion")
+
+    retval = check_commit_gpg_signature(checks)
+    assert retval == FAIL
+    assert m_print_error_message.call_count == 1
+    assert m_print_suggestion.call_count == 1
+
+
+@pytest.mark.benchmark
+def test_check_commit_gpg_signature_exception(mocker):
+    """Test GPG signature check fails when git command throws exception."""
+    checks = [{
+        "check": "gpg_signature",
+        "regex": "",
+        "error": "Commit does not have a valid GPG signature",
+        "suggest": "Use git commit -S to sign commits"
+    }]
+
+    mocker.patch("commit_check.util.cmd_output", side_effect=Exception("Git command failed"))
+    mocker.patch("commit_check.util.get_commit_info", return_value="abc123")
+    m_print_error_message = mocker.patch(f"{LOCATION}.print_error_message")
+    m_print_suggestion = mocker.patch(f"{LOCATION}.print_suggestion")
+
+    retval = check_commit_gpg_signature(checks)
+    assert retval == FAIL
+    assert m_print_error_message.call_count == 1
+    assert m_print_suggestion.call_count == 1
+
+
+@pytest.mark.benchmark
+def test_check_commit_gpg_signature_no_commits(mocker):
+    """Test GPG signature check passes when no commits exist."""
+    checks = [{
+        "check": "gpg_signature",
+        "regex": "",
+        "error": "Commit does not have a valid GPG signature",
+        "suggest": "Use git commit -S to sign commits"
+    }]
+
+    mocker.patch("commit_check.commit.has_commits", return_value=False)
+
+    retval = check_commit_gpg_signature(checks)
+    assert retval == PASS
+
+
+@pytest.mark.benchmark
+def test_check_commit_gpg_signature_empty_checks(mocker):
+    """Test GPG signature check with empty checks list."""
+    checks = []
+
+    retval = check_commit_gpg_signature(checks)
+    assert retval == PASS

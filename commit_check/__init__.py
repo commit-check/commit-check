@@ -49,6 +49,12 @@ DEFAULT_CONFIG = {
             'suggest': 'run command `git commit -m "conventional commit message" --signoff`',
         },
         {
+            'check': 'gpg_signature',
+            'regex': r'',  # Not used for GPG signature check
+            'error': 'Commit does not have a valid GPG signature',
+            'suggest': 'run command `git commit -S` to sign your commits with GPG',
+        },
+        {
             'check': 'merge_base',
             'regex': r'main', # it can be master, develop, devel etc based on your project.
             'error': 'Current branch is not rebased onto target branch',
