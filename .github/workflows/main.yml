@@ -20,7 +20,7 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
@@ -64,7 +64,7 @@ jobs:
         os: ['windows-latest', 'ubuntu-24.04', 'macos-latest']
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.py }}
@@ -86,7 +86,7 @@ jobs:
   docs:
       runs-on: ubuntu-24.04
       steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v5
           with:
             ref: ${{ github.head_ref }} # get current branch name
         - uses: actions/setup-python@v5
