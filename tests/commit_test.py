@@ -143,6 +143,11 @@ def test_check_commit_signoff(mocker):
     m_print_suggestion = mocker.patch(
         f"{LOCATION}.print_suggestion"
     )
+    # Ensure commit message is NOT a merge commit
+    mocker.patch(
+        "commit_check.commit.read_commit_msg",
+        return_value="feat: add new feature"
+    )
     retval = check_commit_signoff(checks)
     assert retval == FAIL
     assert m_re_search.call_count == 1
