@@ -143,6 +143,11 @@ def test_check_commit_signoff(mocker):
     m_print_suggestion = mocker.patch(
         f"{LOCATION}.print_suggestion"
     )
+    # Ensure commit message is NOT a merge commit
+    mocker.patch(
+        "commit_check.commit.read_commit_msg",
+        return_value="feat: add new feature"
+    )
     retval = check_commit_signoff(checks)
     assert retval == FAIL
     assert m_re_search.call_count == 1
@@ -177,6 +182,72 @@ def test_check_commit_signoff_with_empty_checks(mocker):
     retval = check_commit_signoff(checks)
     assert retval == PASS
     assert m_re_match.call_count == 0
+
+
+@pytest.mark.benchmark
+def test_check_commit_signoff_skip_merge_commit(mocker):
+    """Test commit signoff check skips merge commits."""
+    checks = [{
+        "check": "commit_signoff",
+        "regex": "Signed-off-by:",
+        "error": "Signed-off-by not found",
+        "suggest": "Use --signoff"
+    }]
+
+    mocker.patch(
+        "commit_check.commit.read_commit_msg",
+        return_value="Merge branch 'feature/test' into main"
+    )
+
+    retval = check_commit_signoff(checks, MSG_FILE)
+    assert retval == PASS
+
+
+@pytest.mark.benchmark
+def test_check_commit_signoff_skip_merge_pr_commit(mocker):
+    """Test commit signoff check skips GitHub merge PR commits."""
+    checks = [{
+        "check": "commit_signoff",
+        "regex": "Signed-off-by:",
+        "error": "Signed-off-by not found",
+        "suggest": "Use --signoff"
+    }]
+
+    mocker.patch(
+        "commit_check.commit.read_commit_msg",
+        return_value="Merge pull request #123 from user/feature\n\nAdd new feature"
+    )
+
+    retval = check_commit_signoff(checks, MSG_FILE)
+    assert retval == PASS
+
+
+@pytest.mark.benchmark
+def test_check_commit_signoff_still_fails_non_merge_without_signoff(mocker):
+    """Test commit signoff check still fails for non-merge commits without signoff."""
+    checks = [{
+        "check": "commit_signoff",
+        "regex": "Signed-off-by:",
+        "error": "Signed-off-by not found",
+        "suggest": "Use --signoff"
+    }]
+
+    mocker.patch(
+        "commit_check.commit.read_commit_msg",
+        return_value="feat: add new feature\n\nThis adds a new feature"
+    )
+
+    m_print_error_message = mocker.patch(
+        f"{LOCATION}.print_error_message"
+    )
+    m_print_suggestion = mocker.patch(
+        f"{LOCATION}.print_suggestion"
+    )
+
+    retval = check_commit_signoff(checks, MSG_FILE)
+    assert retval == FAIL
+    assert m_print_error_message.call_count == 1
+    assert m_print_suggestion.call_count == 1
 
 
 @pytest.mark.benchmark

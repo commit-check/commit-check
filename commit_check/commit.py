@@ -76,6 +76,14 @@ def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
                 return PASS
 
             commit_msg = read_commit_msg(commit_msg_file)
+
+            # Extract the subject line (first line of commit message)
+            subject = commit_msg.split('\n')[0].strip()
+
+            # Skip if merge commit
+            if subject.startswith('Merge'):
+                return PASS
+
             commit_hash = get_commit_info("H")
             result = re.search(check['regex'], commit_msg)
             if result is None:

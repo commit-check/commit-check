@@ -127,7 +127,7 @@ def main() -> int:
         if args.branch:
             check_results.append(branch.check_branch(checks))
         if args.commit_signoff:
-            check_results.append(commit.check_commit_signoff(checks))
+            check_results.append(commit.check_commit_signoff(checks, args.commit_msg_file))
         if args.merge_base:
             check_results.append(branch.check_merge_base(checks))
         if args.imperative:
