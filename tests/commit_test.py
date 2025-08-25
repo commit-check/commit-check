@@ -198,11 +198,11 @@ def test_check_commit_signoff_skip_merge_commit(mocker):
     assert retval == PASS
 
 
-@pytest.mark.benchmark  
+@pytest.mark.benchmark
 def test_check_commit_signoff_skip_merge_pr_commit(mocker):
     """Test commit signoff check skips GitHub merge PR commits."""
     checks = [{
-        "check": "commit_signoff", 
+        "check": "commit_signoff",
         "regex": "Signed-off-by:",
         "error": "Signed-off-by not found",
         "suggest": "Use --signoff"
@@ -213,7 +213,7 @@ def test_check_commit_signoff_skip_merge_pr_commit(mocker):
         return_value="Merge pull request #123 from user/feature\n\nAdd new feature"
     )
 
-    retval = check_commit_signoff(checks, MSG_FILE) 
+    retval = check_commit_signoff(checks, MSG_FILE)
     assert retval == PASS
 
 
@@ -223,7 +223,7 @@ def test_check_commit_signoff_still_fails_non_merge_without_signoff(mocker):
     checks = [{
         "check": "commit_signoff",
         "regex": "Signed-off-by:",
-        "error": "Signed-off-by not found", 
+        "error": "Signed-off-by not found",
         "suggest": "Use --signoff"
     }]
 
@@ -231,7 +231,7 @@ def test_check_commit_signoff_still_fails_non_merge_without_signoff(mocker):
         "commit_check.commit.read_commit_msg",
         return_value="feat: add new feature\n\nThis adds a new feature"
     )
-    
+
     m_print_error_message = mocker.patch(
         f"{LOCATION}.print_error_message"
     )
