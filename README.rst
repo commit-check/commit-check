@@ -100,7 +100,7 @@ Install from source code
 
     pip install git+https://github.com/commit-check/commit-check.git@main
 
-Then, run ``commit-check --help`` or ``cc --help`` (alias for ``commit-check``) from the command line.
+Then, run ``commit-check --help`` or ``cchk --help`` (alias for ``commit-check``) from the command line.
 
 For more information, see the `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
 

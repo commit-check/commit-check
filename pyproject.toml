@@ -32,7 +32,7 @@ dynamic = ["version"]
 
 [project.scripts]
 commit-check = "commit_check.main:main"
-cc = "commit_check.main:main" # alias for commit-check
+cchk = "commit_check.main:main"  # short alias without clobbering system cc
 
 [project.urls]
 source =  "https://github.com/commit-check/commit-check"
