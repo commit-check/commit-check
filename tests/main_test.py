@@ -174,8 +174,16 @@ class TestMain:
             "commit_check.branch.check_merge_base", return_value=merge_base_result, stdin_text=None
         )
         mocker.patch("commit_check.commit.check_imperative", return_value=PASS, stdin_text=None)
-        mocker.patch("commit_check.author.check_author", return_value=author_name_result, stdin_text=None)
-        mocker.patch("commit_check.author.check_author", return_value=author_email_result, stdin_text=None)
+
+        # Route author check results based on check_type while tolerating extra kwargs
+        def author_side_effect(_, check_type: str, **kwargs) -> int:  # type: ignore[return]
+            assert check_type in ("author_name", "author_email")
+            if check_type == "author_name":
+                return author_name_result
+            elif check_type == "author_email":
+                return author_email_result
+
+        mocker.patch("commit_check.author.check_author", side_effect=author_side_effect)
 
         sys.argv = argv
         assert main() == final_result
