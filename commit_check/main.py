@@ -5,6 +5,7 @@
 The module containing main entrypoint function.
 """
 import argparse
+import sys
 from commit_check import branch
 from commit_check import commit
 from commit_check import author
@@ -108,6 +109,16 @@ def main() -> int:
     parser = get_parser()
     args = parser.parse_args()
 
+    # When running in pipelines like: echo "msg" | commit-check -m
+    # capture stdin once here and pass through to specific checks.
+    stdin_text = None
+    try:
+        if not sys.stdin.isatty():
+            data = sys.stdin.read()
+            stdin_text = data if data else None
+    except Exception:
+        stdin_text = None
+
     if args.dry_run:
         return PASS
 
@@ -119,19 +130,20 @@ def main() -> int:
         ) else DEFAULT_CONFIG
         checks = config['checks']
         if args.message:
-            check_results.append(commit.check_commit_msg(checks, args.commit_msg_file))
+            check_results.append(commit.check_commit_msg(checks, args.commit_msg_file, stdin_text=stdin_text))
         if args.author_name:
-            check_results.append(author.check_author(checks, "author_name"))
+            check_results.append(author.check_author(checks, "author_name", stdin_text=stdin_text))
         if args.author_email:
-            check_results.append(author.check_author(checks, "author_email"))
+            check_results.append(author.check_author(checks, "author_email", stdin_text=stdin_text))
         if args.branch:
-            check_results.append(branch.check_branch(checks))
+            # stdin might contain a branch name string
+            check_results.append(branch.check_branch(checks, stdin_text=stdin_text))
         if args.commit_signoff:
-            check_results.append(commit.check_commit_signoff(checks, args.commit_msg_file))
+            check_results.append(commit.check_commit_signoff(checks, args.commit_msg_file, stdin_text=stdin_text))
         if args.merge_base:
             check_results.append(branch.check_merge_base(checks))
         if args.imperative:
-            check_results.append(commit.check_imperative(checks, args.commit_msg_file))
+            check_results.append(commit.check_imperative(checks, args.commit_msg_file, stdin_text=stdin_text))
 
     return PASS if all(val == PASS for val in check_results) else FAIL
 

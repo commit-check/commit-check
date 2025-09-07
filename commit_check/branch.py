@@ -1,10 +1,11 @@
 """Check git branch naming convention."""
 import re
+from typing import Optional
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
 from commit_check.util import get_branch_name, git_merge_base, print_error_header, print_error_message, print_suggestion, has_commits
 
 
-def check_branch(checks: list) -> int:
+def check_branch(checks: list, stdin_text: Optional[str] = None) -> int:
     for check in checks:
         if check['check'] == 'branch':
             if check['regex'] == "":
@@ -12,7 +13,8 @@ def check_branch(checks: list) -> int:
                     f"{YELLOW}Not found regex for branch naming. skip checking.{RESET_COLOR}",
                 )
                 return PASS
-            branch_name = get_branch_name()
+            # Use override from stdin when provided (e.g., echo name | commit-check --branch)
+            branch_name = stdin_text.strip() if stdin_text else get_branch_name()
             result = re.match(check['regex'], branch_name)
             if result is None:
                 if not print_error_header.has_been_called:

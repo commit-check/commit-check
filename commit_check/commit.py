@@ -1,4 +1,5 @@
 """Check git commit message formatting"""
+from typing import Optional
 import re
 from pathlib import PurePath
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
@@ -27,15 +28,21 @@ def read_commit_msg(commit_msg_file) -> str:
         return str(get_commit_info("s") + "\n\n" + get_commit_info("b"))
 
 
-def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
-    """Check commit message against the provided checks."""
-    if has_commits() is False:
+def check_commit_msg(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
+    """Check commit message against the provided checks.
+
+    If stdin_text is provided, use it directly (stdin override) and do not
+    require a git repository state. Otherwise, fall back to reading from file/Git.
+    """
+    if stdin_text is None and has_commits() is False:
         return PASS # pragma: no cover
 
-    if commit_msg_file is None or commit_msg_file == "":
-        commit_msg_file = get_default_commit_msg_file()
-
-    commit_msg = read_commit_msg(commit_msg_file)
+    if stdin_text is not None:
+        commit_msg = stdin_text
+    else:
+        if commit_msg_file is None or commit_msg_file == "":
+            commit_msg_file = get_default_commit_msg_file()
+        commit_msg = read_commit_msg(commit_msg_file)
 
     for check in checks:
         if check['check'] == 'message':
@@ -60,12 +67,17 @@ def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
     return PASS
 
 
-def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
-    if has_commits() is False:
+def check_commit_signoff(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
+    # Only enforce repository presence when not using explicit text
+    if stdin_text is None and has_commits() is False:
         return PASS # pragma: no cover
 
-    if commit_msg_file is None or commit_msg_file == "":
-        commit_msg_file = get_default_commit_msg_file()
+    if stdin_text is not None:
+        commit_msg = stdin_text
+    else:
+        if commit_msg_file is None or commit_msg_file == "":
+            commit_msg_file = get_default_commit_msg_file()
+        commit_msg = read_commit_msg(commit_msg_file)
 
     for check in checks:
         if check['check'] == 'commit_signoff':
@@ -74,8 +86,6 @@ def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
                     f"{YELLOW}Not found regex for commit signoff. skip checking.{RESET_COLOR}",
                 )
                 return PASS
-
-            commit_msg = read_commit_msg(commit_msg_file)
 
             # Extract the subject line (first line of commit message)
             subject = commit_msg.split('\n')[0].strip()
@@ -100,18 +110,26 @@ def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
     return PASS
 
 
-def check_imperative(checks: list, commit_msg_file: str = "") -> int:
+def check_imperative(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
     """Check if commit message uses imperative mood."""
-    if has_commits() is False:
+    if stdin_text is None and has_commits() is False:
         return PASS # pragma: no cover
 
-    if commit_msg_file is None or commit_msg_file == "":
-        commit_msg_file = get_default_commit_msg_file()
+    # Fast path: if no imperative check configured, do nothing (and don't read message)
+    has_imperative_check = any(c.get('check') == 'imperative' for c in checks)
+    if not has_imperative_check:
+        return PASS
+
+    # Lazily obtain commit message only when needed
+    if stdin_text is not None:
+        commit_msg = stdin_text
+    else:
+        if commit_msg_file is None or commit_msg_file == "":
+            commit_msg_file = get_default_commit_msg_file()
+        commit_msg = read_commit_msg(commit_msg_file)
 
     for check in checks:
         if check['check'] == 'imperative':
-            commit_msg = read_commit_msg(commit_msg_file)
-
             # Extract the subject line (first line of commit message)
             subject = commit_msg.split('\n')[0].strip()
 

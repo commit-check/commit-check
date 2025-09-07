@@ -340,7 +340,7 @@ def test_check_imperative_skip_merge_commit(mocker):
         return_value="Merge branch 'feature/test' into main"
     )
 
-    retval = check_imperative(checks, MSG_FILE)
+    retval = check_imperative(checks, MSG_FILE, stdin_text=None)
     assert retval == PASS
 
 
@@ -357,7 +357,7 @@ def test_check_imperative_different_check_type(mocker):
         return_value="feat: Added new feature"
     )
 
-    retval = check_imperative(checks, MSG_FILE)
+    retval = check_imperative(checks, MSG_FILE, stdin_text="feat: Added new feature")
     assert retval == PASS
     assert m_read_commit_msg.call_count == 0
 
@@ -388,7 +388,7 @@ def test_check_imperative_empty_checks(mocker):
         return_value="feat: Added new feature"
     )
 
-    retval = check_imperative(checks, MSG_FILE)
+    retval = check_imperative(checks, MSG_FILE, stdin_text=None)
     assert retval == PASS
     assert m_read_commit_msg.call_count == 0
 
