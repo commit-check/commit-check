@@ -67,3 +67,9 @@ omit = [
     # don't include tests in coverage
     "tests/*",
 ]
+
+[tool.pytest.ini_options]
+# Silence PytestUnknownMarkWarning for custom marks used in tests
+markers = [
+    "benchmark: performance-related tests (no-op marker in this project)",
+]
