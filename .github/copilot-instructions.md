@@ -107,7 +107,7 @@ rm -f test_commit.txt test_commit_invalid.txt test_complex_commit.txt
 ### Integration Testing
 ```bash
 # Test as pre-commit hook
-pre-commit try-repo . --verbose --hook-stage prepare-commit-msg
+pre-commit try-repo . --verbose --hook-stage commit-msg
 
 # Test wheel installation
 python3 -m pip install dist/*.whl  # After running nox -s build

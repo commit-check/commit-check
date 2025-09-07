@@ -5,8 +5,8 @@ ci:
     autoupdate_schedule: quarterly
 
 # https://pre-commit.com/
-# prepare-commit-msg is used by hook id: check-message
-default_install_hook_types: [pre-commit, prepare-commit-msg]
+# commit-msg is used by hook id: check-message
+default_install_hook_types: [pre-commit, commit-msg]
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
