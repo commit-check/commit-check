@@ -21,7 +21,7 @@ We appreciate your contributions to make Commit Check even better!
 ### Debug commit-check pre-commit hook
 
 ```bash
-pre-commit try-repo  ./../commit-check/ check-message --verbose --hook-stage prepare-commit-msg --commit-msg-filename .git/COMMIT_EDITMSG
+pre-commit try-repo  ./../commit-check/ check-message --verbose --hook-stage commit-msg --commit-msg-filename .git/COMMIT_EDITMSG
 ```
 
 ### Debug commit-check wheel package

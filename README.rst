@@ -71,7 +71,7 @@ Running as pre-commit hook
     -   repo: https://github.com/commit-check/commit-check
         rev: the tag or revision
         hooks: # support hooks
-        -   id: check-message  # requires prepare-commit-msg hook
+        -   id: check-message  # requires commit-msg hook
         -   id: check-branch
         -   id: check-author-name
         -   id: check-author-email

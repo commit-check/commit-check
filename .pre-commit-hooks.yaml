@@ -5,7 +5,7 @@
   args: [--message]
   pass_filenames: true
   language: python
-  stages: [commit-msg, prepare-commit-msg]
+  stages: [commit-msg]
 - id: check-branch
   name: check branch naming
   description: ensures branch naming to match regex
