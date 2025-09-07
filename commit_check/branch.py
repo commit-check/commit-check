@@ -14,7 +14,7 @@ def check_branch(checks: list, stdin_text: Optional[str] = None) -> int:
                 )
                 return PASS
             # Use override from stdin when provided (e.g., echo name | commit-check --branch)
-            branch_name = stdin_text.strip() if stdin_text else get_branch_name()
+            branch_name = stdin_text.strip() if stdin_text is not None else get_branch_name()
             result = re.match(check['regex'], branch_name)
             if result is None:
                 if not print_error_header.has_been_called:
