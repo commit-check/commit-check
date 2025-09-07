@@ -109,16 +109,17 @@ def main() -> int:
     parser = get_parser()
     args = parser.parse_args()
 
-    # When running in pipelines like: echo "msg" | commit-check -m
-    # capture stdin once here and pass through to specific checks.
+    if args.dry_run:
+        return PASS
+
+    # Capture stdin (if piped) once and pass to checks.
     stdin_text = None
     try:
         if not sys.stdin.isatty():
             data = sys.stdin.read()
-            stdin_text = data if data else None
+            stdin_text = data or None
     except Exception:
         stdin_text = None
-
     if args.dry_run:
         return PASS
 
