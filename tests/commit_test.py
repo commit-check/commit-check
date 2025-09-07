@@ -390,7 +390,7 @@ def test_check_imperative_empty_checks(mocker):
 
     retval = check_imperative(checks, MSG_FILE, stdin_text=None)
     assert retval == PASS
-    assert m_read_commit_msg.call_count == 0
+    assert m_read_commit_msg.call_count == 1
 
 
 @pytest.mark.benchmark

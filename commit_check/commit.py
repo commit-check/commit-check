@@ -115,11 +115,6 @@ def check_imperative(checks: list, commit_msg_file: str = "", stdin_text: Option
     if stdin_text is None and has_commits() is False:
         return PASS # pragma: no cover
 
-    # Fast path: if no imperative check configured, do nothing (and don't read message)
-    has_imperative_check = any(c.get('check') == 'imperative' for c in checks)
-    if not has_imperative_check:
-        return PASS
-
     # Lazily obtain commit message only when needed
     if stdin_text is not None:
         commit_msg = stdin_text
