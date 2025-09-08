@@ -2,7 +2,7 @@
 import re
 from pathlib import PurePath
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import cmd_output, get_commit_info, print_error_header, print_error_message, print_suggestion, has_commits
+from commit_check.util import _find_check, cmd_output, get_commit_info, print_error_header, print_error_message, print_suggestion, has_commits
 from commit_check.imperatives import IMPERATIVES
 
 
@@ -25,14 +25,6 @@ def read_commit_msg(commit_msg_file) -> str:
     except FileNotFoundError:
         # Commit message is composed by subject and body
         return str(get_commit_info("s") + "\n\n" + get_commit_info("b"))
-
-
-def _find_check(checks: list, kind: str) -> dict | None:
-    """Return the first check config matching kind, else None."""
-    for check in checks:
-        if check.get('check') == kind:
-            return check
-    return None
 
 
 def _ensure_msg_file(commit_msg_file: str | None) -> str:

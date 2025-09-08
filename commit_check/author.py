@@ -1,6 +1,5 @@
 """Check git author name and email"""
 import re
-from typing import Optional
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
 from commit_check.util import (
     get_commit_info,
@@ -8,6 +7,7 @@ from commit_check.util import (
     print_error_header,
     print_error_message,
     print_suggestion,
+    _find_check,
 )
 
 
@@ -15,14 +15,6 @@ _AUTHOR_FORMAT_MAP = {
     "author_name": "an",
     "author_email": "ae",
 }
-
-
-def _find_check(checks: list, check_type: str) -> Optional[dict]:
-    """Return the first check dict matching check_type, else None."""
-    for check in checks:
-        if check.get("check") == check_type:
-            return check
-    return None
 
 
 def _get_author_value(check_type: str) -> str:

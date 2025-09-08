@@ -12,6 +12,14 @@ from subprocess import CalledProcessError
 from commit_check import RED, GREEN, YELLOW, RESET_COLOR
 
 
+def _find_check(checks: list, check_type: str) -> dict | None:
+    """Return the first check dict matching check_type, else None."""
+    for check in checks:
+        if check.get('check') == check_type:
+            return check
+    return None
+
+
 def get_branch_name() -> str:
     """Identify current branch name.
     .. note::
