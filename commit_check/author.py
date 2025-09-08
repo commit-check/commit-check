@@ -4,10 +4,8 @@ from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
 from commit_check.util import (
     get_commit_info,
     has_commits,
-    print_error_header,
-    print_error_message,
-    print_suggestion,
     _find_check,
+    _print_failure,
 )
 
 
@@ -21,14 +19,6 @@ def _get_author_value(check_type: str) -> str:
     """Fetch the author value from git for the given check type."""
     format_str = _AUTHOR_FORMAT_MAP.get(check_type, "")
     return str(get_commit_info(format_str))
-
-
-def _print_failure(check: dict, regex: str, actual: str) -> None:
-    if not print_error_header.has_been_called:
-        print_error_header()
-    print_error_message(check['check'], regex, check['error'], actual)
-    if check.get('suggest'):
-        print_suggestion(check['suggest'])
 
 
 def check_author(checks: list, check_type: str) -> int:

@@ -131,10 +131,10 @@ class TestAuthor:
                 return_value=None
             )
             m_print_error_message = mocker.patch(
-                f"{LOCATION}.print_error_message"
+                "commit_check.util.print_error_message"
             )
             m_print_suggestion = mocker.patch(
-                f"{LOCATION}.print_suggestion"
+                "commit_check.util.print_suggestion"
             )
             retval = check_author(checks, "author_name")
             assert retval == FAIL
@@ -246,10 +246,10 @@ class TestAuthor:
                 return_value=None
             )
             m_print_error_message = mocker.patch(
-                f"{LOCATION}.print_error_message"
+                "commit_check.util.print_error_message"
             )
             m_print_suggestion = mocker.patch(
-                f"{LOCATION}.print_suggestion"
+                "commit_check.util.print_suggestion"
             )
             retval = check_author(checks, "author_email")
             assert retval == FAIL

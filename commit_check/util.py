@@ -20,6 +20,19 @@ def _find_check(checks: list, check_type: str) -> dict | None:
     return None
 
 
+def _print_failure(
+    check: dict,
+    regex: str,
+    actual: str
+) -> None:
+    """Print a standardized failure message."""
+    if not print_error_header.has_been_called:
+        print_error_header()
+    print_error_message(check['check'], regex, check['error'], actual)
+    if check.get('suggest'):
+        print_suggestion(check['suggest'])
+
+
 def get_branch_name() -> str:
     """Identify current branch name.
     .. note::

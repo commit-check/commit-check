@@ -2,7 +2,7 @@
 import re
 from pathlib import PurePath
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import _find_check, cmd_output, get_commit_info, print_error_header, print_error_message, print_suggestion, has_commits
+from commit_check.util import _find_check, _print_failure, cmd_output, get_commit_info, has_commits
 from commit_check.imperatives import IMPERATIVES
 
 
@@ -15,14 +15,6 @@ def _ensure_msg_file(commit_msg_file: str | None) -> str:
     if not commit_msg_file:
         return get_default_commit_msg_file()
     return commit_msg_file
-
-
-def _print_failure(check: dict, regex: str, actual: str) -> None:
-    if not print_error_header.has_been_called:
-        print_error_header()  # pragma: no cover
-    print_error_message(check['check'], regex, check['error'], actual)
-    if check.get('suggest'):
-        print_suggestion(check['suggest'])
 
 
 def get_default_commit_msg_file() -> str:

@@ -1,15 +1,7 @@
 """Check git branch naming convention."""
 import re
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import _find_check, get_branch_name, git_merge_base, print_error_header, print_error_message, print_suggestion, has_commits
-
-
-def _print_failure(check: dict, regex: str, actual: str) -> None:
-    if not print_error_header.has_been_called:
-        print_error_header()  # pragma: no cover
-    print_error_message(check['check'], regex, check['error'], actual)
-    if check.get('suggest'):
-        print_suggestion(check['suggest'])
+from commit_check.util import _find_check, _print_failure, get_branch_name, git_merge_base, has_commits
 
 
 def check_branch(checks: list) -> int:
