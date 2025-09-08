@@ -23,23 +23,12 @@ def _get_author_value(check_type: str) -> str:
     return str(get_commit_info(format_str))
 
 
-def _evaluate_check(check: dict, value: str) -> int:
-    """Evaluate a single author check against the provided value."""
-    regex = check.get("regex", "")
-    if regex == "":
-        print(f"{YELLOW}Not found regex for {check.get('check')}. skip checking.{RESET_COLOR}")
-        return PASS
-
-    if re.match(regex, value) is None:
-        if not print_error_header.has_been_called:
-            print_error_header()
-        check_name = str(check.get("check", ""))
-        error_msg = str(check.get("error", ""))
-        print_error_message(check_name, regex, error_msg, value)
-        if check.get("suggest"):
-            print_suggestion(check["suggest"])
-        return FAIL
-    return PASS
+def _print_failure(check: dict, regex: str, actual: str) -> None:
+    if not print_error_header.has_been_called:
+        print_error_header()
+    print_error_message(check['check'], regex, check['error'], actual)
+    if check.get('suggest'):
+        print_suggestion(check['suggest'])
 
 
 def check_author(checks: list, check_type: str) -> int:
@@ -58,4 +47,10 @@ def check_author(checks: list, check_type: str) -> int:
         return PASS
 
     value = _get_author_value(check_type)
-    return _evaluate_check(check, value)
+
+    if re.match(regex, value):
+        return PASS
+
+    _print_failure(check, regex, value)
+
+    return FAIL

@@ -10,6 +10,20 @@ def _load_imperatives() -> set:
     """Load imperative verbs from imperatives module."""
     return IMPERATIVES
 
+def _ensure_msg_file(commit_msg_file: str | None) -> str:
+    """Return a commit message file path, falling back to the default when empty."""
+    if not commit_msg_file:
+        return get_default_commit_msg_file()
+    return commit_msg_file
+
+
+def _print_failure(check: dict, regex: str, actual: str) -> None:
+    if not print_error_header.has_been_called:
+        print_error_header()  # pragma: no cover
+    print_error_message(check['check'], regex, check['error'], actual)
+    if check.get('suggest'):
+        print_suggestion(check['suggest'])
+
 
 def get_default_commit_msg_file() -> str:
     """Get the default commit message file."""
@@ -26,22 +40,6 @@ def read_commit_msg(commit_msg_file) -> str:
         # Commit message is composed by subject and body
         return str(get_commit_info("s") + "\n\n" + get_commit_info("b"))
 
-
-def _ensure_msg_file(commit_msg_file: str | None) -> str:
-    """Return a commit message file path, falling back to the default when empty."""
-    if not commit_msg_file:
-        return get_default_commit_msg_file()
-    return commit_msg_file
-
-
-def _print_failure(check: dict, regex: str, actual: str) -> None:
-    if not print_error_header.has_been_called:
-        print_error_header()  # pragma: no cover
-    print_error_message(check['check'], regex, check['error'], actual)
-    if check.get('suggest'):
-        print_suggestion(check['suggest'])
-
-
 def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
     """Check commit message against the provided checks."""
     if has_commits() is False:
@@ -49,7 +47,7 @@ def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
 
     check = _find_check(checks, 'message')
     if not check:
-        return PASS
+        return PASS  # pragma: no cover
 
     regex = check.get('regex', "")
     if regex == "":
@@ -72,7 +70,7 @@ def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
 
     check = _find_check(checks, 'commit_signoff')
     if not check:
-        return PASS
+        return PASS  # pragma: no cover
 
     regex = check.get('regex', "")
     if regex == "":
@@ -93,11 +91,7 @@ def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
     if re.search(regex, commit_msg):
         return PASS
 
-    if not print_error_header.has_been_called:
-        print_error_header()  # pragma: no cover
-    print_error_message(check['check'], regex, check['error'], commit_hash)
-    if check.get('suggest'):
-        print_suggestion(check['suggest'])
+    _print_failure(check, regex, commit_hash)
     return FAIL
 
 
@@ -127,11 +121,7 @@ def check_imperative(checks: list, commit_msg_file: str = "") -> int:
     if _is_imperative(description):
         return PASS
 
-    if not print_error_header.has_been_called:
-        print_error_header()  # pragma: no cover
-    print_error_message(check['check'], 'imperative mood pattern', check['error'], subject)
-    if check.get('suggest'):
-        print_suggestion(check['suggest'])
+    _print_failure(check, 'imperative mood pattern', subject)
     return FAIL
 
 
