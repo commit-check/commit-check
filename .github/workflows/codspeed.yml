@@ -42,3 +42,4 @@ jobs:
         with:
           token: ${{ secrets.CODSPEED_TOKEN }}
           run: pytest tests/ --codspeed
+          mode: instrumentation # https://codspeed.io/docs/instruments
