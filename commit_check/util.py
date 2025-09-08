@@ -180,7 +180,7 @@ def print_error_message(check_type: str, regex: str, error: str, reason: str):
     print(error)
 
 
-def print_suggestion(suggest: str) -> None:
+def print_suggestion(suggest: str | None) -> None:
     """Print suggestion to user
     :param suggest: what message to print out
     """
