@@ -28,9 +28,9 @@ def _print_failure(
     """Print a standardized failure message."""
     if not print_error_header.has_been_called:
         print_error_header()
-    print_error_message(check['check'], regex, check['error'], actual)
+    print_error_message(check['check'], regex, check.get('error', ''), actual)
     if check.get('suggest'):
-        print_suggestion(check['suggest'])
+        print_suggestion(check.get('suggest'))
 
 
 def get_branch_name() -> str:
