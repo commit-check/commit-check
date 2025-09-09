@@ -135,7 +135,6 @@ def main() -> int:
         if args.author_email:
             check_results.append(author.check_author(checks, "author_email", stdin_text=stdin_text))
         if args.branch:
-            # stdin might contain a branch name string
             check_results.append(branch.check_branch(checks, stdin_text=stdin_text))
         if args.commit_signoff:
             check_results.append(commit.check_commit_signoff(checks, args.commit_msg_file, stdin_text=stdin_text))
