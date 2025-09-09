@@ -120,7 +120,6 @@ def main() -> int:
             stdin_text = data or None
     except Exception:
         stdin_text = None
-    # (Removed unreachable duplicated dry_run check)
 
     check_results: list[int] = []
 
