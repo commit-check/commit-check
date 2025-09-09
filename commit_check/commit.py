@@ -1,4 +1,5 @@
 """Check git commit message formatting"""
+from typing import Optional
 import re
 from pathlib import PurePath
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
@@ -32,10 +33,15 @@ def read_commit_msg(commit_msg_file) -> str:
         # Commit message is composed by subject and body
         return str(get_commit_info("s") + "\n\n" + get_commit_info("b"))
 
-def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
-    """Check commit message against the provided checks."""
-    if has_commits() is False:
-        return PASS  # pragma: no cover
+
+def check_commit_msg(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
+    """Check commit message against the provided checks.
+
+    If stdin_text is provided, use it directly (stdin override) and do not
+    require a git repository state. Otherwise, fall back to reading from file/Git.
+    """
+    if stdin_text is None and has_commits() is False:
+        return PASS # pragma: no cover
 
     check = _find_check(checks, 'message')
     if not check:
@@ -46,8 +52,11 @@ def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
         print(f"{YELLOW}Not found regex for commit message. skip checking.{RESET_COLOR}")
         return PASS
 
-    path = _ensure_msg_file(commit_msg_file)
-    commit_msg = read_commit_msg(path)
+    if stdin_text is not None:
+        commit_msg = stdin_text
+    else:
+        path = _ensure_msg_file(commit_msg_file)
+        commit_msg = read_commit_msg(path)
 
     if re.match(regex, commit_msg):
         return PASS
@@ -56,9 +65,9 @@ def check_commit_msg(checks: list, commit_msg_file: str = "") -> int:
     return FAIL
 
 
-def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
-    if has_commits() is False:
-        return PASS  # pragma: no cover
+def check_commit_signoff(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
+    if stdin_text is None and has_commits() is False:
+        return PASS # pragma: no cover
 
     check = _find_check(checks, 'commit_signoff')
     if not check:
@@ -69,8 +78,11 @@ def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
         print(f"{YELLOW}Not found regex for commit signoff. skip checking.{RESET_COLOR}")
         return PASS
 
-    path = _ensure_msg_file(commit_msg_file)
-    commit_msg = read_commit_msg(path)
+    if stdin_text is not None:
+        commit_msg = stdin_text
+    else:
+        path = _ensure_msg_file(commit_msg_file)
+        commit_msg = read_commit_msg(path)
 
     # Extract the subject line (first line of commit message)
     subject = commit_msg.split('\n')[0].strip()
@@ -87,17 +99,20 @@ def check_commit_signoff(checks: list, commit_msg_file: str = "") -> int:
     return FAIL
 
 
-def check_imperative(checks: list, commit_msg_file: str = "") -> int:
+def check_imperative(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
     """Check if commit message uses imperative mood."""
-    if has_commits() is False:
-        return PASS  # pragma: no cover
+    if stdin_text is None and has_commits() is False:
+        return PASS # pragma: no cover
 
     check = _find_check(checks, 'imperative')
     if not check:
         return PASS
 
-    path = _ensure_msg_file(commit_msg_file)
-    commit_msg = read_commit_msg(path)
+    if stdin_text is not None:
+        commit_msg = stdin_text
+    else:
+        path = _ensure_msg_file(commit_msg_file)
+        commit_msg = read_commit_msg(path)
 
     # Extract the subject line (first line of commit message)
     subject = commit_msg.split('\n')[0].strip()

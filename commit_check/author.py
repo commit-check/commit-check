@@ -1,5 +1,6 @@
 """Check git author name and email"""
 import re
+from typing import Optional
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
 from commit_check.util import (
     get_commit_info,
@@ -21,10 +22,10 @@ def _get_author_value(check_type: str) -> str:
     return str(get_commit_info(format_str))
 
 
-def check_author(checks: list, check_type: str) -> int:
-    """Validate author name or email according to configured regex."""
-    if has_commits() is False:
-        return PASS  # pragma: no cover
+def check_author(checks: list, check_type: str, stdin_text: Optional[str] = None) -> int:
+    # If an explicit value is provided (stdin), validate it even if there are no commits
+    if stdin_text is None and has_commits() is False:
+        return PASS # pragma: no cover
 
     check = _find_check(checks, check_type)
     if not check:
@@ -36,7 +37,10 @@ def check_author(checks: list, check_type: str) -> int:
         print(f"{YELLOW}Not found regex for {check_type}. skip checking.{RESET_COLOR}")
         return PASS
 
-    value = _get_author_value(check_type)
+    if stdin_text is not None:
+        value = stdin_text
+    else:
+        value = _get_author_value(check_type)
 
     if re.match(regex, value):
         return PASS
