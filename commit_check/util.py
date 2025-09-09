@@ -12,6 +12,27 @@ from subprocess import CalledProcessError
 from commit_check import RED, GREEN, YELLOW, RESET_COLOR
 
 
+def _find_check(checks: list, check_type: str) -> dict | None:
+    """Return the first check dict matching check_type, else None."""
+    for check in checks:
+        if check.get('check') == check_type:
+            return check
+    return None
+
+
+def _print_failure(
+    check: dict,
+    regex: str,
+    actual: str
+) -> None:
+    """Print a standardized failure message."""
+    if not print_error_header.has_been_called:
+        print_error_header()
+    print_error_message(check['check'], regex, check.get('error', ''), actual)
+    if check.get('suggest'):
+        print_suggestion(check.get('suggest'))
+
+
 def get_branch_name() -> str:
     """Identify current branch name.
     .. note::
@@ -159,7 +180,7 @@ def print_error_message(check_type: str, regex: str, error: str, reason: str):
     print(error)
 
 
-def print_suggestion(suggest: str) -> None:
+def print_suggestion(suggest: str | None) -> None:
     """Print suggestion to user
     :param suggest: what message to print out
     """

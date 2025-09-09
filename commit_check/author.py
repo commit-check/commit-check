@@ -1,34 +1,46 @@
 """Check git author name and email"""
 import re
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import get_commit_info, has_commits, print_error_header, print_error_message, print_suggestion
+from commit_check.util import (
+    get_commit_info,
+    has_commits,
+    _find_check,
+    _print_failure,
+)
+
+
+_AUTHOR_FORMAT_MAP = {
+    "author_name": "an",
+    "author_email": "ae",
+}
+
+
+def _get_author_value(check_type: str) -> str:
+    """Fetch the author value from git for the given check type."""
+    format_str = _AUTHOR_FORMAT_MAP.get(check_type, "")
+    return str(get_commit_info(format_str))
 
 
 def check_author(checks: list, check_type: str) -> int:
+    """Validate author name or email according to configured regex."""
     if has_commits() is False:
-        return PASS # pragma: no cover
+        return PASS  # pragma: no cover
 
-    for check in checks:
-        if check['check'] == check_type:
-            if check['regex'] == "":
-                print(
-                    f"{YELLOW}Not found regex for {check_type}. skip checking.{RESET_COLOR}",
-                )
-                return PASS
-            if check_type == "author_name":
-                format_str = "an"
-            if check_type == 'author_email':
-                format_str = "ae"
-            config_value = str(get_commit_info(format_str))
-            result = re.match(check['regex'], config_value)
-            if result is None:
-                if not print_error_header.has_been_called:
-                    print_error_header()
-                print_error_message(
-                    check['check'], check['regex'],
-                    check['error'], config_value,
-                )
-                if check['suggest']:
-                    print_suggestion(check['suggest'])
-                return FAIL
-    return PASS
+    check = _find_check(checks, check_type)
+    if not check:
+        return PASS
+
+    # If regex is empty, skip without fetching author info
+    regex = check.get("regex", "")
+    if regex == "":
+        print(f"{YELLOW}Not found regex for {check_type}. skip checking.{RESET_COLOR}")
+        return PASS
+
+    value = _get_author_value(check_type)
+
+    if re.match(regex, value):
+        return PASS
+
+    _print_failure(check, regex, value)
+
+    return FAIL

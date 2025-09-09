@@ -107,10 +107,10 @@ class TestCheckBranch:
             return_value=None
         )
         m_print_error_message = mocker.patch(
-            f"{LOCATION}.print_error_message"
+            "commit_check.util.print_error_message"
         )
         m_print_suggestion = mocker.patch(
-            f"{LOCATION}.print_suggestion"
+            "commit_check.util.print_suggestion"
         )
         retval = check_branch(checks)
         assert retval == FAIL
@@ -160,8 +160,8 @@ class TestCheckMergeBase:
             "suggest": "Please rebase"
         }]
         mocker.patch(f"{LOCATION}.check_merge_base", return_value=1)
-        m_print_error = mocker.patch(f"{LOCATION}.print_error_message")
-        m_print_suggest = mocker.patch(f"{LOCATION}.print_suggestion")
+        m_print_error = mocker.patch("commit_check.util.print_error_message")
+        m_print_suggest = mocker.patch("commit_check.util.print_suggestion")
 
         retval = check_merge_base(checks)
         assert retval == FAIL
