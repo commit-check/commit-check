@@ -5,7 +5,7 @@ from commit_check.commit import check_commit_msg, get_default_commit_msg_file, r
 # used by get_commit_info mock
 FAKE_BRANCH_NAME = "fake_commits_info"
 # The location of check_commit_msg()
-LOCATION = "commit_check.commit"
+LOCATION = "commit_check.util"
 # Commit message file
 MSG_FILE = '.git/COMMIT_EDITMSG'
 

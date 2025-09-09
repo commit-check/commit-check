@@ -3,13 +3,19 @@ from typing import Optional
 import re
 from pathlib import PurePath
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import cmd_output, get_commit_info, print_error_header, print_error_message, print_suggestion, has_commits
+from commit_check.util import _find_check, _print_failure, cmd_output, get_commit_info, has_commits
 from commit_check.imperatives import IMPERATIVES
 
 
 def _load_imperatives() -> set:
     """Load imperative verbs from imperatives module."""
     return IMPERATIVES
+
+def _ensure_msg_file(commit_msg_file: str | None) -> str:
+    """Return a commit message file path, falling back to the default when empty."""
+    if not commit_msg_file:
+        return get_default_commit_msg_file()
+    return commit_msg_file
 
 
 def get_default_commit_msg_file() -> str:
@@ -37,77 +43,60 @@ def check_commit_msg(checks: list, commit_msg_file: str = "", stdin_text: Option
     if stdin_text is None and has_commits() is False:
         return PASS # pragma: no cover
 
+    check = _find_check(checks, 'message')
+    if not check:
+        return PASS  # pragma: no cover
+
+    regex = check.get('regex', "")
+    if regex == "":
+        print(f"{YELLOW}Not found regex for commit message. skip checking.{RESET_COLOR}")
+        return PASS
+
     if stdin_text is not None:
         commit_msg = stdin_text
     else:
-        if commit_msg_file is None or commit_msg_file == "":
-            commit_msg_file = get_default_commit_msg_file()
-        commit_msg = read_commit_msg(commit_msg_file)
+        path = _ensure_msg_file(commit_msg_file)
+        commit_msg = read_commit_msg(path)
 
-    for check in checks:
-        if check['check'] == 'message':
-            if check['regex'] == "":
-                print(
-                    f"{YELLOW}Not found regex for commit message. skip checking.{RESET_COLOR}",
-                )
-                return PASS
+    if re.match(regex, commit_msg):
+        return PASS
 
-            result = re.match(check['regex'], commit_msg)
-            if result is None:
-                if not print_error_header.has_been_called:
-                    print_error_header() # pragma: no cover
-                print_error_message(
-                    check['check'], check['regex'],
-                    check['error'], commit_msg,
-                )
-                if check['suggest']:
-                    print_suggestion(check['suggest'])
-                return FAIL
-
-    return PASS
+    _print_failure(check, regex, commit_msg)
+    return FAIL
 
 
 def check_commit_signoff(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
-    # Only enforce repository presence when not using explicit text
     if stdin_text is None and has_commits() is False:
         return PASS # pragma: no cover
+
+    check = _find_check(checks, 'commit_signoff')
+    if not check:
+        return PASS  # pragma: no cover
+
+    regex = check.get('regex', "")
+    if regex == "":
+        print(f"{YELLOW}Not found regex for commit signoff. skip checking.{RESET_COLOR}")
+        return PASS
 
     if stdin_text is not None:
         commit_msg = stdin_text
     else:
-        if commit_msg_file is None or commit_msg_file == "":
-            commit_msg_file = get_default_commit_msg_file()
-        commit_msg = read_commit_msg(commit_msg_file)
+        path = _ensure_msg_file(commit_msg_file)
+        commit_msg = read_commit_msg(path)
 
-    for check in checks:
-        if check['check'] == 'commit_signoff':
-            if check['regex'] == "":
-                print(
-                    f"{YELLOW}Not found regex for commit signoff. skip checking.{RESET_COLOR}",
-                )
-                return PASS
+    # Extract the subject line (first line of commit message)
+    subject = commit_msg.split('\n')[0].strip()
 
-            # Extract the subject line (first line of commit message)
-            subject = commit_msg.split('\n')[0].strip()
+    # Skip if merge commit
+    if subject.startswith('Merge'):
+        return PASS
 
-            # Skip if merge commit
-            if subject.startswith('Merge'):
-                return PASS
+    commit_hash = get_commit_info("H")
+    if re.search(regex, commit_msg):
+        return PASS
 
-            commit_hash = get_commit_info("H")
-            result = re.search(check['regex'], commit_msg)
-            if result is None:
-                if not print_error_header.has_been_called:
-                    print_error_header() # pragma: no cover
-                print_error_message(
-                    check['check'], check['regex'],
-                    check['error'], commit_hash,
-                )
-                if check['suggest']:
-                    print_suggestion(check['suggest'])
-                return FAIL
-
-    return PASS
+    _print_failure(check, regex, commit_hash)
+    return FAIL
 
 
 def check_imperative(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
@@ -115,42 +104,32 @@ def check_imperative(checks: list, commit_msg_file: str = "", stdin_text: Option
     if stdin_text is None and has_commits() is False:
         return PASS # pragma: no cover
 
-    # Lazily obtain commit message only when needed
+    check = _find_check(checks, 'imperative')
+    if not check:
+        return PASS
+
     if stdin_text is not None:
         commit_msg = stdin_text
     else:
-        if commit_msg_file is None or commit_msg_file == "":
-            commit_msg_file = get_default_commit_msg_file()
-        commit_msg = read_commit_msg(commit_msg_file)
+        path = _ensure_msg_file(commit_msg_file)
+        commit_msg = read_commit_msg(path)
 
-    for check in checks:
-        if check['check'] == 'imperative':
-            # Extract the subject line (first line of commit message)
-            subject = commit_msg.split('\n')[0].strip()
+    # Extract the subject line (first line of commit message)
+    subject = commit_msg.split('\n')[0].strip()
 
-            # Skip if empty or merge commit
-            if not subject or subject.startswith('Merge'):
-                return PASS
+    # Skip if empty or merge commit
+    if not subject or subject.startswith('Merge'):
+        return PASS
 
-            # For conventional commits, extract description after the colon
-            if ':' in subject:
-                description = subject.split(':', 1)[1].strip()
-            else:
-                description = subject
+    # For conventional commits, extract description after the colon
+    description = subject.split(':', 1)[1].strip() if ':' in subject else subject
 
-            # Check if the description uses imperative mood
-            if not _is_imperative(description):
-                if not print_error_header.has_been_called:
-                    print_error_header() # pragma: no cover
-                print_error_message(
-                    check['check'], 'imperative mood pattern',
-                    check['error'], subject,
-                )
-                if check['suggest']:
-                    print_suggestion(check['suggest'])
-                return FAIL
+    # Check if the description uses imperative mood
+    if _is_imperative(description):
+        return PASS
 
-    return PASS
+    _print_failure(check, 'imperative mood pattern', subject)
+    return FAIL
 
 
 def _is_imperative(description: str) -> bool:

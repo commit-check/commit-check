@@ -2,30 +2,27 @@
 import re
 from typing import Optional
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import get_branch_name, git_merge_base, print_error_header, print_error_message, print_suggestion, has_commits
+from commit_check.util import _find_check, _print_failure, get_branch_name, git_merge_base, has_commits
 
 
 def check_branch(checks: list, stdin_text: Optional[str] = None) -> int:
-    for check in checks:
-        if check['check'] == 'branch':
-            if check['regex'] == "":
-                print(
-                    f"{YELLOW}Not found regex for branch naming. skip checking.{RESET_COLOR}",
-                )
-                return PASS
-            branch_name = stdin_text.strip() if stdin_text is not None else get_branch_name()
-            result = re.match(check['regex'], branch_name)
-            if result is None:
-                if not print_error_header.has_been_called:
-                    print_error_header() # pragma: no cover
-                print_error_message(
-                    check['check'], check['regex'],
-                    check['error'], branch_name,
-                )
-                if check['suggest']:
-                    print_suggestion(check['suggest'])
-                return FAIL
-    return PASS
+    check = _find_check(checks, 'branch')
+    if not check:
+        return PASS
+
+    regex = check.get('regex', "")
+    if regex == "":
+        print(
+            f"{YELLOW}Not found regex for branch naming. skip checking.{RESET_COLOR}",
+        )
+        return PASS
+
+    branch_name = stdin_text.strip() if stdin_text is not None else get_branch_name()
+    if re.match(regex, branch_name):
+        return PASS
+
+    _print_failure(check, regex, branch_name)
+    return FAIL
 
 
 def check_merge_base(checks: list) -> int:
@@ -37,24 +34,23 @@ def check_merge_base(checks: list) -> int:
     if has_commits() is False:
         return PASS # pragma: no cover
 
-    for check in checks:
-        if check['check'] == 'merge_base':
-            if check['regex'] == "":
-                print(
-                    f"{YELLOW}Not found target branch for checking merge base. skip checking.{RESET_COLOR}",
-                )
-                return PASS
-            target_branch = check['regex'] if "origin/" in check['regex'] else f"origin/{check['regex']}"
-            current_branch = get_branch_name()
-            result = git_merge_base(target_branch, current_branch)
-            if result != 0:
-                if not print_error_header.has_been_called:
-                    print_error_header() # pragma: no cover
-                print_error_message(
-                    check['check'], check['regex'],
-                    check['error'], current_branch,
-                )
-                if check['suggest']:
-                    print_suggestion(check['suggest'])
-                return FAIL
-    return PASS
+    # locate merge_base rule, if any
+    check = _find_check(checks, 'merge_base')
+    if not check:
+        return PASS
+
+    regex = check.get('regex', "")
+    if regex == "":
+        print(
+            f"{YELLOW}Not found target branch for checking merge base. skip checking.{RESET_COLOR}",
+        )
+        return PASS
+
+    target_branch = regex if "origin/" in regex else f"origin/{regex}"
+    current_branch = get_branch_name()
+    result = git_merge_base(target_branch, current_branch)
+    if result == 0:
+        return PASS
+
+    _print_failure(check, regex, current_branch)
+    return FAIL
