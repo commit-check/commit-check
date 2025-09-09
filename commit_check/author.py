@@ -22,7 +22,7 @@ def _get_author_value(check_type: str) -> str:
     return str(get_commit_info(format_str))
 
 
-def check_author(checks: list, check_type: str， stdin_text: Optional[str] = None) -> int:
+def check_author(checks: list, check_type: str, stdin_text: Optional[str] = None) -> int:
     # If an explicit value is provided (stdin), validate it even if there are no commits
     if stdin_text is None and has_commits() is False:
         return PASS # pragma: no cover
