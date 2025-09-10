@@ -83,7 +83,7 @@ def build_checks_from_toml(conf: Dict[str, Any]) -> Dict[str, List[Dict[str, Any
     # Branch naming
     if branch_cfg.get("conventional_branch", True):
         allowed = branch_cfg.get("allow_branch_types") or [
-            "bugfix", "feature", "release", "hotfix", "task", "chore", "feat", "fix",
+            "bugfix", "feature", "release", "hotfix", "chore", "feat", "fix",
         ]
         allowed_re = "|".join(sorted(set(allowed)))
         regex = rf"^({allowed_re})\/.+|(master)|(main)|(HEAD)|(PR-.+)"
