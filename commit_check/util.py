@@ -6,10 +6,21 @@ A module containing utility functions.
 """
 
 import subprocess
-import yaml
-from pathlib import PurePath
+from pathlib import Path, PurePath
 from subprocess import CalledProcessError
+import yaml
 from commit_check import RED, GREEN, YELLOW, RESET_COLOR
+from commit_check.rules import build_checks_from_toml
+from typing import Any, Dict, List, Optional
+
+# Prefer stdlib tomllib (3.11+); fall back to tomli if available; else disabled
+try:  # pragma: no cover - import paths differ by Python version
+    import tomllib as _toml  # type: ignore[attr-defined]
+except Exception:  # pragma: no cover
+    try:
+        import tomli as _toml  # type: ignore[no-redef]
+    except Exception:  # pragma: no cover
+        _toml = None  # type: ignore[assignment]
 
 
 def _find_check(checks: list, check_type: str) -> dict | None:
@@ -122,19 +133,136 @@ def cmd_output(commands: list) -> str:
         return ''
 
 
-def validate_config(path_to_config: str) -> dict:
-    """Validate config file.
-    :param path_to_config: path to config file
-
-    :returns: Get `dict` value if exist else get empty.
-    """
-    configuration = {}
+def _load_toml(path: PurePath) -> Dict[str, Any]:
+    """Load TOML from file, tolerant if toml support missing."""
+    if _toml is None:
+        return {}
     try:
-        with open(PurePath(path_to_config)) as f:
-            configuration = yaml.safe_load(f)
+        with open(path, "rb") as f:
+            return _toml.load(f)  # type: ignore[call-arg]
     except FileNotFoundError:
-        pass
-    return configuration
+        return {}
+    except Exception:
+        return {}
+
+
+def _find_config_file(path_hint: str) -> Optional[PurePath]:
+    """Resolve config file.
+
+    - If a directory is passed, search in priority: commit-check.toml, cchk.toml
+    - If a file ending with .toml is passed, use it if exists.
+    - Ignore legacy .commit-check.yml entirely.
+    """
+    p = Path(path_hint)
+    if p.is_dir():
+        for name in ("commit-check.toml", "cchk.toml"):
+            candidate = p / name
+            if candidate.exists():
+                return candidate
+        return None
+    # If explicit file path provided
+    if str(p).endswith((".toml",)) and p.exists():
+        return p
+    return None
+
+
+def _build_checks_from_toml(conf: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
+    """Translate high-level TOML options into internal checks list."""
+    checks: List[Dict[str, Any]] = []
+
+    commit_cfg = conf.get("commit", {}) or {}
+    branch_cfg = conf.get("branch", {}) or {}
+    author_cfg = conf.get("author", {}) or {}
+
+    # message regex (Conventional Commits)
+    if commit_cfg.get("conventional_commits", True):
+        checks.append({
+            "check": "message",
+            "regex": r"^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)",
+            "error": "The commit message should follow Conventional Commits. See https://www.conventionalcommits.org",
+            "suggest": "Use <type>(<scope>): <description> with allowed types",
+        })
+
+    # Imperative mood check
+    if commit_cfg.get("subject_imperative", True):
+        checks.append({
+            "check": "imperative",
+            "regex": "",
+            "error": "Commit message should use imperative mood (e.g., 'Add feature' not 'Added feature')",
+            "suggest": "Use imperative mood in the subject line",
+        })
+
+    # Branch naming
+    if branch_cfg.get("conventional_branch", True):
+        allowed = branch_cfg.get("allow_branch_types") or [
+            "bugfix", "feature", "release", "hotfix", "task", "chore", "feat", "fix",
+        ]
+        allowed_re = "|".join(sorted(set(allowed)))
+        regex = rf"^({allowed_re})\/.+|(master)|(main)|(HEAD)|(PR-.+)"
+        checks.append({
+            "check": "branch",
+            "regex": regex,
+            "error": "Branches must begin with allowed types (e.g., feature/, bugfix/) or be main/master/PR-*.",
+            "suggest": "git checkout -b <type>/<branch_name>",
+        })
+
+    # Merge base requirement
+    target = branch_cfg.get("require_rebase_target")
+    if isinstance(target, str) and target:
+        checks.append({
+            "check": "merge_base",
+            "regex": target,
+            "error": "Current branch is not rebased onto target branch",
+            "suggest": "Rebase or merge with the target branch",
+        })
+
+    # Author checks (basic format validation retained)
+    checks.append({
+        "check": "author_name",
+        "regex": r"^[A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u017F\u0180-\u024F ,.'\-]+$|.*(\[bot])",
+        "error": "The committer name seems invalid",
+        "suggest": "git config user.name 'Your Name'",
+    })
+    checks.append({
+        "check": "author_email",
+        "regex": r"^.+@.+$",
+        "error": "The committer's email seems invalid",
+        "suggest": "git config user.email yourname@example.com",
+    })
+
+    # Signoff requirement
+    if author_cfg.get("require_signed_off_by", False):
+        checks.append({
+            "check": "commit_signoff",
+            "regex": r"Signed-off-by:.*[A-Za-z0-9]\s+<.+@.+>",
+            "error": "Signed-off-by not found in latest commit",
+            "suggest": "git commit --amend --signoff or use --signoff on commit",
+        })
+
+    return {"checks": checks}
+
+
+def validate_config(path_hint: str) -> dict:
+    """Validate and load configuration from TOML.
+
+    Returns a dict containing a 'checks' list or empty dict if not found/invalid.
+    """
+    cfg_path = _find_config_file(path_hint)
+    if cfg_path:
+        raw = _load_toml(cfg_path)
+        if not raw:
+            return {}
+        return build_checks_from_toml(raw)
+
+    # Legacy YAML fallback (maintained for test compatibility)
+    try:
+        with open(PurePath(path_hint)) as f:
+            data = yaml.safe_load(f)  # type: ignore[no-redef]
+            return data or {}
+    except FileNotFoundError:
+        return {}
+    except Exception:
+        return {}
 
 
 def track_print_call(func):
