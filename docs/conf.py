@@ -40,7 +40,7 @@ html_static_path = ["_static"]
 html_logo = "_static/logo.jpg"
 # html_favicon = "_static/favicon.ico"
 html_css_files = ["extra_css.css"]
-html_title = "commit-check"
+html_title = "Commit Check"
 
 html_theme_options = {
     "repo_url": "https://github.com/commit-check/commit-check",
@@ -49,8 +49,8 @@ html_theme_options = {
         {
             "media": "(prefers-color-scheme: light)",
             "scheme": "default",
-            "primary": "light-blue",
-            "accent": "deep-purple",
+            "primary": "blue",
+            "accent": "cyan",
             "toggle": {
                 "icon": "material/lightbulb-outline",
                 "name": "Switch to dark mode",
@@ -59,8 +59,8 @@ html_theme_options = {
         {
             "media": "(prefers-color-scheme: dark)",
             "scheme": "slate",
-            "primary": "light-blue",
-            "accent": "deep-purple",
+            "primary": "blue",
+            "accent": "cyan",
             "toggle": {
                 "icon": "material/lightbulb",
                 "name": "Switch to light mode",
