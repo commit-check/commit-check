@@ -17,7 +17,7 @@ from typing import Optional, Dict, Callable
 from commit_check import branch, commit, author
 from commit_check.error import error_handler
 from commit_check.util import validate_config
-from . import DEFAULT_CONFIG, PASS, FAIL, __version__
+from . import PASS, FAIL, __version__, DEFAULT_CONFIG
 
 
 class LogLevel:
@@ -66,11 +66,6 @@ def _dispatch_checks_full(checks: list, stdin_text: Optional[str]) -> int:
     dispatcher: Dict[str, Callable[[], int]] = {
         'message': lambda: commit.check_commit_msg(checks, stdin_text=stdin_text),
         'imperative': lambda: commit.check_imperative(checks, stdin_text=stdin_text),
-        'branch': lambda: branch.check_branch(checks, stdin_text=stdin_text),
-        'merge_base': lambda: branch.check_merge_base(checks),
-        'author_name': lambda: author.check_author(checks, 'author_name', stdin_text=stdin_text),
-        'author_email': lambda: author.check_author(checks, 'author_email', stdin_text=stdin_text),
-        'commit_signoff': lambda: commit.check_commit_signoff(checks, stdin_text=stdin_text),
         'subject_capitalized': lambda: commit.check_subject_capitalized(checks, stdin_text=stdin_text),
         'subject_max_length': lambda: commit.check_subject_max_length(checks, stdin_text=stdin_text),
         'subject_min_length': lambda: commit.check_subject_min_length(checks, stdin_text=stdin_text),
@@ -80,7 +75,12 @@ def _dispatch_checks_full(checks: list, stdin_text: Optional[str]) -> int:
         'allow_empty_commits': lambda: commit.check_allow_empty_commits(checks, stdin_text=stdin_text),
         'allow_fixup_commits': lambda: commit.check_allow_fixup_commits(checks, stdin_text=stdin_text),
         'allow_wip_commits': lambda: commit.check_allow_wip_commits(checks, stdin_text=stdin_text),
+        'commit_signoff': lambda: commit.check_commit_signoff(checks, stdin_text=stdin_text),
         'require_body': lambda: commit.check_require_body(checks, stdin_text=stdin_text),
+        'branch': lambda: branch.check_branch(checks, stdin_text=stdin_text),
+        'merge_base': lambda: branch.check_merge_base(checks),
+        'author_name': lambda: author.check_author(checks, 'author_name', stdin_text=stdin_text),
+        'author_email': lambda: author.check_author(checks, 'author_email', stdin_text=stdin_text),
         'allow_authors': lambda: author.check_allow_authors(checks, 'author_name', stdin_text=stdin_text),
         'ignore_authors': lambda: author.check_ignore_authors(checks, 'author_name', stdin_text=stdin_text),
         'commit_signoff_details': lambda: author.check_required_signoff_details(checks, stdin_text=stdin_text),
@@ -129,7 +129,7 @@ def main() -> int:
     stdin_text = _read_stdin()
     with error_handler():
         cfg = validate_config(cfg_path) or DEFAULT_CONFIG
-        checks = cfg['checks']
+        checks = cfg.get('checks', [])
         status = _dispatch_checks_full(checks, stdin_text=stdin_text)
         return status
 

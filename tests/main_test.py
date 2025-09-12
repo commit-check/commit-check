@@ -1,7 +1,7 @@
 import sys
 import pytest
 from commit_check.main import main
-from commit_check import DEFAULT_CONFIG, PASS, FAIL
+from commit_check import PASS, FAIL, DEFAULT_CONFIG
 
 CMD = "commit-check"
 

@@ -3,57 +3,6 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 
-def default_checks() -> List[Dict[str, Any]]:
-    return [
-        {
-            'check': 'message',
-            'regex': r'^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)',
-            'error': 'The commit message should be structured as follows:\n\n'
-                     '<type>[optional scope]: <description>\n'
-                     '[optional body]\n'
-                     '[optional footer(s)]\n\n'
-                     'More details please refer to https://www.conventionalcommits.org',
-            'suggest': 'please check your commit message whether matches above regex',
-        },
-        {
-            'check': 'branch',
-            'regex': r'^(bugfix|feature|release|hotfix|task|chore)\/.+|(master)|(main)|(HEAD)|(PR-.+)',
-            'error': 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/ chore/',
-            'suggest': 'run command `git checkout -b type/branch_name`',
-        },
-        {
-            'check': 'author_name',
-            'regex': r"^[A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u017F\u0180-\u024F ,.'\-]+$|.*(\[bot])",
-            'error': 'The committer name seems invalid',
-            'suggest': 'run command `git config user.name "Your Name"`',
-        },
-        {
-            'check': 'author_email',
-            'regex': r'^.+@.+$',
-            'error': "The committer's email seems invalid",
-            'suggest': 'run command `git config user.email yourname@example.com`',
-        },
-        {
-            'check': 'commit_signoff',
-            'regex': r'Signed-off-by:.*[A-Za-z0-9]\s+<.+@.+>',
-            'error': 'Signed-off-by not found in latest commit',
-            'suggest': 'run command `git commit -m "conventional commit message" --signoff`',
-        },
-        {
-            'check': 'merge_base',
-            'regex': r'main',
-            'error': 'Current branch is not rebased onto target branch',
-            'suggest': 'Please ensure your branch is rebased with the target branch',
-        },
-        {
-            'check': 'imperative',
-            'regex': r'',  # Not used for imperative mood check
-            'error': 'Commit message should use imperative mood (e.g., "Add feature" not "Added feature")',
-            'suggest': 'Use imperative mood in commit message like "Add", "Fix", "Update", "Remove"',
-        },
-    ]
-
-
 def build_checks_from_toml(conf: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
     """Translate high-level TOML options into internal checks list.
 
@@ -67,14 +16,18 @@ def build_checks_from_toml(conf: Dict[str, Any]) -> Dict[str, List[Dict[str, Any
     author_cfg = conf.get("author", {}) or {}
 
     # --- commit section ---
-    allowed_types_cfg = commit_cfg.get("allow_commit_types")
-    if isinstance(allowed_types_cfg, list) and allowed_types_cfg:
+    if commit_cfg.get("conventional_commits", True):
+        allowed_types = commit_cfg.get("allow_commit_types") or [
+            "feat", "fix", "docs", "style", "refactor", "test", "chore",
+        ]
+        allowed_re = "|".join(sorted(set(allowed_types)))
+        conv_regex = rf"^({allowed_re}){{1}}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)"
         checks.append({
-            "check": "allow_commit_types",
-            "regex": "",
-            "error": "Commit type is not in the allowed list",
-            "suggest": "Use an allowed type or update configuration",
-            "allowed": allowed_types_cfg,
+            "check": "message",
+            "regex": conv_regex,
+            "error": "The commit message should follow Conventional Commits. See https://www.conventionalcommits.org",
+            "suggest": "Use <type>(<scope>): <description> with allowed types",
+            "allowed_types": allowed_types,
         })
 
     if commit_cfg.get("subject_capitalized", True):
@@ -111,7 +64,6 @@ def build_checks_from_toml(conf: Dict[str, Any]) -> Dict[str, List[Dict[str, Any
             "suggest": "Provide a meaningful subject (>= configured min)",
             "value": min_len,
         })
-
 
     if commit_cfg.get("allow_merge_commits", True) is False:
         checks.append({
@@ -164,17 +116,25 @@ def build_checks_from_toml(conf: Dict[str, Any]) -> Dict[str, List[Dict[str, Any
 
     # --- branch section ---
     if branch_cfg.get("conventional_branch", True):
-        allowed = branch_cfg.get("allow_branch_types") or [
+        branch_allowed = branch_cfg.get("allow_branch_types") or [
             "feature", "bugfix", "hotfix", "release", "chore", "feat", "fix",
         ]
-        allowed_re = "|".join(sorted(set(allowed)))
+        # Preserve order while de-duplicating
+        seen_b = set()
+        ordered_branch_allowed: List[str] = []
+        for t in branch_allowed:
+            if t not in seen_b:
+                seen_b.add(t)
+                ordered_branch_allowed.append(t)
+        allowed_re = "|".join(ordered_branch_allowed)
         regex = rf"^({allowed_re})\/.+|(master)|(main)|(HEAD)|(PR-.+)"
         checks.append({
             "check": "branch",
             "regex": regex,
             "error": "Branches must begin with allowed types (e.g., feature/, bugfix/) or be main/master/PR-*.",
             "suggest": "git checkout -b <type>/<branch_name>",
-            "allowed_types": allowed,
+            "allowed": ordered_branch_allowed,
+            "allowed_types": ordered_branch_allowed,
         })
 
     target = branch_cfg.get("require_rebase_target")
