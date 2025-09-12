@@ -67,18 +67,14 @@ def build_checks_from_toml(conf: Dict[str, Any]) -> Dict[str, List[Dict[str, Any
     author_cfg = conf.get("author", {}) or {}
 
     # --- commit section ---
-    if commit_cfg.get("conventional_commits", True):
-        allowed_types = commit_cfg.get("allow_commit_types") or [
-            "feat", "fix", "docs", "style", "refactor", "test", "chore",
-        ]
-        allowed_re = "|".join(sorted(set(allowed_types)))
-        conv_regex = rf"^({allowed_re}){{1}}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)"
+    allowed_types_cfg = commit_cfg.get("allow_commit_types")
+    if isinstance(allowed_types_cfg, list) and allowed_types_cfg:
         checks.append({
-            "check": "message",
-            "regex": conv_regex,
-            "error": "The commit message should follow Conventional Commits. See https://www.conventionalcommits.org",
-            "suggest": "Use <type>(<scope>): <description> with allowed types",
-            "allowed_types": allowed_types,
+            "check": "allow_commit_types",
+            "regex": "",
+            "error": "Commit type is not in the allowed list",
+            "suggest": "Use an allowed type or update configuration",
+            "allowed": allowed_types_cfg,
         })
 
     if commit_cfg.get("subject_capitalized", True):
@@ -116,15 +112,6 @@ def build_checks_from_toml(conf: Dict[str, Any]) -> Dict[str, List[Dict[str, Any
             "value": min_len,
         })
 
-    allowed_types_cfg = commit_cfg.get("allow_commit_types")
-    if isinstance(allowed_types_cfg, list) and allowed_types_cfg:
-        checks.append({
-            "check": "allow_commit_types",
-            "regex": "",
-            "error": "Commit type is not in the allowed list",
-            "suggest": "Use an allowed type or update configuration",
-            "allowed": allowed_types_cfg,
-        })
 
     if commit_cfg.get("allow_merge_commits", True) is False:
         checks.append({
