@@ -132,6 +132,153 @@ def check_imperative(checks: list, commit_msg_file: str = "", stdin_text: Option
     return FAIL
 
 
+# --- Additional per-option checks (not yet wired into CLI) ---
+
+def _get_subject_and_body(stdin_text: Optional[str], commit_msg_file: str) -> tuple[str, str]:
+    if stdin_text is not None:
+        commit_msg = stdin_text
+    else:
+        path = _ensure_msg_file(commit_msg_file)
+        commit_msg = read_commit_msg(path)
+    subject = commit_msg.split('\n')[0].strip()
+    body = '\n'.join(commit_msg.split('\n')[1:]).strip()
+    return subject, body
+
+
+def check_subject_capitalized(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
+    if stdin_text is None and has_commits() is False:
+        return PASS  # pragma: no cover
+    check = _find_check(checks, 'subject_capitalized')
+    if not check:
+        return PASS
+    subject, _ = _get_subject_and_body(stdin_text, commit_msg_file)
+    if not subject or subject[0].isupper():
+        return PASS
+    _print_failure(check, 'capitalized first letter', subject)
+    return FAIL
+
+
+def check_subject_max_length(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
+    if stdin_text is None and has_commits() is False:
+        return PASS  # pragma: no cover
+    check = _find_check(checks, 'subject_max_length')
+    if not check:
+        return PASS
+    max_len = int(check.get('value', 0) or 0)
+    subject, _ = _get_subject_and_body(stdin_text, commit_msg_file)
+    if not max_len or len(subject) <= max_len:
+        return PASS
+    _print_failure(check, f'max_length={max_len}', subject)
+    return FAIL
+
+
+def check_subject_min_length(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
+    if stdin_text is None and has_commits() is False:
+        return PASS  # pragma: no cover
+    check = _find_check(checks, 'subject_min_length')
+    if not check:
+        return PASS
+    min_len = int(check.get('value', 0) or 0)
+    subject, _ = _get_subject_and_body(stdin_text, commit_msg_file)
+    if len(subject) >= min_len:
+        return PASS
+    _print_failure(check, f'min_length={min_len}', subject)
+    return FAIL
+
+
+def check_allow_commit_types(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
+    if stdin_text is None and has_commits() is False:
+        return PASS  # pragma: no cover
+    check = _find_check(checks, 'allow_commit_types')
+    if not check:
+        return PASS
+    allowed = set(check.get('allowed') or [])
+    subject, _ = _get_subject_and_body(stdin_text, commit_msg_file)
+    ctype = subject.split(':', 1)[0].split('(')[0].strip() if ':' in subject else subject.split('(')[0].strip()
+    if ctype in allowed:
+        return PASS
+    _print_failure(check, f'allowed={sorted(allowed)}', subject)
+    return FAIL
+
+
+def check_allow_merge_commits(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
+    if stdin_text is None and has_commits() is False:
+        return PASS  # pragma: no cover
+    check = _find_check(checks, 'allow_merge_commits')
+    if not check:
+        return PASS
+    subject, _ = _get_subject_and_body(stdin_text, commit_msg_file)
+    if subject.startswith('Merge'):
+        _print_failure(check, 'no merge commits', subject)
+        return FAIL
+    return PASS
+
+
+def check_allow_revert_commits(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
+    if stdin_text is None and has_commits() is False:
+        return PASS  # pragma: no cover
+    check = _find_check(checks, 'allow_revert_commits')
+    if not check:
+        return PASS
+    subject, _ = _get_subject_and_body(stdin_text, commit_msg_file)
+    if subject.lower().startswith('revert'):
+        _print_failure(check, 'no revert commits', subject)
+        return FAIL
+    return PASS
+
+
+def check_allow_empty_commits(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
+    if stdin_text is None and has_commits() is False:
+        return PASS  # pragma: no cover
+    check = _find_check(checks, 'allow_empty_commits')
+    if not check:
+        return PASS
+    subject, _ = _get_subject_and_body(stdin_text, commit_msg_file)
+    if subject:
+        return PASS
+    _print_failure(check, 'non-empty subject required', subject)
+    return FAIL
+
+
+def check_allow_fixup_commits(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
+    if stdin_text is None and has_commits() is False:
+        return PASS  # pragma: no cover
+    check = _find_check(checks, 'allow_fixup_commits')
+    if not check:
+        return PASS
+    subject, _ = _get_subject_and_body(stdin_text, commit_msg_file)
+    if subject.startswith('fixup!'):
+        _print_failure(check, 'no fixup commits', subject)
+        return FAIL
+    return PASS
+
+
+def check_allow_wip_commits(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
+    if stdin_text is None and has_commits() is False:
+        return PASS  # pragma: no cover
+    check = _find_check(checks, 'allow_wip_commits')
+    if not check:
+        return PASS
+    subject, _ = _get_subject_and_body(stdin_text, commit_msg_file)
+    if subject.startswith('WIP') or subject.upper().startswith('WIP:'):
+        _print_failure(check, 'no WIP commits', subject)
+        return FAIL
+    return PASS
+
+
+def check_require_body(checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None) -> int:
+    if stdin_text is None and has_commits() is False:
+        return PASS  # pragma: no cover
+    check = _find_check(checks, 'require_body')
+    if not check:
+        return PASS
+    _, body = _get_subject_and_body(stdin_text, commit_msg_file)
+    if body:
+        return PASS
+    _print_failure(check, 'body required', '')
+    return FAIL
+
+
 def _is_imperative(description: str) -> bool:
     """Check if a description uses imperative mood."""
     if not description:

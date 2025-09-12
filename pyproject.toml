@@ -12,7 +12,7 @@ authors = [
     { name = "Xianpeng Shen", email = "xianpeng.shen@gmail.com" },
 ]
 requires-python = ">=3.9"
-dependencies = ["pyyaml"]
+dependencies = ["pyyaml", "typer"]
 classifiers = [
     # https://pypi.org/pypi?%3Aaction=list_classifiers
     "Development Status :: 5 - Production/Stable",

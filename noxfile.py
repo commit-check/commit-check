@@ -14,12 +14,7 @@ def lint(session):
     session.install("pre-commit")
     # only need pre-commit hook for local development
     session.run("pre-commit", "install", "--hook-type", "pre-commit")
-    if session.posargs:
-        args = session.posargs + ["--all-files"]
-    else:
-        args = ["--all-files", "--show-diff-on-failure"]
-
-    session.run("pre-commit", "run", *args)
+    session.run("pre-commit", "run", "--all-files")
 
 
 @nox.session(name="test-hook")

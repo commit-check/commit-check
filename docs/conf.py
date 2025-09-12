@@ -6,9 +6,8 @@
 import re
 import datetime
 from pathlib import Path
-import io
+import subprocess
 from sphinx.application import Sphinx
-from commit_check.main import get_parser
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -103,13 +102,12 @@ for name in ("hint", "tip", "important"):
 def setup(app: Sphinx):
     """Generate a doc from the executable script's ``--help`` output."""
 
-    with io.StringIO() as help_out:
-        parser = get_parser()
-        parser.print_help(help_out)
-        output = help_out.getvalue()
+    result = subprocess.run(
+        ["commit-check", "--help"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8'
+    )
     doc = "commit-check --help\n==============================\n\n"
     CLI_OPT_NAME = re.compile(r"^\s*(\-\w)\s?[A-Z_]*,\s(\-\-.*?)\s")
-    for line in output.splitlines():
+    for line in result.stdout.splitlines():
         match = CLI_OPT_NAME.search(line)
         if match is not None:
             # print(match.groups())

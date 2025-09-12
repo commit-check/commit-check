@@ -54,3 +54,15 @@ def check_merge_base(checks: list) -> int:
 
     _print_failure(check, regex, current_branch)
     return FAIL
+
+
+# --- Additional per-option checks (aliases to existing ones) ---
+
+def check_conventional_branch(checks: list, stdin_text: Optional[str] = None) -> int:
+    """Alias to check_branch for explicit rule mapping."""
+    return check_branch(checks, stdin_text=stdin_text)
+
+
+def check_require_rebase_target(checks: list) -> int:
+    """Alias to check_merge_base for explicit rule mapping."""
+    return check_merge_base(checks)

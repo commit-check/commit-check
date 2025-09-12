@@ -26,6 +26,11 @@ The file should be placed in the root of your repository.
     allow_fixup_commits = true
     allow_wip_commits = false
     require_body = false
+    allow_authors = []
+    ignore_authors = ["dependabot[bot]", "dependabot-preview[bot]"]
+    require_signed_off_by = true
+    required_signoff_name = "Your Name"
+    required_signoff_email = "your.email@example.com"
 
     [branch]
     # https://conventional-branch.github.io/
@@ -33,12 +38,6 @@ The file should be placed in the root of your repository.
     allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
     require_rebase_target = "main"
 
-    [author]
-    allow_authors = []
-    ignore_authors = ["dependabot[bot]", "dependabot-preview[bot]"]
-    require_signed_off_by = true
-    required_signoff_name = "Your Name"
-    required_signoff_email = "your.email@example.com"
 
 
 options table description
