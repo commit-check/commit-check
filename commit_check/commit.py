@@ -191,6 +191,9 @@ def check_subject_max_length(
         return PASS
     max_len = int(check.get("value", 0) or 0)
     subject, _ = _get_subject_and_body(stdin_text, commit_msg_file)
+    # Skip if merge commit
+    if subject.startswith("Merge"):
+        return PASS
     if not max_len or len(subject) <= max_len:
         return PASS
     _print_failure(check, f"max_length={max_len}", subject)
