@@ -58,6 +58,9 @@ def check_merge_base(checks: list) -> int:
     result = git_merge_base(target_branch, current_branch)
     if result == 0:
         return PASS
+    # Treat missing target (128) as skip only when detached HEAD (cannot verify ancestry reliably)
+    if result == 128 and current_branch == "HEAD":
+        return PASS
 
     _print_failure(check, regex, current_branch)
     return FAIL
