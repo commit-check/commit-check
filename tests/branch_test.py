@@ -122,7 +122,10 @@ class TestCheckMergeBase:
                 "suggest": "Please rebase",
             }
         ]
-        mocker.patch(f"{LOCATION}.check_merge_base", return_value=1)
+        # Simulate a normal named branch so skip logic doesn't apply
+        mocker.patch(f"{LOCATION}.get_branch_name", return_value="feature/something")
+        # Force git merge-base to report not ancestor (return code 1)
+        mocker.patch(f"{LOCATION}.git_merge_base", return_value=1)
         m_print_error = mocker.patch("commit_check.util.print_error_message")
         m_print_suggest = mocker.patch("commit_check.util.print_suggestion")
 
