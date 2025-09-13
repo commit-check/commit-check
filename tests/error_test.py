@@ -42,11 +42,12 @@ def test_error_handler_cannot_access(mocker):
         mocker.patch("sys.executable", "/mock/path/to/python")
 
         from commit_check.error import log_and_exit
+
         log_and_exit(
             msg="Test error message",
             ret_code=1,
             exc=ValueError("Test exception"),
-            formatted="Mocked formatted stack trace"
+            formatted="Mocked formatted stack trace",
         )
 
         mock_os_access.assert_called_once_with(store_dir, os.W_OK)

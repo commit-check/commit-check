@@ -91,7 +91,7 @@ sphinx_immaterial_custom_admonitions = [
         "name": "note",
         "icon": "material/file-document-edit-outline",
         "override": True,
-    }
+    },
 ]
 for name in ("hint", "tip", "important"):
     sphinx_immaterial_custom_admonitions.append(
@@ -103,7 +103,10 @@ def setup(app: Sphinx):
     """Generate a doc from the executable script's ``--help`` output."""
 
     result = subprocess.run(
-        ["commit-check", "--help"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8'
+        ["commit-check", "--help"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
     )
     doc = "commit-check --help\n==============================\n\n"
     CLI_OPT_NAME = re.compile(r"^\s*(\-\w)\s?[A-Z_]*,\s(\-\-.*?)\s")

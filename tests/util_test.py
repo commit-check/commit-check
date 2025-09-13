@@ -19,53 +19,46 @@ class TestUtil:
         def test_get_branch_name(self, mocker):
             # Must call cmd_output with given argument.
             m_cmd_output = mocker.patch(
-                "commit_check.util.cmd_output",
-                return_value=" fake_branch_name "
+                "commit_check.util.cmd_output", return_value=" fake_branch_name "
             )
             retval = get_branch_name()
             assert m_cmd_output.call_count == 1
-            assert m_cmd_output.call_args[0][0] == [
-                "git", "branch", "--show-current"
-            ]
+            assert m_cmd_output.call_args[0][0] == ["git", "branch", "--show-current"]
             assert retval == "fake_branch_name"
 
         @pytest.mark.benchmark
         def test_get_branch_name_with_exception(self, mocker):
             # Must return empty string when exception raises in cmd_output.
             m_cmd_output = mocker.patch(
-                "commit_check.util.cmd_output",
-                return_value=" fake_branch_name "
+                "commit_check.util.cmd_output", return_value=" fake_branch_name "
             )
             # CalledProcessError's args also dummy
             dummy_ret_code, dummy_cmd_name = 1, "dcmd"
             m_cmd_output.side_effect = CalledProcessError(
-                dummy_ret_code,
-                dummy_cmd_name
+                dummy_ret_code, dummy_cmd_name
             )
             retval = get_branch_name()
             assert m_cmd_output.call_count == 1
-            assert m_cmd_output.call_args[0][0] == [
-                "git", "branch", "--show-current"
-            ]
+            assert m_cmd_output.call_args[0][0] == ["git", "branch", "--show-current"]
             assert retval == ""
 
     class TestHasCommits:
         @pytest.mark.benchmark
         def test_has_commits_true(self, mocker):
             # Must return True when git rev-parse HEAD succeeds
-            m_subprocess_run = mocker.patch(
-                "subprocess.run",
-                return_value=None
-            )
+            m_subprocess_run = mocker.patch("subprocess.run", return_value=None)
             retval = has_commits()
             assert m_subprocess_run.call_count == 1
             assert m_subprocess_run.call_args[0][0] == [
-                "git", "rev-parse", "--verify", "HEAD"
+                "git",
+                "rev-parse",
+                "--verify",
+                "HEAD",
             ]
             assert m_subprocess_run.call_args[1] == {
-                'stdout': subprocess.DEVNULL,
-                'stderr': subprocess.DEVNULL,
-                'check': True
+                "stdout": subprocess.DEVNULL,
+                "stderr": subprocess.DEVNULL,
+                "check": True,
             }
             assert retval is True
 
@@ -74,27 +67,33 @@ class TestUtil:
             # Must return False when git rev-parse HEAD fails
             m_subprocess_run = mocker.patch(
                 "subprocess.run",
-                side_effect=subprocess.CalledProcessError(128, "git rev-parse")
+                side_effect=subprocess.CalledProcessError(128, "git rev-parse"),
             )
             retval = has_commits()
             assert m_subprocess_run.call_count == 1
             assert m_subprocess_run.call_args[0][0] == [
-                "git", "rev-parse", "--verify", "HEAD"
+                "git",
+                "rev-parse",
+                "--verify",
+                "HEAD",
             ]
             assert m_subprocess_run.call_args[1] == {
-                'stdout': subprocess.DEVNULL,
-                'stderr': subprocess.DEVNULL,
-                'check': True
+                "stdout": subprocess.DEVNULL,
+                "stderr": subprocess.DEVNULL,
+                "check": True,
             }
             assert retval is False
 
     class TestGitMergeBase:
         @pytest.mark.benchmark
-        @pytest.mark.parametrize("returncode,expected", [
-            (0, 0),  # ancestor exists
-            (1, 1),  # no ancestor
-            (128, 128),  # error case
-        ])
+        @pytest.mark.parametrize(
+            "returncode,expected",
+            [
+                (0, 0),  # ancestor exists
+                (1, 1),  # no ancestor
+                (128, 128),  # error case
+            ],
+        )
         def test_git_merge_base(self, mocker, returncode, expected):
             mock_run = mocker.patch("subprocess.run")
             if returncode == 128:
@@ -108,74 +107,74 @@ class TestUtil:
 
             mock_run.assert_called_once_with(
                 ["git", "merge-base", "--is-ancestor", "main", "feature"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8'
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                encoding="utf-8",
             )
 
             assert result == expected
 
     class TestGetCommitInfo:
         @pytest.mark.benchmark
-        @pytest.mark.parametrize("format_string", [
-            ("s"),
-            ("an"),
-            ("ae"),
-        ]
+        @pytest.mark.parametrize(
+            "format_string",
+            [
+                ("s"),
+                ("an"),
+                ("ae"),
+            ],
         )
         def test_get_commit_info(self, mocker, format_string):
             # Must call get_commit_info with given argument when there are commits.
-            mocker.patch(
-                "commit_check.util.has_commits",
-                return_value=True
-            )
+            mocker.patch("commit_check.util.has_commits", return_value=True)
             m_cmd_output = mocker.patch(
-                "commit_check.util.cmd_output",
-                return_value=" fake commit message "
+                "commit_check.util.cmd_output", return_value=" fake commit message "
             )
             retval = get_commit_info(format_string)
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
-                "git", "log", "-n", "1", f"--pretty=format:%{format_string}", "HEAD"
+                "git",
+                "log",
+                "-n",
+                "1",
+                f"--pretty=format:%{format_string}",
+                "HEAD",
             ]
             assert retval == " fake commit message "
 
         @pytest.mark.benchmark
         def test_get_commit_info_no_commits(self, mocker):
             # Must return 'Repo has no commits yet.' when there are no commits.
+            mocker.patch("commit_check.util.has_commits", return_value=False)
             mocker.patch(
-                "commit_check.util.has_commits",
-                return_value=False
-            )
-            mocker.patch(
-                "commit_check.util.cmd_output",
-                return_value=" fake commit message "
+                "commit_check.util.cmd_output", return_value=" fake commit message "
             )
             format_string = "s"
             retval = get_commit_info(format_string)
             assert retval == " fake commit message "
 
-
         @pytest.mark.benchmark
         def test_get_commit_info_with_exception(self, mocker):
             # Must return empty string when exception raises in cmd_output.
-            mocker.patch(
-                "commit_check.util.has_commits",
-                return_value=True
-            )
+            mocker.patch("commit_check.util.has_commits", return_value=True)
             m_cmd_output = mocker.patch(
-                "commit_check.util.cmd_output",
-                return_value=" fake commit message "
+                "commit_check.util.cmd_output", return_value=" fake commit message "
             )
             # CalledProcessError's args also dummy
             dummy_ret_code, dummy_cmd_name = 1, "dcmd"
             m_cmd_output.side_effect = CalledProcessError(
-                dummy_ret_code,
-                dummy_cmd_name
+                dummy_ret_code, dummy_cmd_name
             )
             format_string = "s"
             retval = get_commit_info(format_string)
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == [
-                "git", "log", "-n", "1", f"--pretty=format:%{format_string}", "HEAD"
+                "git",
+                "log",
+                "-n",
+                "1",
+                f"--pretty=format:%{format_string}",
+                "HEAD",
             ]
             assert retval == ""
 
@@ -191,26 +190,26 @@ class TestUtil:
         def test_cmd_output(self, mocker):
             # Must subprocess.run with given argument.
             m_subprocess_run = mocker.patch(
-                "subprocess.run",
-                return_value=self.DummyProcessResult(0, "ok", "")
+                "subprocess.run", return_value=self.DummyProcessResult(0, "ok", "")
             )
             retval = cmd_output(["dummy_cmd"])
             assert m_subprocess_run.call_count == 1
             assert retval == "ok"
 
         @pytest.mark.benchmark
-        @pytest.mark.parametrize("returncode, stdout, stderr", [
-            (1, "ok", "err"),
-            (0, None, "err"),
-            (1, None, "err"),
-        ]
+        @pytest.mark.parametrize(
+            "returncode, stdout, stderr",
+            [
+                (1, "ok", "err"),
+                (0, None, "err"),
+                (1, None, "err"),
+            ],
         )
         def test_cmd_output_err(self, mocker, returncode, stdout, stderr):
             # Must return stderr when  subprocess.run returns not empty stderr.
             m_subprocess_run = mocker.patch(
                 "subprocess.run",
-                return_value=self.DummyProcessResult(
-                    returncode, stdout, stderr)
+                return_value=self.DummyProcessResult(returncode, stdout, stderr),
             )
             dummy_cmd = ["dummy_cmd"]
             retval = cmd_output(dummy_cmd)
@@ -218,24 +217,27 @@ class TestUtil:
             assert retval == stderr
             assert m_subprocess_run.call_args[0][0] == dummy_cmd
             assert m_subprocess_run.call_args[1] == {
-                'encoding': 'utf-8',
-                'stderr': PIPE,
-                "stdout": PIPE
+                "encoding": "utf-8",
+                "stderr": PIPE,
+                "stdout": PIPE,
             }
 
         @pytest.mark.benchmark
-        @pytest.mark.parametrize("returncode, stdout, stderr", [
-            (1, "ok", ""),
-            (0, None, ""),
-            (1, None, ""),
-        ]
+        @pytest.mark.parametrize(
+            "returncode, stdout, stderr",
+            [
+                (1, "ok", ""),
+                (0, None, ""),
+                (1, None, ""),
+            ],
         )
-        def test_cmd_output_err_with_len0_stderr(self, mocker, returncode, stdout, stderr):
+        def test_cmd_output_err_with_len0_stderr(
+            self, mocker, returncode, stdout, stderr
+        ):
             # Must return empty string when subprocess.run returns empty stderr.
             m_subprocess_run = mocker.patch(
                 "subprocess.run",
-                return_value=self.DummyProcessResult(
-                    returncode, stdout, stderr)
+                return_value=self.DummyProcessResult(returncode, stdout, stderr),
             )
             dummy_cmd = ["dummy_cmd"]
             retval = cmd_output(dummy_cmd)
@@ -243,9 +245,9 @@ class TestUtil:
             assert retval == ""
             assert m_subprocess_run.call_args[0][0] == dummy_cmd
             assert m_subprocess_run.call_args[1] == {
-                'encoding': 'utf-8',
-                'stderr': PIPE,
-                "stdout": PIPE
+                "encoding": "utf-8",
+                "stderr": PIPE,
+                "stdout": PIPE,
             }
 
     class TestValidateConfig:
@@ -254,10 +256,7 @@ class TestUtil:
             # Must call yaml.safe_load.
             mocker.patch("builtins.open")
             dummy_resp = {"key": "value"}
-            m_yaml_safe_load = mocker.patch(
-                "yaml.safe_load",
-                return_value=dummy_resp
-            )
+            m_yaml_safe_load = mocker.patch("yaml.safe_load", return_value=dummy_resp)
             retval = validate_config("dummy_path")
             assert m_yaml_safe_load.call_count == 1
             assert retval == dummy_resp
@@ -281,24 +280,22 @@ class TestUtil:
             assert "Commit rejected." in stdout
 
         @pytest.mark.benchmark
-        @pytest.mark.parametrize("check_type, type_failed_msg", [
-            ("message", "check failed =>"),
-            ("branch", "check failed =>"),
-            ("author_name", "check failed =>"),
-            ("author_email", "check failed =>"),
-            ("commit_signoff", "check failed =>"),
-        ])
+        @pytest.mark.parametrize(
+            "check_type, type_failed_msg",
+            [
+                ("message", "check failed =>"),
+                ("branch", "check failed =>"),
+                ("author_name", "check failed =>"),
+                ("author_email", "check failed =>"),
+                ("commit_signoff", "check failed =>"),
+            ],
+        )
         def test_print_error_message(self, capfd, check_type, type_failed_msg):
             # Must print on stdout with given argument.
             dummy_regex = "dummy regex"
             dummy_reason = "failure reason"
             dummy_error = "dummy error"
-            print_error_message(
-                check_type,
-                dummy_regex,
-                dummy_error,
-                dummy_reason
-            )
+            print_error_message(check_type, dummy_regex, dummy_error, dummy_reason)
             stdout, _ = capfd.readouterr()
             assert check_type in stdout
             assert type_failed_msg in stdout

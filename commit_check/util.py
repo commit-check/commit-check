@@ -26,22 +26,18 @@ except Exception:  # pragma: no cover
 def _find_check(checks: list, check_type: str) -> dict | None:
     """Return the first check dict matching check_type, else None."""
     for check in checks:
-        if check.get('check') == check_type:
+        if check.get("check") == check_type:
             return check
     return None
 
 
-def _print_failure(
-    check: dict,
-    regex: str,
-    actual: str
-) -> None:
+def _print_failure(check: dict, regex: str, actual: str) -> None:
     """Print a standardized failure message."""
     if not print_error_header.has_been_called:
         print_error_header()
-    print_error_message(check['check'], regex, check.get('error', ''), actual)
-    if check.get('suggest'):
-        print_suggestion(check.get('suggest'))
+    print_error_message(check["check"], regex, check.get("error", ""), actual)
+    if check.get("suggest"):
+        print_suggestion(check.get("suggest"))
 
 
 def get_branch_name() -> str:
@@ -55,10 +51,10 @@ def get_branch_name() -> str:
     """
     try:
         # Git 2.22 and above supports `git branch --show-current`
-        commands = ['git', 'branch', '--show-current']
+        commands = ["git", "branch", "--show-current"]
         branch_name = cmd_output(commands) or "HEAD"
     except CalledProcessError:
-        branch_name = ''
+        branch_name = ""
     return branch_name.strip()
 
 
@@ -71,11 +67,12 @@ def has_commits() -> bool:
             ["git", "rev-parse", "--verify", "HEAD"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            check=True
+            check=True,
         )
         return True
     except subprocess.CalledProcessError:
         return False
+
 
 def get_commit_info(format_string: str, sha: str = "HEAD") -> str:
     """Get latest commits information
@@ -91,11 +88,16 @@ def get_commit_info(format_string: str, sha: str = "HEAD") -> str:
     """
     try:
         commands = [
-            'git', 'log', '-n', '1', f"--pretty=format:%{format_string}", f"{sha}",
+            "git",
+            "log",
+            "-n",
+            "1",
+            f"--pretty=format:%{format_string}",
+            f"{sha}",
         ]
         output = cmd_output(commands)
     except CalledProcessError:
-        output = ''
+        output = ""
     return output
 
 
@@ -107,9 +109,15 @@ def git_merge_base(target_branch: str, current_branch: str) -> int:
     :returns: 0 if ancestor exists, 1 if not, 128 if git command fails.
     """
     try:
-        commands = ['git', 'merge-base', '--is-ancestor', f'{target_branch}', f'{current_branch}']
+        commands = [
+            "git",
+            "merge-base",
+            "--is-ancestor",
+            f"{target_branch}",
+            f"{current_branch}",
+        ]
         result = subprocess.run(
-            commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8'
+            commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8"
         )
         return result.returncode
     except CalledProcessError:
@@ -123,14 +131,14 @@ def cmd_output(commands: list) -> str:
     :returns: Get `str` output.
     """
     result = subprocess.run(
-        commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8'
+        commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8"
     )
     if result.returncode == 0 and result.stdout is not None:
         return result.stdout
-    elif result.stderr != '':
+    elif result.stderr != "":
         return result.stderr
     else:
-        return ''
+        return ""
 
 
 def _load_toml(path: PurePath) -> Dict[str, Any]:
@@ -193,6 +201,7 @@ def track_print_call(func):
     def wrapper(*args, **kwargs):
         wrapper.has_been_called = True
         return func(*args, **kwargs)
+
     wrapper.has_been_called = False  # Initialize as False
     return wrapper
 
@@ -226,7 +235,10 @@ def print_error_message(check_type: str, regex: str, error: str, reason: str):
 
     :returns: Give error messages to user
     """
-    print(f"Type {YELLOW}{check_type}{RESET_COLOR} check failed => {RED}{reason}{RESET_COLOR} ", end='',)
+    print(
+        f"Type {YELLOW}{check_type}{RESET_COLOR} check failed => {RED}{reason}{RESET_COLOR} ",
+        end="",
+    )
     print("")
     print(f"It doesn't match regex: {regex}")
     print(error)
@@ -238,9 +250,10 @@ def print_suggestion(suggest: str | None) -> None:
     """
     if suggest:
         print(
-            f"Suggest: {GREEN}{suggest}{RESET_COLOR} ", end='',
+            f"Suggest: {GREEN}{suggest}{RESET_COLOR} ",
+            end="",
         )
     else:
         print(f"commit-check does not support {suggest} yet.")
         raise SystemExit(1)
-    print('\n')
+    print("\n")

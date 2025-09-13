@@ -1,13 +1,19 @@
 import pytest
 from commit_check import PASS, FAIL
-from commit_check.commit import check_commit_msg, get_default_commit_msg_file, read_commit_msg, check_commit_signoff, check_imperative
+from commit_check.commit import (
+    check_commit_msg,
+    get_default_commit_msg_file,
+    read_commit_msg,
+    check_commit_signoff,
+    check_imperative,
+)
 
 # used by get_commit_info mock
 FAKE_BRANCH_NAME = "fake_commits_info"
 # The location of check_commit_msg()
 LOCATION = "commit_check.util"
 # Commit message file
-MSG_FILE = '.git/COMMIT_EDITMSG'
+MSG_FILE = ".git/COMMIT_EDITMSG"
 
 
 @pytest.mark.benchmark
@@ -29,7 +35,9 @@ def test_read_commit_msg_from_existing_file(tmp_path):
 
 @pytest.mark.benchmark
 def test_read_commit_msg_file_not_found(mocker):
-    m_commits_info = mocker.patch('commit_check.util.get_commit_info', return_value='mocked_commits_info')
+    m_commits_info = mocker.patch(
+        "commit_check.util.get_commit_info", return_value="mocked_commits_info"
+    )
     read_commit_msg("non_existent_file.txt")
     assert m_commits_info.call_count == 0
 
@@ -38,11 +46,10 @@ def test_read_commit_msg_file_not_found(mocker):
 def test_check_commit_msg_no_commit_msg_file(mocker):
     mock_get_default_commit_msg_file = mocker.patch(
         "commit_check.commit.get_default_commit_msg_file",
-        return_value=".git/COMMIT_EDITMSG"
+        return_value=".git/COMMIT_EDITMSG",
     )
     mock_read_commit_msg = mocker.patch(
-        "commit_check.commit.read_commit_msg",
-        return_value="Sample commit message"
+        "commit_check.commit.read_commit_msg", return_value="Sample commit message"
     )
 
     checks = [{"regex": ".*", "check": "message", "error": "Invalid", "suggest": None}]
@@ -57,10 +64,7 @@ def test_check_commit_msg_no_commit_msg_file(mocker):
 @pytest.mark.benchmark
 def test_check_commit_with_empty_checks(mocker):
     checks = []
-    m_re_match = mocker.patch(
-        "re.match",
-        return_value="fake_commits_info"
-    )
+    m_re_match = mocker.patch("re.match", return_value="fake_commits_info")
     retval = check_commit_msg(checks, MSG_FILE)
     assert retval == PASS
     assert m_re_match.call_count == 0
@@ -68,14 +72,8 @@ def test_check_commit_with_empty_checks(mocker):
 
 @pytest.mark.benchmark
 def test_check_commit_with_different_check(mocker):
-    checks = [{
-        "check": "branch",
-        "regex": "dummy_regex"
-    }]
-    m_re_match = mocker.patch(
-        "re.match",
-        return_value="fake_commits_info"
-    )
+    checks = [{"check": "branch", "regex": "dummy_regex"}]
+    m_re_match = mocker.patch("re.match", return_value="fake_commits_info")
     retval = check_commit_msg(checks, MSG_FILE)
     assert retval == PASS
     assert m_re_match.call_count == 0
@@ -83,16 +81,8 @@ def test_check_commit_with_different_check(mocker):
 
 @pytest.mark.benchmark
 def test_check_commit_with_len0_regex(mocker, capfd):
-    checks = [
-        {
-            "check": "message",
-            "regex": ""
-        }
-    ]
-    m_re_match = mocker.patch(
-        "re.match",
-        return_value="fake_rematch_resp"
-    )
+    checks = [{"check": "message", "regex": ""}]
+    m_re_match = mocker.patch("re.match", return_value="fake_rematch_resp")
     retval = check_commit_msg(checks, MSG_FILE)
     assert retval == PASS
     assert m_re_match.call_count == 0
@@ -102,22 +92,17 @@ def test_check_commit_with_len0_regex(mocker, capfd):
 
 @pytest.mark.benchmark
 def test_check_commit_with_result_none(mocker):
-    checks = [{
-        "check": "message",
-        "regex": "dummy_regex",
-        "error": "error",
-        "suggest": "suggest"
-    }]
-    m_re_match = mocker.patch(
-        "re.match",
-        return_value=None
-    )
-    m_print_error_message = mocker.patch(
-        f"{LOCATION}.print_error_message"
-    )
-    m_print_suggestion = mocker.patch(
-        f"{LOCATION}.print_suggestion"
-    )
+    checks = [
+        {
+            "check": "message",
+            "regex": "dummy_regex",
+            "error": "error",
+            "suggest": "suggest",
+        }
+    ]
+    m_re_match = mocker.patch("re.match", return_value=None)
+    m_print_error_message = mocker.patch(f"{LOCATION}.print_error_message")
+    m_print_suggestion = mocker.patch(f"{LOCATION}.print_suggestion")
     retval = check_commit_msg(checks, MSG_FILE)
     assert retval == FAIL
     assert m_re_match.call_count == 1
@@ -127,26 +112,20 @@ def test_check_commit_with_result_none(mocker):
 
 @pytest.mark.benchmark
 def test_check_commit_signoff(mocker):
-    checks = [{
-        "check": "commit_signoff",
-        "regex": "dummy_regex",
-        "error": "error",
-        "suggest": "suggest"
-    }]
-    m_re_search = mocker.patch(
-        "re.search",
-        return_value=None
-    )
-    m_print_error_message = mocker.patch(
-        f"{LOCATION}.print_error_message"
-    )
-    m_print_suggestion = mocker.patch(
-        f"{LOCATION}.print_suggestion"
-    )
+    checks = [
+        {
+            "check": "commit_signoff",
+            "regex": "dummy_regex",
+            "error": "error",
+            "suggest": "suggest",
+        }
+    ]
+    m_re_search = mocker.patch("re.search", return_value=None)
+    m_print_error_message = mocker.patch(f"{LOCATION}.print_error_message")
+    m_print_suggestion = mocker.patch(f"{LOCATION}.print_suggestion")
     # Ensure commit message is NOT a merge commit
     mocker.patch(
-        "commit_check.commit.read_commit_msg",
-        return_value="feat: add new feature"
+        "commit_check.commit.read_commit_msg", return_value="feat: add new feature"
     )
     retval = check_commit_signoff(checks)
     assert retval == FAIL
@@ -157,16 +136,10 @@ def test_check_commit_signoff(mocker):
 
 @pytest.mark.benchmark
 def test_check_commit_signoff_with_empty_regex(mocker):
-    checks = [{
-        "check": "commit_signoff",
-        "regex": "",
-        "error": "error",
-        "suggest": "suggest"
-    }]
-    m_re_match = mocker.patch(
-        "re.match",
-        return_value="fake_commits_info"
-    )
+    checks = [
+        {"check": "commit_signoff", "regex": "", "error": "error", "suggest": "suggest"}
+    ]
+    m_re_match = mocker.patch("re.match", return_value="fake_commits_info")
     retval = check_commit_signoff(checks)
     assert retval == PASS
     assert m_re_match.call_count == 0
@@ -175,10 +148,7 @@ def test_check_commit_signoff_with_empty_regex(mocker):
 @pytest.mark.benchmark
 def test_check_commit_signoff_with_empty_checks(mocker):
     checks = []
-    m_re_match = mocker.patch(
-        "re.match",
-        return_value="fake_commits_info"
-    )
+    m_re_match = mocker.patch("re.match", return_value="fake_commits_info")
     retval = check_commit_signoff(checks)
     assert retval == PASS
     assert m_re_match.call_count == 0
@@ -187,16 +157,18 @@ def test_check_commit_signoff_with_empty_checks(mocker):
 @pytest.mark.benchmark
 def test_check_commit_signoff_skip_merge_commit(mocker):
     """Test commit signoff check skips merge commits."""
-    checks = [{
-        "check": "commit_signoff",
-        "regex": "Signed-off-by:",
-        "error": "Signed-off-by not found",
-        "suggest": "Use --signoff"
-    }]
+    checks = [
+        {
+            "check": "commit_signoff",
+            "regex": "Signed-off-by:",
+            "error": "Signed-off-by not found",
+            "suggest": "Use --signoff",
+        }
+    ]
 
     mocker.patch(
         "commit_check.commit.read_commit_msg",
-        return_value="Merge branch 'feature/test' into main"
+        return_value="Merge branch 'feature/test' into main",
     )
 
     retval = check_commit_signoff(checks, MSG_FILE)
@@ -206,16 +178,18 @@ def test_check_commit_signoff_skip_merge_commit(mocker):
 @pytest.mark.benchmark
 def test_check_commit_signoff_skip_merge_pr_commit(mocker):
     """Test commit signoff check skips GitHub merge PR commits."""
-    checks = [{
-        "check": "commit_signoff",
-        "regex": "Signed-off-by:",
-        "error": "Signed-off-by not found",
-        "suggest": "Use --signoff"
-    }]
+    checks = [
+        {
+            "check": "commit_signoff",
+            "regex": "Signed-off-by:",
+            "error": "Signed-off-by not found",
+            "suggest": "Use --signoff",
+        }
+    ]
 
     mocker.patch(
         "commit_check.commit.read_commit_msg",
-        return_value="Merge pull request #123 from user/feature\n\nAdd new feature"
+        return_value="Merge pull request #123 from user/feature\n\nAdd new feature",
     )
 
     retval = check_commit_signoff(checks, MSG_FILE)
@@ -225,24 +199,22 @@ def test_check_commit_signoff_skip_merge_pr_commit(mocker):
 @pytest.mark.benchmark
 def test_check_commit_signoff_still_fails_non_merge_without_signoff(mocker):
     """Test commit signoff check still fails for non-merge commits without signoff."""
-    checks = [{
-        "check": "commit_signoff",
-        "regex": "Signed-off-by:",
-        "error": "Signed-off-by not found",
-        "suggest": "Use --signoff"
-    }]
+    checks = [
+        {
+            "check": "commit_signoff",
+            "regex": "Signed-off-by:",
+            "error": "Signed-off-by not found",
+            "suggest": "Use --signoff",
+        }
+    ]
 
     mocker.patch(
         "commit_check.commit.read_commit_msg",
-        return_value="feat: add new feature\n\nThis adds a new feature"
+        return_value="feat: add new feature\n\nThis adds a new feature",
     )
 
-    m_print_error_message = mocker.patch(
-        f"{LOCATION}.print_error_message"
-    )
-    m_print_suggestion = mocker.patch(
-        f"{LOCATION}.print_suggestion"
-    )
+    m_print_error_message = mocker.patch(f"{LOCATION}.print_error_message")
+    m_print_suggestion = mocker.patch(f"{LOCATION}.print_suggestion")
 
     retval = check_commit_signoff(checks, MSG_FILE)
     assert retval == FAIL
@@ -253,16 +225,18 @@ def test_check_commit_signoff_still_fails_non_merge_without_signoff(mocker):
 @pytest.mark.benchmark
 def test_check_imperative_pass(mocker):
     """Test imperative mood check passes for valid imperative mood."""
-    checks = [{
-        "check": "imperative",
-        "regex": "",
-        "error": "Commit message should use imperative mood",
-        "suggest": "Use imperative mood"
-    }]
+    checks = [
+        {
+            "check": "imperative",
+            "regex": "",
+            "error": "Commit message should use imperative mood",
+            "suggest": "Use imperative mood",
+        }
+    ]
 
     mocker.patch(
         "commit_check.commit.read_commit_msg",
-        return_value="feat: Add new feature\n\nThis adds a new feature to the application."
+        return_value="feat: Add new feature\n\nThis adds a new feature to the application.",
     )
 
     retval = check_imperative(checks, MSG_FILE)
@@ -272,24 +246,21 @@ def test_check_imperative_pass(mocker):
 @pytest.mark.benchmark
 def test_check_imperative_fail_past_tense(mocker):
     """Test imperative mood check fails for past tense."""
-    checks = [{
-        "check": "imperative",
-        "regex": "",
-        "error": "Commit message should use imperative mood",
-        "suggest": "Use imperative mood"
-    }]
+    checks = [
+        {
+            "check": "imperative",
+            "regex": "",
+            "error": "Commit message should use imperative mood",
+            "suggest": "Use imperative mood",
+        }
+    ]
 
     mocker.patch(
-        "commit_check.commit.read_commit_msg",
-        return_value="feat: Added new feature"
+        "commit_check.commit.read_commit_msg", return_value="feat: Added new feature"
     )
 
-    m_print_error_message = mocker.patch(
-        f"{LOCATION}.print_error_message"
-    )
-    m_print_suggestion = mocker.patch(
-        f"{LOCATION}.print_suggestion"
-    )
+    m_print_error_message = mocker.patch(f"{LOCATION}.print_error_message")
+    m_print_suggestion = mocker.patch(f"{LOCATION}.print_suggestion")
 
     retval = check_imperative(checks, MSG_FILE)
     assert retval == FAIL
@@ -300,24 +271,21 @@ def test_check_imperative_fail_past_tense(mocker):
 @pytest.mark.benchmark
 def test_check_imperative_fail_present_continuous(mocker):
     """Test imperative mood check fails for present continuous."""
-    checks = [{
-        "check": "imperative",
-        "regex": "",
-        "error": "Commit message should use imperative mood",
-        "suggest": "Use imperative mood"
-    }]
+    checks = [
+        {
+            "check": "imperative",
+            "regex": "",
+            "error": "Commit message should use imperative mood",
+            "suggest": "Use imperative mood",
+        }
+    ]
 
     mocker.patch(
-        "commit_check.commit.read_commit_msg",
-        return_value="feat: Adding new feature"
+        "commit_check.commit.read_commit_msg", return_value="feat: Adding new feature"
     )
 
-    m_print_error_message = mocker.patch(
-        f"{LOCATION}.print_error_message"
-    )
-    m_print_suggestion = mocker.patch(
-        f"{LOCATION}.print_suggestion"
-    )
+    m_print_error_message = mocker.patch(f"{LOCATION}.print_error_message")
+    m_print_suggestion = mocker.patch(f"{LOCATION}.print_suggestion")
 
     retval = check_imperative(checks, MSG_FILE)
     assert retval == FAIL
@@ -328,16 +296,18 @@ def test_check_imperative_fail_present_continuous(mocker):
 @pytest.mark.benchmark
 def test_check_imperative_skip_merge_commit(mocker):
     """Test imperative mood check skips merge commits."""
-    checks = [{
-        "check": "imperative",
-        "regex": "",
-        "error": "Commit message should use imperative mood",
-        "suggest": "Use imperative mood"
-    }]
+    checks = [
+        {
+            "check": "imperative",
+            "regex": "",
+            "error": "Commit message should use imperative mood",
+            "suggest": "Use imperative mood",
+        }
+    ]
 
     mocker.patch(
         "commit_check.commit.read_commit_msg",
-        return_value="Merge branch 'feature/test' into main"
+        return_value="Merge branch 'feature/test' into main",
     )
 
     retval = check_imperative(checks, MSG_FILE, stdin_text=None)
@@ -347,14 +317,10 @@ def test_check_imperative_skip_merge_commit(mocker):
 @pytest.mark.benchmark
 def test_check_imperative_different_check_type(mocker):
     """Test imperative mood check skips different check types."""
-    checks = [{
-        "check": "message",
-        "regex": "dummy_regex"
-    }]
+    checks = [{"check": "message", "regex": "dummy_regex"}]
 
     m_read_commit_msg = mocker.patch(
-        "commit_check.commit.read_commit_msg",
-        return_value="feat: Added new feature"
+        "commit_check.commit.read_commit_msg", return_value="feat: Added new feature"
     )
 
     retval = check_imperative(checks, MSG_FILE, stdin_text="feat: Added new feature")
@@ -365,12 +331,14 @@ def test_check_imperative_different_check_type(mocker):
 @pytest.mark.benchmark
 def test_check_imperative_no_commits(mocker):
     """Test imperative mood check passes when there are no commits."""
-    checks = [{
-        "check": "imperative",
-        "regex": "",
-        "error": "Commit message should use imperative mood",
-        "suggest": "Use imperative mood"
-    }]
+    checks = [
+        {
+            "check": "imperative",
+            "regex": "",
+            "error": "Commit message should use imperative mood",
+            "suggest": "Use imperative mood",
+        }
+    ]
 
     mocker.patch("commit_check.commit.has_commits", return_value=False)
 
@@ -384,8 +352,7 @@ def test_check_imperative_empty_checks(mocker):
     checks = []
 
     m_read_commit_msg = mocker.patch(
-        "commit_check.commit.read_commit_msg",
-        return_value="feat: Added new feature"
+        "commit_check.commit.read_commit_msg", return_value="feat: Added new feature"
     )
 
     retval = check_imperative(checks, MSG_FILE, stdin_text=None)

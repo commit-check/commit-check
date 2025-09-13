@@ -44,7 +44,7 @@ def commit_check(session):
 
 @nox.session()
 def coverage(session):
-    session.install('.[test]')
+    session.install(".[test]")
     session.run("coverage", "run", "--source", "commit_check", "-m", "pytest")
     session.run("coverage", "report")
     session.run("coverage", "xml")
@@ -52,11 +52,13 @@ def coverage(session):
 
 @nox.session()
 def docs(session):
-    session.install('.[docs]')
+    session.install(".[docs]")
     session.run("sphinx-build", "-E", "-W", "-b", "html", "docs", "_build/html")
 
 
 @nox.session(name="docs-live")
 def docs_live(session):
-    session.install('.[docs]')
-    session.run("sphinx-autobuild", "-b", "html", "docs", "_build/html", "--watch", "docs/")
+    session.install(".[docs]")
+    session.run(
+        "sphinx-autobuild", "-b", "html", "docs", "_build/html", "--watch", "docs/"
+    )

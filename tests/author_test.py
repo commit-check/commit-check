@@ -15,18 +15,11 @@ class TestAuthor:
         @pytest.mark.benchmark
         def test_check_author(self, mocker):
             # Must call get_commit_info, re.match.
-            checks = [{
-                "check": "author_name",
-                "regex": "dummy_regex"
-            }]
+            checks = [{"check": "author_name", "regex": "dummy_regex"}]
             m_get_commit_info = mocker.patch(
-                f"{LOCATION}.get_commit_info",
-                return_value=self.fake_author_value_an
+                f"{LOCATION}.get_commit_info", return_value=self.fake_author_value_an
             )
-            m_re_match = mocker.patch(
-                "re.match",
-                return_value="fake_rematch_resp"
-            )
+            m_re_match = mocker.patch("re.match", return_value="fake_rematch_resp")
             retval = check_author(checks, "author_name")
             assert retval == PASS
             assert m_get_commit_info.call_count == 1
@@ -35,18 +28,12 @@ class TestAuthor:
         @pytest.mark.benchmark
         def test_check_author_with_accented_letters(self, mocker):
             # Must call get_commit_info, re.match.
-            checks = [{
-                "check": "author_name",
-                "regex": "dummy_regex"
-            }]
+            checks = [{"check": "author_name", "regex": "dummy_regex"}]
             m_get_commit_info = mocker.patch(
                 f"{LOCATION}.get_commit_info",
-                return_value=self.fake_accented_author_value_an
+                return_value=self.fake_accented_author_value_an,
             )
-            m_re_match = mocker.patch(
-                "re.match",
-                return_value="fake_rematch_resp"
-            )
+            m_re_match = mocker.patch("re.match", return_value="fake_rematch_resp")
             retval = check_author(checks, "author_name")
             assert retval == PASS
             assert m_get_commit_info.call_count == 1
@@ -57,13 +44,9 @@ class TestAuthor:
             # Must NOT call get_commit_info, re.match. with `checks` param with length 0.
             checks = []
             m_get_commit_info = mocker.patch(
-                f"{LOCATION}.get_commit_info",
-                return_value=self.fake_author_value_an
+                f"{LOCATION}.get_commit_info", return_value=self.fake_author_value_an
             )
-            m_re_match = mocker.patch(
-                "re.match",
-                return_value="fake_author_name"
-            )
+            m_re_match = mocker.patch("re.match", return_value="fake_author_name")
             retval = check_author(checks, "author_name")
             assert retval == PASS
             assert m_get_commit_info.call_count == 0
@@ -72,18 +55,11 @@ class TestAuthor:
         @pytest.mark.benchmark
         def test_check_author_with_different_check(self, mocker):
             # Must NOT call get_commit_info, re.match with not `author_name`.
-            checks = [{
-                "check": "message",
-                "regex": "dummy_regex"
-            }]
+            checks = [{"check": "message", "regex": "dummy_regex"}]
             m_get_commit_info = mocker.patch(
-                f"{LOCATION}.get_commit_info",
-                return_value=self.fake_author_value_an
+                f"{LOCATION}.get_commit_info", return_value=self.fake_author_value_an
             )
-            m_re_match = mocker.patch(
-                "re.match",
-                return_value="fake_author_name"
-            )
+            m_re_match = mocker.patch("re.match", return_value="fake_author_name")
             retval = check_author(checks, "author_name")
             assert retval == PASS
             assert m_get_commit_info.call_count == 0
@@ -92,20 +68,11 @@ class TestAuthor:
         @pytest.mark.benchmark
         def test_check_author_with_len0_regex(self, mocker, capfd):
             # Must NOT call get_commit_info, re.match with `regex` with length 0.
-            checks = [
-                {
-                    "check": "author_name",
-                    "regex": ""
-                }
-            ]
+            checks = [{"check": "author_name", "regex": ""}]
             m_get_commit_info = mocker.patch(
-                f"{LOCATION}.get_commit_info",
-                return_value=self.fake_author_value_an
+                f"{LOCATION}.get_commit_info", return_value=self.fake_author_value_an
             )
-            m_re_match = mocker.patch(
-                "re.match",
-                return_value="fake_rematch_resp"
-            )
+            m_re_match = mocker.patch("re.match", return_value="fake_rematch_resp")
             retval = check_author(checks, "author_name")
             assert retval == PASS
             assert m_get_commit_info.call_count == 0
@@ -116,26 +83,22 @@ class TestAuthor:
         @pytest.mark.benchmark
         def test_check_author_with_result_none(self, mocker):
             # Must call print_error_message, print_suggestion when re.match returns NONE.
-            checks = [{
-                "check": "author_name",
-                "regex": "dummy_regex",
-                "error": "error",
-                "suggest": "suggest"
-            }]
+            checks = [
+                {
+                    "check": "author_name",
+                    "regex": "dummy_regex",
+                    "error": "error",
+                    "suggest": "suggest",
+                }
+            ]
             m_get_commit_info = mocker.patch(
-                f"{LOCATION}.get_commit_info",
-                return_value=self.fake_author_value_an
+                f"{LOCATION}.get_commit_info", return_value=self.fake_author_value_an
             )
-            m_re_match = mocker.patch(
-                "re.match",
-                return_value=None
-            )
+            m_re_match = mocker.patch("re.match", return_value=None)
             m_print_error_message = mocker.patch(
                 "commit_check.util.print_error_message"
             )
-            m_print_suggestion = mocker.patch(
-                "commit_check.util.print_suggestion"
-            )
+            m_print_suggestion = mocker.patch("commit_check.util.print_suggestion")
             retval = check_author(checks, "author_name")
             assert retval == FAIL
             assert m_get_commit_info.call_count == 1
@@ -150,18 +113,11 @@ class TestAuthor:
         @pytest.mark.benchmark
         def test_check_author(self, mocker):
             # Must call get_commit_info, re.match.
-            checks = [{
-                "check": "author_email",
-                "regex": "dummy_regex"
-            }]
+            checks = [{"check": "author_email", "regex": "dummy_regex"}]
             m_get_commit_info = mocker.patch(
-                f"{LOCATION}.get_commit_info",
-                return_value=self.fake_author_value_ae
+                f"{LOCATION}.get_commit_info", return_value=self.fake_author_value_ae
             )
-            m_re_match = mocker.patch(
-                "re.match",
-                return_value="fake_rematch_resp"
-            )
+            m_re_match = mocker.patch("re.match", return_value="fake_rematch_resp")
             retval = check_author(checks, "author_email")
             assert retval == PASS
             assert m_get_commit_info.call_count == 1
@@ -172,13 +128,9 @@ class TestAuthor:
             # Must NOT call get_commit_info, re.match. with `checks` param with length 0.
             checks = []
             m_get_commit_info = mocker.patch(
-                f"{LOCATION}.get_commit_info",
-                return_value=self.fake_author_value_ae
+                f"{LOCATION}.get_commit_info", return_value=self.fake_author_value_ae
             )
-            m_re_match = mocker.patch(
-                "re.match",
-                return_value="fake_author_email"
-            )
+            m_re_match = mocker.patch("re.match", return_value="fake_author_email")
             retval = check_author(checks, "author_email")
             assert retval == PASS
             assert m_get_commit_info.call_count == 0
@@ -187,18 +139,11 @@ class TestAuthor:
         @pytest.mark.benchmark
         def test_check_author_with_different_check(self, mocker):
             # Must NOT call get_commit_info, re.match with not `author_email`.
-            checks = [{
-                "check": "message",
-                "regex": "dummy_regex"
-            }]
+            checks = [{"check": "message", "regex": "dummy_regex"}]
             m_get_commit_info = mocker.patch(
-                f"{LOCATION}.get_commit_info",
-                return_value=self.fake_author_value_ae
+                f"{LOCATION}.get_commit_info", return_value=self.fake_author_value_ae
             )
-            m_re_match = mocker.patch(
-                "re.match",
-                return_value="fake_author_email"
-            )
+            m_re_match = mocker.patch("re.match", return_value="fake_author_email")
             retval = check_author(checks, "author_email")
             assert retval == PASS
             assert m_get_commit_info.call_count == 0
@@ -207,20 +152,11 @@ class TestAuthor:
         @pytest.mark.benchmark
         def test_check_author_with_len0_regex(self, mocker, capfd):
             # Must NOT call get_commit_info, re.match with `regex` with length 0.
-            checks = [
-                {
-                    "check": "author_email",
-                    "regex": ""
-                }
-            ]
+            checks = [{"check": "author_email", "regex": ""}]
             m_get_commit_info = mocker.patch(
-                f"{LOCATION}.get_commit_info",
-                return_value=self.fake_author_value_ae
+                f"{LOCATION}.get_commit_info", return_value=self.fake_author_value_ae
             )
-            m_re_match = mocker.patch(
-                "re.match",
-                return_value="fake_rematch_resp"
-            )
+            m_re_match = mocker.patch("re.match", return_value="fake_rematch_resp")
             retval = check_author(checks, "author_email")
             assert retval == PASS
             assert m_get_commit_info.call_count == 0
@@ -231,26 +167,22 @@ class TestAuthor:
         @pytest.mark.benchmark
         def test_check_author_with_result_none(self, mocker):
             # Must call print_error_message, print_suggestion when re.match returns NONE.
-            checks = [{
-                "check": "author_email",
-                "regex": "dummy_regex",
-                "error": "error",
-                "suggest": "suggest"
-            }]
+            checks = [
+                {
+                    "check": "author_email",
+                    "regex": "dummy_regex",
+                    "error": "error",
+                    "suggest": "suggest",
+                }
+            ]
             m_get_commit_info = mocker.patch(
-                f"{LOCATION}.get_commit_info",
-                return_value=self.fake_author_value_ae
+                f"{LOCATION}.get_commit_info", return_value=self.fake_author_value_ae
             )
-            m_re_match = mocker.patch(
-                "re.match",
-                return_value=None
-            )
+            m_re_match = mocker.patch("re.match", return_value=None)
             m_print_error_message = mocker.patch(
                 "commit_check.util.print_error_message"
             )
-            m_print_suggestion = mocker.patch(
-                "commit_check.util.print_suggestion"
-            )
+            m_print_suggestion = mocker.patch("commit_check.util.print_suggestion")
             retval = check_author(checks, "author_email")
             assert retval == FAIL
             assert m_get_commit_info.call_count == 1

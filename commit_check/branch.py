@@ -1,16 +1,23 @@
 """Check git branch naming convention."""
+
 import re
 from typing import Optional
 from commit_check import YELLOW, RESET_COLOR, PASS, FAIL
-from commit_check.util import _find_check, _print_failure, get_branch_name, git_merge_base, has_commits
+from commit_check.util import (
+    _find_check,
+    _print_failure,
+    get_branch_name,
+    git_merge_base,
+    has_commits,
+)
 
 
 def check_branch(checks: list, stdin_text: Optional[str] = None) -> int:
-    check = _find_check(checks, 'branch')
+    check = _find_check(checks, "branch")
     if not check:
         return PASS
 
-    regex = check.get('regex', "")
+    regex = check.get("regex", "")
     if regex == "":
         print(
             f"{YELLOW}Not found regex for branch naming. skip checking.{RESET_COLOR}",
@@ -32,14 +39,14 @@ def check_merge_base(checks: list) -> int:
     :returns PASS(0) if merge base check succeeds, FAIL(1) otherwise
     """
     if has_commits() is False:
-        return PASS # pragma: no cover
+        return PASS  # pragma: no cover
 
     # locate merge_base rule, if any
-    check = _find_check(checks, 'merge_base')
+    check = _find_check(checks, "merge_base")
     if not check:
         return PASS
 
-    regex = check.get('regex', "")
+    regex = check.get("regex", "")
     if regex == "":
         print(
             f"{YELLOW}Not found target branch for checking merge base. skip checking.{RESET_COLOR}",
@@ -57,6 +64,7 @@ def check_merge_base(checks: list) -> int:
 
 
 # --- Additional per-option checks (aliases to existing ones) ---
+
 
 def check_conventional_branch(checks: list, stdin_text: Optional[str] = None) -> int:
     """Alias to check_branch for explicit rule mapping."""

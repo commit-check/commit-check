@@ -64,31 +64,63 @@ def _read_stdin() -> Optional[str]:  # read commit message content if piped
 def _dispatch_checks_full(checks: list, stdin_text: Optional[str]) -> int:
     """Execute ALL configured checks once (used by future run mode)."""
     dispatcher: Dict[str, Callable[[], int]] = {
-        'message': lambda: commit.check_commit_msg(checks, stdin_text=stdin_text),
-        'imperative': lambda: commit.check_imperative(checks, stdin_text=stdin_text),
-        'subject_capitalized': lambda: commit.check_subject_capitalized(checks, stdin_text=stdin_text),
-        'subject_max_length': lambda: commit.check_subject_max_length(checks, stdin_text=stdin_text),
-        'subject_min_length': lambda: commit.check_subject_min_length(checks, stdin_text=stdin_text),
-        'allow_commit_types': lambda: commit.check_allow_commit_types(checks, stdin_text=stdin_text),
-        'allow_merge_commits': lambda: commit.check_allow_merge_commits(checks, stdin_text=stdin_text),
-        'allow_revert_commits': lambda: commit.check_allow_revert_commits(checks, stdin_text=stdin_text),
-        'allow_empty_commits': lambda: commit.check_allow_empty_commits(checks, stdin_text=stdin_text),
-        'allow_fixup_commits': lambda: commit.check_allow_fixup_commits(checks, stdin_text=stdin_text),
-        'allow_wip_commits': lambda: commit.check_allow_wip_commits(checks, stdin_text=stdin_text),
-        'commit_signoff': lambda: commit.check_commit_signoff(checks, stdin_text=stdin_text),
-        'require_body': lambda: commit.check_require_body(checks, stdin_text=stdin_text),
-        'branch': lambda: branch.check_branch(checks, stdin_text=stdin_text),
-        'merge_base': lambda: branch.check_merge_base(checks),
-        'author_name': lambda: author.check_author(checks, 'author_name', stdin_text=stdin_text),
-        'author_email': lambda: author.check_author(checks, 'author_email', stdin_text=stdin_text),
-        'allow_authors': lambda: author.check_allow_authors(checks, 'author_name', stdin_text=stdin_text),
-        'ignore_authors': lambda: author.check_ignore_authors(checks, 'author_name', stdin_text=stdin_text),
-        'commit_signoff_details': lambda: author.check_required_signoff_details(checks, stdin_text=stdin_text),
+        "message": lambda: commit.check_commit_msg(checks, stdin_text=stdin_text),
+        "imperative": lambda: commit.check_imperative(checks, stdin_text=stdin_text),
+        "subject_capitalized": lambda: commit.check_subject_capitalized(
+            checks, stdin_text=stdin_text
+        ),
+        "subject_max_length": lambda: commit.check_subject_max_length(
+            checks, stdin_text=stdin_text
+        ),
+        "subject_min_length": lambda: commit.check_subject_min_length(
+            checks, stdin_text=stdin_text
+        ),
+        "allow_commit_types": lambda: commit.check_allow_commit_types(
+            checks, stdin_text=stdin_text
+        ),
+        "allow_merge_commits": lambda: commit.check_allow_merge_commits(
+            checks, stdin_text=stdin_text
+        ),
+        "allow_revert_commits": lambda: commit.check_allow_revert_commits(
+            checks, stdin_text=stdin_text
+        ),
+        "allow_empty_commits": lambda: commit.check_allow_empty_commits(
+            checks, stdin_text=stdin_text
+        ),
+        "allow_fixup_commits": lambda: commit.check_allow_fixup_commits(
+            checks, stdin_text=stdin_text
+        ),
+        "allow_wip_commits": lambda: commit.check_allow_wip_commits(
+            checks, stdin_text=stdin_text
+        ),
+        "commit_signoff": lambda: commit.check_commit_signoff(
+            checks, stdin_text=stdin_text
+        ),
+        "require_body": lambda: commit.check_require_body(
+            checks, stdin_text=stdin_text
+        ),
+        "branch": lambda: branch.check_branch(checks, stdin_text=stdin_text),
+        "merge_base": lambda: branch.check_merge_base(checks),
+        "author_name": lambda: author.check_author(
+            checks, "author_name", stdin_text=stdin_text
+        ),
+        "author_email": lambda: author.check_author(
+            checks, "author_email", stdin_text=stdin_text
+        ),
+        "allow_authors": lambda: author.check_allow_authors(
+            checks, "author_name", stdin_text=stdin_text
+        ),
+        "ignore_authors": lambda: author.check_ignore_authors(
+            checks, "author_name", stdin_text=stdin_text
+        ),
+        "commit_signoff_details": lambda: author.check_required_signoff_details(
+            checks, stdin_text=stdin_text
+        ),
     }
     seen = set()
     results: list[int] = []
     for chk in checks:
-        ctype = chk.get('check')
+        ctype = chk.get("check")
         if ctype in seen:
             continue
         seen.add(ctype)
@@ -104,16 +136,28 @@ def _dispatch_checks_full(checks: list, stdin_text: Optional[str]) -> int:
 def main() -> int:
     argv = sys.argv[1:]
     parser = argparse.ArgumentParser(
-        prog='commit-check',
-        description='check commit message, branch naming, committer name/email, commit signoff and more.'
+        prog="commit-check",
+        description="check commit message, branch naming, committer name/email, commit signoff and more.",
     )
-    parser.add_argument('command', choices=['run'], help="Only supported command: run")
-    parser.add_argument('path', nargs='?', default='.', help='Repository path (default: current directory)')
-    parser.add_argument('--config', type=str, default=None, help='Path to TOML configuration file (commit-check.toml or cchk.toml)')
-    parser.add_argument('-v', '--verbose', action='store_true', help='Verbose logging')
-    parser.add_argument('-q', '--quiet', action='store_true', help='Quiet logging')
-    parser.add_argument('-s', '--silent', action='store_true', help='Silent mode')
-    parser.add_argument('-V', '--version', action='store_true', help='Show version and exit')
+    parser.add_argument("command", choices=["run"], help="Only supported command: run")
+    parser.add_argument(
+        "path",
+        nargs="?",
+        default=".",
+        help="Repository path (default: current directory)",
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Path to TOML configuration file (commit-check.toml or cchk.toml)",
+    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose logging")
+    parser.add_argument("-q", "--quiet", action="store_true", help="Quiet logging")
+    parser.add_argument("-s", "--silent", action="store_true", help="Silent mode")
+    parser.add_argument(
+        "-V", "--version", action="store_true", help="Show version and exit"
+    )
     args = parser.parse_args(argv)
 
     if args.version:
@@ -121,7 +165,7 @@ def main() -> int:
         raise SystemExit(0)
 
     # Command guard (argparse choices already enforce)
-    if args.command != 'run':  # pragma: no cover
+    if args.command != "run":  # pragma: no cover
         parser.error("only 'run' is supported")
 
     set_log_level(args.verbose, args.quiet, args.silent)
@@ -129,10 +173,10 @@ def main() -> int:
     stdin_text = _read_stdin()
     with error_handler():
         cfg = validate_config(cfg_path) or DEFAULT_CONFIG
-        checks = cfg.get('checks', [])
+        checks = cfg.get("checks", [])
         status = _dispatch_checks_full(checks, stdin_text=stdin_text)
         return status
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(main())

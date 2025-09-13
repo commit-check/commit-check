@@ -21,14 +21,20 @@ class TestMain:
                     {"check": "merge_base"},
                     {"check": "imperative"},
                 ]
-            }
+            },
         )
         m_msg = mocker.patch("commit_check.commit.check_commit_msg", return_value=PASS)
         m_branch = mocker.patch("commit_check.branch.check_branch", return_value=PASS)
         m_author = mocker.patch("commit_check.author.check_author", return_value=PASS)
-        m_signoff = mocker.patch("commit_check.commit.check_commit_signoff", return_value=PASS)
-        m_merge = mocker.patch("commit_check.branch.check_merge_base", return_value=PASS)
-        m_imperative = mocker.patch("commit_check.commit.check_imperative", return_value=PASS)
+        m_signoff = mocker.patch(
+            "commit_check.commit.check_commit_signoff", return_value=PASS
+        )
+        m_merge = mocker.patch(
+            "commit_check.branch.check_merge_base", return_value=PASS
+        )
+        m_imperative = mocker.patch(
+            "commit_check.commit.check_imperative", return_value=PASS
+        )
         sys.argv = [CMD, "run"]
         assert main() == PASS
         assert m_msg.call_count == 1
@@ -76,7 +82,18 @@ class TestMain:
             (PASS, PASS, PASS, PASS, PASS, PASS, FAIL, FAIL),
         ],
     )
-    def test_exit_code_aggregation(self, mocker, message_result, branch_result, author_name_result, author_email_result, signoff_result, merge_base_result, imperative_result, expected):
+    def test_exit_code_aggregation(
+        self,
+        mocker,
+        message_result,
+        branch_result,
+        author_name_result,
+        author_email_result,
+        signoff_result,
+        merge_base_result,
+        imperative_result,
+        expected,
+    ):
         # configure all check types
         mocker.patch(
             "commit_check.main.validate_config",
@@ -90,24 +107,35 @@ class TestMain:
                     {"check": "merge_base"},
                     {"check": "imperative"},
                 ]
-            }
+            },
         )
 
-        mocker.patch("commit_check.commit.check_commit_msg", return_value=message_result)
+        mocker.patch(
+            "commit_check.commit.check_commit_msg", return_value=message_result
+        )
         mocker.patch("commit_check.branch.check_branch", return_value=branch_result)
 
         def author_side_effect(_, which, **_kw):  # type: ignore[return]
             return author_name_result if which == "author_name" else author_email_result
 
         mocker.patch("commit_check.author.check_author", side_effect=author_side_effect)
-        mocker.patch("commit_check.commit.check_commit_signoff", return_value=signoff_result)
-        mocker.patch("commit_check.branch.check_merge_base", return_value=merge_base_result)
-        mocker.patch("commit_check.commit.check_imperative", return_value=imperative_result)
+        mocker.patch(
+            "commit_check.commit.check_commit_signoff", return_value=signoff_result
+        )
+        mocker.patch(
+            "commit_check.branch.check_merge_base", return_value=merge_base_result
+        )
+        mocker.patch(
+            "commit_check.commit.check_imperative", return_value=imperative_result
+        )
         sys.argv = [CMD, "run"]
         assert main() == expected
 
     def test_unknown_check_type_ignored(self, mocker):
-        mocker.patch("commit_check.main.validate_config", return_value={"checks": [{"check": "totally_unknown"}]})
+        mocker.patch(
+            "commit_check.main.validate_config",
+            return_value={"checks": [{"check": "totally_unknown"}]},
+        )
         # no dispatcher functions patched intentionally
         sys.argv = [CMD, "run"]
         assert main() == PASS
