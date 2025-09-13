@@ -236,7 +236,7 @@ def print_error_message(check_type: str, regex: str, error: str, reason: str):
     :returns: Give error messages to user
     """
     print(
-        f"Type {YELLOW}{check_type}{RESET_COLOR} check failed => {RED}{reason}{RESET_COLOR} ",
+        f"Type {YELLOW}{check_type}{RESET_COLOR} check failed ==> {RED}{reason}{RESET_COLOR} ",
         end="",
     )
     print("")

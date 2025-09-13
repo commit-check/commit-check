@@ -283,11 +283,11 @@ class TestUtil:
         @pytest.mark.parametrize(
             "check_type, type_failed_msg",
             [
-                ("message", "check failed =>"),
-                ("branch", "check failed =>"),
-                ("author_name", "check failed =>"),
-                ("author_email", "check failed =>"),
-                ("commit_signoff", "check failed =>"),
+                ("message", "check failed ==>"),
+                ("branch", "check failed ==>"),
+                ("author_name", "check failed ==>"),
+                ("author_email", "check failed ==>"),
+                ("commit_signoff", "check failed ==>"),
             ],
         )
         def test_print_error_message(self, capfd, check_type, type_failed_msg):
