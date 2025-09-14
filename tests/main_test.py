@@ -29,7 +29,8 @@ class TestMain:
         m_imperative = mocker.patch(
             "commit_check.commit.check_imperative", return_value=PASS
         )
-        sys.argv = [CMD, "commit"]
+        # Use flags for each check instead of deprecated 'commit' subcommand
+        sys.argv = [CMD, "-m", "-n", "-e", "-s", "-i"]
         assert main() == PASS
         assert m_msg.call_count == 1
         # author_name + author_email => 2 invocations
@@ -38,14 +39,15 @@ class TestMain:
         assert m_imperative.call_count == 1
 
     def test_help(self, capfd):
-        sys.argv = [CMD, "commit", "--help"]
+        sys.argv = [CMD, "--help"]
         with pytest.raises(SystemExit):
             main()
         out, _ = capfd.readouterr()
         assert "usage:" in out
 
     def test_version(self):
-        sys.argv = [CMD, "commit", "-V"]
+        # argparse defines --version
+        sys.argv = [CMD, "--version"]
         with pytest.raises(SystemExit):
             main()
 
@@ -56,7 +58,7 @@ class TestMain:
         mocker.patch("commit_check.author.check_author", return_value=PASS)
         mocker.patch("commit_check.commit.check_commit_signoff", return_value=PASS)
         mocker.patch("commit_check.commit.check_imperative", return_value=PASS)
-        sys.argv = [CMD, "commit"]
+        sys.argv = [CMD, "-m", "-n", "-e", "-s", "-i"]
         main()
         # first positional arg to check_commit_msg is the list of checks
         assert m_msg.call_args[0][0] == DEFAULT_CONFIG["checks"]
@@ -89,7 +91,7 @@ class TestMain:
                 "checks": [
                     {"check": "message"},
                     {"check": "author_name"},
-                    {"check": ""},
+                    {"check": "author_email"},
                     {"check": "commit_signoff"},
                     {"check": "imperative"},
                 ]
@@ -110,7 +112,7 @@ class TestMain:
         mocker.patch(
             "commit_check.commit.check_imperative", return_value=imperative_result
         )
-        sys.argv = [CMD, "commit"]
+        sys.argv = [CMD, "-m", "-n", "-e", "-s", "-i"]
         assert main() == expected
 
     def test_unknown_check_type_ignored(self, mocker):
@@ -119,6 +121,6 @@ class TestMain:
             return_value={"checks": [{"check": "totally_unknown"}]},
         )
         # no dispatcher functions patched intentionally
-
-        sys.argv = [CMD, "commit"]
+        # No flags: unknown check type should simply be ignored, resulting in PASS (no executed checks)
+        sys.argv = [CMD]
         assert main() == PASS
