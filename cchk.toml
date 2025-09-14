@@ -12,9 +12,9 @@ allow_empty_commits = false
 allow_fixup_commits = true
 allow_wip_commits = false
 require_body = false
+require_signed_off_by = false
 allow_authors = []
 ignore_authors = ["dependabot[bot]", "copilot[bot]"]
-require_signed_off_by = false
 
 [branch]
 # https://conventional-branch.github.io/
