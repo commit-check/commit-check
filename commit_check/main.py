@@ -65,7 +65,7 @@ def _get_parser() -> argparse.ArgumentParser:
     """Get and parser to interpret CLI args."""
     parser = argparse.ArgumentParser(
         prog="commit-check",
-        description="Check commit message, branch naming, committer name, email, and more.",
+        description="Check commit message, branch name, author name, email, and more.",
     )
 
     parser.add_argument(
@@ -91,9 +91,17 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "-i",
+        "--imperative",
+        help="check commit message starts with imperative verb",
+        action="store_true",
+        required=False,
+    )
+
+    parser.add_argument(
         "-b",
         "--branch",
-        help="check branch naming",
+        help="check branch name",
         action="store_true",
         required=False,
     )
@@ -101,7 +109,7 @@ def _get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-n",
         "--author-name",
-        help="check committer's name",
+        help="check author name",
         action="store_true",
         required=False,
     )
@@ -109,23 +117,22 @@ def _get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-e",
         "--author-email",
-        help="check committer's email",
+        help="check author email",
         action="store_true",
         required=False,
     )
 
     parser.add_argument(
         "-s",
-        "--commit-signoff",
-        help="check committer's signature",
+        "--signoff",
+        help="check author signoff",
         action="store_true",
         required=False,
     )
 
     parser.add_argument(
-        "-mb",
         "--merge-base",
-        help="check branch is rebased onto target branch",
+        help="check if branch is ahead of main branch",
         action="store_true",
         required=False,
     )
@@ -133,15 +140,7 @@ def _get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-d",
         "--dry-run",
-        help="run checks without failing",
-        action="store_true",
-        required=False,
-    )
-
-    parser.add_argument(
-        "-i",
-        "--imperative",
-        help="check commit message uses imperative mood",
+        help="perform a dry run without failing (always returns 0)",
         action="store_true",
         required=False,
     )
@@ -189,10 +188,8 @@ def main() -> int:
             check_results.append(
                 author.check_author(checks, "author_email", stdin_text=stdin_text)
             )
-        if args.commit_signoff:
-            check_results.append(
-                commit.check_commit_signoff(checks, stdin_text=stdin_text)
-            )
+        if args.signoff:
+            check_results.append(commit.check_signoff(checks, stdin_text=stdin_text))
         if args.merge_base:
             check_results.append(branch.check_merge_base(checks))
         if args.imperative:

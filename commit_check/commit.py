@@ -77,21 +77,19 @@ def check_commit_msg(
     return FAIL
 
 
-def check_commit_signoff(
+def check_signoff(
     checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None
 ) -> int:
     if stdin_text is None and has_commits() is False:
         return PASS  # pragma: no cover
 
-    check = _find_check(checks, "commit_signoff")
+    check = _find_check(checks, "signoff")
     if not check:
         return PASS  # pragma: no cover
 
     regex = check.get("regex", "")
     if regex == "":
-        print(
-            f"{YELLOW}Not found regex for commit signoff. skip checking.{RESET_COLOR}"
-        )
+        print(f"{YELLOW}Not found regex for signoff. skip checking.{RESET_COLOR}")
         return PASS
 
     if stdin_text is not None:

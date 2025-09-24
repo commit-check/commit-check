@@ -230,7 +230,7 @@ def build_checks_from_toml(conf: Dict[str, Any]) -> Dict[str, List[Dict[str, Any
         sign_name = author_cfg.get("required_signoff_name")
         sign_email = author_cfg.get("required_signoff_email")
         rule: Dict[str, Any] = {
-            "check": "commit_signoff",
+            "check": "signoff",
             "regex": r"Signed-off-by:.*[A-Za-z0-9]\s+<.+@.+>",
             "error": "Signed-off-by not found in latest commit",
             "suggest": "git commit --amend --signoff or use --signoff on commit",

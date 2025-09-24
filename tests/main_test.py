@@ -16,16 +16,14 @@ class TestMain:
                     {"check": "message"},
                     {"check": "author_name"},
                     {"check": "author_email"},
-                    {"check": "commit_signoff"},
+                    {"check": "signoff"},
                     {"check": "imperative"},
                 ]
             },
         )
         m_msg = mocker.patch("commit_check.commit.check_commit_msg", return_value=PASS)
         m_author = mocker.patch("commit_check.author.check_author", return_value=PASS)
-        m_signoff = mocker.patch(
-            "commit_check.commit.check_commit_signoff", return_value=PASS
-        )
+        m_signoff = mocker.patch("commit_check.commit.check_signoff", return_value=PASS)
         m_imperative = mocker.patch(
             "commit_check.commit.check_imperative", return_value=PASS
         )
@@ -56,7 +54,7 @@ class TestMain:
         m_msg = mocker.patch("commit_check.commit.check_commit_msg", return_value=PASS)
 
         mocker.patch("commit_check.author.check_author", return_value=PASS)
-        mocker.patch("commit_check.commit.check_commit_signoff", return_value=PASS)
+        mocker.patch("commit_check.commit.check_signoff", return_value=PASS)
         mocker.patch("commit_check.commit.check_imperative", return_value=PASS)
         sys.argv = [CMD, "-m", "-n", "-e", "-s", "-i"]
         main()
@@ -92,7 +90,7 @@ class TestMain:
                     {"check": "message"},
                     {"check": "author_name"},
                     {"check": "author_email"},
-                    {"check": "commit_signoff"},
+                    {"check": "signoff"},
                     {"check": "imperative"},
                 ]
             },
@@ -106,9 +104,7 @@ class TestMain:
             return author_name_result if which == "author_name" else author_email_result
 
         mocker.patch("commit_check.author.check_author", side_effect=author_side_effect)
-        mocker.patch(
-            "commit_check.commit.check_commit_signoff", return_value=signoff_result
-        )
+        mocker.patch("commit_check.commit.check_signoff", return_value=signoff_result)
         mocker.patch(
             "commit_check.commit.check_imperative", return_value=imperative_result
         )

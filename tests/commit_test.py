@@ -2,9 +2,9 @@ import pytest
 from commit_check import PASS, FAIL
 from commit_check.commit import (
     check_commit_msg,
+    check_signoff,
     get_default_commit_msg_file,
     read_commit_msg,
-    check_commit_signoff,
     check_imperative,
 )
 
@@ -111,10 +111,10 @@ def test_check_commit_with_result_none(mocker):
 
 
 @pytest.mark.benchmark
-def test_check_commit_signoff(mocker):
+def test_check_signoff(mocker):
     checks = [
         {
-            "check": "commit_signoff",
+            "check": "signoff",
             "regex": "dummy_regex",
             "error": "error",
             "suggest": "suggest",
@@ -127,7 +127,7 @@ def test_check_commit_signoff(mocker):
     mocker.patch(
         "commit_check.commit.read_commit_msg", return_value="feat: add new feature"
     )
-    retval = check_commit_signoff(checks)
+    retval = check_signoff(checks)
     assert retval == FAIL
     assert m_re_search.call_count == 1
     assert m_print_error_message.call_count == 1
@@ -135,31 +135,29 @@ def test_check_commit_signoff(mocker):
 
 
 @pytest.mark.benchmark
-def test_check_commit_signoff_with_empty_regex(mocker):
-    checks = [
-        {"check": "commit_signoff", "regex": "", "error": "error", "suggest": "suggest"}
-    ]
+def test_check_signoff_with_empty_regex(mocker):
+    checks = [{"check": "signoff", "regex": "", "error": "error", "suggest": "suggest"}]
     m_re_match = mocker.patch("re.match", return_value="fake_commits_info")
-    retval = check_commit_signoff(checks)
+    retval = check_signoff(checks)
     assert retval == PASS
     assert m_re_match.call_count == 0
 
 
 @pytest.mark.benchmark
-def test_check_commit_signoff_with_empty_checks(mocker):
+def test_check_signoff_with_empty_checks(mocker):
     checks = []
     m_re_match = mocker.patch("re.match", return_value="fake_commits_info")
-    retval = check_commit_signoff(checks)
+    retval = check_signoff(checks)
     assert retval == PASS
     assert m_re_match.call_count == 0
 
 
 @pytest.mark.benchmark
-def test_check_commit_signoff_skip_merge_commit(mocker):
+def test_check_signoff_skip_merge_commit(mocker):
     """Test commit signoff check skips merge commits."""
     checks = [
         {
-            "check": "commit_signoff",
+            "check": "signoff",
             "regex": "Signed-off-by:",
             "error": "Signed-off-by not found",
             "suggest": "Use --signoff",
@@ -171,16 +169,16 @@ def test_check_commit_signoff_skip_merge_commit(mocker):
         return_value="Merge branch 'feature/test' into main",
     )
 
-    retval = check_commit_signoff(checks, MSG_FILE)
+    retval = check_signoff(checks, MSG_FILE)
     assert retval == PASS
 
 
 @pytest.mark.benchmark
-def test_check_commit_signoff_skip_merge_pr_commit(mocker):
+def test_check_signoff_skip_merge_pr_commit(mocker):
     """Test commit signoff check skips GitHub merge PR commits."""
     checks = [
         {
-            "check": "commit_signoff",
+            "check": "signoff",
             "regex": "Signed-off-by:",
             "error": "Signed-off-by not found",
             "suggest": "Use --signoff",
@@ -192,16 +190,16 @@ def test_check_commit_signoff_skip_merge_pr_commit(mocker):
         return_value="Merge pull request #123 from user/feature\n\nAdd new feature",
     )
 
-    retval = check_commit_signoff(checks, MSG_FILE)
+    retval = check_signoff(checks, MSG_FILE)
     assert retval == PASS
 
 
 @pytest.mark.benchmark
-def test_check_commit_signoff_still_fails_non_merge_without_signoff(mocker):
+def test_check_signoff_still_fails_non_merge_without_signoff(mocker):
     """Test commit signoff check still fails for non-merge commits without signoff."""
     checks = [
         {
-            "check": "commit_signoff",
+            "check": "signoff",
             "regex": "Signed-off-by:",
             "error": "Signed-off-by not found",
             "suggest": "Use --signoff",
@@ -216,7 +214,7 @@ def test_check_commit_signoff_still_fails_non_merge_without_signoff(mocker):
     m_print_error_message = mocker.patch(f"{LOCATION}.print_error_message")
     m_print_suggestion = mocker.patch(f"{LOCATION}.print_suggestion")
 
-    retval = check_commit_signoff(checks, MSG_FILE)
+    retval = check_signoff(checks, MSG_FILE)
     assert retval == FAIL
     assert m_print_error_message.call_count == 1
     assert m_print_suggestion.call_count == 1

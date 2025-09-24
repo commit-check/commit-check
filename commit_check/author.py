@@ -92,7 +92,7 @@ def check_required_signoff_details(
 ) -> int:
     """If configured, ensure signoff includes specific name/email."""
     # Reuse existing signoff check result; only apply extra constraints if present
-    base = _find_check(checks, "commit_signoff")
+    base = _find_check(checks, "signoff")
     if not base:
         return PASS
     required_name = base.get("required_name")
