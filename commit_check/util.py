@@ -11,7 +11,7 @@ from pathlib import Path, PurePath
 from typing import Any, Dict, Optional
 from subprocess import CalledProcessError
 from commit_check import RED, GREEN, YELLOW, RESET_COLOR
-from commit_check.rules import build_checks_from_toml
+from commit_check._rules import build_checks_from_toml
 
 # Prefer stdlib tomllib (3.11+); fall back to tomli if available; else disabled
 try:  # pragma: no cover - import paths differ by Python version

@@ -8,7 +8,7 @@ Exports:
 """
 
 from importlib.metadata import version
-from commit_check.rules import build_checks_from_toml as _build_checks_from_toml
+from commit_check._rules import build_checks_from_toml as _build_checks_from_toml
 
 # Exit codes used across the package
 PASS = 0
