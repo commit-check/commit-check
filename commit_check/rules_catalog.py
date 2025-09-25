@@ -117,7 +117,7 @@ BRANCH_RULES = [
     RuleCatalogEntry(
         check="branch",
         regex=None,  # Built dynamically from config
-        error="Branches must begin with allowed types (e.g., feature/, bugfix/) or be main/master/PR-*.",
+        error="The branch should follow Conventional Branch. See https://conventional-branches.github.io/",
         suggest="git checkout -b <type>/<branch_name>",
     ),
     RuleCatalogEntry(
