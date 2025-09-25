@@ -156,6 +156,7 @@ def main() -> int:
                     "subject_min_length",
                     "require_signed_off_by",
                     "subject_capitalized",
+                    "require_body",
                 ]
             )
         if args.branch:

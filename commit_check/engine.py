@@ -334,6 +334,54 @@ class SignoffValidator(BaseValidator):
         return f"{subject}\n\n{body}".strip()
 
 
+class BodyValidator(BaseValidator):
+    """Validates that commit messages contain a body when required."""
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        if self._should_skip_validation(context):
+            return ValidationResult.PASS
+
+        message = self._get_commit_message(context)
+        if not message:
+            return ValidationResult.PASS
+
+        # Split message into lines and check if there's content after the subject
+        lines = message.strip().split("\n")
+
+        # Filter out empty lines
+        non_empty_lines = [line.strip() for line in lines if line.strip()]
+
+        # If there's more than just the subject line, we have a body
+        if len(non_empty_lines) > 1:
+            return ValidationResult.PASS
+
+        # Check if there's content after the first line (even if separated by empty lines)
+        if len(lines) > 1:
+            body_content = "\n".join(lines[1:]).strip()
+            if body_content:
+                return ValidationResult.PASS
+
+        self._print_failure(message)
+        return ValidationResult.FAIL
+
+    def _get_commit_message(self, context: ValidationContext) -> str:
+        """Get commit message from context or git."""
+        if context.stdin_text:
+            return context.stdin_text.strip()
+
+        if context.commit_file:
+            try:
+                with open(context.commit_file, "r") as f:
+                    return f.read().strip()
+            except FileNotFoundError:
+                pass
+
+        # Fallback to git log
+        subject = get_commit_info("s")
+        body = get_commit_info("b")
+        return f"{subject}\n\n{body}".strip()
+
+
 class ValidationEngine:
     """Main validation engine that orchestrates all validations."""
 
@@ -350,6 +398,7 @@ class ValidationEngine:
         "branch": BranchValidator,
         "merge_base": MergeBaseValidator,
         "require_signed_off_by": SignoffValidator,
+        "require_body": BodyValidator,
     }
 
     def __init__(self, rules: List[ValidationRule]):
