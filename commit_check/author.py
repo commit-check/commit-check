@@ -88,7 +88,7 @@ def check_ignore_authors(
 
 
 def check_required_signoff_details(
-    checks: list, commit_msg_file: str = "", stdin_text: Optional[str] = None
+    checks: list, stdin_text: Optional[str] = None
 ) -> int:
     """If configured, ensure signoff includes specific name/email."""
     # Reuse existing signoff check result; only apply extra constraints if present
