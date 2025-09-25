@@ -382,6 +382,87 @@ class BodyValidator(BaseValidator):
         return f"{subject}\n\n{body}".strip()
 
 
+class CommitTypeValidator(BaseValidator):
+    """Base validator for special commit types (merge, revert, fixup, WIP, empty)."""
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        if self._should_skip_validation(context):
+            return ValidationResult.PASS
+
+        message = self._get_commit_message(context)
+        if not message:
+            return ValidationResult.PASS
+
+        # Check if this commit type is allowed based on rule configuration
+        is_allowed = self._is_commit_type_allowed(message)
+
+        if not is_allowed:
+            self._print_failure(message)
+            return ValidationResult.FAIL
+
+        return ValidationResult.PASS
+
+    def _is_commit_type_allowed(self, message: str) -> bool:
+        """Check if the commit type is allowed based on the rule check."""
+        check = self.rule.check
+
+        if check == "allow_merge_commits":
+            return self._is_merge_commit_allowed(message)
+        elif check == "allow_revert_commits":
+            return self._is_revert_commit_allowed(message)
+        elif check == "allow_empty_commits":
+            return self._is_empty_commit_allowed(message)
+        elif check == "allow_fixup_commits":
+            return self._is_fixup_commit_allowed(message)
+        elif check == "allow_wip_commits":
+            return self._is_wip_commit_allowed(message)
+
+        return True
+
+    def _is_merge_commit_allowed(self, message: str) -> bool:
+        """Check if merge commits are allowed."""
+        is_merge = message.startswith("Merge ")
+        # If rule value is True, allow merge commits. If False, reject them.
+        return not is_merge or self.rule.value
+
+    def _is_revert_commit_allowed(self, message: str) -> bool:
+        """Check if revert commits are allowed."""
+        is_revert = message.lower().startswith("revert ")
+        return not is_revert or self.rule.value
+
+    def _is_empty_commit_allowed(self, message: str) -> bool:
+        """Check if empty commits are allowed."""
+        is_empty = not message.strip()
+        return not is_empty or self.rule.value
+
+    def _is_fixup_commit_allowed(self, message: str) -> bool:
+        """Check if fixup commits are allowed."""
+        is_fixup = message.startswith("fixup!")
+        return not is_fixup or self.rule.value
+
+    def _is_wip_commit_allowed(self, message: str) -> bool:
+        """Check if WIP commits are allowed."""
+        is_wip = message.upper().startswith("WIP:")
+        return not is_wip or self.rule.value
+
+    def _get_commit_message(self, context: ValidationContext) -> str:
+        """Get commit message from context or git."""
+        if context.stdin_text:
+            return context.stdin_text.strip()
+
+        if context.commit_file:
+            try:
+                with open(context.commit_file, "r") as f:
+                    return f.read().strip()
+            except FileNotFoundError:
+                pass
+
+        # Fallback to git log
+        subject = get_commit_info("s")
+        body = get_commit_info("b")
+        return f"{subject}\n\n{body}".strip()
+
+
 class ValidationEngine:
     """Main validation engine that orchestrates all validations."""
 
@@ -399,6 +480,11 @@ class ValidationEngine:
         "merge_base": MergeBaseValidator,
         "require_signed_off_by": SignoffValidator,
         "require_body": BodyValidator,
+        "allow_merge_commits": CommitTypeValidator,
+        "allow_revert_commits": CommitTypeValidator,
+        "allow_empty_commits": CommitTypeValidator,
+        "allow_fixup_commits": CommitTypeValidator,
+        "allow_wip_commits": CommitTypeValidator,
     }
 
     def __init__(self, rules: List[ValidationRule]):

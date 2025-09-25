@@ -157,6 +157,11 @@ def main() -> int:
                     "require_signed_off_by",
                     "subject_capitalized",
                     "require_body",
+                    "allow_merge_commits",
+                    "allow_revert_commits",
+                    "allow_empty_commits",
+                    "allow_fixup_commits",
+                    "allow_wip_commits",
                 ]
             )
         if args.branch:
