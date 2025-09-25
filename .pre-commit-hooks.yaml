@@ -7,8 +7,8 @@
   language: python
   stages: [commit-msg]
 - id: check-branch
-  name: check branch naming
-  description: ensures branch naming to match regex
+  name: check branch name
+  description: ensures branch name to match regex
   entry: commit-check
   args: [--branch]
   pass_filenames: false
@@ -26,25 +26,4 @@
   entry: commit-check
   args: [--author-email]
   pass_filenames: false
-  language: python
-- id: check-commit-signoff
-  name: check committer signoff
-  description: ensures committer to add a Signed-off-by trailer
-  entry: commit-check
-  args: [--commit-signoff]
-  pass_filenames: false
-  language: python
-- id: check-merge-base
-  name: check merge base
-  description: ensures current branch is rebased onto target branch
-  entry: commit-check
-  args: [--merge-base]
-  pass_filenames: false
-  language: python
-- id: check-imperative
-  name: check imperative mood
-  description: ensures commit message uses imperative mood
-  entry: commit-check
-  args: [--imperative]
-  pass_filenames: true
   language: python

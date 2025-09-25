@@ -1,41 +1,13 @@
 import sys
 import pytest
+import tempfile
+import os
 from commit_check.main import main
-from commit_check import PASS, FAIL, DEFAULT_CONFIG
 
 CMD = "commit-check"
 
 
 class TestMain:
-    def test_commit_invokes_expected_checks(self, mocker):
-        """Given a config with several check types, ensure each dispatcher target is invoked exactly once."""
-        mocker.patch(
-            "commit_check.main.validate_config",
-            return_value={
-                "checks": [
-                    {"check": "message"},
-                    {"check": "author_name"},
-                    {"check": "author_email"},
-                    {"check": "signoff"},
-                    {"check": "imperative"},
-                ]
-            },
-        )
-        m_msg = mocker.patch("commit_check.commit.check_commit_msg", return_value=PASS)
-        m_author = mocker.patch("commit_check.author.check_author", return_value=PASS)
-        m_signoff = mocker.patch("commit_check.commit.check_signoff", return_value=PASS)
-        m_imperative = mocker.patch(
-            "commit_check.commit.check_imperative", return_value=PASS
-        )
-        # Use flags for each check instead of deprecated 'commit' subcommand
-        sys.argv = [CMD, "-m", "-n", "-e", "-s", "-i"]
-        assert main() == PASS
-        assert m_msg.call_count == 1
-        # author_name + author_email => 2 invocations
-        assert m_author.call_count == 2
-        assert m_signoff.call_count == 1
-        assert m_imperative.call_count == 1
-
     def test_help(self, capfd):
         sys.argv = [CMD, "--help"]
         with pytest.raises(SystemExit):
@@ -49,74 +21,85 @@ class TestMain:
         with pytest.raises(SystemExit):
             main()
 
-    def test_default_config_used_when_validate_returns_empty(self, mocker):
-        mocker.patch("commit_check.main.validate_config", return_value={})
-        m_msg = mocker.patch("commit_check.commit.check_commit_msg", return_value=PASS)
-
-        mocker.patch("commit_check.author.check_author", return_value=PASS)
-        mocker.patch("commit_check.commit.check_signoff", return_value=PASS)
-        mocker.patch("commit_check.commit.check_imperative", return_value=PASS)
-        sys.argv = [CMD, "-m", "-n", "-e", "-s", "-i"]
-        main()
-        # first positional arg to check_commit_msg is the list of checks
-        assert m_msg.call_args[0][0] == DEFAULT_CONFIG["checks"]
-
-    @pytest.mark.parametrize(
-        "message_result, author_name_result, author_email_result, signoff_result, imperative_result, expected",
-        [
-            (PASS, PASS, PASS, PASS, PASS, PASS),
-            (FAIL, PASS, PASS, PASS, PASS, FAIL),
-            (PASS, FAIL, PASS, PASS, PASS, FAIL),
-            (PASS, PASS, FAIL, PASS, PASS, FAIL),
-            (PASS, PASS, PASS, FAIL, PASS, FAIL),
-            (PASS, PASS, PASS, PASS, FAIL, FAIL),
-        ],
-    )
-    def test_exit_code_aggregation(
-        self,
-        mocker,
-        message_result,
-        author_name_result,
-        author_email_result,
-        signoff_result,
-        imperative_result,
-        expected,
-    ):
-        # configure all check types
-        mocker.patch(
-            "commit_check.main.validate_config",
-            return_value={
-                "checks": [
-                    {"check": "message"},
-                    {"check": "author_name"},
-                    {"check": "author_email"},
-                    {"check": "signoff"},
-                    {"check": "imperative"},
-                ]
-            },
-        )
-
-        mocker.patch(
-            "commit_check.commit.check_commit_msg", return_value=message_result
-        )
-
-        def author_side_effect(_, which, **_kw):  # type: ignore[return]
-            return author_name_result if which == "author_name" else author_email_result
-
-        mocker.patch("commit_check.author.check_author", side_effect=author_side_effect)
-        mocker.patch("commit_check.commit.check_signoff", return_value=signoff_result)
-        mocker.patch(
-            "commit_check.commit.check_imperative", return_value=imperative_result
-        )
-        sys.argv = [CMD, "-m", "-n", "-e", "-s", "-i"]
-        assert main() == expected
-
-    def test_unknown_check_type_ignored(self, mocker):
-        mocker.patch(
-            "commit_check.main.validate_config",
-            return_value={"checks": [{"check": "totally_unknown"}]},
-        )
-        # no dispatcher functions patched intentionally
-        # No flags: unknown check type should simply be ignored, resulting in PASS (no executed checks)
+    def test_no_args_shows_help(self, capfd):
+        """When no arguments are provided, should show help and exit 0."""
         sys.argv = [CMD]
-        assert main() == PASS
+        assert main() == 0
+
+    def test_message_validation_with_valid_commit(self, mocker):
+        """Test that a valid commit message passes validation."""
+        # Mock stdin to provide a valid commit message
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
+
+        sys.argv = [CMD, "-m"]
+        assert main() == 0
+
+    def test_message_validation_with_invalid_commit(self, mocker):
+        """Test that an invalid commit message fails validation."""
+        # Mock stdin to provide an invalid commit message
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
+
+        sys.argv = [CMD, "-m"]
+        assert main() == 1
+
+    def test_message_validation_from_file(self):
+        """Test validation of commit message from a file."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+            f.write("fix: resolve bug")
+            f.flush()
+
+            try:
+                sys.argv = [CMD, "-m", f.name]
+                assert main() == 0
+            finally:
+                os.unlink(f.name)
+
+    def test_branch_validation(self, mocker):
+        """Test branch name validation."""
+        # Mock git command to return a valid branch name
+        mocker.patch(
+            "subprocess.run",
+            return_value=type(
+                "MockResult", (), {"stdout": "feature/test-branch", "returncode": 0}
+            )(),
+        )
+
+        sys.argv = [CMD, "-b"]
+        assert main() == 0
+
+    def test_author_name_validation(self, mocker):
+        """Test author name validation."""
+        # Mock git command to return a valid author name
+        mocker.patch(
+            "subprocess.run",
+            return_value=type(
+                "MockResult", (), {"stdout": "John Doe", "returncode": 0}
+            )(),
+        )
+
+        sys.argv = [CMD, "-n"]
+        assert main() == 0
+
+    def test_author_email_validation(self, mocker):
+        """Test author email validation."""
+        # Mock git command to return a valid author email
+        mocker.patch(
+            "subprocess.run",
+            return_value=type(
+                "MockResult", (), {"stdout": "john.doe@example.com", "returncode": 0}
+            )(),
+        )
+
+        sys.argv = [CMD, "-e"]
+        assert main() == 0
+
+    def test_dry_run_always_passes(self, mocker):
+        """Test that dry run mode always returns 0."""
+        # Mock stdin to provide an invalid commit message
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
+
+        sys.argv = [CMD, "-m", "--dry-run"]
+        assert main() == 0

@@ -29,7 +29,7 @@ def build(session):
     session.run("python3", "-m", "pip", "wheel", "--no-deps", "-w", "dist", ".")
 
 
-@nox.session(name="install-wheel", requires=["build"])
+@nox.session(name="install", requires=["build"])
 def install_wheel(session):
     session.run("python3", "-m", "pip", "wheel", "--no-deps", "-w", "dist", ".")
     whl_file = glob.glob("dist/*.whl")
