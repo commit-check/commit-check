@@ -11,7 +11,7 @@ from pathlib import Path, PurePath
 from typing import Any, Dict, Optional
 from subprocess import CalledProcessError
 from commit_check import RED, GREEN, YELLOW, RESET_COLOR
-from commit_check._rules import build_checks_from_toml
+from commit_check.rule_builder import RuleBuilder
 
 # Prefer stdlib tomllib (3.11+); fall back to tomli if available; else disabled
 try:  # pragma: no cover - import paths differ by Python version
@@ -184,7 +184,10 @@ def validate_config(path_hint: str) -> dict:
         raw = _load_toml(cfg_path)
         if not raw:
             return {}
-        return build_checks_from_toml(raw)
+        # Use new rule builder system
+        rule_builder = RuleBuilder(raw)
+        rules = rule_builder.build_all_rules()
+        return {"checks": [rule.to_dict() for rule in rules]}
 
     # Legacy YAML fallback (maintained for test compatibility)
     try:
