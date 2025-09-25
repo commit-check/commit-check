@@ -1,68 +1,33 @@
-"""Minimal argparse CLI.
-
-Only command: run
-
-Usage:
-    commit-check run [PATH] [--config FILE] [-v|-q|-s] [--version]
-
-Behavior: loads config and executes every defined check exactly once.
-Exit codes: 0 all pass, 1 any fail.
-"""
+"""Modern commit-check CLI with clean architecture and TOML support."""
 
 from __future__ import annotations
 import sys
 import argparse
 from typing import Optional
 
-from commit_check import branch, commit, author
-from commit_check.error import error_handler
-from commit_check.util import validate_config
-from . import CONFIG_FILE, PASS, FAIL, __version__, DEFAULT_CONFIG
+from commit_check.config import load_config
+from commit_check.rule_builder import RuleBuilder
+from commit_check.engine import ValidationEngine, ValidationContext, ValidationResult
+from . import __version__
 
 
-class LogLevel:
-    VERBOSE = 3
-    QUIET = 1
-    SILENT = 0
-    NORMAL = 2
+class StdinReader:
+    """Handles stdin reading with proper error handling."""
 
-
-LOG_LEVEL = LogLevel.NORMAL
-
-
-def set_log_level(verbose: bool, quiet: bool, silent: bool) -> None:
-    global LOG_LEVEL
-    # Mutual exclusivity: priority silent > verbose > quiet > normal
-    if silent:
-        LOG_LEVEL = LogLevel.SILENT
-    elif verbose:
-        LOG_LEVEL = LogLevel.VERBOSE
-    elif quiet:
-        LOG_LEVEL = LogLevel.QUIET
-    else:
-        LOG_LEVEL = LogLevel.NORMAL
-
-
-def log(msg: str, level: int = LogLevel.NORMAL) -> None:
-    if LOG_LEVEL == LogLevel.SILENT:
-        return
-    if LOG_LEVEL == LogLevel.QUIET and level > LogLevel.QUIET:
-        return
-    print(msg)
-
-
-def _read_stdin() -> Optional[str]:  # read commit message content if piped
-    try:
-        if not sys.stdin.isatty():
-            data = sys.stdin.read()
-            return data or None
-    except Exception:
+    @staticmethod
+    def read_piped_input() -> Optional[str]:
+        """Read commit message content if piped, with proper error handling."""
+        try:
+            if not sys.stdin.isatty():
+                data = sys.stdin.read()
+                return data.strip() if data else None
+        except (OSError, IOError):
+            return None
         return None
-    return None
 
 
 def _get_parser() -> argparse.ArgumentParser:
-    """Get and parser to interpret CLI args."""
+    """Get parser to interpret CLI args."""
     parser = argparse.ArgumentParser(
         prog="commit-check",
         description="Check commit message, branch name, author name, email, and more.",
@@ -78,30 +43,21 @@ def _get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-c",
         "--config",
-        default=CONFIG_FILE,
-        help="path to config file. default is . (current directory)",
+        help="path to config file (cchk.toml). If not specified, searches for cchk.toml in current directory",
     )
 
     parser.add_argument(
         "-m",
         "--message",
-        help="check commit message",
-        action="store_true",
-        required=False,
-    )
-
-    parser.add_argument(
-        "-i",
-        "--imperative",
-        help="check commit message starts with imperative verb",
-        action="store_true",
-        required=False,
+        nargs="?",
+        const="",
+        help="validate commit message. Optionally specify file path, otherwise reads from stdin if available",
     )
 
     parser.add_argument(
         "-b",
         "--branch",
-        help="check branch name",
+        help="check current git branch name",
         action="store_true",
         required=False,
     )
@@ -109,7 +65,7 @@ def _get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-n",
         "--author-name",
-        help="check author name",
+        help="check git author name",
         action="store_true",
         required=False,
     )
@@ -117,22 +73,7 @@ def _get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-e",
         "--author-email",
-        help="check author email",
-        action="store_true",
-        required=False,
-    )
-
-    parser.add_argument(
-        "-s",
-        "--signoff",
-        help="check author signoff",
-        action="store_true",
-        required=False,
-    )
-
-    parser.add_argument(
-        "--merge-base",
-        help="check if branch is ahead of main branch",
+        help="check git author email",
         action="store_true",
         required=False,
     )
@@ -148,54 +89,109 @@ def _get_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _get_message_content(
+    message_arg: Optional[str], stdin_reader: StdinReader
+) -> Optional[str]:
+    """Get commit message content from argument, file, or stdin."""
+    if message_arg is None:
+        return None
+
+    # If message_arg is empty string (from nargs="?", const=""), try stdin first, then git
+    if message_arg == "":
+        # Try reading from stdin if available
+        stdin_content = stdin_reader.read_piped_input()
+        if stdin_content:
+            return stdin_content
+
+        # Fallback to latest git commit message
+        try:
+            from commit_check.util import get_commit_info
+
+            return get_commit_info("B")  # Full commit message
+        except Exception:
+            print(
+                "Error: No commit message provided and unable to read from git",
+                file=sys.stderr,
+            )
+            return None
+
+    # If message_arg is a file path, read from file
+    try:
+        with open(message_arg, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except (OSError, IOError) as e:
+        print(f"Error reading message file '{message_arg}': {e}", file=sys.stderr)
+        return None
+
+
 def main() -> int:
     """The main entrypoint of commit-check program."""
     parser = _get_parser()
     args = parser.parse_args()
 
     if args.dry_run:
-        return PASS
+        return 0
 
-    # Capture stdin (if piped) once and pass to checks.
-    stdin_text = None
+    stdin_reader = StdinReader()
+
     try:
-        if not sys.stdin.isatty():
-            data = sys.stdin.read()
-            stdin_text = data or None
-    except Exception:
-        stdin_text = None
+        # Load configuration
+        config_data = load_config(args.config)
 
-    check_results: list[int] = []
+        # Build validation rules from config
+        rule_builder = RuleBuilder(config_data)
+        all_rules = rule_builder.build_all_rules()
 
-    with error_handler():
-        config = (
-            validate_config(args.config)
-            if validate_config(
-                args.config,
+        # Filter rules based on CLI arguments
+        requested_checks = []
+        if (
+            args.message is not None
+        ):  # Check for None explicitly since empty string is valid
+            # Add commit message related checks
+            requested_checks.extend(
+                ["message", "imperative", "subject_max_length", "subject_min_length"]
             )
-            else DEFAULT_CONFIG
-        )
-        checks = config["checks"]
-        if args.message:
-            check_results.append(commit.check_commit_msg(checks, stdin_text=stdin_text))
         if args.branch:
-            check_results.append(branch.check_branch(checks, stdin_text=stdin_text))
+            requested_checks.extend(["branch", "merge_base"])
         if args.author_name:
-            check_results.append(
-                author.check_author(checks, "author_name", stdin_text=stdin_text)
-            )
+            requested_checks.append("author_name")
         if args.author_email:
-            check_results.append(
-                author.check_author(checks, "author_email", stdin_text=stdin_text)
-            )
-        if args.signoff:
-            check_results.append(commit.check_signoff(checks, stdin_text=stdin_text))
-        if args.merge_base:
-            check_results.append(branch.check_merge_base(checks))
-        if args.imperative:
-            check_results.append(commit.check_imperative(checks, stdin_text=stdin_text))
+            requested_checks.append("author_email")
 
-    return PASS if all(val == PASS for val in check_results) else FAIL
+        # If no specific checks requested, show help
+        if not requested_checks:
+            parser.print_help()
+            return 0
+
+        # Filter rules to only include requested checks
+        filtered_rules = [rule for rule in all_rules if rule.check in requested_checks]
+
+        # Create validation engine with filtered rules
+        engine = ValidationEngine(filtered_rules)
+
+        # Create validation context
+        message_content = None
+        if (
+            args.message is not None
+        ):  # Check explicitly for None since empty string is valid
+            message_content = _get_message_content(args.message, stdin_reader)
+            if not message_content:
+                return 1  # Error message already printed in _get_message_content
+
+        context = ValidationContext(
+            stdin_text=message_content,
+            commit_file=args.message if args.message and args.message != "-" else None,
+        )
+
+        # Run validation
+        result = engine.validate_all(context)
+
+        # Return appropriate exit code
+        return 0 if result == ValidationResult.PASS else 1
+
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":  # pragma: no cover
