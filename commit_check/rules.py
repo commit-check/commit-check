@@ -14,7 +14,6 @@ def build_checks_from_toml(conf: Dict[str, Any]) -> Dict[str, List[Dict[str, Any
 
     commit_cfg = conf.get("commit", {}) or {}
     branch_cfg = conf.get("branch", {}) or {}
-    author_cfg = conf.get("author", {}) or {}
 
     # --- commit section ---
     if commit_cfg.get("conventional_commits", True):
@@ -143,6 +142,61 @@ def build_checks_from_toml(conf: Dict[str, Any]) -> Dict[str, List[Dict[str, Any
             }
         )
 
+    checks.append(
+        {
+            "check": "author_name",
+            "regex": r"^[A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u017F\u0180-\u024F ,.'\-]+$|.*(\[bot])",
+            "error": "The committer name seems invalid",
+            "suggest": "git config user.name 'Your Name'",
+        }
+    )
+    checks.append(
+        {
+            "check": "author_email",
+            "regex": r"^.+@.+$",
+            "error": "The committer's email seems invalid",
+            "suggest": "git config user.email yourname@example.com",
+        }
+    )
+
+    allow_authors = commit_cfg.get("allow_authors")
+    if isinstance(allow_authors, list) and allow_authors:
+        checks.append(
+            {
+                "check": "allow_authors",
+                "regex": "",
+                "error": "Author is not allowed",
+                "suggest": "Use a configured author or adjust configuration",
+                "allowed": allow_authors,
+            }
+        )
+    ignore_authors = commit_cfg.get("ignore_authors")
+    if isinstance(ignore_authors, list) and ignore_authors:
+        checks.append(
+            {
+                "check": "ignore_authors",
+                "regex": "",
+                "error": "",
+                "suggest": "",
+                "ignored": ignore_authors,
+            }
+        )
+
+    if commit_cfg.get("require_signed_off_by", False):
+        sign_name = commit_cfg.get("required_signoff_name")
+        sign_email = commit_cfg.get("required_signoff_email")
+        rule: Dict[str, Any] = {
+            "check": "signoff",
+            "regex": r"Signed-off-by:.*[A-Za-z0-9]\s+<.+@.+>",
+            "error": "Signed-off-by not found in latest commit",
+            "suggest": "git commit --amend --signoff or use --signoff on commit",
+        }
+        if sign_name:
+            rule["required_name"] = sign_name
+        if sign_email:
+            rule["required_email"] = sign_email
+        checks.append(rule)
+
     # --- branch section ---
     if branch_cfg.get("conventional_branch", True):
         branch_allowed = branch_cfg.get("allow_branch_types") or [
@@ -184,61 +238,5 @@ def build_checks_from_toml(conf: Dict[str, Any]) -> Dict[str, List[Dict[str, Any
                 "suggest": "Rebase or merge with the target branch",
             }
         )
-
-    # --- author section ---
-    checks.append(
-        {
-            "check": "author_name",
-            "regex": r"^[A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u017F\u0180-\u024F ,.'\-]+$|.*(\[bot])",
-            "error": "The committer name seems invalid",
-            "suggest": "git config user.name 'Your Name'",
-        }
-    )
-    checks.append(
-        {
-            "check": "author_email",
-            "regex": r"^.+@.+$",
-            "error": "The committer's email seems invalid",
-            "suggest": "git config user.email yourname@example.com",
-        }
-    )
-
-    allow_authors = author_cfg.get("allow_authors")
-    if isinstance(allow_authors, list) and allow_authors:
-        checks.append(
-            {
-                "check": "allow_authors",
-                "regex": "",
-                "error": "Author is not allowed",
-                "suggest": "Use a configured author or adjust configuration",
-                "allowed": allow_authors,
-            }
-        )
-    ignore_authors = author_cfg.get("ignore_authors")
-    if isinstance(ignore_authors, list) and ignore_authors:
-        checks.append(
-            {
-                "check": "ignore_authors",
-                "regex": "",
-                "error": "",
-                "suggest": "",
-                "ignored": ignore_authors,
-            }
-        )
-
-    if author_cfg.get("require_signed_off_by", False):
-        sign_name = author_cfg.get("required_signoff_name")
-        sign_email = author_cfg.get("required_signoff_email")
-        rule: Dict[str, Any] = {
-            "check": "signoff",
-            "regex": r"Signed-off-by:.*[A-Za-z0-9]\s+<.+@.+>",
-            "error": "Signed-off-by not found in latest commit",
-            "suggest": "git commit --amend --signoff or use --signoff on commit",
-        }
-        if sign_name:
-            rule["required_name"] = sign_name
-        if sign_email:
-            rule["required_email"] = sign_email
-        checks.append(rule)
 
     return {"checks": checks}
