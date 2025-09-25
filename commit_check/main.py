@@ -149,7 +149,14 @@ def main() -> int:
         ):  # Check for None explicitly since empty string is valid
             # Add commit message related checks
             requested_checks.extend(
-                ["message", "imperative", "subject_max_length", "subject_min_length"]
+                [
+                    "message",
+                    "imperative",
+                    "subject_max_length",
+                    "subject_min_length",
+                    "require_signed_off_by",
+                    "subject_capitalized",
+                ]
             )
         if args.branch:
             requested_checks.extend(["branch", "merge_base"])
