@@ -38,7 +38,9 @@ class ValidationRule:
 class RuleBuilder:
     """Builds validation rules from config and catalog entries."""
 
+    # Follow conventional commits
     DEFAULT_COMMIT_TYPES = ["feat", "fix", "docs", "style", "refactor", "test", "chore"]
+    # Follow conventional branch
     DEFAULT_BRANCH_TYPES = [
         "feature",
         "bugfix",

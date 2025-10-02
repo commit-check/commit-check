@@ -109,12 +109,27 @@ def setup(app: Sphinx):
         encoding="utf-8",
     )
     doc = "commit-check --help\n==============================\n\n"
-    CLI_OPT_NAME = re.compile(r"^\s*(\-\w)\s?[A-Z_]*,\s(\-\-.*?)\s")
+    CLI_OPT_NAME = re.compile(r"^\s*(\-\w)(?:\s+[A-Z_\[\]]*)?(?:,\s+(\-\-[a-z\-]+))?")
+    in_options_section = False
+
     for line in result.stdout.splitlines():
-        match = CLI_OPT_NAME.search(line)
-        if match is not None:
-            # print(match.groups())
-            doc += "\n.. std:option:: " + ", ".join(match.groups()) + "\n\n"
+        # Start processing options when we see the "options:" line
+        if line.strip() == "options:":
+            in_options_section = True
+            doc += line + "\n"
+            continue
+
+        # Only process option patterns in the options section
+        if in_options_section:
+            match = CLI_OPT_NAME.search(line)
+            if match is not None:
+                short_opt = match.group(1)
+                long_opt = match.group(2)
+                if short_opt and long_opt:
+                    doc += "\n.. std:option:: " + short_opt + ", " + long_opt + "\n\n"
+                elif short_opt:
+                    doc += "\n.. std:option:: " + short_opt + "\n\n"
+
         doc += line + "\n"
     cli_doc = Path(app.srcdir, "cli_args.rst")
     cli_doc.unlink(missing_ok=True)
