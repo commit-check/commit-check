@@ -183,17 +183,28 @@ def main() -> int:
         engine = ValidationEngine(filtered_rules)
 
         # Create validation context
-        message_content = None
+        stdin_content = None
+        commit_file_path = None
+
         if (
             args.message is not None
         ):  # Check explicitly for None since empty string is valid
-            message_content = _get_message_content(args.message, stdin_reader)
-            if not message_content:
-                return 1  # Error message already printed in _get_message_content
+            if args.message == "":
+                # Only set stdin_content if there's actual piped input
+                stdin_content = stdin_reader.read_piped_input()
+                if not stdin_content:
+                    # No stdin and no file - let validators get data from git themselves
+                    stdin_content = None
+            else:
+                # Message is a file path
+                commit_file_path = args.message
+        else:
+            # Even if --message is not specified, check for stdin input for other validations
+            stdin_content = stdin_reader.read_piped_input()
 
         context = ValidationContext(
-            stdin_text=message_content,
-            commit_file=args.message if args.message and args.message != "-" else None,
+            stdin_text=stdin_content,
+            commit_file=commit_file_path,
         )
 
         # Run validation
