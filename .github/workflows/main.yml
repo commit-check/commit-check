@@ -83,7 +83,7 @@ jobs:
       - name: Install test
         # using a wildcard as filename on Windows requires a bash shell
         shell: bash
-        run: nox -s install-wheel
+        run: nox -s install
 
   docs:
       runs-on: ubuntu-24.04
