@@ -193,7 +193,7 @@ Check Commit Signature Failed
 
     Commit rejected.
 
-    Type commit_signoff check failed => c92ce259ff041c91859c7fb61afdbb391e769d0f
+    Type signoff check failed => c92ce259ff041c91859c7fb61afdbb391e769d0f
     It doesn't match regex: Signed-off-by:.*[A-Za-z0-9]\s+<.+@.+>
     Signed-off-by not found in latest commit
     Suggest: run command `git commit -m "conventional commit message" --signoff`

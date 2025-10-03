@@ -27,7 +27,7 @@ nox -s build
 python3 -m pip wheel --no-deps -w dist .  # NETWORK ISSUES: Also fails due to build dependencies
 
 # Install wheel (depends on build)
-nox -s install-wheel  # NETWORK ISSUES: Often fails due to PyPI timeouts in CI environments
+nox -s install  # NETWORK ISSUES: Often fails due to PyPI timeouts in CI environments
 ```
 
 ### Testing

@@ -21,6 +21,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref }} # get current branch name
       - uses: actions/setup-python@v6
         with:
           python-version: '3.x'
@@ -48,7 +50,7 @@ jobs:
       - name: Collect Coverage
         run: nox -s coverage
 
-      - uses: codecov/codecov-action@v5.0.2
+      - uses: codecov/codecov-action@5c47607acb93fed5485fdbf7232e8a31425f672a  # v5.0.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
@@ -81,7 +83,7 @@ jobs:
       - name: Install test
         # using a wildcard as filename on Windows requires a bash shell
         shell: bash
-        run: nox -s install-wheel
+        run: nox -s install
 
   docs:
       runs-on: ubuntu-24.04
@@ -110,7 +112,7 @@ jobs:
         - name: Upload docs to github pages
           # only publish doc changes from main branch
           if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-          uses: peaceiris/actions-gh-pages@v4
+          uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
           with:
             github_token: ${{ secrets.GITHUB_TOKEN }}
             publish_dir: ./_build/html

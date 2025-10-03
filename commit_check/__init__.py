@@ -1,73 +1,29 @@
-"""The commit-check package's base module."""
+"""The commit-check package's base module.
+
+Exports:
+        PASS / FAIL exit codes
+        DEFAULT_CONFIG: minimal default rule set used when no config found
+        ANSI color constants
+        __version__ (package version)
+"""
+
 from importlib.metadata import version
+from commit_check.rule_builder import RuleBuilder
 
-RED = '\033[0;31m'
-GREEN = "\033[32m"
-YELLOW = '\033[93m'
-RESET_COLOR = '\033[0m'
-
+# Exit codes used across the package
 PASS = 0
 FAIL = 1
 
-"""
-Use default config if .commit-check.yml not exist.
-"""
-DEFAULT_CONFIG = {
-    'checks': [
-        {
-            'check': 'message',
-            'regex': r'^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)',
-            'error': 'The commit message should be structured as follows:\n\n'
-            '<type>[optional scope]: <description>\n'
-            '[optional body]\n'
-            '[optional footer(s)]\n\n'
-            'More details please refer to https://www.conventionalcommits.org',
-            'suggest': 'please check your commit message whether matches above regex'
-        },
-        {
-            'check': 'branch',
-            'regex': r'^(bugfix|feature|release|hotfix|task|chore)\/.+|(master)|(main)|(HEAD)|(PR-.+)',
-            'error': 'Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/ chore/',
-            'suggest': 'run command `git checkout -b type/branch_name`',
-        },
-        {
-            'check': 'author_name',
-            'regex': r'^[A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u017F\u0180-\u024F ,.\'-]+$|.*(\[bot])',
-            'error': 'The committer name seems invalid',
-            'suggest': 'run command `git config user.name "Your Name"`',
-        },
-        {
-            'check': 'author_email',
-            'regex': r'^.+@.+$',
-            'error': 'The committer\'s email seems invalid',
-            'suggest': 'run command `git config user.email yourname@example.com`',
-        },
-        {
-            'check': 'commit_signoff',
-            'regex': r'Signed-off-by:.*[A-Za-z0-9]\s+<.+@.+>',
-            'error': 'Signed-off-by not found in latest commit',
-            'suggest': 'run command `git commit -m "conventional commit message" --signoff`',
-        },
-        {
-            'check': 'merge_base',
-            'regex': r'main', # it can be master, develop, devel etc based on your project.
-            'error': 'Current branch is not rebased onto target branch',
-            'suggest': 'Please ensure your branch is rebased with the target branch',
-        },
-        {
-            'check': 'imperative',
-            'regex': r'',  # Not used for imperative mood check
-            'error': 'Commit message should use imperative mood (e.g., "Add feature" not "Added feature")',
-            'suggest': 'Use imperative mood in commit message like "Add", "Fix", "Update", "Remove"',
-        },
-    ],
-}
+# ANSI color codes used for CLI output
+RED = "\033[91m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+RESET_COLOR = "\033[0m"
 
+# Default (empty) configuration translated into internal checks structure
+_rule_builder = RuleBuilder({})
+_default_rules = _rule_builder.build_all_rules()
+DEFAULT_CONFIG = {"checks": [rule.to_dict() for rule in _default_rules]}
 
-"""
-Overwrite DEFAULT_CONFIG if `.commit-check.yml` exist.
-"""
-
-CONFIG_FILE = '.commit-check.yml'
-
+CONFIG_FILE = "."  # Search current directory for commit-check.toml or cchk.toml
 __version__ = version("commit-check")

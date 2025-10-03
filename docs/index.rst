@@ -4,6 +4,7 @@
    :hidden:
 
    self
+   configuration
 
 .. toctree::
    :hidden:
