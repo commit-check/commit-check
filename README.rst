@@ -42,14 +42,14 @@ Configuration
 Use Default Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **Commit Check** uses a `default configuration <https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py>`_ if you do not provide a ``.commit-check.yml`` file.
+- **Commit Check** uses a `default configuration <https://github.com/commit-check/commit-check/blob/main/docs/configuration.rst>`_ if you do not provide a ``cchk.toml`` or ``commit-check.toml`` file.
 
 - The default configuration enforces commit message rules based on the `Conventional Commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_ specification and branch naming rules based on the `Conventional Branch <https://conventional-branch.github.io/#summary>`_ convention.
 
 Use Custom Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-To customize the behavior, create a config file ``.commit-check.yml`` under your repository's root directory, e.g., `.commit-check.yml <https://github.com/commit-check/commit-check/blob/main/.commit-check.yml>`_
+To customize the behavior, create a config file ``cchk.toml`` or ``commit-check.toml`` under your repository's root directory, e.g., `cchk.toml <https://github.com/commit-check/commit-check/blob/main/cchk.toml>`_
 
 Usage
 -----
@@ -75,9 +75,6 @@ Running as pre-commit hook
         -   id: check-branch
         -   id: check-author-name
         -   id: check-author-email
-        -   id: check-commit-signoff
-        -   id: check-merge-base # requires download all git history
-        -   id: check-imperative
 
 Running as CLI
 ~~~~~~~~~~~~~~
@@ -112,7 +109,7 @@ To configure the hook, create a script file in the ``.git/hooks/`` directory.
 .. code-block:: bash
 
     #!/bin/sh
-    commit-check --message --branch --author-name --author-email --commit-signoff --merge-base --imperative
+    commit-check --message --branch --author-name --author-email
 
 Save the script file as ``pre-push`` and make it executable:
 
@@ -131,26 +128,21 @@ Check Commit Message Failed
 
     Commit rejected by Commit-Check.
 
-      (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-       / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-     __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+    / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+    __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
     (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-       || E ||      || R ||      || R ||      || O ||      || R ||
-     _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
+    || E ||      || R ||      || R ||      || O ||      || R ||
+    _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
     (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-     `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+    `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
-    Type message check failed => my test commit message
-    It doesn't match regex: ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)
+    Commit rejected.
 
-    The commit message should be structured as follows:
-
-    <type>[optional scope]: <description>
-    [optional body]
-    [optional footer(s)]
-
-    More details please refer to https://www.conventionalcommits.org
-    Suggest: please check your commit message whether matches above regex
+    Type message check failed ==> test commit message check
+    It doesn't match regex: ^(chore|ci|docs|feat|fix|refactor|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)
+    The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
+    Suggest: Use <type>(<scope>): <description> with allowed types
 
 
 Check Branch Naming Failed
@@ -159,21 +151,21 @@ Check Branch Naming Failed
 
     Commit rejected by Commit-Check.
 
-      (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-       / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-     __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+    / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+    __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
     (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-       || E ||      || R ||      || R ||      || O ||      || R ||
-     _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
+    || E ||      || R ||      || R ||      || O ||      || R ||
+    _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
     (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-     `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+    `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
     Commit rejected.
 
-    Type branch check failed => patch-1
-    It doesn't match regex: ^(bugfix|feature|release|hotfix|task|chore)\/.+|(master)|(main)|(HEAD)|(PR-.+)
-    Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/ chore/
-    Suggest: run command `git checkout -b type/branch_name`
+    Type branch check failed ==> test-branch
+    It doesn't match regex: ^(feature|bugfix|hotfix|release|chore|feat|fix)\/.+|(master)|(main)|(HEAD)|(PR-.+)
+    The branch should follow Conventional Branch. See https://conventional-branches.github.io/
+    Suggest: git checkout -b <type>/<branch_name>
 
 
 Check Commit Signature Failed
@@ -182,21 +174,21 @@ Check Commit Signature Failed
 
     Commit rejected by Commit-Check.
 
-      (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-       / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-     __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+    / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+    __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
     (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-       || E ||      || R ||      || R ||      || O ||      || R ||
-     _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
+    || E ||      || R ||      || R ||      || O ||      || R ||
+    _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
     (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-     `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+    `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
     Commit rejected.
 
-    Type signoff check failed => c92ce259ff041c91859c7fb61afdbb391e769d0f
+    Type require_signed_off_by check failed ==> fix: add missing file
     It doesn't match regex: Signed-off-by:.*[A-Za-z0-9]\s+<.+@.+>
     Signed-off-by not found in latest commit
-    Suggest: run command `git commit -m "conventional commit message" --signoff`
+    Suggest: git commit --amend --signoff or use --signoff on commit
 
 
 Check Imperative Mood Failed
@@ -205,22 +197,24 @@ Check Imperative Mood Failed
 
     Commit rejected by Commit-Check.
 
-      (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-       / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-     __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+    / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+    __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
     (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-       || E ||      || R ||      || R ||      || O ||      || R ||
-     _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
+    || E ||      || R ||      || R ||      || O ||      || R ||
+    _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
     (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-     `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+    `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
     Commit rejected.
 
-    Type imperative check failed => Added file
-    It doesn't match regex: imperative mood pattern
-    Commit message should use imperative mood (e.g., "Add feature" not "Added feature")
-    Suggest: Use imperative mood in commit message like "Add", "Fix", "Update", "Remove"
+    Type imperative check failed ==> fix: added missing file
+    It doesn't match regex:
+    Commit message should use imperative mood (e.g., 'Add feature' not 'Added feature')
+    Suggest: Use imperative mood in the subject line
 
+
+And many more... see `commit-check.toml <cchk.toml>`_ for all available checks.
 
 Badging your repository
 -----------------------

@@ -3,7 +3,7 @@
 conventional_commits = true
 subject_capitalized = false
 subject_imperative = true
-subject_max_length = 50
+subject_max_length = 80
 subject_min_length = 5
 allow_commit_types = ["feat", "fix", "docs", "style", "refactor", "test", "chore", "ci"]
 allow_merge_commits = true
