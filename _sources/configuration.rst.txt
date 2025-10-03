@@ -3,8 +3,13 @@ Configuration
 
 ``commit-check`` configuration file support TOML format.
 
-See ``cchk.toml`` for the default configuration values.
+See ``cchk.toml`` for an example configuration.
 
+**Default Behavior**: When no configuration file exists, commit-check uses sensible defaults with minimal restrictions.
+
+Only conventional commits format, subject capitalization, and imperative mood are enforced by default.
+
+No length limits, author restrictions, or rebase requirements are applied.
 
 commit-check can be configured via a ``cchk.toml`` or ``commit-check.toml`` file.
 
@@ -17,8 +22,8 @@ The file should be placed in the root of your repository.
     conventional_commits = true
     subject_capitalized = true
     subject_imperative = true
-    subject_max_length = 50
-    subject_min_length = 5
+    # subject_max_length = 50  # Optional - no limit by default
+    # subject_min_length = 5   # Optional - no limit by default
     allow_commit_types = ["feat", "fix", "docs", "style", "refactor", "test", "chore"]
     allow_merge_commits = true
     allow_revert_commits = true
@@ -26,17 +31,17 @@ The file should be placed in the root of your repository.
     allow_fixup_commits = true
     allow_wip_commits = false
     require_body = false
-    allow_authors = []
-    ignore_authors = ["dependabot[bot]", "dependabot-preview[bot]"]
-    require_signed_off_by = true
-    required_signoff_name = "Your Name"
-    required_signoff_email = "your.email@example.com"
+    # allow_authors = []       # Optional - all authors allowed by default
+    # ignore_authors = []      # Optional - no authors ignored by default
+    require_signed_off_by = false
+    # required_signoff_name = "Your Name"      # Optional
+    # required_signoff_email = "your.email@example.com"  # Optional
 
     [branch]
     # https://conventional-branch.github.io/
     conventional_branch = true
     allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
-    require_rebase_target = "main"
+    # require_rebase_target = "main"  # Optional - no rebase requirement by default
 
 
 
@@ -69,12 +74,12 @@ options table description
    * - commit
      - subject_max_length
      - int
-     - 50
+     - None (no limit)
      - Maximum length of the subject line.
    * - commit
      - subject_min_length
      - int
-     - 5
+     - None (no limit)
      - Minimum length of the subject line.
    * - commit
      - allow_commit_types
@@ -111,6 +116,21 @@ options table description
      - bool
      - false
      - Require a body in the commit message.
+   * - commit
+     - allow_authors
+     - list[str]
+     - [] (all allowed)
+     - List of allowed authors. If empty, all authors are allowed except those in ignore_authors.
+   * - commit
+     - ignore_authors
+     - list[str]
+     - [] (none ignored)
+     - List of authors to ignore (i.e., always allow).
+   * - commit
+     - require_signed_off_by
+     - bool
+     - false
+     - Require "Signed-off-by" line in the commit message footer.
    * - branch
      - conventional_branch
      - bool
@@ -121,18 +141,8 @@ options table description
      - list[str]
      - ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
      - Allowed branch types when conventional_branch is true.
-   * - author
-     - allow_authors
-     - list[str]
-     - []
-     - List of allowed authors. If empty, all authors are allowed except those in ignore_authors.
-   * - author
-     - ignore_authors
-     - list[str]
-     - ["dependabot[bot]", "dependabot-preview[bot]"]
-     - List of authors to ignore (i.e., always allow).
-   * - author
-     - require_signed_off_by
-     - bool
-     - true
-     - Require "Signed-off-by" line in the commit message footer.
+   * - branch
+     - require_rebase_target
+     - str
+     - None (no requirement)
+     - Target branch for rebase requirement. If not set, no rebase validation is performed.

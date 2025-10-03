@@ -476,7 +476,10 @@
 
 <h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">commit-check</span></code> configuration file support TOML format.</p>
-<p>See <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> for the default configuration values.</p>
+<p>See <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> for an example configuration.</p>
+<p><strong>Default Behavior</strong>: When no configuration file exists, commit-check uses sensible defaults with minimal restrictions.</p>
+<p>Only conventional commits format, subject capitalization, and imperative mood are enforced by default.</p>
+<p>No length limits, author restrictions, or rebase requirements are applied.</p>
 <p>commit-check can be configured via a <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> file.</p>
 <p>The file should be placed in the root of your repository.</p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="k">[commit]</span>
@@ -484,8 +487,8 @@
 <span class="n">conventional_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="n">subject_capitalized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="n">subject_imperative</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-<span class="n">subject_max_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">50</span>
-<span class="n">subject_min_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span>
+<span class="c1"># subject_max_length = 50  # Optional - no limit by default</span>
+<span class="c1"># subject_min_length = 5   # Optional - no limit by default</span>
 <span class="n">allow_commit_types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;feat&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;docs&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;style&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;refactor&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;test&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;chore&quot;</span><span class="p">]</span>
 <span class="n">allow_merge_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="n">allow_revert_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
@@ -493,17 +496,17 @@
 <span class="n">allow_fixup_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="n">allow_wip_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 <span class="n">require_body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
-<span class="n">allow_authors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
-<span class="n">ignore_authors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;dependabot[bot]&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;dependabot-preview[bot]&quot;</span><span class="p">]</span>
-<span class="n">require_signed_off_by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-<span class="n">required_signoff_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Your Name&quot;</span>
-<span class="n">required_signoff_email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;your.email@example.com&quot;</span>
+<span class="c1"># allow_authors = []       # Optional - all authors allowed by default</span>
+<span class="c1"># ignore_authors = []      # Optional - no authors ignored by default</span>
+<span class="n">require_signed_off_by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<span class="c1"># required_signoff_name = &quot;Your Name&quot;      # Optional</span>
+<span class="c1"># required_signoff_email = &quot;your.email@example.com&quot;  # Optional</span>
 
 <span class="k">[branch]</span>
 <span class="c1"># https://conventional-branch.github.io/</span>
 <span class="n">conventional_branch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="n">allow_branch_types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;feature&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;bugfix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;hotfix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;release&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;chore&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;feat&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fix&quot;</span><span class="p">]</span>
-<span class="n">require_rebase_target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;main&quot;</span>
+<span class="c1"># require_rebase_target = &quot;main&quot;  # Optional - no rebase requirement by default</span>
 </code></pre></div>
 </div>
 <h2 id="options-table-description">options table description<a class="headerlink" href="#options-table-description" title="Link to this heading">¶</a></h2>
@@ -538,13 +541,13 @@
 <tr class="row-odd"><td><p>commit</p></td>
 <td><p>subject_max_length</p></td>
 <td><p>int</p></td>
-<td><p>50</p></td>
+<td><p>None (no limit)</p></td>
 <td><p>Maximum length of the subject line.</p></td>
 </tr>
 <tr class="row-even"><td><p>commit</p></td>
 <td><p>subject_min_length</p></td>
 <td><p>int</p></td>
-<td><p>5</p></td>
+<td><p>None (no limit)</p></td>
 <td><p>Minimum length of the subject line.</p></td>
 </tr>
 <tr class="row-odd"><td><p>commit</p></td>
@@ -589,35 +592,41 @@
 <td><p>false</p></td>
 <td><p>Require a body in the commit message.</p></td>
 </tr>
-<tr class="row-even"><td><p>branch</p></td>
+<tr class="row-even"><td><p>commit</p></td>
+<td><p>allow_authors</p></td>
+<td><p>list[str]</p></td>
+<td><p>[] (all allowed)</p></td>
+<td><p>List of allowed authors. If empty, all authors are allowed except those in ignore_authors.</p></td>
+</tr>
+<tr class="row-odd"><td><p>commit</p></td>
+<td><p>ignore_authors</p></td>
+<td><p>list[str]</p></td>
+<td><p>[] (none ignored)</p></td>
+<td><p>List of authors to ignore (i.e., always allow).</p></td>
+</tr>
+<tr class="row-even"><td><p>commit</p></td>
+<td><p>require_signed_off_by</p></td>
+<td><p>bool</p></td>
+<td><p>false</p></td>
+<td><p>Require “Signed-off-by” line in the commit message footer.</p></td>
+</tr>
+<tr class="row-odd"><td><p>branch</p></td>
 <td><p>conventional_branch</p></td>
 <td><p>bool</p></td>
 <td><p>true</p></td>
 <td><p>Enforce Conventional Branch specification.</p></td>
 </tr>
-<tr class="row-odd"><td><p>branch</p></td>
+<tr class="row-even"><td><p>branch</p></td>
 <td><p>allow_branch_types</p></td>
 <td><p>list[str]</p></td>
 <td><p>[“feature”, “bugfix”, “hotfix”, “release”, “chore”, “feat”, “fix”]</p></td>
 <td><p>Allowed branch types when conventional_branch is true.</p></td>
 </tr>
-<tr class="row-even"><td><p>author</p></td>
-<td><p>allow_authors</p></td>
-<td><p>list[str]</p></td>
-<td><p>[]</p></td>
-<td><p>List of allowed authors. If empty, all authors are allowed except those in ignore_authors.</p></td>
-</tr>
-<tr class="row-odd"><td><p>author</p></td>
-<td><p>ignore_authors</p></td>
-<td><p>list[str]</p></td>
-<td><p>[“dependabot[bot]”, “dependabot-preview[bot]”]</p></td>
-<td><p>List of authors to ignore (i.e., always allow).</p></td>
-</tr>
-<tr class="row-even"><td><p>author</p></td>
-<td><p>require_signed_off_by</p></td>
-<td><p>bool</p></td>
-<td><p>true</p></td>
-<td><p>Require “Signed-off-by” line in the commit message footer.</p></td>
+<tr class="row-odd"><td><p>branch</p></td>
+<td><p>require_rebase_target</p></td>
+<td><p>str</p></td>
+<td><p>None (no requirement)</p></td>
+<td><p>Target branch for rebase requirement. If not set, no rebase validation is performed.</p></td>
 </tr>
 </tbody>
 </table>

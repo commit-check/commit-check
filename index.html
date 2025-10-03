@@ -582,11 +582,11 @@
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
 <h3 id="use-default-configuration">Use Default Configuration<a class="headerlink" href="#use-default-configuration" title="Link to this heading">¶</a></h3>
 <ul class="simple">
-<li><p><strong>Commit Check</strong> uses a <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/commit_check/__init__.py">default configuration</a> if you do not provide a <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code> file.</p></li>
+<li><p><strong>Commit Check</strong> uses a <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/docs/configuration.rst">default configuration</a> if you do not provide a <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> file.</p></li>
 <li><p>The default configuration enforces commit message rules based on the <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">Conventional Commits</a> specification and branch naming rules based on the <a class="reference external" href="https://conventional-branch.github.io/#summary">Conventional Branch</a> convention.</p></li>
 </ul>
 <h3 id="use-custom-configuration">Use Custom Configuration<a class="headerlink" href="#use-custom-configuration" title="Link to this heading">¶</a></h3>
-<p>To customize the behavior, create a config file <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code> under your repository’s root directory, e.g., <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/.commit-check.yml">.commit-check.yml</a></p>
+<p>To customize the behavior, create a config file <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> under your repository’s root directory, e.g., <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/cchk.toml">cchk.toml</a></p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h2>
 <h3 id="running-as-github-action">Running as GitHub Action<a class="headerlink" href="#running-as-github-action" title="Link to this heading">¶</a></h3>
 <p>Please see <a class="reference external" href="https://github.com/commit-check/commit-check-action">commit-check/commit-check-action</a></p>
@@ -602,9 +602,6 @@
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-branch</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-author-name</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-author-email</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-commit-signoff</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-merge-base</span><span class="w"> </span><span class="c1"># requires download all git history</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-imperative</span>
 </code></pre></div>
 </div>
 <h3 id="running-as-cli">Running as CLI<a class="headerlink" href="#running-as-cli" title="Link to this heading">¶</a></h3>
@@ -625,7 +622,7 @@
 <h3 id="running-as-git-hooks">Running as Git Hooks<a class="headerlink" href="#running-as-git-hooks" title="Link to this heading">¶</a></h3>
 <p>To configure the hook, create a script file in the <code class="docutils literal notranslate"><span class="pre">.git/hooks/</span></code> directory.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="ch">#!/bin/sh</span>
-commit-check<span class="w"> </span>--message<span class="w"> </span>--branch<span class="w"> </span>--author-name<span class="w"> </span>--author-email<span class="w"> </span>--commit-signoff<span class="w"> </span>--merge-base<span class="w"> </span>--imperative
+commit-check<span class="w"> </span>--message<span class="w"> </span>--branch<span class="w"> </span>--author-name<span class="w"> </span>--author-email
 </code></pre></div>
 </div>
 <p>Save the script file as <code class="docutils literal notranslate"><span class="pre">pre-push</span></code> and make it executable:</p>
@@ -637,88 +634,84 @@ commit-check<span class="w"> </span>--message<span class="w"> </span>--branch<sp
 <p>Check Commit Message Failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
-  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
- __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+(c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+/ ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+__\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
 (_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
-   || E ||      || R ||      || R ||      || O ||      || R ||
- _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
+|| E ||      || R ||      || R ||      || O ||      || R ||
+_.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
 (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
- `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+`-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
-Type message check failed =&gt; my test commit message
-It doesn&#39;t match regex: ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)
+Commit rejected.
 
-The commit message should be structured as follows:
-
-&lt;type&gt;[optional scope]: &lt;description&gt;
-[optional body]
-[optional footer(s)]
-
-More details please refer to https://www.conventionalcommits.org
-Suggest: please check your commit message whether matches above regex
+Type message check failed ==&gt; test commit message check
+It doesn&#39;t match regex: ^(chore|ci|docs|feat|fix|refactor|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)
+The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
+Suggest: Use &lt;type&gt;(&lt;scope&gt;): &lt;description&gt; with allowed types
 </code></pre></div>
 </div>
 <p>Check Branch Naming Failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
-  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
- __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+(c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+/ ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+__\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
 (_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
-   || E ||      || R ||      || R ||      || O ||      || R ||
- _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
+|| E ||      || R ||      || R ||      || O ||      || R ||
+_.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
 (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
- `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+`-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
 Commit rejected.
 
-Type branch check failed =&gt; patch-1
-It doesn&#39;t match regex: ^(bugfix|feature|release|hotfix|task|chore)\/.+|(master)|(main)|(HEAD)|(PR-.+)
-Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/ chore/
-Suggest: run command `git checkout -b type/branch_name`
+Type branch check failed ==&gt; test-branch
+It doesn&#39;t match regex: ^(feature|bugfix|hotfix|release|chore|feat|fix)\/.+|(master)|(main)|(HEAD)|(PR-.+)
+The branch should follow Conventional Branch. See https://conventional-branches.github.io/
+Suggest: git checkout -b &lt;type&gt;/&lt;branch_name&gt;
 </code></pre></div>
 </div>
 <p>Check Commit Signature Failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
-  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
- __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+(c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+/ ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+__\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
 (_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
-   || E ||      || R ||      || R ||      || O ||      || R ||
- _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
+|| E ||      || R ||      || R ||      || O ||      || R ||
+_.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
 (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
- `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+`-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
 Commit rejected.
 
-Type signoff check failed =&gt; c92ce259ff041c91859c7fb61afdbb391e769d0f
+Type require_signed_off_by check failed ==&gt; fix: add missing file
 It doesn&#39;t match regex: Signed-off-by:.*[A-Za-z0-9]\s+&lt;.+@.+&gt;
 Signed-off-by not found in latest commit
-Suggest: run command `git commit -m &quot;conventional commit message&quot; --signoff`
+Suggest: git commit --amend --signoff or use --signoff on commit
 </code></pre></div>
 </div>
 <p>Check Imperative Mood Failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
-  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
- __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+(c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+/ ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+__\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
 (_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
-   || E ||      || R ||      || R ||      || O ||      || R ||
- _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
+|| E ||      || R ||      || R ||      || O ||      || R ||
+_.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
 (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
- `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+`-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
 Commit rejected.
 
-Type imperative check failed =&gt; Added file
-It doesn&#39;t match regex: imperative mood pattern
-Commit message should use imperative mood (e.g., &quot;Add feature&quot; not &quot;Added feature&quot;)
-Suggest: Use imperative mood in commit message like &quot;Add&quot;, &quot;Fix&quot;, &quot;Update&quot;, &quot;Remove&quot;
+Type imperative check failed ==&gt; fix: added missing file
+It doesn&#39;t match regex:
+Commit message should use imperative mood (e.g., &#39;Add feature&#39; not &#39;Added feature&#39;)
+Suggest: Use imperative mood in the subject line
 </code></pre></div>
 </div>
+<p>And many more… see <a class="reference external" href="cchk.toml">commit-check.toml</a> for all available checks.</p>
 <h2 id="badging-your-repository">Badging your repository<a class="headerlink" href="#badging-your-repository" title="Link to this heading">¶</a></h2>
 <p>You can add a badge to your repository to show that you use commit-check!</p>
 <a class="reference external image-reference" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white" />
