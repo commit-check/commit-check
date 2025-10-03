@@ -11,7 +11,7 @@
       
       
       
-        <link rel="prev" href="index.html">
+        <link rel="prev" href="configuration.html">
       
       
       
@@ -19,7 +19,7 @@
     
     
       
-        <title>commit-check –help - commit-check</title>
+        <title>commit-check –help - Commit Check</title>
       
     
     
@@ -84,7 +84,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="index.html" title="commit-check" class="md-header__button md-logo" aria-label="commit-check" data-md-component="logo">
+    <a href="index.html" title="Commit Check" class="md-header__button md-logo" aria-label="Commit Check" data-md-component="logo">
       <img src="_static/logo.jpg" alt="logo">
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -95,7 +95,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            commit-check
+            Commit Check
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -222,6 +222,23 @@
         
   
   
+  
+    <li class="md-tabs__item">
+      <a href="configuration.html" class="md-tabs__link">
+        
+  
+    
+  
+  <span>Configuration</span>
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
     
   
   
@@ -268,10 +285,10 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="index.html" title="commit-check" class="md-nav__button md-logo" aria-label="commit-check" data-md-component="logo">
+    <a href="index.html" title="Commit Check" class="md-nav__button md-logo" aria-label="Commit Check" data-md-component="logo">
       <img src="_static/logo.jpg" alt="logo">
     </a>
-    commit-check
+    Commit Check
   </label>
   
     <div class="md-nav__source">
@@ -302,6 +319,29 @@
   
   <span class="md-ellipsis">
     <span>Commit Check</span>
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="configuration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    <span>Configuration</span>
     
   </span>
   
@@ -436,30 +476,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cmdoption-s" class="md-nav__link">
-    
-    <span class="md-ellipsis">
-      <span title="-s (program option)"><span>-<wbr>s, --<wbr>commit-<wbr>signoff</span></span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#cmdoption-d" class="md-nav__link">
     
     <span class="md-ellipsis">
       <span title="-d (program option)"><span>-<wbr>d, --<wbr>dry-<wbr>run</span></span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cmdoption-i" class="md-nav__link">
-    
-    <span class="md-ellipsis">
-      <span title="-i (program option)"><span>-<wbr>i, --<wbr>imperative</span></span>
     </span>
   </a>
   
@@ -567,30 +587,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cmdoption-s" class="md-nav__link">
-    
-    <span class="md-ellipsis">
-      <span title="-s (program option)"><span>-<wbr>s, --<wbr>commit-<wbr>signoff</span></span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#cmdoption-d" class="md-nav__link">
     
     <span class="md-ellipsis">
       <span title="-d (program option)"><span>-<wbr>d, --<wbr>dry-<wbr>run</span></span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cmdoption-i" class="md-nav__link">
-    
-    <span class="md-ellipsis">
-      <span title="-i (program option)"><span>-<wbr>i, --<wbr>imperative</span></span>
     </span>
   </a>
   
@@ -613,16 +613,8 @@
 
 
 <h1 id="commit-check-help">commit-check –help<a class="headerlink" href="#commit-check-help" title="Link to this heading">¶</a></h1>
-<dl class="simple">
-<dt>usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-s] [-mb] [-d]</dt><dd><p>[-i]
-[commit_msg_file]</p>
-</dd>
-</dl>
-<p>Check commit message, branch naming, committer name, email, and more.</p>
-<dl class="simple">
-<dt>positional arguments:</dt><dd><p>commit_msg_file       commit message file</p>
-</dd>
-</dl>
+<p>usage: commit-check [-h] [-v] [-c CONFIG] [-m [MESSAGE]] [-b] [-n] [-e] [-d]</p>
+<p>Check commit message, branch name, author name, email, and more.</p>
 <p>options:</p>
 <dl class="std option objdesc">
 <dt class="sig sig-object highlight std" id="cmdoption-h">
@@ -649,7 +641,9 @@
 <span id="cmdoption-config"></span><span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--config</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-c" title="Link to this definition">¶</a></dt>
 <dd><dl class="option-list">
 <dt><kbd><span class="option">-c <var>CONFIG</var></span>, <span class="option">--config <var>CONFIG</var></span></kbd></dt>
-<dd><p>path to config file. default is . (current directory)</p>
+<dd><p>path to config file (cchk.toml or commit-check.toml).
+If not specified, searches for cchk.toml in current
+directory</p>
 </dd>
 </dl>
 </dd></dl>
@@ -657,9 +651,9 @@
 <dl class="std option objdesc">
 <dt class="sig sig-object highlight std" id="cmdoption-m">
 <span id="cmdoption-message"></span><span class="sig-name descname"><span class="pre">-m</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--message</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-m" title="Link to this definition">¶</a></dt>
-<dd><dl class="option-list">
-<dt><kbd><span class="option">-m</span>, <span class="option">--message</span></kbd></dt>
-<dd><p>check commit message</p>
+<dd><dl class="simple">
+<dt>-m [MESSAGE], –message [MESSAGE]</dt><dd><p>validate commit message. Optionally specify file path,
+otherwise reads from stdin if available</p>
 </dd>
 </dl>
 </dd></dl>
@@ -669,7 +663,7 @@
 <span id="cmdoption-branch"></span><span class="sig-name descname"><span class="pre">-b</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--branch</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-b" title="Link to this definition">¶</a></dt>
 <dd><dl class="option-list">
 <dt><kbd><span class="option">-b</span>, <span class="option">--branch</span></kbd></dt>
-<dd><p>check branch naming</p>
+<dd><p>check current git branch name</p>
 </dd>
 </dl>
 </dd></dl>
@@ -679,7 +673,7 @@
 <span id="cmdoption-author-name"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--author-name</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-n" title="Link to this definition">¶</a></dt>
 <dd><dl class="option-list">
 <dt><kbd><span class="option">-n</span>, <span class="option">--author-name</span></kbd></dt>
-<dd><p>check committer’s name</p>
+<dd><p>check git author name</p>
 </dd>
 </dl>
 </dd></dl>
@@ -689,20 +683,7 @@
 <span id="cmdoption-author-email"></span><span class="sig-name descname"><span class="pre">-e</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--author-email</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-e" title="Link to this definition">¶</a></dt>
 <dd><dl class="option-list">
 <dt><kbd><span class="option">-e</span>, <span class="option">--author-email</span></kbd></dt>
-<dd><p>check committer’s email</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="std option objdesc">
-<dt class="sig sig-object highlight std" id="cmdoption-s">
-<span id="cmdoption-commit-signoff"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--commit-signoff</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-s" title="Link to this definition">¶</a></dt>
-<dd><dl class="option-list">
-<dt><kbd><span class="option">-s</span>, <span class="option">--commit-signoff</span></kbd></dt>
-<dd><p>check committer’s signature</p>
-</dd>
-<dt><kbd><span class="option">-m<var>b</var></span>, <span class="option">--merge-base</span></kbd></dt>
-<dd><p>check branch is rebased onto target branch</p>
+<dd><p>check git author email</p>
 </dd>
 </dl>
 </dd></dl>
@@ -712,17 +693,7 @@
 <span id="cmdoption-dry-run"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--dry-run</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-d" title="Link to this definition">¶</a></dt>
 <dd><dl class="option-list">
 <dt><kbd><span class="option">-d</span>, <span class="option">--dry-run</span></kbd></dt>
-<dd><p>run checks without failing</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="std option objdesc">
-<dt class="sig sig-object highlight std" id="cmdoption-i">
-<span id="cmdoption-imperative"></span><span class="sig-name descname"><span class="pre">-i</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--imperative</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-i" title="Link to this definition">¶</a></dt>
-<dd><dl class="option-list">
-<dt><kbd><span class="option">-i</span>, <span class="option">--imperative</span></kbd></dt>
-<dd><p>check commit message uses imperative mood</p>
+<dd><p>perform a dry run without failing (always returns 0)</p>
 </dd>
 </dl>
 </dd></dl>

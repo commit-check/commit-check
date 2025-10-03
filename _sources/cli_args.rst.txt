@@ -1,14 +1,9 @@
 commit-check --help
 ==============================
 
-usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-s] [-mb] [-d]
-                    [-i]
-                    [commit_msg_file]
+usage: commit-check [-h] [-v] [-c CONFIG] [-m [MESSAGE]] [-b] [-n] [-e] [-d]
 
-Check commit message, branch naming, committer name, email, and more.
-
-positional arguments:
-  commit_msg_file       commit message file
+Check commit message, branch name, author name, email, and more.
 
 options:
 
@@ -23,33 +18,28 @@ options:
 .. std:option:: -c, --config
 
   -c CONFIG, --config CONFIG
-                        path to config file. default is . (current directory)
+                        path to config file (cchk.toml or commit-check.toml).
+                        If not specified, searches for cchk.toml in current
+                        directory
 
 .. std:option:: -m, --message
 
-  -m, --message         check commit message
+  -m [MESSAGE], --message [MESSAGE]
+                        validate commit message. Optionally specify file path,
+                        otherwise reads from stdin if available
 
 .. std:option:: -b, --branch
 
-  -b, --branch          check branch naming
+  -b, --branch          check current git branch name
 
 .. std:option:: -n, --author-name
 
-  -n, --author-name     check committer's name
+  -n, --author-name     check git author name
 
 .. std:option:: -e, --author-email
 
-  -e, --author-email    check committer's email
-
-.. std:option:: -s, --commit-signoff
-
-  -s, --commit-signoff  check committer's signature
-  -mb, --merge-base     check branch is rebased onto target branch
+  -e, --author-email    check git author email
 
 .. std:option:: -d, --dry-run
 
-  -d, --dry-run         run checks without failing
-
-.. std:option:: -i, --imperative
-
-  -i, --imperative      check commit message uses imperative mood
+  -d, --dry-run         perform a dry run without failing (always returns 0)
