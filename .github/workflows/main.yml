@@ -65,6 +65,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.py }}
