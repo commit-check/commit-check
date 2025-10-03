@@ -161,6 +161,19 @@ value = "works"
                 def mock_import(name, *args, **kwargs):
                     if name == "tomllib":
                         raise ImportError("No module named 'tomllib'")
+                    # For tomli, return a working mock
+                    if name == "tomli":
+
+                        class MockTomli:
+                            @staticmethod
+                            def load(f):
+                                content = f.read().decode("utf-8")
+                                # Simple parser for test
+                                if '[test]\nvalue = "tomli_works"' in content:
+                                    return {"test": {"value": "tomli_works"}}
+                                return {}
+
+                        return MockTomli()
                     return original_import(name, *args, **kwargs)
 
                 with patch("builtins.__import__", side_effect=mock_import):

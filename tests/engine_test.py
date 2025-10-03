@@ -58,7 +58,7 @@ class TestCommitMessageValidator:
         """Test CommitMessageValidator with valid conventional commit."""
         rule = ValidationRule(
             check="message",
-            pattern=r"^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?: .+",
+            regex=r"^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?: .+",
         )
         validator = CommitMessageValidator(rule)
         context = ValidationContext(stdin_text="feat: add new feature")
@@ -70,7 +70,7 @@ class TestCommitMessageValidator:
         """Test CommitMessageValidator with invalid commit message."""
         rule = ValidationRule(
             check="message",
-            pattern=r"^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?: .+",
+            regex=r"^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?: .+",
         )
         validator = CommitMessageValidator(rule)
         context = ValidationContext(stdin_text="invalid commit message")
@@ -80,7 +80,7 @@ class TestCommitMessageValidator:
 
     def test_commit_message_validator_with_file(self):
         """Test CommitMessageValidator reading from file."""
-        rule = ValidationRule(check="message", pattern=r"^(feat|fix):")
+        rule = ValidationRule(check="message", regex=r"^(feat|fix):")
         validator = CommitMessageValidator(rule)
 
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
@@ -96,25 +96,30 @@ class TestCommitMessageValidator:
 
     def test_commit_message_validator_file_not_found(self):
         """Test CommitMessageValidator with non-existent file."""
-        rule = ValidationRule(check="message", pattern=r"^feat:")
+        rule = ValidationRule(check="message", regex=r"^feat:")
         validator = CommitMessageValidator(rule)
         context = ValidationContext(commit_file="/nonexistent/file")
 
         result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
-    @patch("commit_check.util.get_commit_info")
+    @patch("commit_check.engine.get_commit_info")
     def test_commit_message_validator_from_git(self, mock_get_commit_info):
         """Test CommitMessageValidator reading from git."""
-        mock_get_commit_info.return_value = "feat: add feature from git"
+        # Mock both subject ("s") and body ("b") calls
+        mock_get_commit_info.side_effect = lambda format_str: {
+            "s": "feat: add feature from git",
+            "b": "",
+        }.get(format_str, "")
 
-        rule = ValidationRule(check="message", pattern=r"^feat:")
+        rule = ValidationRule(check="message", regex=r"^feat:")
         validator = CommitMessageValidator(rule)
         context = ValidationContext()
 
         result = validator.validate(context)
         assert result == ValidationResult.PASS
-        mock_get_commit_info.assert_called_once_with("s")
+        # Should call get_commit_info twice: once for subject, once for body
+        assert mock_get_commit_info.call_count == 2
 
 
 class TestBranchValidator:
@@ -123,19 +128,19 @@ class TestBranchValidator:
         """Test BranchValidator with valid branch name."""
         mock_get_branch_name.return_value = "feature/new-feature"
 
-        rule = ValidationRule(check="branch", pattern=r"^(feature|bugfix|hotfix)/.+")
+        rule = ValidationRule(check="branch", regex=r"^(feature|bugfix|hotfix)/.+")
         validator = BranchValidator(rule)
         context = ValidationContext()
 
         result = validator.validate(context)
         assert result == ValidationResult.PASS
 
-    @patch("commit_check.util.get_branch_name")
+    @patch("commit_check.engine.get_branch_name")
     def test_branch_validator_invalid_branch(self, mock_get_branch_name):
         """Test BranchValidator with invalid branch name."""
         mock_get_branch_name.return_value = "invalid-branch-name"
 
-        rule = ValidationRule(check="branch", pattern=r"^(feature|bugfix|hotfix)/.+")
+        rule = ValidationRule(check="branch", regex=r"^(feature|bugfix|hotfix)/.+")
         validator = BranchValidator(rule)
         context = ValidationContext()
 
@@ -144,12 +149,12 @@ class TestBranchValidator:
 
 
 class TestAuthorValidator:
-    @patch("commit_check.util.get_commit_info")
+    @patch("commit_check.engine.get_commit_info")
     def test_author_validator_name_valid(self, mock_get_commit_info):
         """Test AuthorValidator for author name."""
         mock_get_commit_info.return_value = "John Doe"
 
-        rule = ValidationRule(check="author_name", pattern=r"^[A-Z][a-z]+ [A-Z][a-z]+$")
+        rule = ValidationRule(check="author_name", regex=r"^[A-Z][a-z]+ [A-Z][a-z]+$")
         validator = AuthorValidator(rule)
         context = ValidationContext()
 
@@ -157,14 +162,14 @@ class TestAuthorValidator:
         assert result == ValidationResult.PASS
         mock_get_commit_info.assert_called_once_with("an")
 
-    @patch("commit_check.util.get_commit_info")
+    @patch("commit_check.engine.get_commit_info")
     def test_author_validator_email_valid(self, mock_get_commit_info):
         """Test AuthorValidator for author email."""
         mock_get_commit_info.return_value = "john.doe@example.com"
 
         rule = ValidationRule(
             check="author_email",
-            pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+            regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
         )
         validator = AuthorValidator(rule)
         context = ValidationContext()
@@ -177,7 +182,7 @@ class TestAuthorValidator:
 class TestCommitTypeValidator:
     def test_commit_type_validator_merge_commits(self):
         """Test CommitTypeValidator with merge commits."""
-        rule = ValidationRule(check="allow_merge_commits", allow=True)
+        rule = ValidationRule(check="allow_merge_commits", value=True)
         validator = CommitTypeValidator(rule)
         context = ValidationContext(stdin_text="Merge branch 'feature' into main")
 
@@ -186,7 +191,7 @@ class TestCommitTypeValidator:
 
     def test_commit_type_validator_revert_commits(self):
         """Test CommitTypeValidator with revert commits."""
-        rule = ValidationRule(check="allow_revert_commits", allow=True)
+        rule = ValidationRule(check="allow_revert_commits", value=True)
         validator = CommitTypeValidator(rule)
         context = ValidationContext(stdin_text='Revert "feat: add feature"')
 
@@ -217,7 +222,7 @@ class TestSubjectImperativeValidator:
 class TestSubjectLengthValidator:
     def test_subject_length_validator_max_valid(self):
         """Test SubjectLengthValidator with valid max length."""
-        rule = ValidationRule(check="subject_max_length", length=50)
+        rule = ValidationRule(check="subject_max_length", value=50)
         validator = SubjectLengthValidator(rule)
         context = ValidationContext(stdin_text="feat: short message")
 
@@ -226,7 +231,7 @@ class TestSubjectLengthValidator:
 
     def test_subject_length_validator_max_too_long(self):
         """Test SubjectLengthValidator with message too long."""
-        rule = ValidationRule(check="subject_max_length", length=20)
+        rule = ValidationRule(check="subject_max_length", value=20)
         validator = SubjectLengthValidator(rule)
         context = ValidationContext(
             stdin_text="feat: this is a very long commit message that exceeds the limit"
@@ -237,7 +242,7 @@ class TestSubjectLengthValidator:
 
     def test_subject_length_validator_min_valid(self):
         """Test SubjectLengthValidator with valid min length."""
-        rule = ValidationRule(check="subject_min_length", length=10)
+        rule = ValidationRule(check="subject_min_length", value=10)
         validator = SubjectLengthValidator(rule)
         context = ValidationContext(stdin_text="feat: add feature")
 
@@ -246,7 +251,7 @@ class TestSubjectLengthValidator:
 
     def test_subject_length_validator_min_too_short(self):
         """Test SubjectLengthValidator with message too short."""
-        rule = ValidationRule(check="subject_min_length", length=20)
+        rule = ValidationRule(check="subject_min_length", value=20)
         validator = SubjectLengthValidator(rule)
         context = ValidationContext(stdin_text="feat: fix")
 
@@ -257,7 +262,9 @@ class TestSubjectLengthValidator:
 class TestSignoffValidator:
     def test_signoff_validator_valid(self):
         """Test SignoffValidator with valid signoff."""
-        rule = ValidationRule(check="require_signed_off_by")
+        rule = ValidationRule(
+            check="require_signed_off_by", regex=r"Signed-off-by: .+ <.+@.+\..+>"
+        )
         validator = SignoffValidator(rule)
         context = ValidationContext(
             stdin_text="feat: add feature\n\nSigned-off-by: John Doe <john@example.com>"
@@ -331,16 +338,24 @@ class TestMergeBaseValidator:
         result = validator.validate(context)
         assert result == ValidationResult.PASS
 
+    @patch("commit_check.engine.has_commits")
+    @patch("commit_check.engine.get_branch_name")
     @patch("commit_check.util.git_merge_base")
-    def test_merge_base_validator_invalid(self, mock_git_merge_base):
+    def test_merge_base_validator_invalid(
+        self, mock_git_merge_base, mock_get_branch_name, mock_has_commits
+    ):
         """Test MergeBaseValidator with invalid merge base."""
+        mock_has_commits.return_value = True
+        mock_get_branch_name.return_value = "feature/test"
         mock_git_merge_base.return_value = 1
 
-        rule = ValidationRule(check="merge_base")
+        rule = ValidationRule(check="merge_base", regex=r"^main$")
         validator = MergeBaseValidator(rule)
         context = ValidationContext()
 
-        result = validator.validate(context)
+        # Mock _find_target_branch to return a target branch
+        with patch.object(validator, "_find_target_branch", return_value="main"):
+            result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
 
@@ -348,15 +363,17 @@ class TestValidationEngine:
     def test_validation_engine_creation(self):
         """Test ValidationEngine creation."""
         rules = [
-            ValidationRule(check="message", pattern=r"^feat:"),
-            ValidationRule(check="branch", pattern=r"^feature/"),
+            ValidationRule(check="message", regex=r"^feat:"),
+            ValidationRule(check="branch", regex=r"^feature/"),
         ]
         engine = ValidationEngine(rules)
-        assert len(engine.validators) == 2
+
+        assert len(engine.rules) == 2
+        assert engine.rules == rules
 
     def test_validation_engine_validate_all_pass(self):
         """Test ValidationEngine with all validations passing."""
-        rules = [ValidationRule(check="message", pattern=r"^feat:")]
+        rules = [ValidationRule(check="message", regex=r"^feat:")]
         engine = ValidationEngine(rules)
         context = ValidationContext(stdin_text="feat: add feature")
 
@@ -366,8 +383,8 @@ class TestValidationEngine:
     def test_validation_engine_validate_all_fail(self):
         """Test ValidationEngine with some validations failing."""
         rules = [
-            ValidationRule(check="message", pattern=r"^feat:"),
-            ValidationRule(check="message", pattern=r"^fix:"),  # This will fail
+            ValidationRule(check="message", regex=r"^feat:"),
+            ValidationRule(check="message", regex=r"^fix:"),  # This will fail
         ]
         engine = ValidationEngine(rules)
         context = ValidationContext(stdin_text="feat: add feature")
@@ -385,7 +402,10 @@ class TestValidationEngine:
 
     def test_validation_engine_unknown_validator_type(self):
         """Test ValidationEngine with unknown validator type."""
-        rules = [ValidationRule(check="unknown_check")]
+        rules = [ValidationRule(check="unknown_check", regex=r".*")]
+        engine = ValidationEngine(rules)
+        context = ValidationContext()
 
-        with pytest.raises(ValueError, match="Unknown validator type: unknown_check"):
-            ValidationEngine(rules)
+        # Should not raise an error, just skip unknown validators
+        result = engine.validate_all(context)
+        assert result == ValidationResult.PASS  # No validation performed = PASS

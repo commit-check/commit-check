@@ -108,6 +108,15 @@ class SubjectValidator(BaseValidator):
         """Extract subject from commit message."""
         if context.stdin_text:
             return context.stdin_text.strip().split("\n")[0]
+
+        if context.commit_file:
+            try:
+                with open(context.commit_file, "r") as f:
+                    message = f.read().strip()
+                    return message.split("\n")[0]
+            except FileNotFoundError:
+                pass
+
         return get_commit_info("s")
 
     def _validate_subject(self, subject: str) -> ValidationResult:

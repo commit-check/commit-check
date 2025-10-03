@@ -198,8 +198,11 @@ def main() -> int:
             else:
                 # Message is a file path
                 commit_file_path = args.message
+        elif not any([args.branch, args.author_name, args.author_email]):
+            # If no specific validation type is requested, don't read stdin
+            pass
         else:
-            # Even if --message is not specified, check for stdin input for other validations
+            # For non-message validations (branch, author), check for stdin input
             stdin_content = stdin_reader.read_piped_input()
 
         context = ValidationContext(

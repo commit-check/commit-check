@@ -18,6 +18,8 @@ def test_config_tomli_fallback_direct():
             del sys.modules["commit_check.config"]
 
         # Make tomllib unavailable by raising ImportError
+        original_import = __import__
+
         def mock_import(name, globals=None, locals=None, fromlist=(), level=0):
             if name == "tomllib":
                 raise ImportError("No module named 'tomllib'")
@@ -36,9 +38,7 @@ def test_config_tomli_fallback_direct():
                 return MockTomli()
             return original_import(name, globals, locals, fromlist, level)
 
-        original_import = __builtins__["__import__"]
-
-        with patch.object(__builtins__, "__import__", mock_import):
+        with patch("builtins.__import__", side_effect=mock_import):
             # Now import config - should use tomli fallback
             import commit_check.config as config
 
