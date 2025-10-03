@@ -43,7 +43,7 @@ def _get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-c",
         "--config",
-        help="path to config file (cchk.toml). If not specified, searches for cchk.toml in current directory",
+        help="path to config file (cchk.toml or commit-check.toml). If not specified, searches for cchk.toml in current directory",
     )
 
     parser.add_argument(
@@ -135,8 +135,11 @@ def main() -> int:
     stdin_reader = StdinReader()
 
     try:
-        # Load configuration
-        config_data = load_config(args.config)
+        # Load configuration (fallback to defaults when no file found)
+        try:
+            config_data = load_config(args.config)
+        except FileNotFoundError:
+            config_data = {}
 
         # Build validation rules from config
         rule_builder = RuleBuilder(config_data)

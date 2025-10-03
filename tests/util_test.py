@@ -5,7 +5,6 @@ from commit_check.util import has_commits
 from commit_check.util import git_merge_base
 from commit_check.util import get_commit_info
 from commit_check.util import cmd_output
-from commit_check.util import validate_config
 from commit_check.util import print_error_header
 from commit_check.util import print_error_message
 from commit_check.util import print_suggestion
@@ -249,26 +248,6 @@ class TestUtil:
                 "stderr": PIPE,
                 "stdout": PIPE,
             }
-
-    class TestValidateConfig:
-        @pytest.mark.benchmark
-        def test_validate_config(self, mocker):
-            # Must call yaml.safe_load.
-            mocker.patch("builtins.open")
-            dummy_resp = {"key": "value"}
-            m_yaml_safe_load = mocker.patch("yaml.safe_load", return_value=dummy_resp)
-            retval = validate_config("dummy_path")
-            assert m_yaml_safe_load.call_count == 1
-            assert retval == dummy_resp
-
-        @pytest.mark.benchmark
-        def test_validate_config_file_not_found(self, mocker):
-            # Must return empty dictionary when FileNotFoundError raises in built-in open.
-            mocker.patch("builtins.open").side_effect = FileNotFoundError
-            m_yaml_safe_load = mocker.patch("yaml.safe_load")
-            retval = validate_config("dummy_path")
-            assert m_yaml_safe_load.call_count == 0
-            assert retval == {}
 
     class TestPrintErrorMessage:
         @pytest.mark.benchmark

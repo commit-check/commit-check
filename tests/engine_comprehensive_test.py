@@ -52,11 +52,8 @@ class TestCommitMessageValidator:
         validator = CommitMessageValidator(rule)
         assert validator.rule == rule
 
-    @patch("commit_check.engine.get_commit_info")
     @patch("commit_check.engine.has_commits")
-    def test_commit_message_validator_with_stdin(
-        self, mock_has_commits, mock_get_commit_info
-    ):
+    def test_commit_message_validator_with_stdin(self, mock_has_commits):
         """Test CommitMessageValidator with stdin text."""
         mock_has_commits.return_value = True
 
