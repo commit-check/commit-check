@@ -3,7 +3,7 @@
 conventional_commits = true
 subject_capitalized = false
 subject_imperative = true
-subject_max_length = 50
+subject_max_length = 80
 subject_min_length = 5
 allow_commit_types = ["feat", "fix", "docs", "style", "refactor", "test", "chore", "ci"]
 allow_merge_commits = true
@@ -12,7 +12,7 @@ allow_empty_commits = false
 allow_fixup_commits = true
 allow_wip_commits = false
 require_body = false
-require_signed_off_by = false
+require_signed_off_by = true
 allow_authors = []
 ignore_authors = ["dependabot[bot]", "copilot[bot]"]
 
