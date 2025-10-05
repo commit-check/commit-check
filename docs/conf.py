@@ -22,6 +22,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
+    "sphinx_issues",
 ]
 
 autodoc_member_order = "bysource"
@@ -31,12 +32,15 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 default_role = "any"
 
+# -- Options for sphinx_issues --------------------------------------------------------
+issues_default_group_project = "commit-check/commit-check"
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_immaterial"
 html_static_path = ["_static"]
-html_logo = "_static/logo.jpg"
+# html_logo = "_static/logo.jpg" can not display well in blue background
 # html_favicon = "_static/favicon.ico"
 html_css_files = ["extra_css.css"]
 html_title = "Commit Check"
@@ -44,6 +48,9 @@ html_title = "Commit Check"
 html_theme_options = {
     "repo_url": "https://github.com/commit-check/commit-check",
     "repo_name": "commit-check",
+    "icon": {
+        "logo": "material/git",
+    },
     "palette": [
         {
             "media": "(prefers-color-scheme: light)",

@@ -36,6 +36,19 @@ Fully customizable with error messages and suggested commands, it ensures compli
 
 As an alternative to GitHub Enterprise `Metadata restrictions <https://docs.github.com/en/enterprise-server@3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions>`_ and Bitbucket's paid plugin `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_, Commit Check stands out by integrating DevOps principles and Infrastructure as Code (IaC).
 
+What’s New in v2.0.0
+-----------------------
+
+Version 2.0.0 is a major release featuring a new configuration format, a modernized architecture, and an improved user experience.
+
+**✨ Highlights**
+
+* TOML Configuration — Replaces ``.commit-check.yml`` with ``cchk.toml`` or ``commit-check.toml`` for clearer, more consistent syntax.
+* Simplified CLI & Hooks — Legacy pre-commit hooks and options removed for a cleaner interface.
+* New Validation Engine — Redesigned for better flexibility, performance, and maintainability.
+
+For the full list of updates and improvements, see the `What's New <https://commit-check.github.io/commit-check/what-is-new.html>`_ page.
+
 Configuration
 -------------
 

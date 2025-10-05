@@ -1,19 +1,21 @@
 Configuration
 =============
 
-``commit-check`` configuration file support TOML format.
+``commit-check`` configuration files support the TOML format. See ``cchk.toml`` for an example configuration.
 
-See ``cchk.toml`` for an example configuration.
+.. tip::
+  **Default Behavior**
 
-**Default Behavior**: When no configuration file exists, commit-check uses sensible defaults with minimal restrictions.
-
-Only conventional commits format, subject capitalization, and imperative mood are enforced by default.
-
-No length limits, author restrictions, or rebase requirements are applied.
+  * When no configuration file exists, commit-check uses sensible defaults with minimal restrictions.
+  * Only conventional commits format, subject capitalization, and imperative mood are enforced by default.
+  * No length limits, author restrictions, or rebase requirements are applied.
 
 commit-check can be configured via a ``cchk.toml`` or ``commit-check.toml`` file.
 
 The file should be placed in the root of your repository.
+
+Example Configuration
+---------------------
 
 .. code-block:: toml
 
@@ -44,8 +46,7 @@ The file should be placed in the root of your repository.
     # require_rebase_target = "main"  # Optional - no rebase requirement by default
 
 
-
-options table description
+Options Table Description
 -------------------------
 
 .. list-table::
@@ -70,7 +71,7 @@ options table description
      - subject_imperative
      - bool
      - true
-     - Subject must be in imperative mood.
+     - Subject must be in imperative mood. Forms of verbs can be found at `imperatives.py <https://github.com/commit-check/commit-check/blob/main/commit_check/imperatives.py>`_
    * - commit
      - subject_max_length
      - int

@@ -4,7 +4,10 @@
    :hidden:
 
    self
+   what-is-new
    configuration
+   migration
+   changelog
 
 .. toctree::
    :hidden:
