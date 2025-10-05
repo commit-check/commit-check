@@ -223,9 +223,8 @@ Simple boolean flag for DCO compliance.
        conventional_commits = true
        subject_max_length = 72
 
-**For Existing Users:**
+For Existing Users
 ^^^^^^^^^^^^^^^^^^^^^^
-
 1. **Follow the Migration Guide**: See `Migration Guide <migration.html>`_
 2. **Test thoroughly**: Validate your new configuration before deploying
 
