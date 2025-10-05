@@ -22,9 +22,8 @@ body:
   - type: textarea
     id: configuration
     attributes:
-      label: .commit-check.yml
-      description: (auto-rendered as yaml, no need for backticks)
-      placeholder: 'checks: ...'
-      render: yaml
+      label: commit-check.toml or cchk.toml
+      description: (auto-rendered as toml, no need for backticks)
+      render: toml
     validations:
       required: false
