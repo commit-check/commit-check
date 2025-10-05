@@ -94,8 +94,15 @@ class TestCommitMessageValidator:
             finally:
                 os.unlink(f.name)
 
-    def test_commit_message_validator_file_not_found(self):
+    @patch("commit_check.engine.get_commit_info")
+    def test_commit_message_validator_file_not_found(self, mock_get_commit_info):
         """Test CommitMessageValidator with non-existent file."""
+        # Mock git fallback to return a message that doesn't match regex
+        mock_get_commit_info.side_effect = lambda format_str: {
+            "s": "invalid commit message",
+            "b": "",
+        }[format_str]
+
         rule = ValidationRule(check="message", regex=r"^feat:")
         validator = CommitMessageValidator(rule)
         context = ValidationContext(commit_file="/nonexistent/file")
@@ -123,7 +130,7 @@ class TestCommitMessageValidator:
 
 
 class TestBranchValidator:
-    @patch("commit_check.util.get_branch_name")
+    @patch("commit_check.engine.get_branch_name")
     def test_branch_validator_valid_branch(self, mock_get_branch_name):
         """Test BranchValidator with valid branch name."""
         mock_get_branch_name.return_value = "feature/new-feature"
