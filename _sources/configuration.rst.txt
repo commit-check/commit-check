@@ -1,3 +1,5 @@
+:status: new
+
 Configuration
 =============
 
@@ -18,6 +20,7 @@ Example Configuration
 ---------------------
 
 .. code-block:: toml
+    :class: copy
 
     [commit]
     # https://www.conventionalcommits.org
