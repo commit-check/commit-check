@@ -167,7 +167,7 @@ Simple boolean flag for DCO compliance.
 **Benefits**: Simple boolean configuration, built-in DCO validation, clear error messages.
 
 **Architecture Improvements**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **New Validation Engine**
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -178,7 +178,7 @@ Simple boolean flag for DCO compliance.
 * **Flexible Configuration**: Dynamic rule building from configuration
 
 **Module Organization**
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. list-table::
    :header-rows: 1
@@ -198,7 +198,7 @@ Simple boolean flag for DCO compliance.
      - CLI interface and orchestration
 
 **Getting Started with v2.0**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **For New Users:**
 ^^^^^^^^^^^^^^^^^^
@@ -224,12 +224,12 @@ Simple boolean flag for DCO compliance.
        subject_max_length = 72
 
 For Existing Users
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 1. **Follow the Migration Guide**: See `Migration Guide <migration.html>`_
 2. **Test thoroughly**: Validate your new configuration before deploying
 
 **Additional Resources**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 * `Configuration Reference <configuration.html>`_ - Complete configuration options
 * `Migration Guide <migration.html>`_ - Step-by-step upgrade instructions

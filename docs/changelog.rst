@@ -44,7 +44,7 @@ Architecture Redesign:
 See PR :pr:`280`
 
 v0.10.2 (2025-08-26)
-------
+--------------------
 
 Last release before the big v2.0 changes.
 

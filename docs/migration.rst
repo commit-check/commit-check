@@ -13,7 +13,7 @@ Version 2.0 introduces significant changes to commit-check:
 * **Enhanced functionality**: Better error messages and more flexible configuration options
 
 Quick Migration Steps
---------------------
+---------------------
 
 1. **Backup your existing configuration**:
 
@@ -43,7 +43,7 @@ Quick Migration Steps
        rm .commit-check.yml.backup  # after confirming everything works
 
 Configuration Format Changes
----------------------------
+----------------------------
 
 The configuration structure has changed from YAML to TOML format
 
@@ -125,7 +125,7 @@ YAML (v1.x) vs TOML (v2.0+)
 
 
 CLI Changes
-~~~~~~~~~~
+~~~~~~~~~~~
 
 The command-line interface has been simplified:
 
@@ -145,10 +145,10 @@ The command-line interface has been simplified:
 
 
 Troubleshooting
---------------
+---------------
 
 Common Issues
-~~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 **Issue**: "Configuration file not found"
 
@@ -167,7 +167,7 @@ Common Issues
 **Solution**: Check the `Configuration Documentation <configuration.html>`_ for the correct option names and formats.
 
 Validation and Testing
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 After migration, test your configuration:
 
@@ -183,7 +183,7 @@ After migration, test your configuration:
     commit-check --message --branch --author-name --author-email --dry-run
 
 Getting Help
------------
+------------
 
 * **Documentation**: Check the `Configuration Guide <configuration.html>`_
 * **Issues**: Report problems on `GitHub Issues <https://github.com/commit-check/commit-check/issues>`_
