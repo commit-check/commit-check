@@ -112,7 +112,7 @@ Standardize branch naming with conventional patterns.
     conventional_branch = true
     allow_branch_types = ["bugfix", "feature", "release", "hotfix", "task", "chore"]
 
-**Benefits**: Built-in `Conventional Branch <https://conventional-branch.github.io/>`_ support, automatic handling of special branches (main, master, HEAD, PR-*).
+**Benefits**: Built-in `Conventional Branch <https://conventional-branch.github.io/>`_ support, automatic handling of special branches (main, master, HEAD, PR-\*).
 
 Author Validation
 ^^^^^^^^^^^^^^^^^
