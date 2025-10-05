@@ -40,7 +40,7 @@ issues_default_group_project = "commit-check/commit-check"
 
 html_theme = "sphinx_immaterial"
 html_static_path = ["_static"]
-html_logo = "_static/logo.jpg"
+# html_logo = "_static/logo.jpg" can not display well in blue background
 # html_favicon = "_static/favicon.ico"
 html_css_files = ["extra_css.css"]
 html_title = "Commit Check"
@@ -48,6 +48,9 @@ html_title = "Commit Check"
 html_theme_options = {
     "repo_url": "https://github.com/commit-check/commit-check",
     "repo_name": "commit-check",
+    "icon": {
+        "logo": "material/git",
+    },
     "palette": [
         {
             "media": "(prefers-color-scheme: light)",
