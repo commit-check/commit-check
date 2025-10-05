@@ -1,7 +1,7 @@
 Configuration
 =============
 
-``commit-check`` configuration file support TOML format. See ``cchk.toml`` for an example configuration.
+``commit-check`` configuration files support the TOML format. See ``cchk.toml`` for an example configuration.
 
 .. tip::
   **Default Behavior**
