@@ -22,6 +22,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
+    "sphinx_issues",
 ]
 
 autodoc_member_order = "bysource"
@@ -30,6 +31,9 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 default_role = "any"
+
+# -- Options for sphinx_issues --------------------------------------------------------
+issues_default_group_project = "commit-check/commit-check"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
