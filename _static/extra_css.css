@@ -7,5 +7,10 @@ thead {
 .md-header,
 .md-tabs,
 .md-nav--primary .md-nav__title[for="__drawer"] {
-  background-color: #4051b5;
+  background-color: #009485;
+}
+
+/* Fix table header visibility for both light and dark modes */
+.md-content table th {
+  color: var(--md-typeset-color) !important;
 }
