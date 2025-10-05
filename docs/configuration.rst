@@ -71,7 +71,7 @@ Options Table Description
      - subject_imperative
      - bool
      - true
-     - Subject must be in imperative mood. forms of verbs can be found at `imperatives.py <https://github.com/commit-check/commit-check/blob/main/commit_check/imperatives.py>`_
+     - Subject must be in imperative mood. Forms of verbs can be found at `imperatives.py <https://github.com/commit-check/commit-check/blob/main/commit_check/imperatives.py>`_
    * - commit
      - subject_max_length
      - int
