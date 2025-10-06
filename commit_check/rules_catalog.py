@@ -111,8 +111,8 @@ BRANCH_RULES = [
     RuleCatalogEntry(
         check="branch",
         regex=None,  # Built dynamically from config
-        error="The branch should follow Conventional Branch. See https://conventional-branches.github.io/",
-        suggest="git checkout -b <type>/<branch_name>",
+        error="The branch should follow Conventional Branch. See https://conventional-branch.github.io/",
+        suggest="Use <type>/<description> with allowed types or ignore_authors in config branch section to bypass",
     ),
     RuleCatalogEntry(
         check="merge_base",

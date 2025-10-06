@@ -177,8 +177,8 @@ Check Branch Naming Failed
 
     Type branch check failed ==> test-branch
     It doesn't match regex: ^(feature|bugfix|hotfix|release|chore|feat|fix)\/.+|(master)|(main)|(HEAD)|(PR-.+)
-    The branch should follow Conventional Branch. See https://conventional-branches.github.io/
-    Suggest: git checkout -b <type>/<branch_name>
+    The branch should follow Conventional Branch. See https://conventional-branch.github.io/
+    Suggest: Use <type>/<description> with allowed types or ignore_authors in config branch section to bypass
 
 
 Check Commit Signature Failed
