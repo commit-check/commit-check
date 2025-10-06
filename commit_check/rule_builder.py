@@ -100,8 +100,6 @@ class RuleBuilder:
             return self._build_length_rule(catalog_entry, "subject_max_length")
         elif check == "subject_min_length":
             return self._build_length_rule(catalog_entry, "subject_min_length")
-        elif check == "allow_authors":
-            return self._build_author_list_rule(catalog_entry, "allow_authors")
         elif check == "ignore_authors":
             return self._build_author_list_rule(catalog_entry, "ignore_authors")
         elif check == "merge_base":
@@ -174,15 +172,9 @@ class RuleBuilder:
         if not isinstance(author_list, list) or not author_list:
             return None
 
-        if config_key == "allow_authors":
-            return ValidationRule(
-                check=catalog_entry.check,
-                error=catalog_entry.error,
-                suggest=catalog_entry.suggest,
-                allowed=author_list,
-            )
-        else:  # ignore_authors
+        if config_key == "ignore_authors":
             return ValidationRule(check=catalog_entry.check, ignored=author_list)
+        return None
 
     def _build_merge_base_rule(
         self, catalog_entry: RuleCatalogEntry

@@ -137,12 +137,10 @@ Flexible author validation with allow/ignore lists.
 
     [commit]
     # Built-in validation with sensible defaults for author name/email
-    # Optional: restrict to specific authors
-    allow_authors = ["John Doe <john@example.com>", "Jane Smith <jane@example.com>"]
     # Optional: ignore specific authors (e.g., bots)
     ignore_authors = ["dependabot[bot]", "renovate[bot]"]
 
-**Benefits**: Built-in validation patterns, flexible allow/ignore lists, automatic bot detection.
+**Benefits**: Built-in validation patterns, flexible ignore lists, automatic bot detection.
 
 Signed-off-by Requirements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

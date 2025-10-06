@@ -237,8 +237,6 @@ class TestValidationEngine:
             "subject_min_length": SubjectLengthValidator,
             "author_name": AuthorValidator,
             "author_email": AuthorValidator,
-            "allow_authors": AuthorValidator,
-            "ignore_authors": AuthorValidator,
             "branch": BranchValidator,
             "merge_base": MergeBaseValidator,
             "require_signed_off_by": SignoffValidator,
@@ -248,6 +246,7 @@ class TestValidationEngine:
             "allow_empty_commits": CommitTypeValidator,
             "allow_fixup_commits": CommitTypeValidator,
             "allow_wip_commits": CommitTypeValidator,
+            "ignore_authors": CommitTypeValidator,
         }
 
         for check, validator_class in expected_mappings.items():

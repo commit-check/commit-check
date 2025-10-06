@@ -36,7 +36,6 @@ Example Configuration
     allow_fixup_commits = true
     allow_wip_commits = false
     require_body = false
-    # allow_authors = []       # Optional - all authors allowed by default
     # ignore_authors = []      # Optional - no authors ignored by default
     require_signed_off_by = false
     # required_signoff_name = "Your Name"      # Optional
@@ -47,6 +46,7 @@ Example Configuration
     conventional_branch = true
     allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
     # require_rebase_target = "main"  # Optional - no rebase requirement by default
+    # ignore_authors = []      # Optional - no authors ignored by default
 
 
 Options Table Description
@@ -121,11 +121,6 @@ Options Table Description
      - false
      - Require a body in the commit message.
    * - commit
-     - allow_authors
-     - list[str]
-     - [] (all allowed)
-     - List of allowed authors. If empty, all authors are allowed except those in ignore_authors.
-   * - commit
      - ignore_authors
      - list[str]
      - [] (none ignored)
@@ -150,3 +145,8 @@ Options Table Description
      - str
      - None (no requirement)
      - Target branch for rebase requirement. If not set, no rebase validation is performed.
+   * - branch
+     - ignore_authors
+     - list[str]
+     - [] (none ignored)
+     - List of authors to ignore (i.e., always allow).

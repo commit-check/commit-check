@@ -211,6 +211,7 @@ def main() -> int:
         context = ValidationContext(
             stdin_text=stdin_content,
             commit_file=commit_file_path,
+            config=config_data,
         )
 
         # Run validation

@@ -93,12 +93,6 @@ COMMIT_RULES = [
         suggest="git config user.email yourname@example.com",
     ),
     RuleCatalogEntry(
-        check="allow_authors",
-        regex=None,
-        error="Author is not allowed",
-        suggest="Use a configured author or adjust configuration",
-    ),
-    RuleCatalogEntry(
         check="ignore_authors",
         regex=None,
         error=None,
@@ -117,13 +111,19 @@ BRANCH_RULES = [
     RuleCatalogEntry(
         check="branch",
         regex=None,  # Built dynamically from config
-        error="The branch should follow Conventional Branch. See https://conventional-branches.github.io/",
-        suggest="git checkout -b <type>/<branch_name>",
+        error="The branch should follow Conventional Branch. See https://conventional-branch.github.io/",
+        suggest="Use <type>/<description> with allowed types or ignore_authors in config branch section to bypass",
     ),
     RuleCatalogEntry(
         check="merge_base",
         regex=None,  # Provided by config
         error="Current branch is not rebased onto target branch",
         suggest="Rebase or merge with the target branch",
+    ),
+    RuleCatalogEntry(
+        check="ignore_authors",
+        regex=None,
+        error=None,
+        suggest=None,
     ),
 ]
