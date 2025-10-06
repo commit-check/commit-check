@@ -240,6 +240,7 @@ class TestMainFunctionEdgeCases:
         # This should not crash, just use default config
         result = main()
         assert result == 0
+
     # Removed problematic tests that had configuration dependency issues
 
     def test_main_with_dry_run_all_checks(self, mocker):
