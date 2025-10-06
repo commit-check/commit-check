@@ -603,10 +603,9 @@ class TestMergeBaseValidator:
         validator = MergeBaseValidator(rule)
         context = ValidationContext()
 
-        with patch("commit_check.engine.git_merge_base", return_value=True):
+        with patch("commit_check.engine.git_merge_base", return_value=0):
             result = validator.validate(context)
             assert result == ValidationResult.PASS
-
     def test_validate_with_merge_base_skip_conditions(self):
         """Test merge base validation skip conditions."""
         rule = ValidationRule(check="merge_base")
