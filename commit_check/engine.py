@@ -47,22 +47,30 @@ class BaseValidator(ABC):
         """
         Determine if validation should be skipped.
 
-        By default, skip if no stdin_text and no commits exist.
+        Skip only when there is no stdin_text, no commit_file, and no commits.
         """
-        return context.stdin_text is None and not has_commits()
+        return (
+            context.stdin_text is None
+            and context.commit_file is None
+            and not has_commits()
+        )
 
     def _should_skip_commit_validation(self, context: ValidationContext) -> bool:
         """
         Determine if commit validation should be skipped.
 
         Skip if the current author is in the ignore_authors list for commits,
-        or if no stdin_text and no commits exist.
+        or if no stdin_text, no commit_file, and no commits exist.
         """
         ignore_authors = context.config.get("commit", {}).get("ignore_authors", [])
         current_author = get_commit_info("an")
         if current_author and current_author in ignore_authors:
             return True
-        return context.stdin_text is None and not has_commits()
+        return (
+            context.stdin_text is None
+            and context.commit_file is None
+            and not has_commits()
+        )
 
     def _should_skip_branch_validation(self, context: ValidationContext) -> bool:
         """
