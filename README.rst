@@ -30,14 +30,13 @@ Commit Check
 Overview
 --------
 
-**Commit Check** is a free, powerful tool that enforces commit metadata standards, including commit message, branch naming, committer name/email, commit signoff and more.
+**Commit Check** (aka **cchk**) is an open-source tool that enforces commit metadata standards — including commit messages, branch naming, committer name/email, commit signoff, and more — to ensure consistency and compliance across teams.
 
-Fully customizable with error messages and suggested commands, it ensures compliance across teams.
-
-As an alternative to GitHub Enterprise `Metadata restrictions <https://docs.github.com/en/enterprise-server@3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions>`_ and Bitbucket's paid plugin `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_, Commit Check stands out by integrating DevOps principles and Infrastructure as Code (IaC).
+As an alternative to GitHub Enterprise `Metadata restrictions <https://docs.github.com/en/enterprise-server@3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions>`_
+and Bitbucket's paid plugin `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_, Commit Check stands out by integrating DevOps principles and Infrastructure as Code (IaC) practices.
 
 What’s New in v2.0.0
------------------------
+--------------------
 
 Version 2.0.0 is a major release featuring a new configuration format, a modernized architecture, and an improved user experience.
 
@@ -164,14 +163,14 @@ Check Branch Naming Failed
 
     Commit rejected by Commit-Check.
 
-    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-    / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-    __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+      (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+       / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+     __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
     (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-    || E ||      || R ||      || R ||      || O ||      || R ||
-    _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
+       || E ||      || R ||      || R ||      || O ||      || R ||
+     _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
     (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-    `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+     `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
     Commit rejected.
 
@@ -187,14 +186,14 @@ Check Commit Signature Failed
 
     Commit rejected by Commit-Check.
 
-    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-    / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-    __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+      (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+       / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+     __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
     (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-    || E ||      || R ||      || R ||      || O ||      || R ||
-    _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
+       || E ||      || R ||      || R ||      || O ||      || R ||
+     _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
     (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-    `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+     `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
     Commit rejected.
 
@@ -210,14 +209,14 @@ Check Imperative Mood Failed
 
     Commit rejected by Commit-Check.
 
-    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-    / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-    __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+      (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+       / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+     __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
     (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-    || E ||      || R ||      || R ||      || O ||      || R ||
-    _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
+       || E ||      || R ||      || R ||      || O ||      || R ||
+     _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
     (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-    `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+     `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
     Commit rejected.
 
