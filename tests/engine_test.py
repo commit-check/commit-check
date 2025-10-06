@@ -131,9 +131,13 @@ class TestCommitMessageValidator:
 
 
 class TestBranchValidator:
+    @patch("commit_check.engine.has_commits")
     @patch("commit_check.engine.get_branch_name")
-    def test_branch_validator_valid_branch(self, mock_get_branch_name):
+    def test_branch_validator_valid_branch(
+        self, mock_get_branch_name, mock_has_commits
+    ):
         """Test BranchValidator with valid branch name."""
+        mock_has_commits.return_value = True
         mock_get_branch_name.return_value = "feature/new-feature"
         rule = ValidationRule(check="branch", regex=r"^(feature|bugfix|hotfix)/.+")
         validator = BranchValidator(rule)
@@ -141,10 +145,16 @@ class TestBranchValidator:
         context = ValidationContext(config=config)
         result = validator.validate(context)
         assert result == ValidationResult.PASS
+        assert result == ValidationResult.PASS
+        assert result == ValidationResult.PASS
 
+    @patch("commit_check.engine.has_commits")
     @patch("commit_check.engine.get_branch_name")
-    def test_branch_validator_invalid_branch(self, mock_get_branch_name):
+    def test_branch_validator_invalid_branch(
+        self, mock_get_branch_name, mock_has_commits
+    ):
         """Test BranchValidator with invalid branch name."""
+        mock_has_commits.return_value = True
         mock_get_branch_name.return_value = "invalid-branch-name"
         rule = ValidationRule(check="branch", regex=r"^(feature|bugfix|hotfix)/.+")
         validator = BranchValidator(rule)
@@ -170,9 +180,11 @@ class TestBranchValidator:
 
 
 class TestAuthorValidator:
+    @patch("commit_check.engine.has_commits")
     @patch("commit_check.engine.get_commit_info")
-    def test_author_validator_name_valid(self, mock_get_commit_info):
+    def test_author_validator_name_valid(self, mock_get_commit_info, mock_has_commits):
         """Test AuthorValidator for author name."""
+        mock_has_commits.return_value = True
         mock_get_commit_info.return_value = "John Doe"
         rule = ValidationRule(check="author_name", regex=r"^[A-Z][a-z]+ [A-Z][a-z]+$")
         validator = AuthorValidator(rule)
@@ -180,14 +192,12 @@ class TestAuthorValidator:
         context = ValidationContext(config=config)
         result = validator.validate(context)
         assert result == ValidationResult.PASS
-        # Called once for skip logic, once for value
-        assert mock_get_commit_info.call_count == 2
-        assert mock_get_commit_info.call_args_list[0][0][0] == "an"
-        assert mock_get_commit_info.call_args_list[1][0][0] == "an"
 
+    @patch("commit_check.engine.has_commits")
     @patch("commit_check.engine.get_commit_info")
-    def test_author_validator_email_valid(self, mock_get_commit_info):
+    def test_author_validator_email_valid(self, mock_get_commit_info, mock_has_commits):
         """Test AuthorValidator for author email."""
+        mock_has_commits.return_value = True
         mock_get_commit_info.return_value = "john.doe@example.com"
         rule = ValidationRule(
             check="author_email",
@@ -197,6 +207,11 @@ class TestAuthorValidator:
         config = {"commit": {"ignore_authors": ["ignored"]}}
         context = ValidationContext(config=config)
         result = validator.validate(context)
+        assert result == ValidationResult.PASS
+        # Called once for skip logic ("an"), once for value ("ae")
+        assert mock_get_commit_info.call_count == 2
+        assert mock_get_commit_info.call_args_list[0][0][0] == "an"
+        assert mock_get_commit_info.call_args_list[1][0][0] == "ae"
         assert result == ValidationResult.PASS
         # Called once for skip logic ("an"), once for value ("ae")
         assert mock_get_commit_info.call_count == 2
