@@ -742,9 +742,9 @@
 <h1 id="commit-check">Commit Check<a class="headerlink" href="#commit-check" title="Link to this heading">¶</a></h1>
 <p><a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="PyPI" src="https://img.shields.io/pypi/v/commit-check?logo=python&amp;logoColor=white" /></a> <a class="reference external" href="https://github.com/commit-check/commit-check/actions/workflows/main.yml"><img alt="CI" src="https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg" /></a> <a class="reference external" href="https://sonarcloud.io/summary/new_code?id=commit-check_commit-check"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&amp;metric=alert_status" /></a> <a class="reference external" href="https://codecov.io/gh/commit-check/commit-check"><img alt="CodeCov" src="https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT" /></a> <a class="reference external" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white" /></a> <a class="reference external" href="https://slsa.dev"><img alt="SLSA" src="https://slsa.dev/images/gh-badge-level3.svg" /></a></p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
-<p><strong>Commit Check</strong> is a free, powerful tool that enforces commit metadata standards, including commit message, branch naming, committer name/email, commit signoff and more.</p>
-<p>Fully customizable with error messages and suggested commands, it ensures compliance across teams.</p>
-<p>As an alternative to GitHub Enterprise <a class="reference external" href="https://docs.github.com/en/enterprise-server&#64;3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions">Metadata restrictions</a> and Bitbucket’s paid plugin <a class="reference external" href="https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&amp;hosting=datacenter">Yet Another Commit Checker</a>, Commit Check stands out by integrating DevOps principles and Infrastructure as Code (IaC).</p>
+<p><strong>Commit Check</strong> (aka <strong>cchk</strong>) is an open-source tool that enforces commit metadata standards — including commit messages, branch naming, committer name/email, commit signoff, and more — to ensure consistency and compliance across teams.</p>
+<p>As an alternative to GitHub Enterprise <a class="reference external" href="https://docs.github.com/en/enterprise-server&#64;3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions">Metadata restrictions</a>
+and Bitbucket’s paid plugin <a class="reference external" href="https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&amp;hosting=datacenter">Yet Another Commit Checker</a>, Commit Check stands out by integrating DevOps principles and Infrastructure as Code (IaC) practices.</p>
 <h2 id="whats-new-in-v2-0-0">What’s New in v2.0.0<a class="headerlink" href="#whats-new-in-v2-0-0" title="Link to this heading">¶</a></h2>
 <p>Version 2.0.0 is a major release featuring a new configuration format, a modernized architecture, and an improved user experience.</p>
 <p><strong>✨ Highlights</strong></p>
@@ -809,14 +809,14 @@ commit-check<span class="w"> </span>--message<span class="w"> </span>--branch<sp
 <p>Check Commit Message Failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
-(c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-/ ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-__\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+ __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
 (_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
-|| E ||      || R ||      || R ||      || O ||      || R ||
-_.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
+   || E ||      || R ||      || R ||      || O ||      || R ||
+ _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
 (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-`-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+ `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
 Commit rejected.
 
@@ -829,14 +829,14 @@ Suggest: Use &lt;type&gt;(&lt;scope&gt;): &lt;description&gt; with allowed types
 <p>Check Branch Naming Failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
-(c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-/ ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-__\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+ __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
 (_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
-|| E ||      || R ||      || R ||      || O ||      || R ||
-_.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
+   || E ||      || R ||      || R ||      || O ||      || R ||
+ _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
 (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-`-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+ `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
 Commit rejected.
 
@@ -849,14 +849,14 @@ Suggest: Use &lt;type&gt;/&lt;description&gt; with allowed types or ignore_autho
 <p>Check Commit Signature Failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
-(c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-/ ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-__\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+ __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
 (_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
-|| E ||      || R ||      || R ||      || O ||      || R ||
-_.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
+   || E ||      || R ||      || R ||      || O ||      || R ||
+ _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
 (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-`-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+ `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
 Commit rejected.
 
@@ -869,14 +869,14 @@ Suggest: git commit --amend --signoff or use --signoff on commit
 <p>Check Imperative Mood Failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
-(c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-/ ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-__\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
+  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
+   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
+ __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
 (_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
-|| E ||      || R ||      || R ||      || O ||      || R ||
-_.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
+   || E ||      || R ||      || R ||      || O ||      || R ||
+ _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
 (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-`-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
+ `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
 Commit rejected.
 
