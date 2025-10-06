@@ -226,21 +226,20 @@ class TestMainFunctionEdgeCases:
 
     # Removed problematic config and multi-check tests due to complex validation dependencies
 
-    def test_main_with_invalid_config_file(self, capsys):
+    def test_main_with_invalid_config_file(self, mocker):
         """Test main function with invalid config file."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: Test feature\n")
         sys.argv = [
             "commit-check",
             "--config",
             "/nonexistent/config.toml",
-            "--message",
-            "feat: Test feature",
+            "--message",  # empty -> read from stdin
         ]
 
         # This should not crash, just use default config
         result = main()
-        # The test should still pass because it falls back to default config
         assert result == 0
-
     # Removed problematic tests that had configuration dependency issues
 
     def test_main_with_dry_run_all_checks(self, mocker):
