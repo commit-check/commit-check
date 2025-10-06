@@ -41,6 +41,9 @@ class TestMain:
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
 
+        # Mock git author to ensure it's not in any ignore list
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
+
         sys.argv = [CMD, "-m"]
         assert main() == 1
 
