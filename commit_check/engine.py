@@ -4,6 +4,7 @@ from typing import List, Optional, Dict, Type
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum
+from dataclasses import field
 
 from commit_check.rule_builder import ValidationRule
 from commit_check.util import (
@@ -28,6 +29,7 @@ class ValidationContext:
 
     stdin_text: Optional[str] = None
     commit_file: Optional[str] = None
+    config: Dict = field(default_factory=dict)
 
 
 class BaseValidator(ABC):
@@ -42,7 +44,37 @@ class BaseValidator(ABC):
         pass
 
     def _should_skip_validation(self, context: ValidationContext) -> bool:
-        """Determine if validation should be skipped."""
+        """
+        Determine if validation should be skipped.
+
+        By default, skip if no stdin_text and no commits exist.
+        """
+        return context.stdin_text is None and not has_commits()
+
+    def _should_skip_commit_validation(self, context: ValidationContext) -> bool:
+        """
+        Determine if commit validation should be skipped.
+
+        Skip if the current author is in the ignore_authors list for commits,
+        or if no stdin_text and no commits exist.
+        """
+        ignore_authors = context.config.get("commit", {}).get("ignore_authors", [])
+        current_author = get_commit_info("an")
+        if current_author and current_author in ignore_authors:
+            return True
+        return context.stdin_text is None and not has_commits()
+
+    def _should_skip_branch_validation(self, context: ValidationContext) -> bool:
+        """
+        Determine if branch validation should be skipped.
+
+        Skip if the current author is in the ignore_authors list for branches,
+        or if no stdin_text and no commits exist.
+        """
+        ignore_authors = context.config.get("branch", {}).get("ignore_authors", [])
+        current_author = get_commit_info("an")
+        if current_author and current_author in ignore_authors:
+            return True
         return context.stdin_text is None and not has_commits()
 
     def _print_failure(self, actual_value: str, regex_or_constraint: str = "") -> None:
@@ -58,7 +90,7 @@ class CommitMessageValidator(BaseValidator):
     """Validates commit messages against conventional commit standards."""
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        if self._should_skip_validation(context):
+        if self._should_skip_commit_validation(context):
             return ValidationResult.PASS
 
         message = self._get_commit_message(context)
@@ -95,7 +127,7 @@ class SubjectValidator(BaseValidator):
     """Validates commit subject lines."""
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        if self._should_skip_validation(context):
+        if self._should_skip_commit_validation(context):
             return ValidationResult.PASS
 
         subject = self._get_subject(context)
@@ -198,7 +230,8 @@ class AuthorValidator(BaseValidator):
     """Validates author information."""
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        if self._should_skip_validation(context):
+        # Use commit skip logic for ignore_authors
+        if self._should_skip_commit_validation(context):
             return ValidationResult.PASS
 
         author_value = self._get_author_value(context)
@@ -243,6 +276,8 @@ class BranchValidator(BaseValidator):
     """Validates branch names."""
 
     def validate(self, context: ValidationContext) -> ValidationResult:
+        if self._should_skip_branch_validation(context):
+            return ValidationResult.PASS
         branch_name = (
             context.stdin_text.strip() if context.stdin_text else get_branch_name()
         )
@@ -263,7 +298,7 @@ class MergeBaseValidator(BaseValidator):
     """Validates merge base ancestry."""
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        if not has_commits():
+        if self._should_skip_branch_validation(context):
             return ValidationResult.PASS
 
         current_branch = get_branch_name()
@@ -347,7 +382,7 @@ class BodyValidator(BaseValidator):
     """Validates that commit messages contain a body when required."""
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        if self._should_skip_validation(context):
+        if self._should_skip_commit_validation(context):
             return ValidationResult.PASS
 
         message = self._get_commit_message(context)
@@ -395,7 +430,7 @@ class CommitTypeValidator(BaseValidator):
     """Base validator for special commit types (merge, revert, fixup, WIP, empty)."""
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        if self._should_skip_validation(context):
+        if self._should_skip_commit_validation(context):
             return ValidationResult.PASS
 
         message = self._get_commit_message(context)
@@ -483,8 +518,6 @@ class ValidationEngine:
         "subject_min_length": SubjectLengthValidator,
         "author_name": AuthorValidator,
         "author_email": AuthorValidator,
-        "allow_authors": AuthorValidator,
-        "ignore_authors": AuthorValidator,
         "branch": BranchValidator,
         "merge_base": MergeBaseValidator,
         "require_signed_off_by": SignoffValidator,
@@ -494,6 +527,7 @@ class ValidationEngine:
         "allow_empty_commits": CommitTypeValidator,
         "allow_fixup_commits": CommitTypeValidator,
         "allow_wip_commits": CommitTypeValidator,
+        "ignore_authors": CommitTypeValidator,
     }
 
     def __init__(self, rules: List[ValidationRule]):

@@ -115,7 +115,6 @@ YAML (v1.x) vs TOML (v2.0+)
     allow_wip_commits = false
     require_body = false
     require_signed_off_by = false
-    allow_authors = []
     ignore_authors = ["dependabot[bot]", "copilot[bot]"]
 
     [branch]

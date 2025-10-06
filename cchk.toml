@@ -13,7 +13,6 @@ allow_fixup_commits = true
 allow_wip_commits = false
 require_body = false
 require_signed_off_by = false
-allow_authors = []
 ignore_authors = ["dependabot[bot]", "copilot[bot]"]
 
 [branch]
@@ -21,3 +20,4 @@ ignore_authors = ["dependabot[bot]", "copilot[bot]"]
 conventional_branch = true
 allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
 require_rebase_target = "main"
+ignore_authors = ["dependabot[bot]", "copilot[bot]"]

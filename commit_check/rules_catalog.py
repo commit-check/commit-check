@@ -93,12 +93,6 @@ COMMIT_RULES = [
         suggest="git config user.email yourname@example.com",
     ),
     RuleCatalogEntry(
-        check="allow_authors",
-        regex=None,
-        error="Author is not allowed",
-        suggest="Use a configured author or adjust configuration",
-    ),
-    RuleCatalogEntry(
         check="ignore_authors",
         regex=None,
         error=None,
@@ -125,5 +119,11 @@ BRANCH_RULES = [
         regex=None,  # Provided by config
         error="Current branch is not rebased onto target branch",
         suggest="Rebase or merge with the target branch",
+    ),
+    RuleCatalogEntry(
+        check="ignore_authors",
+        regex=None,
+        error=None,
+        suggest=None,
     ),
 ]
