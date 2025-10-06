@@ -686,7 +686,6 @@
 <span class="n">allow_fixup_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="n">allow_wip_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 <span class="n">require_body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
-<span class="c1"># allow_authors = []       # Optional - all authors allowed by default</span>
 <span class="c1"># ignore_authors = []      # Optional - no authors ignored by default</span>
 <span class="n">require_signed_off_by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 <span class="c1"># required_signoff_name = &quot;Your Name&quot;      # Optional</span>
@@ -697,6 +696,7 @@
 <span class="n">conventional_branch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="n">allow_branch_types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;feature&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;bugfix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;hotfix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;release&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;chore&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;feat&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fix&quot;</span><span class="p">]</span>
 <span class="c1"># require_rebase_target = &quot;main&quot;  # Optional - no rebase requirement by default</span>
+<span class="c1"># ignore_authors = []      # Optional - no authors ignored by default</span>
 </code></pre></div>
 </div>
 <h2 id="options-table-description">Options Table Description<a class="headerlink" href="#options-table-description" title="Link to this heading">¶</a></h2>
@@ -783,40 +783,40 @@
 <td><p>Require a body in the commit message.</p></td>
 </tr>
 <tr class="row-even"><td><p>commit</p></td>
-<td><p>allow_authors</p></td>
-<td><p>list[str]</p></td>
-<td><p>[] (all allowed)</p></td>
-<td><p>List of allowed authors. If empty, all authors are allowed except those in ignore_authors.</p></td>
-</tr>
-<tr class="row-odd"><td><p>commit</p></td>
 <td><p>ignore_authors</p></td>
 <td><p>list[str]</p></td>
 <td><p>[] (none ignored)</p></td>
 <td><p>List of authors to ignore (i.e., always allow).</p></td>
 </tr>
-<tr class="row-even"><td><p>commit</p></td>
+<tr class="row-odd"><td><p>commit</p></td>
 <td><p>require_signed_off_by</p></td>
 <td><p>bool</p></td>
 <td><p>false</p></td>
 <td><p>Require “Signed-off-by” line in the commit message footer.</p></td>
 </tr>
-<tr class="row-odd"><td><p>branch</p></td>
+<tr class="row-even"><td><p>branch</p></td>
 <td><p>conventional_branch</p></td>
 <td><p>bool</p></td>
 <td><p>true</p></td>
 <td><p>Enforce Conventional Branch specification.</p></td>
 </tr>
-<tr class="row-even"><td><p>branch</p></td>
+<tr class="row-odd"><td><p>branch</p></td>
 <td><p>allow_branch_types</p></td>
 <td><p>list[str]</p></td>
 <td><p>[“feature”, “bugfix”, “hotfix”, “release”, “chore”, “feat”, “fix”]</p></td>
 <td><p>Allowed branch types when conventional_branch is true.</p></td>
 </tr>
-<tr class="row-odd"><td><p>branch</p></td>
+<tr class="row-even"><td><p>branch</p></td>
 <td><p>require_rebase_target</p></td>
 <td><p>str</p></td>
 <td><p>None (no requirement)</p></td>
 <td><p>Target branch for rebase requirement. If not set, no rebase validation is performed.</p></td>
+</tr>
+<tr class="row-odd"><td><p>branch</p></td>
+<td><p>ignore_authors</p></td>
+<td><p>list[str]</p></td>
+<td><p>[] (none ignored)</p></td>
+<td><p>List of authors to ignore (i.e., always allow).</p></td>
 </tr>
 </tbody>
 </table>

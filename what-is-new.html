@@ -1092,13 +1092,11 @@
 <p><strong>After (TOML v2.0+):</strong></p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="k">[commit]</span>
 <span class="c1"># Built-in validation with sensible defaults for author name/email</span>
-<span class="c1"># Optional: restrict to specific authors</span>
-<span class="n">allow_authors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;John Doe &lt;john@example.com&gt;&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Jane Smith &lt;jane@example.com&gt;&quot;</span><span class="p">]</span>
 <span class="c1"># Optional: ignore specific authors (e.g., bots)</span>
 <span class="n">ignore_authors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;dependabot[bot]&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;renovate[bot]&quot;</span><span class="p">]</span>
 </code></pre></div>
 </div>
-<p><strong>Benefits</strong>: Built-in validation patterns, flexible allow/ignore lists, automatic bot detection.</p>
+<p><strong>Benefits</strong>: Built-in validation patterns, flexible ignore lists, automatic bot detection.</p>
 <h4 id="signed-off-by-requirements">Signed-off-by Requirements<a class="headerlink" href="#signed-off-by-requirements" title="Link to this heading">¶</a></h4>
 <p>Simple boolean flag for DCO compliance.</p>
 <p><strong>Before (YAML v1.x):</strong></p>
