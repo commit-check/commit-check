@@ -3,7 +3,7 @@
 import pytest
 import tempfile
 import os
-from unittest.mock import patch
+from unittest.mock import mock_open, patch
 from commit_check.engine import (
     ValidationResult,
     ValidationContext,
@@ -178,6 +178,24 @@ class TestBranchValidator:
         result = validator.validate(context)
         assert result == ValidationResult.PASS
 
+    def test_validate_with_stdin_text(self):
+        """Test branch validation with stdin_text."""
+        rule = ValidationRule(check="branch", regex=r"^feature/")
+        validator = BranchValidator(rule)
+        context = ValidationContext(stdin_text="feature/new-feature")
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    def test_validate_without_regex(self):
+        """Test branch validation without regex (should pass)."""
+        rule = ValidationRule(check="branch")
+        validator = BranchValidator(rule)
+        context = ValidationContext()
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
 
 class TestAuthorValidator:
     @patch("commit_check.engine.has_commits")
@@ -229,6 +247,52 @@ class TestAuthorValidator:
         result = validator.validate(context)
         assert result == ValidationResult.PASS
 
+    def test_validate_author_with_allowed_list(self):
+        """Test author validation with allowed list."""
+        rule = ValidationRule(check="author_name", allowed=["John Doe", "Jane Smith"])
+        validator = AuthorValidator(rule)
+
+        # Mock author value
+        with patch.object(validator, "_get_author_value", return_value="John Doe"):
+            context = ValidationContext()
+            result = validator.validate(context)
+            assert result == ValidationResult.PASS
+
+    def test_validate_author_not_in_allowed_list(self):
+        """Test author validation with name not in allowed list."""
+        rule = ValidationRule(check="author_name", allowed=["John Doe", "Jane Smith"])
+        validator = AuthorValidator(rule)
+
+        # Mock author value and print function
+        with patch.object(validator, "_get_author_value", return_value="Unknown User"):
+            with patch("commit_check.util._print_failure"):
+                context = ValidationContext()
+                result = validator.validate(context)
+                assert result == ValidationResult.FAIL
+
+    def test_validate_author_in_ignored_list(self):
+        """Test author validation with ignored authors."""
+        rule = ValidationRule(check="author_name", ignored=["Bot User", "CI User"])
+        validator = AuthorValidator(rule)
+
+        # Mock author value
+        with patch.object(validator, "_get_author_value", return_value="Bot User"):
+            context = ValidationContext()
+            result = validator.validate(context)
+            assert result == ValidationResult.PASS
+
+    def test_get_author_value_with_email_format(self):
+        """Test _get_author_value with email format."""
+        rule = ValidationRule(check="author_email")
+        validator = AuthorValidator(rule)
+        context = ValidationContext()
+
+        with patch(
+            "commit_check.engine.get_commit_info", return_value="test@example.com"
+        ):
+            author_value = validator._get_author_value(context)
+            assert author_value == "test@example.com"
+
 
 class TestCommitTypeValidator:
     def test_commit_type_validator_merge_commits(self):
@@ -249,25 +313,87 @@ class TestCommitTypeValidator:
         result = validator.validate(context)
         assert result == ValidationResult.PASS
 
+    def test_validate_merge_commit_allowed(self):
+        """Test merge commit validation when allowed."""
+        rule = ValidationRule(check="allow_merge_commits", value=True)
+        validator = CommitTypeValidator(rule)
+        context = ValidationContext()
 
-class TestSubjectImperativeValidator:
-    def test_imperative_validator_valid_imperative(self):
-        """Test SubjectImperativeValidator with valid imperative mood."""
-        rule = ValidationRule(check="imperative")
-        validator = SubjectImperativeValidator(rule)
-        context = ValidationContext(stdin_text="feat: add new feature")
+        with patch("commit_check.engine.get_commit_info") as mock_get_info:
+            mock_get_info.side_effect = lambda x: {
+                "s": "Merge branch 'feature'",
+                "b": "",
+                "an": "test-author",
+            }[x]
 
-        result = validator.validate(context)
-        assert result == ValidationResult.PASS
+            result = validator.validate(context)
+            assert result == ValidationResult.PASS
 
-    def test_imperative_validator_invalid_imperative(self):
-        """Test SubjectImperativeValidator with non-imperative mood."""
-        rule = ValidationRule(check="imperative")
-        validator = SubjectImperativeValidator(rule)
-        context = ValidationContext(stdin_text="feat: added new feature")
+    def test_validate_merge_commit_not_allowed(self):
+        """Test merge commit validation when not allowed."""
+        rule = ValidationRule(check="allow_merge_commits", value=False)
+        validator = CommitTypeValidator(rule)
+        context = ValidationContext()
 
-        result = validator.validate(context)
-        assert result == ValidationResult.FAIL
+        with patch("commit_check.engine.get_commit_info") as mock_get_info:
+            mock_get_info.side_effect = lambda x: {
+                "s": "Merge branch 'feature'",
+                "b": "",
+                "an": "test-author",
+            }[x]
+
+            with patch("commit_check.util._print_failure"):
+                result = validator.validate(context)
+                assert result == ValidationResult.FAIL
+
+    def test_validate_revert_commit_allowed(self):
+        """Test revert commit validation when allowed."""
+        rule = ValidationRule(check="allow_revert_commits", value=True)
+        validator = CommitTypeValidator(rule)
+        context = ValidationContext()
+
+        with patch("commit_check.engine.get_commit_info") as mock_get_info:
+            mock_get_info.side_effect = lambda x: {
+                "s": "Revert 'bad commit'",
+                "b": "",
+                "an": "test-author",
+            }[x]
+
+            result = validator.validate(context)
+            assert result == ValidationResult.PASS
+
+    def test_validate_fixup_commit_not_allowed(self):
+        """Test fixup commit validation when not allowed."""
+        rule = ValidationRule(check="allow_fixup_commits", value=False)
+        validator = CommitTypeValidator(rule)
+        context = ValidationContext()
+
+        with patch("commit_check.engine.get_commit_info") as mock_get_info:
+            mock_get_info.side_effect = lambda x: {
+                "s": "fixup! fix bug",
+                "b": "",
+                "an": "test-author",
+            }[x]
+
+            with patch("commit_check.util._print_failure"):
+                result = validator.validate(context)
+                assert result == ValidationResult.FAIL
+
+    def test_validate_wip_commit_allowed(self):
+        """Test WIP commit validation when allowed."""
+        rule = ValidationRule(check="allow_wip_commits", value=True)
+        validator = CommitTypeValidator(rule)
+        context = ValidationContext()
+
+        with patch("commit_check.engine.get_commit_info") as mock_get_info:
+            mock_get_info.side_effect = lambda x: {
+                "s": "WIP: work in progress",
+                "b": "",
+                "an": "test-author",
+            }[x]
+
+            result = validator.validate(context)
+            assert result == ValidationResult.PASS
 
 
 class TestSubjectLengthValidator:
@@ -333,6 +459,38 @@ class TestSignoffValidator:
         result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
+    def test_validate_with_signoff_in_stdin(self):
+        """Test signoff validation with stdin message containing signoff."""
+        rule = ValidationRule(check="require_signed_off_by", regex=r".*Signed-off-by.*")
+        validator = SignoffValidator(rule)
+        context = ValidationContext(
+            stdin_text="feat: add feature\n\nSigned-off-by: John Doe <john@example.com>"
+        )
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    def test_validate_without_signoff(self):
+        """Test signoff validation without signoff."""
+        rule = ValidationRule(check="require_signed_off_by")
+        validator = SignoffValidator(rule)
+        context = ValidationContext(stdin_text="feat: add feature")
+
+        with patch("commit_check.util._print_failure"):
+            result = validator.validate(context)
+            assert result == ValidationResult.FAIL
+
+    def test_get_commit_message_from_context_file(self):
+        """Test _get_commit_message with commit_file."""
+        rule = ValidationRule(check="require_signed_off_by")
+        validator = SignoffValidator(rule)
+        context = ValidationContext(commit_file="dummy")
+
+        with patch("commit_check.engine.get_commit_info") as mock_get_info:
+            mock_get_info.side_effect = lambda x: {"s": "test message", "b": ""}[x]
+            message = validator._get_commit_message(context)
+            assert message == "test message"
+
 
 class TestSubjectCapitalizationValidator:
     def test_subject_capitalization_validator_valid(self):
@@ -375,6 +533,36 @@ class TestBodyValidator:
         result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
+    def test_validate_with_body_present(self):
+        """Test body validation with body present."""
+        rule = ValidationRule(check="require_body")
+        validator = BodyValidator(rule)
+        context = ValidationContext(stdin_text="feat: add feature\n\nThis is the body")
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    def test_validate_with_empty_lines_and_body(self):
+        """Test body validation with empty lines before body."""
+        rule = ValidationRule(check="require_body")
+        validator = BodyValidator(rule)
+        context = ValidationContext(
+            stdin_text="feat: add feature\n\n\nThis is the body"
+        )
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    def test_validate_without_body(self):
+        """Test body validation without body."""
+        rule = ValidationRule(check="require_body")
+        validator = BodyValidator(rule)
+        context = ValidationContext(stdin_text="feat: add feature")
+
+        with patch("commit_check.util._print_failure"):
+            result = validator.validate(context)
+            assert result == ValidationResult.FAIL
+
 
 class TestMergeBaseValidator:
     @patch("commit_check.util.git_merge_base")
@@ -408,6 +596,26 @@ class TestMergeBaseValidator:
         with patch.object(validator, "_find_target_branch", return_value="main"):
             result = validator.validate(context)
         assert result == ValidationResult.FAIL
+
+    def test_validate_with_merge_base_ahead(self):
+        """Test merge base validation when branch is ahead."""
+        rule = ValidationRule(check="merge_base")
+        validator = MergeBaseValidator(rule)
+        context = ValidationContext()
+
+        with patch("commit_check.engine.git_merge_base", return_value=0):
+            result = validator.validate(context)
+            assert result == ValidationResult.PASS
+
+    def test_validate_with_merge_base_skip_conditions(self):
+        """Test merge base validation skip conditions."""
+        rule = ValidationRule(check="merge_base")
+        validator = MergeBaseValidator(rule)
+        context = ValidationContext()  # No stdin, should skip if no commits
+
+        with patch("commit_check.engine.has_commits", return_value=False):
+            result = validator.validate(context)
+            assert result == ValidationResult.PASS  # Skipped
 
 
 class TestValidationEngine:
@@ -460,3 +668,113 @@ class TestValidationEngine:
         # Should not raise an error, just skip unknown validators
         result = engine.validate_all(context)
         assert result == ValidationResult.PASS  # No validation performed = PASS
+
+    def test_validate_all_with_unknown_validator(self):
+        """Test validation engine with unknown validator type."""
+        rules = [
+            ValidationRule(check="unknown_check_type", regex=r".*"),
+            ValidationRule(check="message", regex=r"^feat:"),
+        ]
+        engine = ValidationEngine(rules)
+        context = ValidationContext(stdin_text="feat: add feature")
+
+        result = engine.validate_all(context)
+        assert (
+            result == ValidationResult.PASS
+        )  # Unknown validator skipped, remaining passes
+
+    def test_validate_all_mixed_results(self):
+        """Test validation engine with mixed pass/fail results."""
+        rules = [
+            ValidationRule(check="message", regex=r"^feat:"),  # Will pass
+            ValidationRule(check="subject_max_length", value=5),  # Will fail
+        ]
+        engine = ValidationEngine(rules)
+        context = ValidationContext(stdin_text="feat: add new feature")
+
+        with patch("commit_check.util._print_failure"):
+            result = engine.validate_all(context)
+            assert result == ValidationResult.FAIL  # Any failure = overall failure
+
+
+class TestSubjectValidator:
+    """Test SubjectValidator base class."""
+
+    def test_get_subject_with_context_stdin(self):
+        """Test _get_subject with stdin_text."""
+        rule = ValidationRule(check="subject_capitalized")
+        validator = SubjectCapitalizationValidator(rule)
+        context = ValidationContext(stdin_text="feat: add new feature")
+
+        subject = validator._get_subject(context)
+        assert subject == "feat: add new feature"
+
+    def test_get_subject_with_context_file(self):
+        """Test _get_subject with commit_file."""
+        rule = ValidationRule(check="subject_capitalized")
+        validator = SubjectCapitalizationValidator(rule)
+        context = ValidationContext(commit_file="dummy")
+
+        with patch(
+            "builtins.open", mock_open(read_data="fix: resolve bug\n\nBody text")
+        ):
+            subject = validator._get_subject(context)
+            assert subject == "fix: resolve bug"
+
+    def test_get_subject_fallback_to_git(self):
+        """Test _get_subject fallback to git."""
+        rule = ValidationRule(check="subject_capitalized")
+        validator = SubjectCapitalizationValidator(rule)
+        context = ValidationContext()
+
+        with patch(
+            "commit_check.engine.get_commit_info", return_value="chore: update deps"
+        ):
+            subject = validator._get_subject(context)
+            assert subject == "chore: update deps"
+
+    def test_get_subject_with_file_not_found(self):
+        """Test _get_subject when commit file not found."""
+        rule = ValidationRule(check="subject_capitalized")
+        validator = SubjectCapitalizationValidator(rule)
+        context = ValidationContext(commit_file="/nonexistent/file")
+
+        with patch(
+            "commit_check.engine.get_commit_info", return_value="fallback message"
+        ):
+            subject = validator._get_subject(context)
+            assert subject == "fallback message"
+
+
+class TestSubjectImperativeValidator:
+    """Test SubjectImperativeValidator edge cases."""
+
+    def test_validate_with_imperative_subject(self):
+        """Test validation with proper imperative subject."""
+        rule = ValidationRule(check="imperative")
+        validator = SubjectImperativeValidator(rule)
+        context = ValidationContext(stdin_text="fix: resolve the issue")
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    def test_validate_with_non_imperative_subject(self):
+        """Test validation with non-imperative subject."""
+        rule = ValidationRule(check="imperative")
+        validator = SubjectImperativeValidator(rule)
+        context = ValidationContext(stdin_text="fix: resolved the issue")
+
+        # Mock the print function to avoid output during tests
+        with patch("commit_check.util._print_failure"):
+            result = validator.validate(context)
+            assert result == ValidationResult.FAIL
+
+    def test_validate_short_subject(self):
+        """Test validation with very short subject (edge case)."""
+        rule = ValidationRule(check="imperative")
+        validator = SubjectImperativeValidator(rule)
+        context = ValidationContext(stdin_text="feat: add")
+
+        # "add" is a valid imperative word with conventional prefix
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
