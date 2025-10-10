@@ -42,11 +42,11 @@ Version 2.0.0 is a major release featuring a new configuration format, a moderni
 
 **✨ Highlights**
 
-* TOML Configuration — Replaces ``.commit-check.yml`` with ``cchk.toml`` or ``commit-check.toml`` for clearer, more consistent syntax.
-* Simplified CLI & Hooks — Legacy pre-commit hooks and options removed for a cleaner interface.
-* New Validation Engine — Redesigned for better flexibility, performance, and maintainability.
+* **TOML Configuration** — Replaces ``.commit-check.yml`` with ``cchk.toml`` or ``commit-check.toml`` for clearer, more consistent syntax.
+* **Simplified CLI & Hooks** — Legacy pre-commit hooks and options removed to deliver a cleaner, more streamlined interface.
+* **New Validation Engine** — Fully redesigned for greater flexibility, performance, and maintainability.
 
-For the full list of updates and improvements, see the `What's New <https://commit-check.github.io/commit-check/what-is-new.html>`_ page.
+For the full list of updates and improvements, visit the `What's New <https://commit-check.github.io/commit-check/what-is-new.html>`_ page.
 
 Configuration
 -------------
