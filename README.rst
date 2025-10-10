@@ -1,7 +1,7 @@
 Commit Check
 ============
 
-.. |pypi-version| image:: https://img.shields.io/pypi/v/commit-check?logo=python&logoColor=white
+.. |pypi-version| image:: https://img.shields.io/pypi/v/commit-check?logo=python&logoColor=white&color=%2334D058
     :target: https://pypi.org/project/commit-check/
     :alt: PyPI
 
@@ -9,23 +9,23 @@ Commit Check
     :target: https://github.com/commit-check/commit-check/actions/workflows/main.yml
     :alt: CI
 
-.. |sonar-badge| image:: https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&metric=alert_status
+.. |sonar-badge| image:: https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&metric=alert_status&color=%2334D058
     :target: https://sonarcloud.io/summary/new_code?id=commit-check_commit-check
     :alt: Quality Gate Status
 
-.. |codecov-badge| image:: https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT
+.. |codecov-badge| image:: https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT&color=%2334D058
     :target: https://codecov.io/gh/commit-check/commit-check
     :alt: CodeCov
 
-.. |commit-check-badge| image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white
+.. |commit-check-badge| image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white&color=%2334D058
     :target: https://github.com/commit-check/commit-check
     :alt: commit-check
 
-.. |slsa-badge| image:: https://slsa.dev/images/gh-badge-level3.svg
+.. |slsa-badge| image:: https://slsa.dev/images/gh-badge-level3.svg?color=%2334D058
     :target: https://slsa.dev
     :alt: SLSA
 
-|pypi-version| |ci-badge| |sonar-badge| |codecov-badge| |commit-check-badge| |slsa-badge|
+|pypi-version| |ci-badge| |sonar-badge| |commit-check-badge| |codecov-badge| |slsa-badge|
 
 Overview
 --------
@@ -241,13 +241,13 @@ Markdown
 
 .. code-block:: text
 
-    [![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white)](https://github.com/commit-check/commit-check)
+    [![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white&color=%2334D058)](https://github.com/commit-check/commit-check)
 
 reStructuredText
 
 .. code-block:: text
 
-    .. image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white
+    .. image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white&color=%2334D058
         :target: https://github.com/commit-check/commit-check
         :alt: commit-check
 
