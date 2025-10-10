@@ -241,13 +241,13 @@ Markdown
 
 .. code-block:: text
 
-    [![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white)](https://github.com/commit-check/commit-check)
+    [![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white?color=%2334D058)](https://github.com/commit-check/commit-check)
 
 reStructuredText
 
 .. code-block:: text
 
-    .. image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white
+    .. image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white?color=%2334D058
         :target: https://github.com/commit-check/commit-check
         :alt: commit-check
 

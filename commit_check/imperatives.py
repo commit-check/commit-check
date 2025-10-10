@@ -208,6 +208,7 @@ IMPERATIVES = {
     "submit",
     "subscribe",
     "sum",
+    "support",
     "swap",
     "sync",
     "synchronise",
