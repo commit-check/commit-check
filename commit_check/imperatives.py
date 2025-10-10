@@ -181,6 +181,7 @@ IMPERATIVES = {
     "resolve",
     "retrieve",
     "return",
+    "revert",
     "roll",
     "rollback",
     "round",
