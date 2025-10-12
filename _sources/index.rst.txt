@@ -6,6 +6,7 @@
    self
    what-is-new
    configuration
+   example
    migration
    troubleshoot
    changelog

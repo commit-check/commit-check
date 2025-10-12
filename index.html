@@ -262,6 +262,23 @@
   
   
     <li class="md-tabs__item">
+      <a href="example.html" class="md-tabs__link">
+        
+  
+    
+  
+  <span>Usage Examples</span>
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="migration.html" class="md-tabs__link">
         
   
@@ -478,6 +495,29 @@
   
   
     <li class="md-nav__item">
+      <a href="example.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    <span>Usage Examples</span>
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="migration.html" class="md-nav__link">
         
   
@@ -540,14 +580,6 @@
     <span>Changelog</span>
     
   </span>
-  
-    
-  
-  
-    <span class="md-status md-status--new" title="Recently added">
-    </span>
-  
-
   
 
       </a>
@@ -622,6 +654,16 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Installation</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuration" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -664,52 +706,6 @@
       <span>Usage</span>
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Usage">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#running-as-github-action" class="md-nav__link">
-    
-    <span class="md-ellipsis">
-      <span>Running as Git<wbr>Hub Action</span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#running-as-pre-commit-hook" class="md-nav__link">
-    
-    <span class="md-ellipsis">
-      <span>Running as pre-<wbr>commit hook</span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#running-as-cli" class="md-nav__link">
-    
-    <span class="md-ellipsis">
-      <span>Running as CLI</span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#running-as-git-hooks" class="md-nav__link">
-    
-    <span class="md-ellipsis">
-      <span>Running as Git Hooks</span>
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -794,6 +790,17 @@ and Bitbucket’s paid plugin <a class="reference external" href="https://market
 <li><p><strong>New Validation Engine</strong> — Fully redesigned for greater flexibility, performance, and maintainability.</p></li>
 </ul>
 <p>For the full list of updates and improvements, visit the <a class="reference external" href="https://commit-check.github.io/commit-check/what-is-new.html">What’s New</a> page.</p>
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h2>
+<p>To install Commit Check, you can use pip:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>commit-check
+</code></pre></div>
+</div>
+<p>Or install directly from the GitHub repository:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/commit-check/commit-check.git@main
+</code></pre></div>
+</div>
+<p>Then, run <code class="docutils literal notranslate"><span class="pre">commit-check</span> <span class="pre">--help</span></code> or <code class="docutils literal notranslate"><span class="pre">cchk</span> <span class="pre">--help</span></code> (alias for <code class="docutils literal notranslate"><span class="pre">commit-check</span></code>) from the command line.
+For more information, see the <a class="reference external" href="https://commit-check.github.io/commit-check/cli_args.html">docs</a>.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
 <h3 id="use-default-configuration">Use Default Configuration<a class="headerlink" href="#use-default-configuration" title="Link to this heading">¶</a></h3>
 <ul class="simple">
@@ -803,48 +810,7 @@ and Bitbucket’s paid plugin <a class="reference external" href="https://market
 <h3 id="use-custom-configuration">Use Custom Configuration<a class="headerlink" href="#use-custom-configuration" title="Link to this heading">¶</a></h3>
 <p>To customize the behavior, create a configuration file named <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> in your repository’s root directory, e.g., <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/cchk.toml">cchk.toml</a></p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h2>
-<h3 id="running-as-github-action">Running as GitHub Action<a class="headerlink" href="#running-as-github-action" title="Link to this heading">¶</a></h3>
-<p>Please see <a class="reference external" href="https://github.com/commit-check/commit-check-action">commit-check/commit-check-action</a></p>
-<h3 id="running-as-pre-commit-hook">Running as pre-commit hook<a class="headerlink" href="#running-as-pre-commit-hook" title="Link to this heading">¶</a></h3>
-<div class="tip admonition">
-<p class="admonition-title">Tip</p>
-<p>Make sure <code class="docutils literal notranslate"><span class="pre">pre-commit</span></code> is <a class="reference external" href="https://pre-commit.com/#install">installed</a>.</p>
-</div>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/commit-check/commit-check</span>
-<span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">the tag or revision</span>
-<span class="w">    </span><span class="nt">hooks</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-message</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-branch</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-author-name</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-author-email</span>
-</code></pre></div>
-</div>
-<h3 id="running-as-cli">Running as CLI<a class="headerlink" href="#running-as-cli" title="Link to this heading">¶</a></h3>
-<p>Install globally</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>pip3<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>commit-check
-</code></pre></div>
-</div>
-<p>Install locally</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>commit-check
-</code></pre></div>
-</div>
-<p>Install from source code</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/commit-check/commit-check.git@main
-</code></pre></div>
-</div>
-<p>Then, run <code class="docutils literal notranslate"><span class="pre">commit-check</span> <span class="pre">--help</span></code> or <code class="docutils literal notranslate"><span class="pre">cchk</span> <span class="pre">--help</span></code> (alias for <code class="docutils literal notranslate"><span class="pre">commit-check</span></code>) from the command line.</p>
-<p>For more information, see the <a class="reference external" href="https://commit-check.github.io/commit-check/cli_args.html">docs</a>.</p>
-<h3 id="running-as-git-hooks">Running as Git Hooks<a class="headerlink" href="#running-as-git-hooks" title="Link to this heading">¶</a></h3>
-<p>To configure the hook, create a script file in the <code class="docutils literal notranslate"><span class="pre">.git/hooks/</span></code> directory.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="ch">#!/bin/sh</span>
-commit-check<span class="w"> </span>--message<span class="w"> </span>--branch<span class="w"> </span>--author-name<span class="w"> </span>--author-email
-</code></pre></div>
-</div>
-<p>Save the script file as <code class="docutils literal notranslate"><span class="pre">pre-push</span></code> and make it executable:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>chmod<span class="w"> </span>+x<span class="w"> </span>.git/hooks/pre-push
-</code></pre></div>
-</div>
-<p>Now, <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span></code> will trigger this hook automatically.</p>
+<p>For detailed usage instructions including pre-commit hooks, CLI commands, and STDIN examples, see the <a class="reference external" href="https://commit-check.github.io/commit-check/example.html">Usage Examples documentation</a>.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Link to this heading">¶</a></h2>
 <p>Check Commit Message Failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
@@ -886,47 +852,7 @@ The branch should follow Conventional Branch. See https://conventional-branch.gi
 Suggest: Use &lt;type&gt;/&lt;description&gt; with allowed types or ignore_authors in config branch section to bypass
 </code></pre></div>
 </div>
-<p>Check Commit Signature Failed</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
-
-  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
- __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
-(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
-   || E ||      || R ||      || R ||      || O ||      || R ||
- _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
-(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
- `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
-
-Commit rejected.
-
-Type require_signed_off_by check failed ==&gt; fix: add missing file
-It doesn&#39;t match regex: Signed-off-by:.*[A-Za-z0-9]\s+&lt;.+@.+&gt;
-Signed-off-by not found in latest commit
-Suggest: git commit --amend --signoff or use --signoff on commit
-</code></pre></div>
-</div>
-<p>Check Imperative Mood Failed</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
-
-  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
- __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
-(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)(_.-/&#39;-&#39;\-._)
-   || E ||      || R ||      || R ||      || O ||      || R ||
- _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._  _.&#39; &#39;-&#39; &#39;._
-(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
- `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
-
-Commit rejected.
-
-Type imperative check failed ==&gt; fix: added missing file
-It doesn&#39;t match regex:
-Commit message should use imperative mood (e.g., &#39;Add feature&#39; not &#39;Added feature&#39;)
-Suggest: Use imperative mood in the subject line
-</code></pre></div>
-</div>
-<p>And many more… see <a class="reference external" href="https://commit-check.github.io/commit-check/configuration.html">configuration</a> for all available checks.</p>
+<p>More examples see <a class="reference external" href="https://commit-check.github.io/commit-check/example.html">example documentation</a>.</p>
 <h2 id="badging-your-repository">Badging your repository<a class="headerlink" href="#badging-your-repository" title="Link to this heading">¶</a></h2>
 <p>You can add a badge to your repository to show that you use commit-check!</p>
 <a class="reference external image-reference" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white" />
