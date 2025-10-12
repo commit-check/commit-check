@@ -135,11 +135,8 @@ def main() -> int:
     stdin_reader = StdinReader()
 
     try:
-        # Load configuration (fallback to defaults when no file found)
-        try:
-            config_data = load_config(args.config)
-        except FileNotFoundError:
-            config_data = {}
+        # Load configuration
+        config_data = load_config(args.config)
 
         # Build validation rules from config
         rule_builder = RuleBuilder(config_data)
@@ -220,6 +217,9 @@ def main() -> int:
         # Return appropriate exit code
         return 0 if result == ValidationResult.PASS else 1
 
+    except FileNotFoundError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1

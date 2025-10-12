@@ -237,9 +237,9 @@ class TestMainFunctionEdgeCases:
             "--message",  # empty -> read from stdin
         ]
 
-        # This should not crash, just use default config
+        # This should fail with proper error message when config file doesn't exist
         result = main()
-        assert result == 0
+        assert result == 1
 
     # Removed problematic tests that had configuration dependency issues
 
@@ -276,3 +276,22 @@ class TestMainFunctionEdgeCases:
         result = main()
         # Even if subprocess fails, main should not crash
         assert result in [0, 1]  # Either passes or fails gracefully
+
+    def test_nonexistent_config_file_error(self, capsys):
+        """Test that specifying a non-existent config file returns error."""
+        sys.argv = [
+            "commit-check",
+            "--config",
+            "/nonexistent/config.toml",
+            "--message",
+            "feat: test",
+        ]
+
+        result = main()
+        assert result == 1
+
+        captured = capsys.readouterr()
+        assert (
+            "Error: Specified config file not found: /nonexistent/config.toml"
+            in captured.err
+        )
