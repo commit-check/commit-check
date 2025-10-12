@@ -200,7 +200,8 @@ class SubjectImperativeValidator(SubjectValidator):
         # Extract first word (ignore conventional commit prefixes)
         import re
 
-        match = re.match(r"^(?:\w+(?:\([^)]*\))?[!:]?\s*)?(\w+)", subject)
+        # support breaking changes (feat!:)
+        match = re.match(r"^(?:\w+(?:\([^)]*\))?!?:\s*)?(\w+)", subject)
         if not match:
             return ValidationResult.PASS
 
