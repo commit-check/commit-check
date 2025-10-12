@@ -12,9 +12,9 @@ In some cases, Commit Check may fail due to an invalid ``author_name``, as shown
     - hook id: check-author-name
     - exit code: 1
 
-    Commit rejected by Commit-Check.                                  
-                                                                                                                   
-    Type author_name check failed => 12 
+    Commit rejected by Commit-Check.
+
+    Type author_name check failed => 12
     It doesn't match regex: ^[A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u017F\u0180-\u024F ,.\'-]+$|.*(\[bot])
     The committer name seems invalid
     Suggest: run command `git config user.name "Your Name"`
@@ -40,6 +40,6 @@ Alternatively, use the ``SKIP=your-hook-name`` environment variable, like below:
 
     # Set the correct Git author name
     git config user.name "Xianpeng Shen"
-    
+
     # Force amend while skipping the specified hook
     SKIP=check-author-name git commit --amend --author="Xianpeng Shen <xianpeng.shen@gmail.com>" --no-edit
