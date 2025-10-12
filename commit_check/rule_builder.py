@@ -3,6 +3,11 @@
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from commit_check.rules_catalog import COMMIT_RULES, BRANCH_RULES, RuleCatalogEntry
+from commit_check import (
+    DEFAULT_COMMIT_TYPES,
+    DEFAULT_BRANCH_TYPES,
+    DEFAULT_BOOLEAN_RULES,
+)
 
 
 @dataclass(frozen=True)
@@ -37,19 +42,6 @@ class ValidationRule:
 
 class RuleBuilder:
     """Builds validation rules from config and catalog entries."""
-
-    # Follow conventional commits
-    DEFAULT_COMMIT_TYPES = ["feat", "fix", "docs", "style", "refactor", "test", "chore"]
-    # Follow conventional branch
-    DEFAULT_BRANCH_TYPES = [
-        "feature",
-        "bugfix",
-        "hotfix",
-        "release",
-        "chore",
-        "feat",
-        "fix",
-    ]
 
     def __init__(self, config: Dict[str, Any]):
         self.config = config
@@ -197,20 +189,7 @@ class RuleBuilder:
         """Build boolean-based validation rule."""
         check = catalog_entry.check
 
-        # Handle different default values for different rules
-        defaults = {
-            "subject_capitalized": True,
-            "subject_imperative": True,
-            "allow_merge_commits": True,
-            "allow_revert_commits": True,
-            "allow_empty_commits": False,
-            "allow_fixup_commits": True,
-            "allow_wip_commits": False,
-            "require_body": False,
-            "require_signed_off_by": False,
-        }
-
-        default_value = defaults.get(check, True)
+        default_value = DEFAULT_BOOLEAN_RULES.get(check, True)
         config_value = section_config.get(check, default_value)
 
         # For "allow_*" rules, only create rule if they're disabled (False)
@@ -235,12 +214,12 @@ class RuleBuilder:
 
     def _get_allowed_commit_types(self) -> List[str]:
         """Get deduplicated list of allowed commit types."""
-        types = self.commit_config.get("allow_commit_types", self.DEFAULT_COMMIT_TYPES)
+        types = self.commit_config.get("allow_commit_types", DEFAULT_COMMIT_TYPES)
         return list(dict.fromkeys(types))  # Preserve order, remove duplicates
 
     def _get_allowed_branch_types(self) -> List[str]:
         """Get deduplicated list of allowed branch types."""
-        types = self.branch_config.get("allow_branch_types", self.DEFAULT_BRANCH_TYPES)
+        types = self.branch_config.get("allow_branch_types", DEFAULT_BRANCH_TYPES)
         return list(dict.fromkeys(types))  # Preserve order, remove duplicates
 
     def _build_conventional_commit_regex(self, allowed_types: List[str]) -> str:
