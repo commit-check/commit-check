@@ -798,10 +798,10 @@ and Bitbucket’s paid plugin <a class="reference external" href="https://market
 <h3 id="use-default-configuration">Use Default Configuration<a class="headerlink" href="#use-default-configuration" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Commit Check</strong> uses a <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/docs/configuration.rst">default configuration</a> if you do not provide a <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> file.</p></li>
-<li><p>The default configuration enforces commit message rules based on the <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">Conventional Commits</a> specification and branch naming rules based on the <a class="reference external" href="https://conventional-branch.github.io/#summary">Conventional Branch</a> convention.</p></li>
+<li><p>The default configuration is lenient — it only checks whether commit messages follow the <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">Conventional Commits</a> specification and branch names follow the <a class="reference external" href="https://conventional-branch.github.io/#summary">Conventional Branch</a> convention.</p></li>
 </ul>
 <h3 id="use-custom-configuration">Use Custom Configuration<a class="headerlink" href="#use-custom-configuration" title="Link to this heading">¶</a></h3>
-<p>To customize the behavior, create a config file <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> under your repository’s root directory, e.g., <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/cchk.toml">cchk.toml</a></p>
+<p>To customize the behavior, create a configuration file named <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> in your repository’s root directory, e.g., <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/cchk.toml">cchk.toml</a></p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h2>
 <h3 id="running-as-github-action">Running as GitHub Action<a class="headerlink" href="#running-as-github-action" title="Link to this heading">¶</a></h3>
 <p>Please see <a class="reference external" href="https://github.com/commit-check/commit-check-action">commit-check/commit-check-action</a></p>
@@ -812,8 +812,8 @@ and Bitbucket’s paid plugin <a class="reference external" href="https://market
 </div>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/commit-check/commit-check</span>
 <span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">the tag or revision</span>
-<span class="w">    </span><span class="nt">hooks</span><span class="p">:</span><span class="w"> </span><span class="c1"># support hooks</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-message</span><span class="w">  </span><span class="c1"># requires commit-msg hook</span>
+<span class="w">    </span><span class="nt">hooks</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-message</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-branch</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-author-name</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-author-email</span>
@@ -926,7 +926,7 @@ Commit message should use imperative mood (e.g., &#39;Add feature&#39; not &#39;
 Suggest: Use imperative mood in the subject line
 </code></pre></div>
 </div>
-<p>And many more… see <a class="reference external" href="cchk.toml">commit-check.toml</a> for all available checks.</p>
+<p>And many more… see <a class="reference external" href="https://commit-check.github.io/commit-check/configuration.html">configuration</a> for all available checks.</p>
 <h2 id="badging-your-repository">Badging your repository<a class="headerlink" href="#badging-your-repository" title="Link to this heading">¶</a></h2>
 <p>You can add a badge to your repository to show that you use commit-check!</p>
 <a class="reference external image-reference" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white" />
