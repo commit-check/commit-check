@@ -20,6 +20,43 @@ GREEN = "\033[92m"
 YELLOW = "\033[93m"
 RESET_COLOR = "\033[0m"
 
+# Follow conventional commits
+DEFAULT_COMMIT_TYPES = [
+    "feat",
+    "fix",
+    "docs",
+    "style",
+    "refactor",
+    "test",
+    "chore",
+    "perf",
+    "build",
+    "ci",
+]
+# Follow conventional branch
+DEFAULT_BRANCH_TYPES = [
+    "feature",
+    "bugfix",
+    "hotfix",
+    "release",
+    "chore",
+    "feat",
+    "fix",
+]
+
+# Handle different default values for different rules
+DEFAULT_BOOLEAN_RULES = {
+    "subject_capitalized": True,
+    "subject_imperative": True,
+    "allow_merge_commits": True,
+    "allow_revert_commits": True,
+    "allow_empty_commits": True,
+    "allow_fixup_commits": True,
+    "allow_wip_commits": True,
+    "require_body": False,
+    "require_signed_off_by": False,
+}
+
 # Default (empty) configuration translated into internal checks structure
 _rule_builder = RuleBuilder({})
 _default_rules = _rule_builder.build_all_rules()
