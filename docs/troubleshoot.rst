@@ -32,7 +32,7 @@ Use the ``--no-verify`` flag to skip the pre-commit hook:
     git commit --amend --author="Xianpeng Shen <xianpeng.shen@gmail.com>" --no-edit --no-verify
 
 Bypass All Hooks
-----------------
+~~~~~~~~~~~~~~~~
 
 Alternatively, use the ``SKIP=your-hook-name`` environment variable, like below:
 
