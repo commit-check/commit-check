@@ -22,11 +22,16 @@ def load_config(path_hint: str = "") -> Dict[str, Any]:
     """Load and validate config from TOML file."""
     if path_hint:
         p = Path(path_hint)
-        if p.exists():
-            with open(p, "rb") as f:
-                return toml_load(f)
+        if not p.exists():
+            raise FileNotFoundError(f"Specified config file not found: {path_hint}")
+        with open(p, "rb") as f:
+            return toml_load(f)
+
+    # Check default config paths only when no specific path is provided
     for candidate in DEFAULT_CONFIG_PATHS:
         if candidate.exists():
             with open(candidate, "rb") as f:
                 return toml_load(f)
-    raise FileNotFoundError("No config file found (cchk.toml or commit-check.toml)")
+
+    # Return empty config if no default config files found
+    return {}

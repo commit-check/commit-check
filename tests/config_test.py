@@ -29,26 +29,12 @@ branch = true
                 os.unlink(f.name)
 
     def test_load_config_with_nonexistent_path_hint(self):
-        """Test loading config when path hint doesn't exist, falls back to default paths."""
-        # Create a temporary cchk.toml in current directory
-        config_content = b"""
-[checks]
-fallback = true
-"""
-        original_cwd = os.getcwd()
-        with tempfile.TemporaryDirectory() as tmpdir:
-            os.chdir(tmpdir)
-            try:
-                # Create cchk.toml in temp directory
-                with open("cchk.toml", "wb") as f:
-                    f.write(config_content)
-
-                # Try to load with nonexistent path hint
-                config = load_config("nonexistent.toml")
-                assert "checks" in config
-                assert config["checks"]["fallback"] is True
-            finally:
-                os.chdir(original_cwd)
+        """Test loading config when path hint doesn't exist - should raise FileNotFoundError."""
+        # Test that specifying a nonexistent config file raises an error
+        with pytest.raises(
+            FileNotFoundError, match="Specified config file not found: nonexistent.toml"
+        ):
+            load_config("nonexistent.toml")
 
     def test_load_config_default_cchk_toml(self):
         """Test loading config from default cchk.toml path."""
@@ -89,23 +75,27 @@ commit_check_toml = true
                 os.chdir(original_cwd)
 
     def test_load_config_file_not_found(self):
-        """Test FileNotFoundError when no config files exist."""
+        """Test returning empty config when no default config files exist."""
         original_cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as tmpdir:
             os.chdir(tmpdir)
             try:
-                with pytest.raises(FileNotFoundError, match="No config file found"):
-                    load_config()
+                # Should return empty config when no default files exist
+                config = load_config()
+                assert config == {}
             finally:
                 os.chdir(original_cwd)
 
     def test_load_config_file_not_found_with_invalid_path_hint(self):
-        """Test FileNotFoundError when path hint and default paths don't exist."""
+        """Test FileNotFoundError when specified path hint doesn't exist."""
         original_cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as tmpdir:
             os.chdir(tmpdir)
             try:
-                with pytest.raises(FileNotFoundError, match="No config file found"):
+                with pytest.raises(
+                    FileNotFoundError,
+                    match="Specified config file not found: nonexistent.toml",
+                ):
                     load_config("nonexistent.toml")
             finally:
                 os.chdir(original_cwd)
