@@ -100,7 +100,7 @@ Commit-check provides several command-line options for different validation scen
 .. tip ::
     Validate commit messages by piping them through STDIN. This is useful for testing or scripting.
 
-Available Commands see `commit-check --help <cli_args>`_
+Available Commands see `commit-check --help <cli_args.html>`_
 
 Message Validation Examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
