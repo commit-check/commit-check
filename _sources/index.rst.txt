@@ -7,6 +7,7 @@
    what-is-new
    configuration
    migration
+   troubleshoot
    changelog
 
 .. toctree::
