@@ -1,5 +1,3 @@
-:status: new
-
 Changelog
 =========
 

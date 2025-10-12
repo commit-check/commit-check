@@ -48,6 +48,25 @@ Version 2.0.0 is a major release featuring a new configuration format, a moderni
 
 For the full list of updates and improvements, visit the `What's New <https://commit-check.github.io/commit-check/what-is-new.html>`_ page.
 
+Installation
+------------
+
+To install Commit Check, you can use pip:
+
+.. code-block:: bash
+
+    pip install commit-check
+
+Or install directly from the GitHub repository:
+
+.. code-block:: bash
+
+    pip install git+https://github.com/commit-check/commit-check.git@main
+
+Then, run ``commit-check --help`` or ``cchk --help`` (alias for ``commit-check``) from the command line.
+For more information, see the `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
+
+
 Configuration
 -------------
 
@@ -66,70 +85,7 @@ To customize the behavior, create a configuration file named ``cchk.toml`` or ``
 Usage
 -----
 
-Running as GitHub Action
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Please see `commit-check/commit-check-action <https://github.com/commit-check/commit-check-action>`_
-
-Running as pre-commit hook
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. tip::
-
-    Make sure ``pre-commit`` is `installed <https://pre-commit.com/#install>`_.
-
-.. code-block:: yaml
-
-    -   repo: https://github.com/commit-check/commit-check
-        rev: the tag or revision
-        hooks:
-        -   id: check-message
-        -   id: check-branch
-        -   id: check-author-name
-        -   id: check-author-email
-
-Running as CLI
-~~~~~~~~~~~~~~
-
-Install globally
-
-.. code-block:: bash
-
-    sudo pip3 install -U commit-check
-
-Install locally
-
-.. code-block:: bash
-
-    pip install -U commit-check
-
-Install from source code
-
-.. code-block:: bash
-
-    pip install git+https://github.com/commit-check/commit-check.git@main
-
-Then, run ``commit-check --help`` or ``cchk --help`` (alias for ``commit-check``) from the command line.
-
-For more information, see the `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
-
-Running as Git Hooks
-~~~~~~~~~~~~~~~~~~~~
-
-To configure the hook, create a script file in the ``.git/hooks/`` directory.
-
-.. code-block:: bash
-
-    #!/bin/sh
-    commit-check --message --branch --author-name --author-email
-
-Save the script file as ``pre-push`` and make it executable:
-
-.. code-block:: bash
-
-    chmod +x .git/hooks/pre-push
-
-Now, ``git push`` will trigger this hook automatically.
+For detailed usage instructions including pre-commit hooks, CLI commands, and STDIN examples, see the `Usage Examples documentation <https://commit-check.github.io/commit-check/example.html>`_.
 
 Examples
 --------
@@ -179,54 +135,7 @@ Check Branch Naming Failed
     The branch should follow Conventional Branch. See https://conventional-branch.github.io/
     Suggest: Use <type>/<description> with allowed types or ignore_authors in config branch section to bypass
 
-
-Check Commit Signature Failed
-
-.. code-block:: text
-
-    Commit rejected by Commit-Check.
-
-      (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-       / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-     __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
-    (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-       || E ||      || R ||      || R ||      || O ||      || R ||
-     _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
-    (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-     `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
-
-    Commit rejected.
-
-    Type require_signed_off_by check failed ==> fix: add missing file
-    It doesn't match regex: Signed-off-by:.*[A-Za-z0-9]\s+<.+@.+>
-    Signed-off-by not found in latest commit
-    Suggest: git commit --amend --signoff or use --signoff on commit
-
-
-Check Imperative Mood Failed
-
-.. code-block:: text
-
-    Commit rejected by Commit-Check.
-
-      (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-       / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
-     __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
-    (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-       || E ||      || R ||      || R ||      || O ||      || R ||
-     _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
-    (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
-     `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
-
-    Commit rejected.
-
-    Type imperative check failed ==> fix: added missing file
-    It doesn't match regex:
-    Commit message should use imperative mood (e.g., 'Add feature' not 'Added feature')
-    Suggest: Use imperative mood in the subject line
-
-
-And many more... see `configuration <https://commit-check.github.io/commit-check/configuration.html>`_ for all available checks.
+More examples see `example documentation <https://commit-check.github.io/commit-check/example.html>`_.
 
 Badging your repository
 -----------------------
