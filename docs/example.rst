@@ -103,7 +103,7 @@ Commit-check provides several command-line options for different validation scen
 Available Commands see `commit-check --help <cli_args>`_
 
 Message Validation Examples
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
@@ -139,7 +139,7 @@ Message Validation Examples
 
 
 Branch Validation Examples
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
@@ -153,7 +153,7 @@ Branch Validation Examples
     # - release/v1.2.0
 
 Author Validation Examples
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
@@ -168,7 +168,7 @@ Author Validation Examples
 
 
 Configuration Examples
-^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
@@ -180,7 +180,7 @@ Configuration Examples
 
 
 Valid Commit Message Examples
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
@@ -203,7 +203,7 @@ Valid Commit Message Examples
     echo "Merge pull request #123 from feature/new-api" | commit-check -m
 
 Invalid Commit Message Examples
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
@@ -223,7 +223,7 @@ Invalid Commit Message Examples
     echo "unknown: some changes" | commit-check -m
 
 Error Output Examples
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~
 
 **Commit Message Validation Failure:**
 
@@ -318,7 +318,7 @@ Integration Tips
 ----------------
 
 CI/CD Integration
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 You can use commit-check in CI/CD pipelines:
 
