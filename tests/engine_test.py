@@ -778,3 +778,23 @@ class TestSubjectImperativeValidator:
         # "add" is a valid imperative word with conventional prefix
         result = validator.validate(context)
         assert result == ValidationResult.PASS
+
+    def test_validate_with_breaking_change(self):
+        """Test validation with breaking change notation."""
+        rule = ValidationRule(check="imperative")
+        validator = SubjectImperativeValidator(rule)
+        context = ValidationContext(stdin_text="feat!: update authentication system")
+
+        # "update" is a valid imperative word with breaking change notation
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    def test_validate_with_scoped_breaking_change(self):
+        """Test validation with scoped breaking change notation."""
+        rule = ValidationRule(check="imperative")
+        validator = SubjectImperativeValidator(rule)
+        context = ValidationContext(stdin_text="fix(auth)!: resolve login bug")
+
+        # "resolve" is a valid imperative word with scope and breaking change notation
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
