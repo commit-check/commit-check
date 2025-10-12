@@ -56,12 +56,12 @@ Use Default Configuration
 
 - **Commit Check** uses a `default configuration <https://github.com/commit-check/commit-check/blob/main/docs/configuration.rst>`_ if you do not provide a ``cchk.toml`` or ``commit-check.toml`` file.
 
-- The default configuration enforces commit message rules based on the `Conventional Commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_ specification and branch naming rules based on the `Conventional Branch <https://conventional-branch.github.io/#summary>`_ convention.
+- The default configuration is lenient — it only checks whether commit messages follow the `Conventional Commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_ specification and branch names follow the `Conventional Branch <https://conventional-branch.github.io/#summary>`_ convention.
 
 Use Custom Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-To customize the behavior, create a config file ``cchk.toml`` or ``commit-check.toml`` under your repository's root directory, e.g., `cchk.toml <https://github.com/commit-check/commit-check/blob/main/cchk.toml>`_
+To customize the behavior, create a configuration file named ``cchk.toml`` or ``commit-check.toml`` in your repository's root directory, e.g., `cchk.toml <https://github.com/commit-check/commit-check/blob/main/cchk.toml>`_
 
 Usage
 -----
@@ -82,8 +82,8 @@ Running as pre-commit hook
 
     -   repo: https://github.com/commit-check/commit-check
         rev: the tag or revision
-        hooks: # support hooks
-        -   id: check-message  # requires commit-msg hook
+        hooks:
+        -   id: check-message
         -   id: check-branch
         -   id: check-author-name
         -   id: check-author-email
@@ -226,7 +226,7 @@ Check Imperative Mood Failed
     Suggest: Use imperative mood in the subject line
 
 
-And many more... see `commit-check.toml <cchk.toml>`_ for all available checks.
+And many more... see `configuration <https://commit-check.github.io/commit-check/configuration.html>`_ for all available checks.
 
 Badging your repository
 -----------------------
