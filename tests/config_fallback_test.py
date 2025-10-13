@@ -3,9 +3,11 @@
 import sys
 import tempfile
 import os
+import pytest
 from unittest.mock import patch
 
 
+@pytest.mark.benchmark
 def test_config_tomli_fallback_direct():
     """Test config.py fallback to tomli by manipulating imports."""
 

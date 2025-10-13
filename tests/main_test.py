@@ -8,6 +8,7 @@ CMD = "commit-check"
 
 
 class TestMain:
+    @pytest.mark.benchmark
     def test_help(self, capfd):
         sys.argv = [CMD, "--help"]
         with pytest.raises(SystemExit):
@@ -15,17 +16,20 @@ class TestMain:
         out, _ = capfd.readouterr()
         assert "usage:" in out
 
+    @pytest.mark.benchmark
     def test_version(self):
         # argparse defines --version
         sys.argv = [CMD, "--version"]
         with pytest.raises(SystemExit):
             main()
 
+    @pytest.mark.benchmark
     def test_no_args_shows_help(self, capfd):
         """When no arguments are provided, should show help and exit 0."""
         sys.argv = [CMD]
         assert main() == 0
 
+    @pytest.mark.benchmark
     def test_message_validation_with_valid_commit(self, mocker):
         """Test that a valid commit message passes validation."""
         # Mock stdin to provide a valid commit message
@@ -35,6 +39,7 @@ class TestMain:
         sys.argv = [CMD, "-m"]
         assert main() == 0
 
+    @pytest.mark.benchmark
     def test_message_validation_with_invalid_commit(self, mocker):
         """Test that an invalid commit message fails validation."""
         # Mock stdin to provide an invalid commit message
@@ -47,6 +52,7 @@ class TestMain:
         sys.argv = [CMD, "-m"]
         assert main() == 1
 
+    @pytest.mark.benchmark
     def test_message_validation_from_file(self):
         """Test validation of commit message from a file."""
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
@@ -59,6 +65,7 @@ class TestMain:
             finally:
                 os.unlink(f.name)
 
+    @pytest.mark.benchmark
     def test_branch_validation(self, mocker):
         """Test branch name validation."""
         # Mock git command to return a valid branch name
@@ -72,6 +79,7 @@ class TestMain:
         sys.argv = [CMD, "-b"]
         assert main() == 0
 
+    @pytest.mark.benchmark
     def test_author_name_validation(self, mocker):
         """Test author name validation."""
         # Mock git command to return a valid author name
@@ -85,6 +93,7 @@ class TestMain:
         sys.argv = [CMD, "-n"]
         assert main() == 0
 
+    @pytest.mark.benchmark
     def test_author_email_validation(self, mocker):
         """Test author email validation."""
         # Mock git command to return a valid author email
@@ -98,6 +107,7 @@ class TestMain:
         sys.argv = [CMD, "-e"]
         assert main() == 0
 
+    @pytest.mark.benchmark
     def test_dry_run_always_passes(self, mocker):
         """Test that dry run mode always returns 0."""
         # Mock stdin to provide an invalid commit message
@@ -111,6 +121,7 @@ class TestMain:
 class TestStdinReader:
     """Test StdinReader edge cases."""
 
+    @pytest.mark.benchmark
     def test_read_piped_input_with_exception(self, mocker):
         """Test StdinReader when stdin raises exception."""
         reader = StdinReader()
@@ -120,6 +131,7 @@ class TestStdinReader:
         result = reader.read_piped_input()
         assert result is None
 
+    @pytest.mark.benchmark
     def test_read_piped_input_with_ioerror(self, mocker):
         """Test StdinReader when stdin raises IOError."""
         reader = StdinReader()
@@ -133,6 +145,7 @@ class TestStdinReader:
 class TestGetMessageContent:
     """Test _get_message_content function edge cases."""
 
+    @pytest.mark.benchmark
     def test_get_message_content_empty_string_with_stdin(self, mocker):
         """Test _get_message_content with empty string and stdin available."""
         reader = StdinReader()
@@ -141,6 +154,7 @@ class TestGetMessageContent:
         result = _get_message_content("", reader)
         assert result == "piped message"
 
+    @pytest.mark.benchmark
     def test_get_message_content_empty_string_no_stdin_with_git(self, mocker):
         """Test _get_message_content with empty string, no stdin, fallback to git."""
         reader = StdinReader()
@@ -152,6 +166,7 @@ class TestGetMessageContent:
         result = _get_message_content("", reader)
         assert result == "git commit message"
 
+    @pytest.mark.benchmark
     def test_get_message_content_empty_string_no_stdin_git_fails(self, capsys, mocker):
         """Test _get_message_content with empty string, no stdin, git fails."""
         reader = StdinReader()
@@ -166,6 +181,7 @@ class TestGetMessageContent:
         captured = capsys.readouterr()
         assert "Error: No commit message provided" in captured.err
 
+    @pytest.mark.benchmark
     def test_get_message_content_file_read_error(self, capsys):
         """Test _get_message_content with file read error."""
         reader = StdinReader()
@@ -176,6 +192,7 @@ class TestGetMessageContent:
         captured = capsys.readouterr()
         assert "Error reading message file" in captured.err
 
+    @pytest.mark.benchmark
     def test_get_message_content_file_permission_error(self, capsys, mocker):
         """Test _get_message_content with file permission error."""
         reader = StdinReader()
@@ -191,6 +208,7 @@ class TestGetMessageContent:
 class TestMainFunctionEdgeCases:
     """Test main function edge cases for better coverage."""
 
+    @pytest.mark.benchmark
     def test_main_with_message_file_argument(self):
         """Test main function with --message pointing to a file."""
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
@@ -204,6 +222,7 @@ class TestMainFunctionEdgeCases:
             finally:
                 os.unlink(f.name)
 
+    @pytest.mark.benchmark
     def test_main_with_message_empty_string_and_stdin(self, mocker):
         """Test main function with --message (empty) and stdin input."""
         mocker.patch("sys.stdin.isatty", return_value=False)
@@ -213,6 +232,7 @@ class TestMainFunctionEdgeCases:
         result = main()
         assert result == 0
 
+    @pytest.mark.benchmark
     def test_main_with_message_empty_string_no_stdin_with_git(self, mocker):
         """Test main function with --message (empty), no stdin, git fallback."""
         mocker.patch("sys.stdin.isatty", return_value=True)
@@ -226,6 +246,7 @@ class TestMainFunctionEdgeCases:
 
     # Removed problematic config and multi-check tests due to complex validation dependencies
 
+    @pytest.mark.benchmark
     def test_main_with_invalid_config_file(self, mocker):
         """Test main function with invalid config file."""
         mocker.patch("sys.stdin.isatty", return_value=False)
@@ -243,6 +264,7 @@ class TestMainFunctionEdgeCases:
 
     # Removed problematic tests that had configuration dependency issues
 
+    @pytest.mark.benchmark
     def test_main_with_dry_run_all_checks(self, mocker):
         """Test main function with dry run and all checks."""
         # Mock git operations
@@ -265,6 +287,7 @@ class TestMainFunctionEdgeCases:
         result = main()
         assert result == 0  # Dry run always returns 0
 
+    @pytest.mark.benchmark
     def test_main_error_handling_subprocess_failure(self, mocker, capsys):
         """Test main function when subprocess operations fail."""
         # Mock subprocess to fail
@@ -277,6 +300,7 @@ class TestMainFunctionEdgeCases:
         # Even if subprocess fails, main should not crash
         assert result in [0, 1]  # Either passes or fails gracefully
 
+    @pytest.mark.benchmark
     def test_nonexistent_config_file_error(self, capsys):
         """Test that specifying a non-existent config file returns error."""
         sys.argv = [
