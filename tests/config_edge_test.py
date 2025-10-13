@@ -6,6 +6,7 @@ import os
 from commit_check.config import load_config
 
 
+@pytest.mark.benchmark
 def test_load_config_invalid_toml():
     """Test handling of invalid TOML syntax."""
     invalid_toml = b"""
@@ -23,6 +24,7 @@ missing closing bracket
             os.unlink(f.name)
 
 
+@pytest.mark.benchmark
 def test_load_config_file_permission_error():
     """Test handling of file permission errors."""
     config_content = b"""
@@ -45,6 +47,7 @@ test = true
             os.unlink(f.name)
 
 
+@pytest.mark.benchmark
 def test_tomli_import_fallback():
     """Test the tomli import fallback when tomllib is not available."""
     # We need to test the import fallback behavior

@@ -17,9 +17,11 @@ from commit_check.engine import (
     CommitTypeValidator,
 )
 from commit_check.rule_builder import ValidationRule
+import pytest
 
 
 class TestValidationResult:
+    @pytest.mark.benchmark
     def test_validation_result_values(self):
         """Test ValidationResult enum values."""
         assert ValidationResult.PASS == 0
@@ -27,6 +29,7 @@ class TestValidationResult:
 
 
 class TestValidationContext:
+    @pytest.mark.benchmark
     def test_validation_context_creation(self):
         """Test ValidationContext creation."""
         context = ValidationContext()
@@ -41,6 +44,7 @@ class TestValidationContext:
 
 
 class TestCommitMessageValidator:
+    @pytest.mark.benchmark
     def test_commit_message_validator_creation(self):
         """Test CommitMessageValidator creation."""
         rule = ValidationRule(
@@ -53,6 +57,7 @@ class TestCommitMessageValidator:
         assert validator.rule == rule
 
     @patch("commit_check.engine.has_commits")
+    @pytest.mark.benchmark
     def test_commit_message_validator_with_stdin(self, mock_has_commits):
         """Test CommitMessageValidator with stdin text."""
         mock_has_commits.return_value = True
@@ -71,6 +76,7 @@ class TestCommitMessageValidator:
 
     @patch("commit_check.engine.get_commit_info")
     @patch("commit_check.engine.has_commits")
+    @pytest.mark.benchmark
     def test_commit_message_validator_failure(
         self, mock_has_commits, mock_get_commit_info
     ):
@@ -92,6 +98,7 @@ class TestCommitMessageValidator:
             mock_print.assert_called_once()
 
     @patch("commit_check.engine.has_commits")
+    @pytest.mark.benchmark
     def test_commit_message_validator_skip_validation(self, mock_has_commits):
         """Test CommitMessageValidator skips when no commits and no stdin."""
         mock_has_commits.return_value = False
@@ -110,6 +117,7 @@ class TestCommitMessageValidator:
 
 
 class TestSubjectCapitalizationValidator:
+    @pytest.mark.benchmark
     def test_subject_capitalization_pass(self):
         """Test SubjectCapitalizationValidator pass case."""
         rule = ValidationRule(
@@ -125,6 +133,7 @@ class TestSubjectCapitalizationValidator:
         result = validator.validate(context)
         assert result == ValidationResult.PASS
 
+    @pytest.mark.benchmark
     def test_subject_capitalization_fail(self):
         """Test SubjectCapitalizationValidator fail case."""
         rule = ValidationRule(
@@ -144,6 +153,7 @@ class TestSubjectCapitalizationValidator:
 
 
 class TestSubjectImperativeValidator:
+    @pytest.mark.benchmark
     def test_subject_imperative_pass(self):
         """Test SubjectImperativeValidator pass case."""
         rule = ValidationRule(
@@ -159,6 +169,7 @@ class TestSubjectImperativeValidator:
         result = validator.validate(context)
         assert result == ValidationResult.PASS
 
+    @pytest.mark.benchmark
     def test_subject_imperative_fail(self):
         """Test SubjectImperativeValidator fail case."""
         rule = ValidationRule(
@@ -178,6 +189,7 @@ class TestSubjectImperativeValidator:
 
 
 class TestSubjectLengthValidator:
+    @pytest.mark.benchmark
     def test_subject_length_pass(self):
         """Test SubjectLengthValidator pass case."""
         rule = ValidationRule(
@@ -193,6 +205,7 @@ class TestSubjectLengthValidator:
         result = validator.validate(context)
         assert result == ValidationResult.PASS
 
+    @pytest.mark.benchmark
     def test_subject_length_fail(self):
         """Test SubjectLengthValidator fail case."""
         rule = ValidationRule(
@@ -212,6 +225,7 @@ class TestSubjectLengthValidator:
 
 
 class TestValidationEngine:
+    @pytest.mark.benchmark
     def test_validation_engine_creation(self):
         """Test ValidationEngine creation."""
         rules = [
@@ -225,6 +239,7 @@ class TestValidationEngine:
         engine = ValidationEngine(rules)
         assert engine.rules == rules
 
+    @pytest.mark.benchmark
     def test_validation_engine_validator_map(self):
         """Test ValidationEngine VALIDATOR_MAP contains expected mappings."""
         engine = ValidationEngine([])
@@ -252,6 +267,7 @@ class TestValidationEngine:
         for check, validator_class in expected_mappings.items():
             assert engine.VALIDATOR_MAP[check] == validator_class
 
+    @pytest.mark.benchmark
     def test_validation_engine_validate_all_pass(self):
         """Test ValidationEngine validate_all with all passing rules."""
         rules = [
@@ -269,6 +285,7 @@ class TestValidationEngine:
             result = engine.validate_all(context)
             assert result == ValidationResult.PASS
 
+    @pytest.mark.benchmark
     def test_validation_engine_validate_all_fail(self):
         """Test ValidationEngine validate_all with failing rule."""
         rules = [
@@ -286,6 +303,7 @@ class TestValidationEngine:
             result = engine.validate_all(context)
             assert result == ValidationResult.FAIL
 
+    @pytest.mark.benchmark
     def test_validation_engine_unknown_validator(self):
         """Test ValidationEngine with unknown validator type."""
         rules = [

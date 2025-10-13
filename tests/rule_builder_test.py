@@ -2,9 +2,11 @@
 
 from commit_check.rule_builder import ValidationRule, RuleBuilder
 from commit_check.rules_catalog import RuleCatalogEntry
+import pytest
 
 
 class TestValidationRule:
+    @pytest.mark.benchmark
     def test_validation_rule_to_dict_with_ignored(self):
         """Test ValidationRule.to_dict() method with ignored field."""
         rule = ValidationRule(check="test_check", ignored=["ignored1", "ignored2"])
@@ -14,6 +16,7 @@ class TestValidationRule:
 
 
 class TestRuleBuilder:
+    @pytest.mark.benchmark
     def test_rule_builder_conventional_commits_disabled(self):
         """Test RuleBuilder when conventional_commits is disabled (line 115)."""
         config = {"commit": {"conventional_commits": False}}
@@ -27,6 +30,7 @@ class TestRuleBuilder:
         rule = builder._build_conventional_commit_rule(catalog_entry)
         assert rule is None
 
+    @pytest.mark.benchmark
     def test_rule_builder_conventional_branch_disabled(self):
         """Test RuleBuilder when conventional_branch is disabled (line 133)."""
         config = {"branch": {"conventional_branch": False}}
@@ -38,6 +42,7 @@ class TestRuleBuilder:
         rule = builder._build_conventional_branch_rule(catalog_entry)
         assert rule is None
 
+    @pytest.mark.benchmark
     def test_rule_builder_ignore_authors_list(self):
         """Test RuleBuilder with ignore_authors list."""
         config = {"commit": {"ignore_authors": ["spam@example.com", "bot@example.com"]}}
@@ -56,6 +61,7 @@ class TestRuleBuilder:
         assert rule.check == "ignore_authors"
         assert rule.ignored == ["spam@example.com", "bot@example.com"]
 
+    @pytest.mark.benchmark
     def test_rule_builder_invalid_author_list_type(self):
         """Test RuleBuilder with invalid author list type returns None."""
         config = {"commit": {"ignore_authors": "not_a_list"}}
@@ -69,6 +75,7 @@ class TestRuleBuilder:
         rule = builder._build_author_list_rule(catalog_entry, "ignore_authors")
         assert rule is None
 
+    @pytest.mark.benchmark
     def test_rule_builder_length_rule_with_format(self):
         """Test RuleBuilder length rule with formatted error message (lines 154-160)."""
         config = {"commit": {"max_length": 50}}
@@ -89,6 +96,7 @@ class TestRuleBuilder:
         assert rule.suggest == "Keep message short"
         assert rule.value == 50
 
+    @pytest.mark.benchmark
     def test_rule_builder_merge_base_rule_valid_target(self):
         """Test RuleBuilder merge base rule with valid target (line 193)."""
         config = {"branch": {"require_rebase_target": "main"}}
@@ -109,6 +117,7 @@ class TestRuleBuilder:
         assert rule.error == "Branch must be rebased on target"
         assert rule.suggest == "Rebase on target branch"
 
+    @pytest.mark.benchmark
     def test_rule_builder_boolean_rule_enabled(self):
         """Test RuleBuilder boolean rule when enabled (line 236)."""
         config = {"commit": {"require_signed_off_by": True}}
@@ -130,6 +139,7 @@ class TestRuleBuilder:
         assert rule.suggest == "Add Signed-off-by line"
         assert rule.value is True
 
+    @pytest.mark.benchmark
     def test_rule_builder_boolean_rule_subject_disabled(self):
         """Test RuleBuilder boolean rule for subject checks when disabled (line 232)."""
         config = {"commit": {"subject_capitalized": False}}

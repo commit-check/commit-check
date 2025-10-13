@@ -3,8 +3,10 @@
 import tempfile
 import os
 from unittest.mock import patch
+import pytest
 
 
+@pytest.mark.benchmark
 def test_tomli_import_fallback_simulation():
     """Test tomli import fallback by simulating the ImportError condition."""
 
@@ -63,6 +65,7 @@ def _mock_import_error(name, *args, **kwargs):
     return __import__(name, *args, **kwargs)
 
 
+@pytest.mark.benchmark
 def test_import_paths_coverage():
     """Ensure both import paths are conceptually tested."""
     # This test verifies that both the tomllib and tomli code paths

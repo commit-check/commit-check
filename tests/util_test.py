@@ -93,6 +93,7 @@ class TestUtil:
                 (128, 128),  # error case
             ],
         )
+        @pytest.mark.benchmark
         def test_git_merge_base(self, mocker, returncode, expected):
             mock_run = mocker.patch("subprocess.run")
             if returncode == 128:
@@ -123,6 +124,7 @@ class TestUtil:
                 ("ae"),
             ],
         )
+        @pytest.mark.benchmark
         def test_get_commit_info(self, mocker, format_string):
             # Must call get_commit_info with given argument when there are commits.
             mocker.patch("commit_check.util.has_commits", return_value=True)
@@ -204,6 +206,7 @@ class TestUtil:
                 (1, None, "err"),
             ],
         )
+        @pytest.mark.benchmark
         def test_cmd_output_err(self, mocker, returncode, stdout, stderr):
             # Must return stderr when  subprocess.run returns not empty stderr.
             m_subprocess_run = mocker.patch(
@@ -230,6 +233,7 @@ class TestUtil:
                 (1, None, ""),
             ],
         )
+        @pytest.mark.benchmark
         def test_cmd_output_err_with_len0_stderr(
             self, mocker, returncode, stdout, stderr
         ):
@@ -269,6 +273,7 @@ class TestUtil:
                 ("signoff", "check failed ==>"),
             ],
         )
+        @pytest.mark.benchmark
         def test_print_error_message(self, capfd, check_type, type_failed_msg):
             # Must print on stdout with given argument.
             dummy_regex = "dummy regex"

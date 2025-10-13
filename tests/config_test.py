@@ -9,6 +9,7 @@ from commit_check.config import load_config, DEFAULT_CONFIG_PATHS
 
 
 class TestConfig:
+    @pytest.mark.benchmark
     def test_load_config_with_path_hint(self):
         """Test loading config with explicit path hint."""
         config_content = b"""
@@ -28,6 +29,7 @@ branch = true
             finally:
                 os.unlink(f.name)
 
+    @pytest.mark.benchmark
     def test_load_config_with_nonexistent_path_hint(self):
         """Test loading config when path hint doesn't exist - should raise FileNotFoundError."""
         # Test that specifying a nonexistent config file raises an error
@@ -36,6 +38,7 @@ branch = true
         ):
             load_config("nonexistent.toml")
 
+    @pytest.mark.benchmark
     def test_load_config_default_cchk_toml(self):
         """Test loading config from default cchk.toml path."""
         config_content = b"""
@@ -55,6 +58,7 @@ default_cchk = true
             finally:
                 os.chdir(original_cwd)
 
+    @pytest.mark.benchmark
     def test_load_config_default_commit_check_toml(self):
         """Test loading config from default commit-check.toml path."""
         config_content = b"""
@@ -74,6 +78,7 @@ commit_check_toml = true
             finally:
                 os.chdir(original_cwd)
 
+    @pytest.mark.benchmark
     def test_load_config_file_not_found(self):
         """Test returning empty config when no default config files exist."""
         original_cwd = os.getcwd()
@@ -86,6 +91,7 @@ commit_check_toml = true
             finally:
                 os.chdir(original_cwd)
 
+    @pytest.mark.benchmark
     def test_load_config_file_not_found_with_invalid_path_hint(self):
         """Test FileNotFoundError when specified path hint doesn't exist."""
         original_cwd = os.getcwd()
@@ -100,12 +106,14 @@ commit_check_toml = true
             finally:
                 os.chdir(original_cwd)
 
+    @pytest.mark.benchmark
     def test_default_config_paths_constant(self):
         """Test that DEFAULT_CONFIG_PATHS contains expected paths."""
         assert len(DEFAULT_CONFIG_PATHS) == 2
         assert Path("cchk.toml") in DEFAULT_CONFIG_PATHS
         assert Path("commit-check.toml") in DEFAULT_CONFIG_PATHS
 
+    @pytest.mark.benchmark
     def test_toml_load_function_exists(self):
         """Test that toml_load function is properly set up."""
         from commit_check.config import toml_load
@@ -128,6 +136,7 @@ value = "works"
             finally:
                 os.unlink(f.name)
 
+    @pytest.mark.benchmark
     def test_tomli_import_fallback(self):
         """Test that tomli is imported when tomllib is not available (lines 10-13)."""
         import sys
