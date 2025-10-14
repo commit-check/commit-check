@@ -9,11 +9,11 @@ Commit Check
     :target: https://github.com/commit-check/commit-check/actions/workflows/main.yml
     :alt: CI
 
-.. |sonar-badge| image:: https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&metric=alert_status&color=%232c9ccd
+.. |sonar-badge| image:: https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&metric=alert_status
     :target: https://sonarcloud.io/summary/new_code?id=commit-check_commit-check
     :alt: Quality Gate Status
 
-.. |codecov-badge| image:: https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT&color=%232c9ccd
+.. |codecov-badge| image:: https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT
     :target: https://codecov.io/gh/commit-check/commit-check
     :alt: CodeCov
 
@@ -21,11 +21,11 @@ Commit Check
     :target: https://github.com/commit-check/commit-check
     :alt: commit-check
 
-.. |slsa-badge| image:: https://slsa.dev/images/gh-badge-level3.svg?color=%232c9ccd
+.. |slsa-badge| image:: https://slsa.dev/images/gh-badge-level3.svg
     :target: https://slsa.dev
     :alt: SLSA
 
-|pypi-version| |ci-badge| |sonar-badge| |commit-check-badge| |codecov-badge| |slsa-badge|
+|ci-badge| |sonar-badge| |pypi-version| |commit-check-badge| |codecov-badge| |slsa-badge|
 
 Overview
 --------
