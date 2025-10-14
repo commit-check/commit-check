@@ -7,10 +7,47 @@ thead {
 .md-header,
 .md-tabs,
 .md-nav--primary .md-nav__title[for="__drawer"] {
-  background-color: #009485;
+  background-color: #2c9ccd;
 }
 
 /* Fix table header visibility for both light and dark modes */
 .md-content table th {
   color: var(--md-typeset-color) !important;
+}
+
+/* Custom color scheme to match logo */
+:root {
+  --md-primary-fg-color: #2c9ccd;
+  --md-primary-fg-color--light: #5bb3d9;
+  --md-primary-fg-color--dark: #1e85a8;
+}
+
+/* Navigation and links */
+.md-nav__link--active,
+.md-nav__link:hover {
+  color: #2c9ccd;
+}
+
+/* Buttons and accent elements */
+.md-button--primary {
+  background-color: #2c9ccd;
+  border-color: #2c9ccd;
+}
+
+.md-button--primary:hover {
+  background-color: #1e85a8;
+  border-color: #1e85a8;
+}
+
+/* Code blocks and syntax highlighting accents */
+.md-typeset .codehilite .hll,
+.md-typeset .highlight .hll {
+  background-color: rgba(44, 156, 205, 0.1);
+}
+
+/* Admonition titles with your brand color */
+.md-typeset .admonition.note > .admonition-title,
+.md-typeset .admonition.tip > .admonition-title {
+  background-color: rgba(44, 156, 205, 0.1);
+  border-color: #2c9ccd;
 }
