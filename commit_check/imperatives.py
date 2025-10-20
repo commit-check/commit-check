@@ -12,7 +12,7 @@ IMPERATIVES = {
     "adjust",
     "aggregate",
     "allow",
-    "append",
+    "alignappend",
     "apply",
     "archive",
     "assert",
