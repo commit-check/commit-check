@@ -25,8 +25,8 @@ Example Configuration
     [commit]
     # https://www.conventionalcommits.org
     conventional_commits = true
-    subject_capitalized = true
-    subject_imperative = true
+    subject_capitalized = false
+    subject_imperative = false
     # subject_max_length = 50  # Optional - no limit by default
     # subject_min_length = 5   # Optional - no limit by default
     allow_commit_types = ["feat", "fix", "docs", "style", "refactor", "test", "chore"]
