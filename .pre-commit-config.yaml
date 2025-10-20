@@ -34,6 +34,7 @@ repos:
     rev: v2.0.0
     hooks:
     -   id: check-message
+        stages: [commit-msg]
     -   id: check-branch          # uncomment if you need.
     -   id: check-author-name     # uncomment if you need.
     -   id: check-author-email    # uncomment if you need.
