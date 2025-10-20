@@ -22,6 +22,7 @@ IMPERATIVES = {
     "authorize",
     "break",
     "build",
+    "bump"
     "cache",
     "calculate",
     "call",
