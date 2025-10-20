@@ -44,8 +44,8 @@ DEFAULT_BRANCH_TYPES = [
 
 # Handle different default values for different rules
 DEFAULT_BOOLEAN_RULES = {
-    "subject_capitalized": True,
-    "subject_imperative": True,
+    "subject_capitalized": False,
+    "subject_imperative": False,
     "allow_merge_commits": True,
     "allow_revert_commits": True,
     "allow_empty_commits": True,
