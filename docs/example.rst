@@ -31,6 +31,7 @@ Running as pre-commit hook
         rev: the tag or revision
         hooks:
         -   id: check-message
+            stages: [commit-msg]
         -   id: check-branch
         -   id: check-author-name
         -   id: check-author-email
