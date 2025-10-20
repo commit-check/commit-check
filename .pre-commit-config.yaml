@@ -15,7 +15,7 @@ repos:
     -   id: trailing-whitespace
     -   id: name-tests-test
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.3
+    rev: v0.14.1
     hooks:
     -   id: ruff-check
         args: [ --fix ]
@@ -31,9 +31,10 @@ repos:
     hooks:
     -   id: codespell
 -   repo: https://github.com/commit-check/commit-check
-    rev: v0.10.2
+    rev: v2.0.0
     hooks:
     -   id: check-message
+        stages: [commit-msg]
     -   id: check-branch          # uncomment if you need.
     -   id: check-author-name     # uncomment if you need.
     -   id: check-author-email    # uncomment if you need.
