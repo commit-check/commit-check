@@ -75,7 +75,7 @@ jobs:
           pip install .[dev]
 
       - name: Download wheel artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: commit-check_wheel
           path: dist
