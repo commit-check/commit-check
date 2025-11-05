@@ -39,7 +39,7 @@ class TestUtil:
             retval = get_branch_name()
             assert m_cmd_output.call_count == 1
             assert m_cmd_output.call_args[0][0] == ["git", "branch", "--show-current"]
-            assert retval == ""
+            assert retval == "HEAD"
 
         @pytest.mark.benchmark
         def test_get_branch_name_fallback_github_head_ref(self, mocker):
