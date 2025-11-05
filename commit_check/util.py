@@ -56,7 +56,9 @@ def get_branch_name() -> str:
         branch_name = cmd_output(commands)
         if not branch_name:
             # Fallback to environment variables (GitHub Actions)
-            branch_name = os.getenv("GITHUB_HEAD_REF") or os.getenv("GITHUB_REF_NAME") or "HEAD"
+            branch_name = (
+                os.getenv("GITHUB_HEAD_REF") or os.getenv("GITHUB_REF_NAME") or "HEAD"
+            )
     except CalledProcessError:
         branch_name = ""
     return branch_name.strip()

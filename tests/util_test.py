@@ -41,6 +41,46 @@ class TestUtil:
             assert m_cmd_output.call_args[0][0] == ["git", "branch", "--show-current"]
             assert retval == ""
 
+        @pytest.mark.benchmark
+        def test_get_branch_name_fallback_github_head_ref(self, mocker):
+            """Test fallback to GITHUB_HEAD_REF."""
+            mocker.patch("commit_check.util.cmd_output", return_value="")
+            mocker.patch(
+                "commit_check.util.os.getenv",
+                lambda key: "feature-branch" if key == "GITHUB_HEAD_REF" else None,
+            )
+            assert get_branch_name() == "feature-branch"
+
+        @pytest.mark.benchmark
+        def test_get_branch_name_fallback_github_ref_name(self, mocker):
+            """Test fallback to GITHUB_REF_NAME."""
+            mocker.patch("commit_check.util.cmd_output", return_value="")
+            mocker.patch(
+                "commit_check.util.os.getenv",
+                lambda key: "develop" if key == "GITHUB_REF_NAME" else None,
+            )
+            assert get_branch_name() == "develop"
+
+        @pytest.mark.benchmark
+        def test_get_branch_name_fallback_head(self, mocker):
+            """Test fallback to HEAD."""
+            mocker.patch("commit_check.util.cmd_output", return_value="")
+            mocker.patch("commit_check.util.os.getenv", return_value=None)
+            assert get_branch_name() == "HEAD"
+
+        @pytest.mark.benchmark
+        def test_get_branch_name_fallback_priority(self, mocker):
+            """Test fallback priority."""
+            mocker.patch("commit_check.util.cmd_output", return_value="")
+            mocker.patch(
+                "commit_check.util.os.getenv",
+                lambda key: {
+                    "GITHUB_HEAD_REF": "feature-branch",
+                    "GITHUB_REF_NAME": "develop",
+                }.get(key),
+            )
+            assert get_branch_name() == "feature-branch"
+
     class TestHasCommits:
         @pytest.mark.benchmark
         def test_has_commits_true(self, mocker):
