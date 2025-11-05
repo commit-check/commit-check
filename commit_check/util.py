@@ -5,6 +5,7 @@
 A module containing utility functions.
 """
 
+import os
 import subprocess
 import yaml
 from pathlib import Path, PurePath
@@ -52,9 +53,15 @@ def get_branch_name() -> str:
     try:
         # Git 2.22 and above supports `git branch --show-current`
         commands = ["git", "branch", "--show-current"]
-        branch_name = cmd_output(commands) or "HEAD"
+        branch_name = cmd_output(commands)
     except CalledProcessError:
         branch_name = ""
+
+    if not branch_name:
+        # Fallback to environment variables (GitHub Actions)
+        branch_name = (
+            os.getenv("GITHUB_HEAD_REF") or os.getenv("GITHUB_REF_NAME") or "HEAD"
+        )
     return branch_name.strip()
 
 
