@@ -20,4 +20,4 @@ ignore_authors = ["dependabot[bot]", "copilot[bot]", "pre-commit-ci[bot]"]
 conventional_branch = true
 allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
 require_rebase_target = "main"
-ignore_authors = ["dependabot[bot]", "copilot[bot]", "pre-commit-ci[bot]"]
+ignore_authors = ["dependabot[bot]", "copilot[bot]", "pre-commit-ci[bot]", "shenxianpeng"]
