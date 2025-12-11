@@ -157,7 +157,7 @@ class TestSubjectImperativeValidator:
     def test_subject_imperative_pass(self):
         """Test SubjectImperativeValidator pass case."""
         rule = ValidationRule(
-            check="imperative",
+            check="subject_imperative",
             regex="",
             error="Subject must be imperative",
             suggest="Use imperative mood",
@@ -173,7 +173,7 @@ class TestSubjectImperativeValidator:
     def test_subject_imperative_fail(self):
         """Test SubjectImperativeValidator fail case."""
         rule = ValidationRule(
-            check="imperative",
+            check="subject_imperative",
             regex="",
             error="Subject must be imperative",
             suggest="Use imperative mood",
@@ -247,7 +247,7 @@ class TestValidationEngine:
         expected_mappings = {
             "message": CommitMessageValidator,
             "subject_capitalized": SubjectCapitalizationValidator,
-            "imperative": SubjectImperativeValidator,
+            "subject_imperative": SubjectImperativeValidator,
             "subject_max_length": SubjectLengthValidator,
             "subject_min_length": SubjectLengthValidator,
             "author_name": AuthorValidator,
