@@ -151,7 +151,7 @@ def main() -> int:
             requested_checks.extend(
                 [
                     "message",
-                    "imperative",
+                    "subject_imperative",
                     "subject_max_length",
                     "subject_min_length",
                     "require_signed_off_by",
