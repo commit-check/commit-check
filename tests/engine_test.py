@@ -811,7 +811,7 @@ class TestSubjectImperativeValidator:
     @pytest.mark.benchmark
     def test_validate_with_imperative_subject(self):
         """Test validation with proper imperative subject."""
-        rule = ValidationRule(check="imperative")
+        rule = ValidationRule(check="subject_imperative")
         validator = SubjectImperativeValidator(rule)
         context = ValidationContext(stdin_text="fix: resolve the issue")
 
@@ -821,7 +821,7 @@ class TestSubjectImperativeValidator:
     @pytest.mark.benchmark
     def test_validate_with_non_imperative_subject(self):
         """Test validation with non-imperative subject."""
-        rule = ValidationRule(check="imperative")
+        rule = ValidationRule(check="subject_imperative")
         validator = SubjectImperativeValidator(rule)
         context = ValidationContext(stdin_text="fix: resolved the issue")
 
@@ -833,7 +833,7 @@ class TestSubjectImperativeValidator:
     @pytest.mark.benchmark
     def test_validate_short_subject(self):
         """Test validation with very short subject (edge case)."""
-        rule = ValidationRule(check="imperative")
+        rule = ValidationRule(check="subject_imperative")
         validator = SubjectImperativeValidator(rule)
         context = ValidationContext(stdin_text="feat: add")
 
@@ -844,7 +844,7 @@ class TestSubjectImperativeValidator:
     @pytest.mark.benchmark
     def test_validate_with_breaking_change(self):
         """Test validation with breaking change notation."""
-        rule = ValidationRule(check="imperative")
+        rule = ValidationRule(check="subject_imperative")
         validator = SubjectImperativeValidator(rule)
         context = ValidationContext(stdin_text="feat!: update authentication system")
 
@@ -855,7 +855,7 @@ class TestSubjectImperativeValidator:
     @pytest.mark.benchmark
     def test_validate_with_scoped_breaking_change(self):
         """Test validation with scoped breaking change notation."""
-        rule = ValidationRule(check="imperative")
+        rule = ValidationRule(check="subject_imperative")
         validator = SubjectImperativeValidator(rule)
         context = ValidationContext(stdin_text="fix(auth)!: resolve login bug")
 

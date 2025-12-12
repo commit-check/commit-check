@@ -27,7 +27,7 @@ COMMIT_RULES = [
         suggest="Capitalize the first word of the subject",
     ),
     RuleCatalogEntry(
-        check="imperative",
+        check="subject_imperative",
         regex=None,
         error="Commit message should use imperative mood (e.g., 'Add feature' not 'Added feature')",
         suggest="Use imperative mood in the subject line",
