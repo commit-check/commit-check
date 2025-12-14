@@ -1,5 +1,6 @@
 """Tests for commit_check.config module."""
 
+import builtins
 import pytest
 import tempfile
 import os
@@ -204,3 +205,231 @@ value = "works"
                 sys.modules["tomllib"] = original_tomllib
             if original_config is not None:
                 sys.modules["commit_check.config"] = original_config
+
+
+# Tests from config_edge_test.py
+class TestConfigEdgeCases:
+    """Test edge cases and error handling in config loading."""
+
+    def test_load_config_invalid_toml(self, tmp_path):
+        """Test loading config with invalid TOML syntax."""
+        invalid_config = tmp_path / "invalid.toml"
+        invalid_config.write_text("invalid toml [[[")
+
+        with pytest.raises(Exception):  # Could be TOMLDecodeError or similar
+            load_config(str(invalid_config))
+
+    def test_load_config_file_permission_error(self, tmp_path, monkeypatch):
+        """Test load_config when file cannot be read due to permissions."""
+        config_file = tmp_path / "no_perms.toml"
+        config_file.write_text("[commit-check]\nenabled = true")
+
+        # Mock open to raise PermissionError
+        original_open = builtins.open
+
+        def mock_open(*args, **kwargs):
+            if "no_perms.toml" in str(args[0]):
+                raise PermissionError("Permission denied")
+            return original_open(*args, **kwargs)
+
+        monkeypatch.setattr(builtins, "open", mock_open)
+
+        with pytest.raises(PermissionError):
+            load_config(str(config_file))
+
+    def test_tomli_import_fallback(self, monkeypatch):
+        """Test tomli import fallback when tomllib not available."""
+        import sys
+
+        # Save original modules
+        original_tomllib = sys.modules.get("tomllib")
+        original_tomli = sys.modules.get("tomli")
+
+        try:
+            # Remove tomllib from sys.modules
+            if "tomllib" in sys.modules:
+                del sys.modules["tomllib"]
+
+            # Force reimport of config module
+            if "commit_check.config" in sys.modules:
+                del sys.modules["commit_check.config"]
+
+            # Mock tomllib to not exist
+            monkeypatch.setitem(sys.modules, "tomllib", None)
+
+            # Import should fall back to tomli
+            from commit_check.config import toml_load
+
+            assert toml_load is not None
+        finally:
+            # Restore original modules
+            if original_tomllib is not None:
+                sys.modules["tomllib"] = original_tomllib
+            elif "tomllib" in sys.modules:
+                del sys.modules["tomllib"]
+
+            if original_tomli is not None:
+                sys.modules["tomli"] = original_tomli
+            elif "tomli" in sys.modules:
+                del sys.modules["tomli"]
+
+            # Force reimport of config module to restore original state
+            if "commit_check.config" in sys.modules:
+                del sys.modules["commit_check.config"]
+            import commit_check.config  # noqa: F401
+
+
+# Tests from config_fallback_test.py
+class TestConfigTomllibFallback:
+    """Test tomllib/tomli fallback mechanism."""
+
+    def test_config_tomli_fallback_direct(self, tmp_path):
+        """Test that config module can use tomli when tomllib is not available."""
+        import sys
+
+        # Save original modules
+        original_tomllib = sys.modules.get("tomllib")
+        original_tomli = sys.modules.get("tomli")
+        original_config = sys.modules.get("commit_check.config")
+
+        try:
+            # Remove tomllib and config from sys.modules to force fresh import
+            if "tomllib" in sys.modules:
+                del sys.modules["tomllib"]
+            if "commit_check.config" in sys.modules:
+                del sys.modules["commit_check.config"]
+
+            # Block tomllib import by setting it to None
+            sys.modules["tomllib"] = None
+
+            # Now import config - should fall back to tomli
+            from commit_check.config import load_config, toml_load
+
+            # Verify toml_load is available
+            assert toml_load is not None
+
+            # Test that config loading works with tomli
+            config_file = tmp_path / "test.toml"
+            config_file.write_text("[commit-check]\nenabled = true")
+
+            result = load_config(str(config_file))
+            assert result is not None
+            assert "commit-check" in result
+            assert result["commit-check"]["enabled"] is True
+
+        finally:
+            # Restore original modules
+            if original_tomllib is not None:
+                sys.modules["tomllib"] = original_tomllib
+            elif "tomllib" in sys.modules:
+                del sys.modules["tomllib"]
+
+            if original_tomli is not None:
+                sys.modules["tomli"] = original_tomli
+            elif "tomli" in sys.modules:
+                del sys.modules["tomli"]
+
+            if original_config is not None:
+                sys.modules["commit_check.config"] = original_config
+            elif "commit_check.config" in sys.modules:
+                del sys.modules["commit_check.config"]
+
+
+# Tests from config_import_test.py
+class TestConfigImportPaths:
+    """Test import path coverage in config module."""
+
+    def test_tomli_import_fallback_simulation(self, monkeypatch):
+        """Test tomli import fallback by simulating tomllib unavailability."""
+        import sys
+
+        # Save original modules
+        original_tomllib = sys.modules.get("tomllib")
+        original_config = sys.modules.get("commit_check.config")
+
+        try:
+            # Remove modules to force fresh import
+            if "tomllib" in sys.modules:
+                del sys.modules["tomllib"]
+            if "commit_check.config" in sys.modules:
+                del sys.modules["commit_check.config"]
+
+            # Simulate tomllib not being available by blocking its import
+            import builtins
+
+            original_import = builtins.__import__
+
+            def mock_import(name, *args, **kwargs):
+                if name == "tomllib":
+                    raise ModuleNotFoundError("No module named 'tomllib'")
+                return original_import(name, *args, **kwargs)
+
+            monkeypatch.setattr(builtins, "__import__", mock_import)
+
+            # Import config - should trigger tomli fallback
+            from commit_check.config import toml_load
+
+            # Verify toml_load is available (from tomli)
+            assert toml_load is not None
+
+        finally:
+            # Restore original import
+            monkeypatch.undo()
+
+            # Restore original modules
+            if original_tomllib is not None:
+                sys.modules["tomllib"] = original_tomllib
+            elif "tomllib" in sys.modules:
+                del sys.modules["tomllib"]
+
+            if original_config is not None:
+                sys.modules["commit_check.config"] = original_config
+            elif "commit_check.config" in sys.modules:
+                del sys.modules["commit_check.config"]
+
+    def test_import_paths_coverage(self):
+        """Test various import paths in config module."""
+        import sys
+
+        # Save original modules
+        original_tomllib = sys.modules.get("tomllib")
+        original_tomli = sys.modules.get("tomli")
+        original_config = sys.modules.get("commit_check.config")
+
+        try:
+            # Test 1: Import with tomllib available
+            if "commit_check.config" in sys.modules:
+                del sys.modules["commit_check.config"]
+
+            from commit_check.config import toml_load as toml_load_1
+
+            assert toml_load_1 is not None
+
+            # Test 2: Force tomli fallback
+            if "tomllib" in sys.modules:
+                del sys.modules["tomllib"]
+            if "commit_check.config" in sys.modules:
+                del sys.modules["commit_check.config"]
+
+            sys.modules["tomllib"] = None
+
+            from commit_check.config import toml_load as toml_load_2
+
+            assert toml_load_2 is not None
+
+        finally:
+            # Restore original modules
+            if original_tomllib is not None:
+                sys.modules["tomllib"] = original_tomllib
+            elif "tomllib" in sys.modules:
+                del sys.modules["tomllib"]
+
+            if original_tomli is not None:
+                sys.modules["tomli"] = original_tomli
+            elif "tomli" in sys.modules:
+                del sys.modules["tomli"]
+
+            if original_config is not None:
+                sys.modules["commit_check.config"] = original_config
+            elif "commit_check.config" in sys.modules:
+                del sys.modules["commit_check.config"]

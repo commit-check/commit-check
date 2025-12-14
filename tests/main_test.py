@@ -2,6 +2,7 @@ import sys
 import pytest
 import tempfile
 import os
+from unittest.mock import patch
 from commit_check.main import StdinReader, _get_message_content, main
 
 CMD = "commit-check"
@@ -319,3 +320,61 @@ class TestMainFunctionEdgeCases:
             "Error: Specified config file not found: /nonexistent/config.toml"
             in captured.err
         )
+
+
+# Additional coverage tests
+class TestMainAdditionalCoverage:
+    """Additional tests for comprehensive main.py coverage."""
+
+    def test_main_message_validation_git_format_used(self):
+        """Test message validation uses git format B."""
+        with patch("sys.argv", ["commit-check", "--message"]):
+            with patch.object(StdinReader, "read_piped_input", return_value=None):
+                with patch(
+                    "commit_check.util.get_commit_info", return_value="feat: test"
+                ):
+                    with patch("commit_check.util.has_commits", return_value=True):
+                        result = main()
+                        assert result == 0
+
+    def test_main_with_file_not_found_exception(self):
+        """Test main with FileNotFoundError."""
+        with patch(
+            "sys.argv",
+            [
+                "commit-check",
+                "--config",
+                "/nonexistent/config.toml",
+                "--message",
+                "test.txt",
+            ],
+        ):
+            with patch(
+                "commit_check.config.load_config",
+                side_effect=FileNotFoundError("config not found"),
+            ):
+                result = main()
+                assert result == 1
+
+
+class TestGetMessageContentAdditional:
+    """Additional tests for _get_message_content."""
+
+    def test_get_message_content_file_oserror(self):
+        """Test file reading with OSError."""
+        stdin_reader = StdinReader()
+
+        with patch("builtins.open", side_effect=OSError("permission denied")):
+            result = _get_message_content("/some/file.txt", stdin_reader)
+            assert result is None
+
+
+class TestStdinReaderAdditional:
+    """Additional tests for StdinReader."""
+
+    def test_read_piped_input_strips_whitespace(self):
+        """Test reading piped input strips whitespace."""
+        with patch("sys.stdin.isatty", return_value=False):
+            with patch("sys.stdin.read", return_value="  data  \n"):
+                result = StdinReader.read_piped_input()
+                assert result == "data"
