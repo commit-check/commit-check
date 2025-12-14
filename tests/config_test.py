@@ -216,7 +216,7 @@ class TestConfigEdgeCases:
         invalid_config = tmp_path / "invalid.toml"
         invalid_config.write_text("invalid toml [[[")
 
-        with pytest.raises(Exception):  # Could be TOMLDecodeError or similar
+        with pytest.raises(Exception):  # TOMLDecodeError varies by library
             load_config(str(invalid_config))
 
     def test_load_config_file_permission_error(self, tmp_path, monkeypatch):
@@ -276,7 +276,6 @@ class TestConfigEdgeCases:
             # Force reimport of config module to restore original state
             if "commit_check.config" in sys.modules:
                 del sys.modules["commit_check.config"]
-            import commit_check.config  # noqa: F401
 
 
 # Tests from config_fallback_test.py
