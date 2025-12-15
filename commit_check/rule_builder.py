@@ -6,6 +6,7 @@ from commit_check.rules_catalog import COMMIT_RULES, BRANCH_RULES, RuleCatalogEn
 from commit_check import (
     DEFAULT_COMMIT_TYPES,
     DEFAULT_BRANCH_TYPES,
+    DEFAULT_BRANCH_NAMES,
     DEFAULT_BOOLEAN_RULES,
 )
 
@@ -125,7 +126,8 @@ class RuleBuilder:
             return None
 
         allowed_types = self._get_allowed_branch_types()
-        regex = self._build_conventional_branch_regex(allowed_types)
+        allowed_names = self._get_allowed_branch_names()
+        regex = self._build_conventional_branch_regex(allowed_types, allowed_names)
 
         return ValidationRule(
             check=catalog_entry.check,
@@ -222,12 +224,23 @@ class RuleBuilder:
         types = self.branch_config.get("allow_branch_types", DEFAULT_BRANCH_TYPES)
         return list(dict.fromkeys(types))  # Preserve order, remove duplicates
 
+    def _get_allowed_branch_names(self) -> List[str]:
+        """Get deduplicated list of allowed branch names."""
+        names = self.branch_config.get("allow_branch_names", DEFAULT_BRANCH_NAMES)
+        return list(dict.fromkeys(names))  # Preserve order, remove duplicates
+
     def _build_conventional_commit_regex(self, allowed_types: List[str]) -> str:
         """Build regex for conventional commit messages."""
         types_pattern = "|".join(sorted(set(allowed_types)))
         return rf"^({types_pattern}){{1}}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)"
 
-    def _build_conventional_branch_regex(self, allowed_types: List[str]) -> str:
+    def _build_conventional_branch_regex(
+        self, allowed_types: List[str], allowed_names: List[str]
+    ) -> str:
         """Build regex for conventional branch names."""
         types_pattern = "|".join(allowed_types)
-        return rf"^({types_pattern})\/.+|(master)|(main)|(HEAD)|(PR-.+)"
+        # Build pattern for additional allowed branch names
+        base_names = ["master", "main", "HEAD", "PR-.+"]
+        all_names = base_names + allowed_names
+        names_pattern = ")|(".join(all_names)
+        return rf"^({types_pattern})\/.+|({names_pattern})"

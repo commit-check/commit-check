@@ -197,8 +197,67 @@ class TestBranchValidator:
         validator = BranchValidator(rule)
         context = ValidationContext(stdin_text="feature/new-feature")
 
+        validator.validate(context)
+
+    @patch("commit_check.engine.has_commits")
+    @patch("commit_check.engine.get_branch_name")
+    @pytest.mark.benchmark
+    def test_branch_validator_develop_branch_allowed(
+        self, mock_get_branch_name, mock_has_commits
+    ):
+        """Test BranchValidator with develop branch when it's in allow_branch_names."""
+        mock_has_commits.return_value = True
+        mock_get_branch_name.return_value = "develop"
+        # Regex pattern that includes develop as an allowed branch name
+        rule = ValidationRule(
+            check="branch",
+            regex=r"^(feature|bugfix|hotfix)\/.+|(master)|(main)|(HEAD)|(PR-.+)|(develop)",
+        )
+        validator = BranchValidator(rule)
+        config = {"branch": {"ignore_authors": []}}
+        context = ValidationContext(config=config)
         result = validator.validate(context)
         assert result == ValidationResult.PASS
+
+    @patch("commit_check.engine.has_commits")
+    @patch("commit_check.engine.get_branch_name")
+    @pytest.mark.benchmark
+    def test_branch_validator_staging_branch_allowed(
+        self, mock_get_branch_name, mock_has_commits
+    ):
+        """Test BranchValidator with staging branch when it's in allow_branch_names."""
+        mock_has_commits.return_value = True
+        mock_get_branch_name.return_value = "staging"
+        # Regex pattern that includes staging as an allowed branch name
+        rule = ValidationRule(
+            check="branch",
+            regex=r"^(feature|bugfix|hotfix)\/.+|(master)|(main)|(HEAD)|(PR-.+)|(staging)|(develop)",
+        )
+        validator = BranchValidator(rule)
+        config = {"branch": {"ignore_authors": []}}
+        context = ValidationContext(config=config)
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @patch("commit_check.engine.has_commits")
+    @patch("commit_check.engine.get_branch_name")
+    @pytest.mark.benchmark
+    def test_branch_validator_develop_branch_not_allowed(
+        self, mock_get_branch_name, mock_has_commits
+    ):
+        """Test BranchValidator with develop branch when it's NOT in allow_branch_names."""
+        mock_has_commits.return_value = True
+        mock_get_branch_name.return_value = "develop"
+        # Regex pattern that does NOT include develop as an allowed branch name
+        rule = ValidationRule(
+            check="branch",
+            regex=r"^(feature|bugfix|hotfix)\/.+|(master)|(main)|(HEAD)|(PR-.+)",
+        )
+        validator = BranchValidator(rule)
+        config = {"branch": {"ignore_authors": []}}
+        context = ValidationContext(config=config)
+        result = validator.validate(context)
+        assert result == ValidationResult.FAIL
 
     @pytest.mark.benchmark
     def test_validate_without_regex(self):
