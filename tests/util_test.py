@@ -8,8 +8,14 @@ from commit_check.util import cmd_output
 from commit_check.util import print_error_header
 from commit_check.util import print_error_message
 from commit_check.util import print_suggestion
+from commit_check.util import _find_check
+from commit_check.util import _print_failure
+from commit_check.util import _find_config_file
+from commit_check.util import _load_toml
+from commit_check.util import validate_config
 from subprocess import CalledProcessError, PIPE
 from unittest.mock import MagicMock
+from unittest.mock import patch
 
 
 class TestUtil:
@@ -339,3 +345,170 @@ class TestUtil:
             assert e.value.code == 1
             stdout, _ = capfd.readouterr()
             assert "commit-check does not support" in stdout
+
+
+# Additional coverage tests
+class TestFindCheck:
+    """Test the _find_check function."""
+
+    def test_find_check_with_matching_type(self):
+        """Test finding a check by type."""
+        checks = [
+            {"check": "message", "regex": ".*"},
+            {"check": "branch", "regex": ".*"},
+        ]
+        result = _find_check(checks, "branch")
+        assert result == {"check": "branch", "regex": ".*"}
+
+    def test_find_check_with_no_match(self):
+        """Test when no check matches."""
+        checks = [{"check": "message", "regex": ".*"}]
+        result = _find_check(checks, "author_name")
+        assert result is None
+
+
+class TestPrintFailure:
+    """Test the _print_failure function."""
+
+    def test_print_failure_first_call_prints_header(self, capsys):
+        """Test that header is printed on first failure."""
+        print_error_header.has_been_called = False
+        check = {"check": "message", "error": "Invalid format", "suggest": "Use feat:"}
+        _print_failure(check, "^feat:.*", "wrong message")
+
+        captured = capsys.readouterr()
+        assert "Commit rejected" in captured.out
+        assert "check failed ==>" in captured.out
+        assert "Suggest:" in captured.out
+
+    def test_print_failure_subsequent_call_no_header(self, capsys):
+        """Test that header is not printed on subsequent failures."""
+        print_error_header.has_been_called = True
+        check = {"check": "branch", "error": "Invalid branch"}
+        _print_failure(check, "^feature/.*", "wrong-branch")
+
+        captured = capsys.readouterr()
+        assert "CHECK" not in captured.out
+        assert "check failed ==>" in captured.out
+
+
+class TestPrintSuggestionEdgeCases:
+    """Test print_suggestion error paths."""
+
+    def test_print_suggestion_with_none_raises_system_exit(self, capsys):
+        """Test that None suggestion raises SystemExit."""
+        with pytest.raises(SystemExit) as exc_info:
+            print_suggestion(None)
+        assert exc_info.value.code == 1
+
+        captured = capsys.readouterr()
+        assert "commit-check does not support" in captured.out
+
+
+class TestTomlLoading:
+    """Test TOML loading edge cases."""
+
+    def test_load_toml_with_nonexistent_file(self, tmp_path):
+        """Test loading TOML from nonexistent file."""
+        nonexistent = tmp_path / "does_not_exist.toml"
+        result = _load_toml(nonexistent)
+        assert result == {}
+
+    def test_load_toml_with_invalid_toml(self, tmp_path):
+        """Test loading invalid TOML file."""
+        invalid_toml = tmp_path / "invalid.toml"
+        invalid_toml.write_text("this is not valid toml ][")
+        result = _load_toml(invalid_toml)
+        assert result == {}
+
+    @patch("commit_check.util._toml", None)
+    def test_load_toml_without_toml_module(self, tmp_path):
+        """Test loading TOML when toml module is not available."""
+        valid_toml = tmp_path / "valid.toml"
+        valid_toml.write_text("[commit]\nconventional_commits = true")
+        result = _load_toml(valid_toml)
+        assert result == {}
+
+
+class TestFindConfigFile:
+    """Test config file finding logic."""
+
+    def test_find_config_file_in_directory_commit_check_toml(self, tmp_path):
+        """Test finding commit-check.toml in directory."""
+        config_file = tmp_path / "commit-check.toml"
+        config_file.write_text("[commit]")
+        result = _find_config_file(str(tmp_path))
+        assert result == config_file
+
+    def test_find_config_file_in_directory_cchk_toml(self, tmp_path):
+        """Test finding cchk.toml when commit-check.toml doesn't exist."""
+        config_file = tmp_path / "cchk.toml"
+        config_file.write_text("[commit]")
+        result = _find_config_file(str(tmp_path))
+        assert result == config_file
+
+    def test_find_config_file_priority(self, tmp_path):
+        """Test that commit-check.toml has priority over cchk.toml."""
+        commit_check_file = tmp_path / "commit-check.toml"
+        cchk_file = tmp_path / "cchk.toml"
+        commit_check_file.write_text("[commit]")
+        cchk_file.write_text("[branch]")
+        result = _find_config_file(str(tmp_path))
+        assert result == commit_check_file
+
+    def test_find_config_file_explicit_toml_path(self, tmp_path):
+        """Test finding explicitly specified TOML file."""
+        config_file = tmp_path / "custom.toml"
+        config_file.write_text("[commit]")
+        result = _find_config_file(str(config_file))
+        assert result == config_file
+
+    def test_find_config_file_nonexistent_explicit_path(self, tmp_path):
+        """Test with nonexistent explicit file path."""
+        nonexistent = tmp_path / "nonexistent.toml"
+        result = _find_config_file(str(nonexistent))
+        assert result is None
+
+    def test_find_config_file_non_toml_extension(self, tmp_path):
+        """Test with non-TOML file extension."""
+        yaml_file = tmp_path / "config.yaml"
+        yaml_file.write_text("commit: {}")
+        result = _find_config_file(str(yaml_file))
+        assert result is None
+
+    def test_find_config_file_empty_directory(self, tmp_path):
+        """Test finding config in empty directory."""
+        result = _find_config_file(str(tmp_path))
+        assert result is None
+
+
+class TestValidateConfigYamlFallback:
+    """Test validate_config YAML fallback paths."""
+
+    def test_validate_config_with_yaml_fallback(self, tmp_path):
+        """Test YAML fallback when TOML not found."""
+        yaml_file = tmp_path / "config.yml"
+        yaml_file.write_text("checks:\n  - check: message\n    regex: .*")
+        result = validate_config(str(yaml_file))
+        assert "checks" in result
+        assert len(result["checks"]) > 0
+
+    def test_validate_config_yaml_not_found(self, tmp_path):
+        """Test YAML fallback with nonexistent file."""
+        nonexistent = tmp_path / "nonexistent.yml"
+        result = validate_config(str(nonexistent))
+        assert result == {}
+
+    def test_validate_config_invalid_yaml(self, tmp_path):
+        """Test YAML fallback with invalid YAML."""
+        invalid_yaml = tmp_path / "invalid.yml"
+        invalid_yaml.write_text("invalid: yaml: content: [")
+        result = validate_config(str(invalid_yaml))
+        assert result == {}
+
+    def test_validate_config_empty_yaml(self, tmp_path):
+        """Test YAML fallback with empty file."""
+        empty_yaml = tmp_path / "empty.yml"
+        empty_yaml.write_text("")
+        result = validate_config(str(empty_yaml))
+        assert result == {}

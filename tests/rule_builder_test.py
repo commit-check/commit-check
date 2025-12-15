@@ -155,3 +155,119 @@ class TestRuleBuilder:
         # This should return None when subject_capitalized is False (line 232)
         rule = builder._build_boolean_rule(catalog_entry, builder.commit_config)
         assert rule is None
+
+
+# Additional coverage tests
+class TestRuleBuilderAdditionalCoverage:
+    """Additional tests for comprehensive rule_builder.py coverage."""
+
+    def test_build_length_rule_with_non_integer(self):
+        """Test length rule building with non-integer config value."""
+        config = {"commit": {"subject_max_length": "not an int"}}
+        builder = RuleBuilder(config)
+        rules = builder.build_all_rules()
+
+        length_rules = [r for r in rules if r.check == "subject_max_length"]
+        assert len(length_rules) == 0
+
+    def test_build_author_list_rule_with_non_list(self):
+        """Test author list rule building with non-list config value."""
+        config = {"commit": {"ignore_authors": "not a list"}}
+        builder = RuleBuilder(config)
+        rules = builder.build_all_rules()
+
+        author_rules = [r for r in rules if r.check == "ignore_authors"]
+        assert len(author_rules) == 0
+
+    def test_build_merge_base_rule_with_non_string(self):
+        """Test merge base rule building with non-string config value."""
+        config = {"branch": {"require_rebase_target": 123}}
+        builder = RuleBuilder(config)
+        rules = builder.build_all_rules()
+
+        merge_rules = [r for r in rules if r.check == "merge_base"]
+        assert len(merge_rules) == 0
+
+    def test_build_merge_base_rule_with_empty_string(self):
+        """Test merge base rule building with empty string."""
+        config = {"branch": {"require_rebase_target": ""}}
+        builder = RuleBuilder(config)
+        rules = builder.build_all_rules()
+
+        merge_rules = [r for r in rules if r.check == "merge_base"]
+        assert len(merge_rules) == 0
+
+    def test_build_allow_merge_commits_enabled(self):
+        """Test building allow_merge_commits rule when enabled (default)."""
+        config = {"commit": {"allow_merge_commits": True}}
+        builder = RuleBuilder(config)
+        rules = builder.build_all_rules()
+
+        merge_rules = [r for r in rules if r.check == "allow_merge_commits"]
+        assert len(merge_rules) == 0
+
+    def test_build_length_rule_with_format(self):
+        """Test length rule with format placeholder."""
+        config = {"commit": {"subject_max_length": 72}}
+        builder = RuleBuilder(config)
+
+        from commit_check.rules_catalog import COMMIT_RULES
+
+        catalog_entry = next(
+            (r for r in COMMIT_RULES if r.check == "subject_max_length"), None
+        )
+
+        if catalog_entry:
+            rule = builder._build_length_rule(catalog_entry, "subject_max_length")
+            assert rule is not None
+            assert "72" in rule.error
+
+    def test_build_author_list_rule_with_empty_list(self):
+        """Test author list rule building with empty list."""
+        config = {"commit": {"ignore_authors": []}}
+        builder = RuleBuilder(config)
+        rules = builder.build_all_rules()
+
+        author_rules = [r for r in rules if r.check == "ignore_authors"]
+        assert len(author_rules) == 0
+
+
+class TestValidationRuleToDict:
+    """Test ValidationRule to_dict edge cases."""
+
+    def test_to_dict_with_all_fields(self):
+        """Test to_dict with all fields populated."""
+        rule = ValidationRule(
+            check="author_name",
+            regex=r"^[A-Z].*",
+            error="Invalid author",
+            suggest="Use proper name",
+            value=True,
+            allowed=["Alice", "Bob"],
+            ignored=["bot"],
+        )
+
+        result = rule.to_dict()
+
+        assert result["check"] == "author_name"
+        assert result["regex"] == r"^[A-Z].*"
+        assert result["error"] == "Invalid author"
+        assert result["suggest"] == "Use proper name"
+        assert result["value"] is True
+        assert result["allowed"] == ["Alice", "Bob"]
+        assert result["allowed_types"] == ["Alice", "Bob"]
+        assert result["ignored"] == ["bot"]
+
+    def test_to_dict_with_minimal_fields(self):
+        """Test to_dict with minimal fields."""
+        rule = ValidationRule(check="message")
+
+        result = rule.to_dict()
+
+        assert result["check"] == "message"
+        assert result["regex"] == ""
+        assert result["error"] == ""
+        assert result["suggest"] == ""
+        assert "value" not in result
+        assert "allowed" not in result
+        assert "ignored" not in result
