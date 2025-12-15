@@ -1061,7 +1061,9 @@ class TestCommitMessageValidatorComprehensive:
     @patch("commit_check.engine.get_commit_info")
     @patch("commit_check.engine.has_commits")
     @pytest.mark.benchmark
-    def test_commit_message_validator_failure(self, mock_has_commits, mock_get_commit_info):
+    def test_commit_message_validator_failure(
+        self, mock_has_commits, mock_get_commit_info
+    ):
         """Test CommitMessageValidator failure case."""
         mock_has_commits.return_value = True
 
