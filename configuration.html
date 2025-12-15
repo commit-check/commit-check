@@ -767,6 +767,7 @@
 <span class="c1"># https://conventional-branch.github.io/</span>
 <span class="n">conventional_branch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="n">allow_branch_types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;feature&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;bugfix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;hotfix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;release&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;chore&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;feat&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fix&quot;</span><span class="p">]</span>
+<span class="c1"># allow_branch_names = []  # Optional - additional standalone branch names (e.g., [&quot;develop&quot;, &quot;staging&quot;])</span>
 <span class="c1"># require_rebase_target = &quot;main&quot;  # Optional - no rebase requirement by default</span>
 <span class="c1"># ignore_authors = []      # Optional - no authors ignored by default</span>
 </code></pre></div>
@@ -879,12 +880,18 @@
 <td><p>Allowed branch types when conventional_branch is true.</p></td>
 </tr>
 <tr class="row-even"><td><p>branch</p></td>
+<td><p>allow_branch_names</p></td>
+<td><p>list[str]</p></td>
+<td><p>[] (empty list)</p></td>
+<td><p>Additional standalone branch names allowed when conventional_branch is true (e.g., [“develop”, “staging”]). By default, master, main, HEAD, and PR-* are always allowed.</p></td>
+</tr>
+<tr class="row-odd"><td><p>branch</p></td>
 <td><p>require_rebase_target</p></td>
 <td><p>str</p></td>
 <td><p>None (no requirement)</p></td>
 <td><p>Target branch for rebase requirement. If not set, no rebase validation is performed.</p></td>
 </tr>
-<tr class="row-odd"><td><p>branch</p></td>
+<tr class="row-even"><td><p>branch</p></td>
 <td><p>ignore_authors</p></td>
 <td><p>list[str]</p></td>
 <td><p>[] (none ignored)</p></td>
