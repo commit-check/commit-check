@@ -155,3 +155,74 @@ class TestRuleBuilder:
         # This should return None when subject_capitalized is False (line 232)
         rule = builder._build_boolean_rule(catalog_entry, builder.commit_config)
         assert rule is None
+
+    @pytest.mark.benchmark
+    def test_rule_builder_allow_branch_names_default(self):
+        """Test RuleBuilder with default branch names (no allow_branch_names configured)."""
+        config = {"branch": {"conventional_branch": True}}
+
+        builder = RuleBuilder(config)
+        catalog_entry = RuleCatalogEntry(check="branch", regex="", error="", suggest="")
+
+        rule = builder._build_conventional_branch_rule(catalog_entry)
+        assert rule is not None
+        # Should include default branch names: master, main, HEAD, PR-*
+        assert "(master)" in rule.regex
+        assert "(main)" in rule.regex
+        assert "(HEAD)" in rule.regex
+        assert "(PR-.+)" in rule.regex
+
+    @pytest.mark.benchmark
+    def test_rule_builder_allow_branch_names_custom(self):
+        """Test RuleBuilder with custom branch names (allow_branch_names configured)."""
+        config = {
+            "branch": {
+                "conventional_branch": True,
+                "allow_branch_names": ["develop", "staging", "production"],
+            }
+        }
+
+        builder = RuleBuilder(config)
+        catalog_entry = RuleCatalogEntry(check="branch", regex="", error="", suggest="")
+
+        rule = builder._build_conventional_branch_rule(catalog_entry)
+        assert rule is not None
+        # Should include both default and custom branch names
+        assert "(master)" in rule.regex
+        assert "(main)" in rule.regex
+        assert "(HEAD)" in rule.regex
+        assert "(PR-.+)" in rule.regex
+        assert "(develop)" in rule.regex
+        assert "(staging)" in rule.regex
+        assert "(production)" in rule.regex
+
+    @pytest.mark.benchmark
+    def test_rule_builder_allow_branch_names_empty_list(self):
+        """Test RuleBuilder with empty allow_branch_names list."""
+        config = {"branch": {"conventional_branch": True, "allow_branch_names": []}}
+
+        builder = RuleBuilder(config)
+        catalog_entry = RuleCatalogEntry(check="branch", regex="", error="", suggest="")
+
+        rule = builder._build_conventional_branch_rule(catalog_entry)
+        assert rule is not None
+        # Should only include default branch names
+        assert "(master)" in rule.regex
+        assert "(main)" in rule.regex
+        assert "(HEAD)" in rule.regex
+        assert "(PR-.+)" in rule.regex
+
+    @pytest.mark.benchmark
+    def test_rule_builder_allow_branch_names_with_duplicates(self):
+        """Test RuleBuilder with duplicate branch names in allow_branch_names."""
+        config = {
+            "branch": {
+                "conventional_branch": True,
+                "allow_branch_names": ["develop", "develop", "staging", "develop"],
+            }
+        }
+
+        builder = RuleBuilder(config)
+        allowed_names = builder._get_allowed_branch_names()
+        # Should deduplicate while preserving order
+        assert allowed_names == ["develop", "staging"]

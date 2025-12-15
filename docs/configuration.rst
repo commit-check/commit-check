@@ -45,6 +45,7 @@ Example Configuration
     # https://conventional-branch.github.io/
     conventional_branch = true
     allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
+    # allow_branch_names = []  # Optional - additional standalone branch names (e.g., ["develop", "staging"])
     # require_rebase_target = "main"  # Optional - no rebase requirement by default
     # ignore_authors = []      # Optional - no authors ignored by default
 
@@ -140,6 +141,11 @@ Options Table Description
      - list[str]
      - ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
      - Allowed branch types when conventional_branch is true.
+   * - branch
+     - allow_branch_names
+     - list[str]
+     - [] (empty list)
+     - Additional standalone branch names allowed when conventional_branch is true (e.g., ["develop", "staging"]). By default, master, main, HEAD, and PR-* are always allowed.
    * - branch
      - require_rebase_target
      - str

@@ -41,6 +41,8 @@ DEFAULT_BRANCH_TYPES = [
     "feat",
     "fix",
 ]
+# Additional allowed branch names (e.g., develop, staging)
+DEFAULT_BRANCH_NAMES: list[str] = []
 
 # Handle different default values for different rules
 DEFAULT_BOOLEAN_RULES = {
