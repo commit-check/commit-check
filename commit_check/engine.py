@@ -522,7 +522,7 @@ class ValidationEngine:
     VALIDATOR_MAP: Dict[str, Type[BaseValidator]] = {
         "message": CommitMessageValidator,
         "subject_capitalized": SubjectCapitalizationValidator,
-        "imperative": SubjectImperativeValidator,
+        "subject_imperative": SubjectImperativeValidator,
         "subject_max_length": SubjectLengthValidator,
         "subject_min_length": SubjectLengthValidator,
         "author_name": AuthorValidator,
