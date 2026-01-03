@@ -1,8 +1,5 @@
 name: main
 
-permissions:
-  contents: write
-
 on:
   push:
     branches:
@@ -85,6 +82,8 @@ jobs:
 
   docs:
       runs-on: ubuntu-24.04
+      permissions:
+        contents: write
       steps:
         - uses: actions/checkout@v6.0.1
         - uses: actions/setup-python@v6.1.0
