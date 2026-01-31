@@ -320,7 +320,7 @@ class TestConfigFallback:
 
             with patch("builtins.__import__", side_effect=mock_import):
                 # Now import config - should use tomli fallback
-                import commit_check.config as config
+                from commit_check.config import toml_load
 
                 # Test that it works
                 config_content = b'test_key = "test_value"'
@@ -332,7 +332,7 @@ class TestConfigFallback:
 
                     try:
                         with open(f.name, "rb") as config_file:
-                            result = config.toml_load(config_file)
+                            result = toml_load(config_file)
                         assert result == {"test_key": "test_value"}
                     finally:
                         os.unlink(f.name)
@@ -375,9 +375,7 @@ except ImportError:
         with patch.dict("sys.modules", {"tomllib": None}):
             with patch(
                 "builtins.__import__",
-                side_effect=lambda name, *args, **kwargs: self._mock_import_error(
-                    name, *args, **kwargs
-                ),
+                side_effect=self._mock_import_error,
             ):
                 namespace2 = {}
                 exec(test_code, namespace2)
