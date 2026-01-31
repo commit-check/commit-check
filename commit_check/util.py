@@ -170,7 +170,12 @@ def _find_config_file(path_hint: str) -> Optional[PurePath]:
     """
     p = Path(path_hint)
     if p.is_dir():
-        for name in ("cchk.toml", "commit-check.toml", ".github/cchk.toml", ".github/commit-check.toml"):
+        for name in (
+            "cchk.toml",
+            "commit-check.toml",
+            ".github/cchk.toml",
+            ".github/commit-check.toml",
+        ):
             candidate = p / name
             if candidate.exists():
                 return candidate

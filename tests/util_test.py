@@ -466,7 +466,7 @@ class TestUtil:
                 # Create both root and .github configs
                 root_config = Path(tmpdir) / "cchk.toml"
                 root_config.write_text("[checks]")
-                
+
                 github_dir = Path(tmpdir) / ".github"
                 github_dir.mkdir()
                 github_config = github_dir / "cchk.toml"
