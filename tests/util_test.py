@@ -1,15 +1,24 @@
 import pytest
 import subprocess
-from commit_check.util import get_branch_name
-from commit_check.util import has_commits
-from commit_check.util import git_merge_base
-from commit_check.util import get_commit_info
-from commit_check.util import cmd_output
-from commit_check.util import print_error_header
-from commit_check.util import print_error_message
-from commit_check.util import print_suggestion
+import tempfile
+import os
+from pathlib import Path, PurePath
+from commit_check.util import (
+    get_branch_name,
+    has_commits,
+    git_merge_base,
+    get_commit_info,
+    cmd_output,
+    print_error_header,
+    print_error_message,
+    print_suggestion,
+    _find_check,
+    _load_toml,
+    _find_config_file,
+    validate_config,
+)
 from subprocess import CalledProcessError, PIPE
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 
 class TestUtil:
@@ -339,3 +348,197 @@ class TestUtil:
             assert e.value.code == 1
             stdout, _ = capfd.readouterr()
             assert "commit-check does not support" in stdout
+
+    class TestHelperFunctions:
+        """Tests for utility helper functions to improve coverage."""
+
+        def test_find_check_found(self):
+            """Test _find_check when check is found."""
+            checks = [
+                {"check": "commit-message", "regex": ".*"},
+                {"check": "branch-name", "regex": ".*"},
+            ]
+            result = _find_check(checks, "commit-message")
+            assert result == {"check": "commit-message", "regex": ".*"}
+
+        def test_find_check_not_found(self):
+            """Test _find_check when check is not found."""
+            checks = [
+                {"check": "commit-message", "regex": ".*"},
+            ]
+            result = _find_check(checks, "author-name")
+            assert result is None
+
+        def test_find_check_empty_list(self):
+            """Test _find_check with empty list."""
+            checks = []
+            result = _find_check(checks, "commit-message")
+            assert result is None
+
+        def test_load_toml_file_not_found(self):
+            """Test _load_toml with non-existent file."""
+            result = _load_toml(PurePath("/nonexistent/path/config.toml"))
+            assert result == {}
+
+        def test_load_toml_invalid_toml(self):
+            """Test _load_toml with invalid TOML content."""
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".toml", delete=False
+            ) as f:
+                f.write("invalid toml { content")
+                temp_path = f.name
+
+            try:
+                result = _load_toml(PurePath(temp_path))
+                assert result == {}
+            finally:
+                os.unlink(temp_path)
+
+        def test_load_toml_valid(self):
+            """Test _load_toml with valid TOML content."""
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".toml", delete=False
+            ) as f:
+                f.write('[checks]\ncommit_message = { pattern = ".*" }\n')
+                temp_path = f.name
+
+            try:
+                result = _load_toml(PurePath(temp_path))
+                assert isinstance(result, dict)
+                assert "checks" in result
+            finally:
+                os.unlink(temp_path)
+
+        def test_find_config_file_directory_commit_check_toml(self):
+            """Test _find_config_file finds commit-check.toml in directory."""
+            with tempfile.TemporaryDirectory() as tmpdir:
+                config_file = Path(tmpdir) / "commit-check.toml"
+                config_file.write_text("[checks]")
+
+                result = _find_config_file(tmpdir)
+                assert result == config_file
+
+        def test_find_config_file_directory_cchk_toml(self):
+            """Test _find_config_file finds cchk.toml in directory."""
+            with tempfile.TemporaryDirectory() as tmpdir:
+                config_file = Path(tmpdir) / "cchk.toml"
+                config_file.write_text("[checks]")
+
+                result = _find_config_file(tmpdir)
+                assert result == config_file
+
+        def test_find_config_file_directory_priority(self):
+            """Test _find_config_file prefers commit-check.toml over cchk.toml."""
+            with tempfile.TemporaryDirectory() as tmpdir:
+                config1 = Path(tmpdir) / "commit-check.toml"
+                config2 = Path(tmpdir) / "cchk.toml"
+                config1.write_text("[checks]")
+                config2.write_text("[checks]")
+
+                result = _find_config_file(tmpdir)
+                assert result == config1
+
+        def test_find_config_file_directory_no_config(self):
+            """Test _find_config_file returns None when no config found in directory."""
+            with tempfile.TemporaryDirectory() as tmpdir:
+                result = _find_config_file(tmpdir)
+                assert result is None
+
+        def test_find_config_file_explicit_toml_exists(self):
+            """Test _find_config_file with explicit .toml file path."""
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".toml", delete=False
+            ) as f:
+                f.write("[checks]")
+                temp_path = f.name
+
+            try:
+                result = _find_config_file(temp_path)
+                assert result == Path(temp_path)
+            finally:
+                os.unlink(temp_path)
+
+        def test_find_config_file_explicit_toml_not_exists(self):
+            """Test _find_config_file with non-existent .toml file path."""
+            result = _find_config_file("/nonexistent/config.toml")
+            assert result is None
+
+        def test_find_config_file_non_toml_file(self):
+            """Test _find_config_file with non-.toml file."""
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".yml", delete=False
+            ) as f:
+                f.write("checks:")
+                temp_path = f.name
+
+            try:
+                result = _find_config_file(temp_path)
+                assert result is None
+            finally:
+                os.unlink(temp_path)
+
+        def test_validate_config_with_toml(self):
+            """Test validate_config loads and validates TOML config."""
+            with tempfile.TemporaryDirectory() as tmpdir:
+                config_file = Path(tmpdir) / "commit-check.toml"
+                config_file.write_text("""
+[checks.commit_message]
+pattern = "^(feat|fix|docs|style|refactor|test|chore).*"
+""")
+
+                result = validate_config(tmpdir)
+                assert "checks" in result
+                assert isinstance(result["checks"], list)
+
+        def test_validate_config_yaml_fallback(self):
+            """Test validate_config falls back to YAML when TOML not found."""
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".yml", delete=False
+            ) as f:
+                f.write("""
+checks:
+  - check: commit-message
+    regex: ".*"
+""")
+                temp_path = f.name
+
+            try:
+                result = validate_config(temp_path)
+                assert isinstance(result, dict)
+            finally:
+                os.unlink(temp_path)
+
+        def test_validate_config_yaml_not_found(self):
+            """Test validate_config returns empty dict when YAML not found."""
+            result = validate_config("/nonexistent/config.yml")
+            assert result == {}
+
+        def test_validate_config_yaml_invalid(self):
+            """Test validate_config handles invalid YAML."""
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".yml", delete=False
+            ) as f:
+                f.write("invalid: yaml: : content:")
+                temp_path = f.name
+
+            try:
+                result = validate_config(temp_path)
+                # Should return empty dict on error
+                assert isinstance(result, dict)
+            finally:
+                os.unlink(temp_path)
+
+        def test_validate_config_empty_toml(self):
+            """Test validate_config with empty TOML file."""
+            with tempfile.TemporaryDirectory() as tmpdir:
+                config_file = Path(tmpdir) / "commit-check.toml"
+                config_file.write_text("")
+
+                result = validate_config(tmpdir)
+                assert result == {}
+
+        @patch("commit_check.util._toml", None)
+        def test_load_toml_when_toml_not_available(self):
+            """Test _load_toml returns empty dict when toml library not available."""
+            result = _load_toml(PurePath("/some/path/config.toml"))
+            assert result == {}

@@ -24,7 +24,7 @@ except Exception:  # pragma: no cover
         _toml = None  # type: ignore[assignment]
 
 
-def _find_check(checks: list, check_type: str) -> dict | None:
+def _find_check(checks: list, check_type: str) -> Optional[dict]:
     """Return the first check dict matching check_type, else None."""
     for check in checks:
         if check.get("check") == check_type:
@@ -254,7 +254,7 @@ def print_error_message(check_type: str, regex: str, error: str, reason: str):
     print(error)
 
 
-def print_suggestion(suggest: str | None) -> None:
+def print_suggestion(suggest: Optional[str]) -> None:
     """Print suggestion to user
     :param suggest: what message to print out
     """
