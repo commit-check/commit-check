@@ -428,15 +428,53 @@ class TestUtil:
                 assert result == config_file
 
         def test_find_config_file_directory_priority(self):
-            """Test _find_config_file prefers commit-check.toml over cchk.toml."""
+            """Test _find_config_file prefers cchk.toml over commit-check.toml."""
             with tempfile.TemporaryDirectory() as tmpdir:
-                config1 = Path(tmpdir) / "commit-check.toml"
-                config2 = Path(tmpdir) / "cchk.toml"
+                config1 = Path(tmpdir) / "cchk.toml"
+                config2 = Path(tmpdir) / "commit-check.toml"
                 config1.write_text("[checks]")
                 config2.write_text("[checks]")
 
                 result = _find_config_file(tmpdir)
                 assert result == config1
+
+        def test_find_config_file_github_directory_cchk_toml(self):
+            """Test _find_config_file finds .github/cchk.toml in directory."""
+            with tempfile.TemporaryDirectory() as tmpdir:
+                github_dir = Path(tmpdir) / ".github"
+                github_dir.mkdir()
+                config_file = github_dir / "cchk.toml"
+                config_file.write_text("[checks]")
+
+                result = _find_config_file(tmpdir)
+                assert result == config_file
+
+        def test_find_config_file_github_directory_commit_check_toml(self):
+            """Test _find_config_file finds .github/commit-check.toml in directory."""
+            with tempfile.TemporaryDirectory() as tmpdir:
+                github_dir = Path(tmpdir) / ".github"
+                github_dir.mkdir()
+                config_file = github_dir / "commit-check.toml"
+                config_file.write_text("[checks]")
+
+                result = _find_config_file(tmpdir)
+                assert result == config_file
+
+        def test_find_config_file_priority_root_over_github(self):
+            """Test _find_config_file prefers root configs over .github configs."""
+            with tempfile.TemporaryDirectory() as tmpdir:
+                # Create both root and .github configs
+                root_config = Path(tmpdir) / "cchk.toml"
+                root_config.write_text("[checks]")
+
+                github_dir = Path(tmpdir) / ".github"
+                github_dir.mkdir()
+                github_config = github_dir / "cchk.toml"
+                github_config.write_text("[checks]")
+
+                result = _find_config_file(tmpdir)
+                # Should prefer root over .github
+                assert result == root_config
 
         def test_find_config_file_directory_no_config(self):
             """Test _find_config_file returns None when no config found in directory."""

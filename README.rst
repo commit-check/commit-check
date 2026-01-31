@@ -80,7 +80,7 @@ Use Default Configuration
 Use Custom Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-To customize the behavior, create a configuration file named ``cchk.toml`` or ``commit-check.toml`` in your repository's root directory, e.g., `cchk.toml <https://github.com/commit-check/commit-check/blob/main/cchk.toml>`_
+To customize the behavior, create a configuration file named ``cchk.toml`` or ``commit-check.toml`` in your repository's root directory or in the ``.github`` folder, e.g., `cchk.toml <https://github.com/commit-check/commit-check/blob/main/cchk.toml>`_ or ``.github/cchk.toml``.
 
 Usage
 -----

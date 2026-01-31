@@ -14,7 +14,22 @@ Configuration
 
 commit-check can be configured via a ``cchk.toml`` or ``commit-check.toml`` file.
 
-The file should be placed in the root of your repository.
+The file should be placed in the root of your repository or in the ``.github`` folder.
+
+Configuration File Locations
+-----------------------------
+
+commit-check searches for configuration files in the following order (first found is used):
+
+1. ``cchk.toml`` (root directory)
+2. ``commit-check.toml`` (root directory)
+3. ``.github/cchk.toml``
+4. ``.github/commit-check.toml``
+
+.. tip::
+  **GitHub Best Practice**
+
+  Placing configuration files in the ``.github`` folder helps keep your repository root clean and follows GitHub conventions used by tools like Dependabot and Renovate.
 
 Example Configuration
 ---------------------

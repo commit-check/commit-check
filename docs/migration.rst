@@ -153,7 +153,7 @@ Common Issues
 
 **Issue**: "Configuration file not found"
 
-**Solution**: Ensure your file is named ``cchk.toml`` or ``commit-check.toml`` and placed in the repository root.
+**Solution**: Ensure your file is named ``cchk.toml`` or ``commit-check.toml`` and placed in the repository root or in the ``.github`` folder.
 
 **Issue**: "Invalid TOML syntax"
 
