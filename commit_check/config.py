@@ -15,6 +15,8 @@ except ImportError:
 DEFAULT_CONFIG_PATHS = [
     Path("cchk.toml"),
     Path("commit-check.toml"),
+    Path(".github/cchk.toml"),
+    Path(".github/commit-check.toml"),
 ]
 
 

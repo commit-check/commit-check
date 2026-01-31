@@ -80,6 +80,79 @@ commit_check_toml = true
                 os.chdir(original_cwd)
 
     @pytest.mark.benchmark
+    def test_load_config_github_cchk_toml(self):
+        """Test loading config from .github/cchk.toml path."""
+        config_content = b"""
+[checks]
+github_cchk = true
+"""
+        original_cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            os.chdir(tmpdir)
+            try:
+                # Create .github directory
+                os.makedirs(".github", exist_ok=True)
+                with open(".github/cchk.toml", "wb") as f:
+                    f.write(config_content)
+
+                config = load_config()
+                assert "checks" in config
+                assert config["checks"]["github_cchk"] is True
+            finally:
+                os.chdir(original_cwd)
+
+    @pytest.mark.benchmark
+    def test_load_config_github_commit_check_toml(self):
+        """Test loading config from .github/commit-check.toml path."""
+        config_content = b"""
+[checks]
+github_commit_check = true
+"""
+        original_cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            os.chdir(tmpdir)
+            try:
+                # Create .github directory
+                os.makedirs(".github", exist_ok=True)
+                with open(".github/commit-check.toml", "wb") as f:
+                    f.write(config_content)
+
+                config = load_config()
+                assert "checks" in config
+                assert config["checks"]["github_commit_check"] is True
+            finally:
+                os.chdir(original_cwd)
+
+    @pytest.mark.benchmark
+    def test_load_config_priority_root_over_github(self):
+        """Test that root config files have priority over .github folder."""
+        root_config = b"""
+[checks]
+location = "root"
+"""
+        github_config = b"""
+[checks]
+location = "github"
+"""
+        original_cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            os.chdir(tmpdir)
+            try:
+                # Create both root and .github configs
+                with open("cchk.toml", "wb") as f:
+                    f.write(root_config)
+                os.makedirs(".github", exist_ok=True)
+                with open(".github/cchk.toml", "wb") as f:
+                    f.write(github_config)
+
+                config = load_config()
+                assert "checks" in config
+                # Should load from root, not .github
+                assert config["checks"]["location"] == "root"
+            finally:
+                os.chdir(original_cwd)
+
+    @pytest.mark.benchmark
     def test_load_config_file_not_found(self):
         """Test returning empty config when no default config files exist."""
         original_cwd = os.getcwd()
@@ -110,9 +183,11 @@ commit_check_toml = true
     @pytest.mark.benchmark
     def test_default_config_paths_constant(self):
         """Test that DEFAULT_CONFIG_PATHS contains expected paths."""
-        assert len(DEFAULT_CONFIG_PATHS) == 2
+        assert len(DEFAULT_CONFIG_PATHS) == 4
         assert Path("cchk.toml") in DEFAULT_CONFIG_PATHS
         assert Path("commit-check.toml") in DEFAULT_CONFIG_PATHS
+        assert Path(".github/cchk.toml") in DEFAULT_CONFIG_PATHS
+        assert Path(".github/commit-check.toml") in DEFAULT_CONFIG_PATHS
 
     @pytest.mark.benchmark
     def test_toml_load_function_exists(self):
