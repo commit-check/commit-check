@@ -428,10 +428,10 @@ class TestUtil:
                 assert result == config_file
 
         def test_find_config_file_directory_priority(self):
-            """Test _find_config_file prefers commit-check.toml over cchk.toml."""
+            """Test _find_config_file prefers cchk.toml over commit-check.toml."""
             with tempfile.TemporaryDirectory() as tmpdir:
-                config1 = Path(tmpdir) / "commit-check.toml"
-                config2 = Path(tmpdir) / "cchk.toml"
+                config1 = Path(tmpdir) / "cchk.toml"
+                config2 = Path(tmpdir) / "commit-check.toml"
                 config1.write_text("[checks]")
                 config2.write_text("[checks]")
 

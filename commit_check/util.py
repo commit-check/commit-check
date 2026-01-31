@@ -164,13 +164,13 @@ def _load_toml(path: PurePath) -> Dict[str, Any]:
 def _find_config_file(path_hint: str) -> Optional[PurePath]:
     """Resolve config file.
 
-    - If a directory is passed, search in priority: commit-check.toml, cchk.toml, .github/commit-check.toml, .github/cchk.toml
+    - If a directory is passed, search in priority: cchk.toml, commit-check.toml, .github/cchk.toml, .github/commit-check.toml
     - If a file ending with .toml is passed, use it if exists.
     - Ignore legacy .commit-check.yml entirely.
     """
     p = Path(path_hint)
     if p.is_dir():
-        for name in ("commit-check.toml", "cchk.toml", ".github/commit-check.toml", ".github/cchk.toml"):
+        for name in ("cchk.toml", "commit-check.toml", ".github/cchk.toml", ".github/commit-check.toml"):
             candidate = p / name
             if candidate.exists():
                 return candidate
