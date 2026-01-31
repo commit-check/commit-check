@@ -810,6 +810,34 @@ class TestValidationEngine:
             result = engine.validate_all(context)
             assert result == ValidationResult.FAIL  # Any failure = overall failure
 
+    @pytest.mark.benchmark
+    def test_validation_engine_validator_map(self):
+        """Test ValidationEngine VALIDATOR_MAP contains expected mappings."""
+        engine = ValidationEngine([])
+
+        expected_mappings = {
+            "message": CommitMessageValidator,
+            "subject_capitalized": SubjectCapitalizationValidator,
+            "subject_imperative": SubjectImperativeValidator,
+            "subject_max_length": SubjectLengthValidator,
+            "subject_min_length": SubjectLengthValidator,
+            "author_name": AuthorValidator,
+            "author_email": AuthorValidator,
+            "branch": BranchValidator,
+            "merge_base": MergeBaseValidator,
+            "require_signed_off_by": SignoffValidator,
+            "require_body": BodyValidator,
+            "allow_merge_commits": CommitTypeValidator,
+            "allow_revert_commits": CommitTypeValidator,
+            "allow_empty_commits": CommitTypeValidator,
+            "allow_fixup_commits": CommitTypeValidator,
+            "allow_wip_commits": CommitTypeValidator,
+            "ignore_authors": CommitTypeValidator,
+        }
+
+        for check, validator_class in expected_mappings.items():
+            assert engine.VALIDATOR_MAP[check] == validator_class
+
 
 class TestSubjectValidator:
     """Test SubjectValidator base class."""
