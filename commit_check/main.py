@@ -43,7 +43,7 @@ def _get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-c",
         "--config",
-        help="path to config file (cchk.toml or commit-check.toml). If not specified, searches for cchk.toml in current directory",
+        help="path to config file (cchk.toml or commit-check.toml). If not specified, searches for config in: cchk.toml, commit-check.toml, .github/cchk.toml, .github/commit-check.toml",
     )
 
     parser.add_argument(
