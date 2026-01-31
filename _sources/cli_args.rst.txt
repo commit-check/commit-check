@@ -19,8 +19,9 @@ options:
 
   -c CONFIG, --config CONFIG
                         path to config file (cchk.toml or commit-check.toml).
-                        If not specified, searches for cchk.toml in current
-                        directory
+                        If not specified, searches for config in: cchk.toml,
+                        commit-check.toml, .github/cchk.toml, .github/commit-
+                        check.toml
 
 .. std:option:: -m, --message
 

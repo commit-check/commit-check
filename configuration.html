@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#example-configuration" class="md-skip">
+        <a href="#configuration-file-locations" class="md-skip">
           Skip to content
         </a>
       
@@ -521,6 +521,16 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#configuration-file-locations" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Configuration File Locations</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#example-configuration" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -695,6 +705,16 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#configuration-file-locations" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Configuration File Locations</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#example-configuration" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -742,7 +762,20 @@
 </ul>
 </div>
 <p>commit-check can be configured via a <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> file.</p>
-<p>The file should be placed in the root of your repository.</p>
+<p>The file should be placed in the root of your repository or in the <code class="docutils literal notranslate"><span class="pre">.github</span></code> folder.</p>
+<h2 id="configuration-file-locations">Configuration File Locations<a class="headerlink" href="#configuration-file-locations" title="Link to this heading">¶</a></h2>
+<p>commit-check searches for configuration files in the following order (first found is used):</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> (root directory)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> (root directory)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.github/cchk.toml</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.github/commit-check.toml</span></code></p></li>
+</ol>
+<div class="tip admonition">
+<p class="admonition-title">Tip</p>
+<p><strong>GitHub Best Practice</strong></p>
+<p>Placing configuration files in the <code class="docutils literal notranslate"><span class="pre">.github</span></code> folder helps keep your repository root clean and follows GitHub conventions used by tools like Dependabot and Renovate.</p>
+</div>
 <h2 id="example-configuration">Example Configuration<a class="headerlink" href="#example-configuration" title="Link to this heading">¶</a></h2>
 <div class="copy highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="k">[commit]</span>
 <span class="c1"># https://www.conventionalcommits.org</span>
