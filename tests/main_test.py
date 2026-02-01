@@ -319,3 +319,158 @@ class TestMainFunctionEdgeCases:
             "Error: Specified config file not found: /nonexistent/config.toml"
             in captured.err
         )
+
+
+class TestCLIArgumentIntegration:
+    """Test CLI argument integration with the new config merger."""
+
+    @pytest.mark.benchmark
+    def test_cli_subject_imperative_true(self, mocker):
+        """Test --subject-imperative=true rejects non-imperative commit."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: Added feature\n")
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
+
+        sys.argv = ["commit-check", "--message", "--subject-imperative=true"]
+        result = main()
+        assert result == 1  # Should fail due to non-imperative mood
+
+    @pytest.mark.benchmark
+    def test_cli_subject_imperative_false(self, mocker):
+        """Test --subject-imperative=false allows non-imperative commit."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: Added feature\n")
+
+        sys.argv = ["commit-check", "--message", "--subject-imperative=false"]
+        result = main()
+        assert result == 0  # Should pass
+
+    @pytest.mark.benchmark
+    def test_cli_subject_max_length(self, mocker):
+        """Test --subject-max-length limits commit subject."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch(
+            "sys.stdin.read",
+            return_value="feat: This is a very long commit message that exceeds the limit\n",
+        )
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
+
+        sys.argv = ["commit-check", "--message", "--subject-max-length=30"]
+        result = main()
+        assert result == 1  # Should fail due to length
+
+    @pytest.mark.benchmark
+    def test_cli_allow_commit_types(self, mocker):
+        """Test --allow-commit-types restricts commit types."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="chore: do something\n")
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
+
+        sys.argv = ["commit-check", "--message", "--allow-commit-types=feat,fix"]
+        result = main()
+        assert result == 1  # Should fail because 'chore' is not in allowed types
+
+    @pytest.mark.benchmark
+    def test_cli_allow_merge_commits_false(self, mocker):
+        """Test --allow-merge-commits=false rejects merge commits."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch(
+            "sys.stdin.read", return_value="Merge branch 'feature' into main\n"
+        )
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
+
+        sys.argv = ["commit-check", "--message", "--allow-merge-commits=false"]
+        result = main()
+        assert result == 1  # Should fail
+
+    @pytest.mark.benchmark
+    def test_cli_multiple_args_combined(self, mocker):
+        """Test multiple CLI arguments work together."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: Add feature\n")
+
+        sys.argv = [
+            "commit-check",
+            "--message",
+            "--subject-imperative=true",
+            "--subject-max-length=100",
+            "--allow-commit-types=feat,fix,docs",
+        ]
+        result = main()
+        assert result == 0  # Should pass all checks
+
+
+class TestEnvironmentVariableIntegration:
+    """Test environment variable integration with the new config merger."""
+
+    @pytest.mark.benchmark
+    def test_env_subject_imperative(self, mocker, monkeypatch):
+        """Test CCHK_SUBJECT_IMPERATIVE environment variable."""
+        monkeypatch.setenv("CCHK_SUBJECT_IMPERATIVE", "true")
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: Added feature\n")
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
+
+        sys.argv = ["commit-check", "--message"]
+        result = main()
+        assert result == 1  # Should fail due to non-imperative
+
+    @pytest.mark.benchmark
+    def test_env_subject_max_length(self, mocker, monkeypatch):
+        """Test CCHK_SUBJECT_MAX_LENGTH environment variable."""
+        monkeypatch.setenv("CCHK_SUBJECT_MAX_LENGTH", "30")
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch(
+            "sys.stdin.read",
+            return_value="feat: This is a very long commit message\n",
+        )
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
+
+        sys.argv = ["commit-check", "--message"]
+        result = main()
+        assert result == 1  # Should fail due to length
+
+    @pytest.mark.benchmark
+    def test_env_allow_commit_types(self, mocker, monkeypatch):
+        """Test CCHK_ALLOW_COMMIT_TYPES environment variable."""
+        monkeypatch.setenv("CCHK_ALLOW_COMMIT_TYPES", "feat,fix")
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="chore: do something\n")
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
+
+        sys.argv = ["commit-check", "--message"]
+        result = main()
+        assert result == 1  # Should fail
+
+
+class TestConfigPriority:
+    """Test configuration priority: CLI > Env > TOML > Defaults."""
+
+    @pytest.mark.benchmark
+    def test_cli_overrides_env(self, mocker, monkeypatch):
+        """Test that CLI arguments override environment variables."""
+        # Set env var to true
+        monkeypatch.setenv("CCHK_SUBJECT_IMPERATIVE", "true")
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: Added feature\n")
+
+        # Override with CLI to false
+        sys.argv = ["commit-check", "--message", "--subject-imperative=false"]
+        result = main()
+        assert result == 0  # CLI wins, should pass
+
+    @pytest.mark.benchmark
+    def test_env_overrides_default(self, mocker, monkeypatch):
+        """Test that environment variables override defaults."""
+        # Default subject_max_length is 80
+        monkeypatch.setenv("CCHK_SUBJECT_MAX_LENGTH", "30")
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch(
+            "sys.stdin.read",
+            return_value="feat: This is a commit message that is longer than 30 chars\n",
+        )
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
+
+        sys.argv = ["commit-check", "--message"]
+        result = main()
+        assert result == 1  # Env var wins, should fail
