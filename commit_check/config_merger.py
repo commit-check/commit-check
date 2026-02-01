@@ -121,6 +121,31 @@ class ConfigMerger:
         "CCHK_BRANCH_IGNORE_AUTHORS": ("branch", "ignore_authors", parse_list),
     }
 
+    # Mapping of CLI argument names to config keys
+    CLI_ARG_MAPPING: Dict[str, Tuple[str, str]] = {
+        # Commit section
+        "conventional_commits": ("commit", "conventional_commits"),
+        "subject_capitalized": ("commit", "subject_capitalized"),
+        "subject_imperative": ("commit", "subject_imperative"),
+        "subject_max_length": ("commit", "subject_max_length"),
+        "subject_min_length": ("commit", "subject_min_length"),
+        "allow_commit_types": ("commit", "allow_commit_types"),
+        "allow_merge_commits": ("commit", "allow_merge_commits"),
+        "allow_revert_commits": ("commit", "allow_revert_commits"),
+        "allow_empty_commits": ("commit", "allow_empty_commits"),
+        "allow_fixup_commits": ("commit", "allow_fixup_commits"),
+        "allow_wip_commits": ("commit", "allow_wip_commits"),
+        "require_body": ("commit", "require_body"),
+        "require_signed_off_by": ("commit", "require_signed_off_by"),
+        "ignore_authors": ("commit", "ignore_authors"),
+        # Branch section
+        "conventional_branch": ("branch", "conventional_branch"),
+        "allow_branch_types": ("branch", "allow_branch_types"),
+        "allow_branch_names": ("branch", "allow_branch_names"),
+        "require_rebase_target": ("branch", "require_rebase_target"),
+        "branch_ignore_authors": ("branch", "ignore_authors"),
+    }
+
     @staticmethod
     def parse_env_vars() -> Dict[str, Any]:
         """Parse environment variables with CCHK_ prefix into config dict."""
@@ -145,77 +170,11 @@ class ConfigMerger:
         """Parse CLI arguments into config dict."""
         config: Dict[str, Any] = {"commit": {}, "branch": {}}
 
-        # Commit section arguments
-        if (
-            hasattr(args, "conventional_commits")
-            and args.conventional_commits is not None
-        ):
-            config["commit"]["conventional_commits"] = args.conventional_commits
-        if (
-            hasattr(args, "subject_capitalized")
-            and args.subject_capitalized is not None
-        ):
-            config["commit"]["subject_capitalized"] = args.subject_capitalized
-        if hasattr(args, "subject_imperative") and args.subject_imperative is not None:
-            config["commit"]["subject_imperative"] = args.subject_imperative
-        if hasattr(args, "subject_max_length") and args.subject_max_length is not None:
-            config["commit"]["subject_max_length"] = args.subject_max_length
-        if hasattr(args, "subject_min_length") and args.subject_min_length is not None:
-            config["commit"]["subject_min_length"] = args.subject_min_length
-        if hasattr(args, "allow_commit_types") and args.allow_commit_types is not None:
-            config["commit"]["allow_commit_types"] = args.allow_commit_types
-        if (
-            hasattr(args, "allow_merge_commits")
-            and args.allow_merge_commits is not None
-        ):
-            config["commit"]["allow_merge_commits"] = args.allow_merge_commits
-        if (
-            hasattr(args, "allow_revert_commits")
-            and args.allow_revert_commits is not None
-        ):
-            config["commit"]["allow_revert_commits"] = args.allow_revert_commits
-        if (
-            hasattr(args, "allow_empty_commits")
-            and args.allow_empty_commits is not None
-        ):
-            config["commit"]["allow_empty_commits"] = args.allow_empty_commits
-        if (
-            hasattr(args, "allow_fixup_commits")
-            and args.allow_fixup_commits is not None
-        ):
-            config["commit"]["allow_fixup_commits"] = args.allow_fixup_commits
-        if hasattr(args, "allow_wip_commits") and args.allow_wip_commits is not None:
-            config["commit"]["allow_wip_commits"] = args.allow_wip_commits
-        if hasattr(args, "require_body") and args.require_body is not None:
-            config["commit"]["require_body"] = args.require_body
-        if (
-            hasattr(args, "require_signed_off_by")
-            and args.require_signed_off_by is not None
-        ):
-            config["commit"]["require_signed_off_by"] = args.require_signed_off_by
-        if hasattr(args, "ignore_authors") and args.ignore_authors is not None:
-            config["commit"]["ignore_authors"] = args.ignore_authors
-
-        # Branch section arguments
-        if (
-            hasattr(args, "conventional_branch")
-            and args.conventional_branch is not None
-        ):
-            config["branch"]["conventional_branch"] = args.conventional_branch
-        if hasattr(args, "allow_branch_types") and args.allow_branch_types is not None:
-            config["branch"]["allow_branch_types"] = args.allow_branch_types
-        if hasattr(args, "allow_branch_names") and args.allow_branch_names is not None:
-            config["branch"]["allow_branch_names"] = args.allow_branch_names
-        if (
-            hasattr(args, "require_rebase_target")
-            and args.require_rebase_target is not None
-        ):
-            config["branch"]["require_rebase_target"] = args.require_rebase_target
-        if (
-            hasattr(args, "branch_ignore_authors")
-            and args.branch_ignore_authors is not None
-        ):
-            config["branch"]["ignore_authors"] = args.branch_ignore_authors
+        for arg_name, (section, key) in ConfigMerger.CLI_ARG_MAPPING.items():
+            if hasattr(args, arg_name):
+                value = getattr(args, arg_name)
+                if value is not None:
+                    config[section][key] = value
 
         # Remove empty sections
         config = {k: v for k, v in config.items() if v}
