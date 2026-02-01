@@ -70,6 +70,12 @@ For more information, see the `docs <https://commit-check.github.io/commit-check
 Configuration
 -------------
 
+Commit Check can be configured in three ways (in order of priority):
+
+1. **Command-line arguments** — Override settings for specific runs
+2. **Environment variables** — Configure via ``CCHK_*`` environment variables
+3. **Configuration files** — Use ``cchk.toml`` or ``commit-check.toml``
+
 Use Default Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -77,10 +83,37 @@ Use Default Configuration
 
 - The default configuration is lenient — it only checks whether commit messages follow the `Conventional Commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_ specification and branch names follow the `Conventional Branch <https://conventional-branch.github.io/#summary>`_ convention.
 
-Use Custom Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~
+Use Custom Configuration File
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To customize the behavior, create a configuration file named ``cchk.toml`` or ``commit-check.toml`` in your repository's root directory or in the ``.github`` folder, e.g., `cchk.toml <https://github.com/commit-check/commit-check/blob/main/cchk.toml>`_ or ``.github/cchk.toml``.
+
+Use CLI Arguments or Environment Variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For one-off checks or CI/CD pipelines, you can configure via CLI arguments or environment variables:
+
+.. code-block:: bash
+
+    # Using CLI arguments
+    commit-check --message --subject-imperative=true --subject-max-length=72
+
+    # Using environment variables
+    export CCHK_SUBJECT_IMPERATIVE=true
+    export CCHK_SUBJECT_MAX_LENGTH=72
+    commit-check --message
+
+    # In pre-commit hooks (.pre-commit-config.yaml)
+    repos:
+      - repo: https://github.com/commit-check/commit-check
+        rev: v2.3.0
+        hooks:
+          - id: commit-check
+            args:
+              - --subject-imperative=false
+              - --subject-max-length=100
+
+See the `Configuration documentation <https://commit-check.github.io/commit-check/configuration.html>`_ for all available options.
 
 Usage
 -----

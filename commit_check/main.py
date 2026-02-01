@@ -5,7 +5,7 @@ import sys
 import argparse
 from typing import Optional
 
-from commit_check.config import load_config
+from commit_check.config_merger import ConfigMerger, parse_bool, parse_list, parse_int
 from commit_check.rule_builder import RuleBuilder
 from commit_check.engine import ValidationEngine, ValidationContext, ValidationResult
 from . import __version__
@@ -86,6 +86,160 @@ def _get_parser() -> argparse.ArgumentParser:
         required=False,
     )
 
+    # Commit configuration options
+    parser.add_argument(
+        "--conventional-commits",
+        type=parse_bool,
+        default=None,
+        metavar="BOOL",
+        help="enforce conventional commits format (true/false)",
+    )
+
+    parser.add_argument(
+        "--subject-capitalized",
+        type=parse_bool,
+        default=None,
+        metavar="BOOL",
+        help="require subject to start with capital letter (true/false)",
+    )
+
+    parser.add_argument(
+        "--subject-imperative",
+        type=parse_bool,
+        default=None,
+        metavar="BOOL",
+        help="require subject to use imperative mood (true/false)",
+    )
+
+    parser.add_argument(
+        "--subject-max-length",
+        type=parse_int,
+        default=None,
+        metavar="INT",
+        help="maximum length of commit subject",
+    )
+
+    parser.add_argument(
+        "--subject-min-length",
+        type=parse_int,
+        default=None,
+        metavar="INT",
+        help="minimum length of commit subject",
+    )
+
+    parser.add_argument(
+        "--allow-commit-types",
+        type=parse_list,
+        default=None,
+        metavar="LIST",
+        help="comma-separated list of allowed commit types (e.g., feat,fix,docs)",
+    )
+
+    parser.add_argument(
+        "--allow-merge-commits",
+        type=parse_bool,
+        default=None,
+        metavar="BOOL",
+        help="allow merge commits (true/false)",
+    )
+
+    parser.add_argument(
+        "--allow-revert-commits",
+        type=parse_bool,
+        default=None,
+        metavar="BOOL",
+        help="allow revert commits (true/false)",
+    )
+
+    parser.add_argument(
+        "--allow-empty-commits",
+        type=parse_bool,
+        default=None,
+        metavar="BOOL",
+        help="allow empty commit messages (true/false)",
+    )
+
+    parser.add_argument(
+        "--allow-fixup-commits",
+        type=parse_bool,
+        default=None,
+        metavar="BOOL",
+        help="allow fixup commits (true/false)",
+    )
+
+    parser.add_argument(
+        "--allow-wip-commits",
+        type=parse_bool,
+        default=None,
+        metavar="BOOL",
+        help="allow WIP commits (true/false)",
+    )
+
+    parser.add_argument(
+        "--require-body",
+        type=parse_bool,
+        default=None,
+        metavar="BOOL",
+        help="require commit body (true/false)",
+    )
+
+    parser.add_argument(
+        "--require-signed-off-by",
+        type=parse_bool,
+        default=None,
+        metavar="BOOL",
+        help="require 'Signed-off-by' trailer (true/false)",
+    )
+
+    parser.add_argument(
+        "--ignore-authors",
+        type=parse_list,
+        default=None,
+        metavar="LIST",
+        help="comma-separated list of authors to ignore for commit checks",
+    )
+
+    # Branch configuration options
+    parser.add_argument(
+        "--conventional-branch",
+        type=parse_bool,
+        default=None,
+        metavar="BOOL",
+        help="enforce conventional branch naming (true/false)",
+    )
+
+    parser.add_argument(
+        "--allow-branch-types",
+        type=parse_list,
+        default=None,
+        metavar="LIST",
+        help="comma-separated list of allowed branch types (e.g., feature,bugfix,hotfix)",
+    )
+
+    parser.add_argument(
+        "--allow-branch-names",
+        type=parse_list,
+        default=None,
+        metavar="LIST",
+        help="comma-separated list of additional allowed branch names",
+    )
+
+    parser.add_argument(
+        "--require-rebase-target",
+        type=str,
+        default=None,
+        metavar="BRANCH",
+        help="target branch for rebase validation",
+    )
+
+    parser.add_argument(
+        "--branch-ignore-authors",
+        type=parse_list,
+        default=None,
+        metavar="LIST",
+        help="comma-separated list of authors to ignore for branch checks",
+    )
+
     return parser
 
 
@@ -135,8 +289,8 @@ def main() -> int:
     stdin_reader = StdinReader()
 
     try:
-        # Load configuration
-        config_data = load_config(args.config)
+        # Load and merge configuration from all sources: CLI > Env > TOML > Defaults
+        config_data = ConfigMerger.from_all_sources(args, args.config)
 
         # Build validation rules from config
         rule_builder = RuleBuilder(config_data)
