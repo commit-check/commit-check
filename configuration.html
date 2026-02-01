@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#configuration-file-locations" class="md-skip">
+        <a href="#configuration-files" class="md-skip">
           Skip to content
         </a>
       
@@ -521,6 +521,16 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#configuration-files" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Configuration Files</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuration-file-locations" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -535,6 +545,36 @@
     
     <span class="md-ellipsis">
       <span>Example Configuration</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#command-line-arguments" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Command-<wbr>Line Arguments</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Environment Variables</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-priority-example" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Configuration Priority Example</span>
     </span>
   </a>
   
@@ -705,6 +745,16 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#configuration-files" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Configuration Files</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuration-file-locations" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -719,6 +769,36 @@
     
     <span class="md-ellipsis">
       <span>Example Configuration</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#command-line-arguments" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Command-<wbr>Line Arguments</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Environment Variables</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-priority-example" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Configuration Priority Example</span>
     </span>
   </a>
   
@@ -751,6 +831,21 @@
 
 
 <h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">commit-check</span></code> can be configured in three ways with the following priority (highest to lowest):</p>
+<ol class="arabic simple">
+<li><p><strong>Command-line arguments</strong> (<code class="docutils literal notranslate"><span class="pre">--subject-imperative=true</span></code>)</p></li>
+<li><p><strong>Environment variables</strong> (<code class="docutils literal notranslate"><span class="pre">CCHK_SUBJECT_IMPERATIVE=true</span></code>)</p></li>
+<li><p><strong>Configuration files</strong> (<code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code>)</p></li>
+<li><p><strong>Built-in defaults</strong></p></li>
+</ol>
+<p>This flexibility allows you to:</p>
+<ul class="simple">
+<li><p>Use configuration files for project-wide settings</p></li>
+<li><p>Override with environment variables in CI/CD pipelines</p></li>
+<li><p>Override specific settings via CLI for one-off checks</p></li>
+<li><p>Use without any configuration files (relies on defaults)</p></li>
+</ul>
+<h2 id="configuration-files">Configuration Files<a class="headerlink" href="#configuration-files" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">commit-check</span></code> configuration files support the TOML format. See <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> for an example configuration.</p>
 <div class="tip admonition">
 <p class="admonition-title">Tip</p>
@@ -803,6 +898,174 @@
 <span class="c1"># allow_branch_names = []  # Optional - additional standalone branch names (e.g., [&quot;develop&quot;, &quot;staging&quot;])</span>
 <span class="c1"># require_rebase_target = &quot;main&quot;  # Optional - no rebase requirement by default</span>
 <span class="c1"># ignore_authors = []      # Optional - no authors ignored by default</span>
+</code></pre></div>
+</div>
+<h2 id="command-line-arguments">Command-Line Arguments<a class="headerlink" href="#command-line-arguments" title="Link to this heading">¶</a></h2>
+<p>All configuration options can be specified via command-line arguments, which take precedence over environment variables and configuration files.</p>
+<p><strong>Syntax:</strong></p>
+<ul class="simple">
+<li><p>Boolean options: <code class="docutils literal notranslate"><span class="pre">--option-name=true</span></code> or <code class="docutils literal notranslate"><span class="pre">--option-name=false</span></code></p></li>
+<li><p>Integer options: <code class="docutils literal notranslate"><span class="pre">--option-name=80</span></code></p></li>
+<li><p>List options: <code class="docutils literal notranslate"><span class="pre">--option-name=value1,value2,value3</span></code> (comma-separated)</p></li>
+<li><p>String options: <code class="docutils literal notranslate"><span class="pre">--option-name=value</span></code></p></li>
+</ul>
+<p><strong>Examples:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># Disable imperative mood check</span>
+commit-check<span class="w"> </span>--message<span class="w"> </span>--subject-imperative<span class="o">=</span><span class="nb">false</span>
+
+<span class="c1"># Set custom subject length limit</span>
+commit-check<span class="w"> </span>--message<span class="w"> </span>--subject-max-length<span class="o">=</span><span class="m">72</span>
+
+<span class="c1"># Restrict allowed commit types</span>
+commit-check<span class="w"> </span>--message<span class="w"> </span>--allow-commit-types<span class="o">=</span>feat,fix,docs
+
+<span class="c1"># Combine multiple options</span>
+commit-check<span class="w"> </span>--message<span class="w"> </span>--subject-imperative<span class="o">=</span><span class="nb">true</span><span class="w"> </span>--subject-max-length<span class="o">=</span><span class="m">50</span><span class="w"> </span>--allow-commit-types<span class="o">=</span>feat,fix
+
+<span class="c1"># Branch configuration via CLI</span>
+commit-check<span class="w"> </span>--branch<span class="w"> </span>--allow-branch-types<span class="o">=</span>feature,bugfix,hotfix
+</code></pre></div>
+</div>
+<p><strong>Pre-commit Hook Usage:</strong></p>
+<p>The primary use case for CLI arguments is configuring commit-check in <code class="docutils literal notranslate"><span class="pre">.pre-commit-config.yaml</span></code> without requiring a TOML file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">repos</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/commit-check/commit-check</span>
+<span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v2.3.0</span>
+<span class="w">    </span><span class="nt">hooks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">commit-check</span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--subject-imperative=false</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--subject-max-length=100</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--allow-merge-commits=false</span>
+</code></pre></div>
+</div>
+<h2 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Link to this heading">¶</a></h2>
+<p>Configuration can also be set via environment variables with the <code class="docutils literal notranslate"><span class="pre">CCHK_</span></code> prefix. This is useful for CI/CD pipelines and temporary overrides.</p>
+<p><strong>Naming Convention:</strong></p>
+<ul class="simple">
+<li><p>Convert option name to uppercase</p></li>
+<li><p>Replace hyphens with underscores</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">CCHK_</span></code> prefix</p></li>
+</ul>
+<p><strong>Examples:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># Set boolean options</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CCHK_SUBJECT_IMPERATIVE</span><span class="o">=</span><span class="nb">true</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CCHK_SUBJECT_CAPITALIZED</span><span class="o">=</span><span class="nb">false</span>
+
+<span class="c1"># Set integer options</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CCHK_SUBJECT_MAX_LENGTH</span><span class="o">=</span><span class="m">72</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CCHK_SUBJECT_MIN_LENGTH</span><span class="o">=</span><span class="m">10</span>
+
+<span class="c1"># Set list options (comma-separated)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CCHK_ALLOW_COMMIT_TYPES</span><span class="o">=</span>feat,fix,docs,chore
+<span class="nb">export</span><span class="w"> </span><span class="nv">CCHK_ALLOW_BRANCH_TYPES</span><span class="o">=</span>feature,bugfix,hotfix
+
+<span class="c1"># Set string options</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CCHK_REQUIRE_REBASE_TARGET</span><span class="o">=</span>main
+
+<span class="c1"># Use in CI/CD</span>
+<span class="nv">CCHK_SUBJECT_MAX_LENGTH</span><span class="o">=</span><span class="m">100</span><span class="w"> </span>commit-check<span class="w"> </span>--message
+</code></pre></div>
+</div>
+<p><strong>Complete Mapping:</strong></p>
+<table class="docutils data align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>TOML Config</p></th>
+<th class="head"><p>Environment Variable</p></th>
+<th class="head"><p>CLI Argument</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">conventional_commits</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_CONVENTIONAL_COMMITS=true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--conventional-commits=true</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">subject_capitalized</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_SUBJECT_CAPITALIZED=false</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--subject-capitalized=false</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">subject_imperative</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_SUBJECT_IMPERATIVE=true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--subject-imperative=true</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">subject_max_length</span> <span class="pre">=</span> <span class="pre">80</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_SUBJECT_MAX_LENGTH=80</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--subject-max-length=80</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">subject_min_length</span> <span class="pre">=</span> <span class="pre">5</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_SUBJECT_MIN_LENGTH=5</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--subject-min-length=5</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">allow_commit_types</span> <span class="pre">=</span> <span class="pre">[&quot;feat&quot;,</span> <span class="pre">&quot;fix&quot;]</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_COMMIT_TYPES=feat,fix</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--allow-commit-types=feat,fix</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">allow_merge_commits</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_MERGE_COMMITS=true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--allow-merge-commits=true</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">allow_revert_commits</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_REVERT_COMMITS=true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--allow-revert-commits=true</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">allow_empty_commits</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_EMPTY_COMMITS=false</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--allow-empty-commits=false</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">allow_fixup_commits</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_FIXUP_COMMITS=true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--allow-fixup-commits=true</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">allow_wip_commits</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_WIP_COMMITS=false</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--allow-wip-commits=false</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">require_body</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_REQUIRE_BODY=false</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--require-body=false</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">require_signed_off_by</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_REQUIRE_SIGNED_OFF_BY=false</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--require-signed-off-by=false</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ignore_authors</span> <span class="pre">=</span> <span class="pre">[&quot;bot&quot;]</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_IGNORE_AUTHORS=bot,user</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--ignore-authors=bot,user</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">conventional_branch</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_CONVENTIONAL_BRANCH=true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--conventional-branch=true</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">allow_branch_types</span> <span class="pre">=</span> <span class="pre">[&quot;feature&quot;]</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_BRANCH_TYPES=feature,bugfix</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--allow-branch-types=feature,bugfix</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">allow_branch_names</span> <span class="pre">=</span> <span class="pre">[&quot;develop&quot;]</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_BRANCH_NAMES=develop,staging</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--allow-branch-names=develop,staging</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">require_rebase_target</span> <span class="pre">=</span> <span class="pre">&quot;main&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_REQUIRE_REBASE_TARGET=main</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--require-rebase-target=main</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ignore_authors</span> <span class="pre">=</span> <span class="pre">[&quot;bot&quot;]</span></code> (in branch section)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_BRANCH_IGNORE_AUTHORS=bot,user</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--branch-ignore-authors=bot,user</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<h2 id="configuration-priority-example">Configuration Priority Example<a class="headerlink" href="#configuration-priority-example" title="Link to this heading">¶</a></h2>
+<p>When the same option is specified in multiple places, the priority determines which value is used:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># In cchk.toml:</span>
+<span class="c1"># subject_max_length = 100</span>
+
+<span class="c1"># Set via environment:</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CCHK_SUBJECT_MAX_LENGTH</span><span class="o">=</span><span class="m">80</span>
+
+<span class="c1"># Override via CLI:</span>
+commit-check<span class="w"> </span>--message<span class="w"> </span>--subject-max-length<span class="o">=</span><span class="m">50</span>
+
+<span class="c1"># Result: subject_max_length = 50 (CLI wins)</span>
 </code></pre></div>
 </div>
 <h2 id="options-table-description">Options Table Description<a class="headerlink" href="#options-table-description" title="Link to this heading">¶</a></h2>

@@ -685,10 +685,20 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#use-custom-configuration" class="md-nav__link">
+  <a href="#use-custom-configuration-file" class="md-nav__link">
     
     <span class="md-ellipsis">
-      <span>Use Custom Configuration</span>
+      <span>Use Custom Configuration File</span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cli-arguments-or-environment-variables" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Use CLI Arguments or Environment Variables</span>
     </span>
   </a>
   
@@ -802,13 +812,41 @@ and Bitbucket’s paid plugin <a class="reference external" href="https://market
 <p>Then, run <code class="docutils literal notranslate"><span class="pre">commit-check</span> <span class="pre">--help</span></code> or <code class="docutils literal notranslate"><span class="pre">cchk</span> <span class="pre">--help</span></code> (alias for <code class="docutils literal notranslate"><span class="pre">commit-check</span></code>) from the command line.
 For more information, see the <a class="reference external" href="https://commit-check.github.io/commit-check/cli_args.html">docs</a>.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
+<p>Commit Check can be configured in three ways (in order of priority):</p>
+<ol class="arabic simple">
+<li><p><strong>Command-line arguments</strong> — Override settings for specific runs</p></li>
+<li><p><strong>Environment variables</strong> — Configure via <code class="docutils literal notranslate"><span class="pre">CCHK_*</span></code> environment variables</p></li>
+<li><p><strong>Configuration files</strong> — Use <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code></p></li>
+</ol>
 <h3 id="use-default-configuration">Use Default Configuration<a class="headerlink" href="#use-default-configuration" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Commit Check</strong> uses a <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/docs/configuration.rst">default configuration</a> if you do not provide a <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> file.</p></li>
 <li><p>The default configuration is lenient — it only checks whether commit messages follow the <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">Conventional Commits</a> specification and branch names follow the <a class="reference external" href="https://conventional-branch.github.io/#summary">Conventional Branch</a> convention.</p></li>
 </ul>
-<h3 id="use-custom-configuration">Use Custom Configuration<a class="headerlink" href="#use-custom-configuration" title="Link to this heading">¶</a></h3>
+<h3 id="use-custom-configuration-file">Use Custom Configuration File<a class="headerlink" href="#use-custom-configuration-file" title="Link to this heading">¶</a></h3>
 <p>To customize the behavior, create a configuration file named <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> in your repository’s root directory or in the <code class="docutils literal notranslate"><span class="pre">.github</span></code> folder, e.g., <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/cchk.toml">cchk.toml</a> or <code class="docutils literal notranslate"><span class="pre">.github/cchk.toml</span></code>.</p>
+<h3 id="use-cli-arguments-or-environment-variables">Use CLI Arguments or Environment Variables<a class="headerlink" href="#use-cli-arguments-or-environment-variables" title="Link to this heading">¶</a></h3>
+<p>For one-off checks or CI/CD pipelines, you can configure via CLI arguments or environment variables:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># Using CLI arguments</span>
+commit-check<span class="w"> </span>--message<span class="w"> </span>--subject-imperative<span class="o">=</span><span class="nb">true</span><span class="w"> </span>--subject-max-length<span class="o">=</span><span class="m">72</span>
+
+<span class="c1"># Using environment variables</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CCHK_SUBJECT_IMPERATIVE</span><span class="o">=</span><span class="nb">true</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CCHK_SUBJECT_MAX_LENGTH</span><span class="o">=</span><span class="m">72</span>
+commit-check<span class="w"> </span>--message
+
+<span class="c1"># In pre-commit hooks (.pre-commit-config.yaml)</span>
+repos:
+<span class="w">  </span>-<span class="w"> </span>repo:<span class="w"> </span>https://github.com/commit-check/commit-check
+<span class="w">    </span>rev:<span class="w"> </span>v2.3.0
+<span class="w">    </span>hooks:
+<span class="w">      </span>-<span class="w"> </span>id:<span class="w"> </span>commit-check
+<span class="w">        </span>args:
+<span class="w">          </span>-<span class="w"> </span>--subject-imperative<span class="o">=</span><span class="nb">false</span>
+<span class="w">          </span>-<span class="w"> </span>--subject-max-length<span class="o">=</span><span class="m">100</span>
+</code></pre></div>
+</div>
+<p>See the <a class="reference external" href="https://commit-check.github.io/commit-check/configuration.html">Configuration documentation</a> for all available options.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h2>
 <p>For detailed usage instructions including pre-commit hooks, CLI commands, and STDIN examples, see the <a class="reference external" href="https://commit-check.github.io/commit-check/example.html">Usage Examples documentation</a>.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Link to this heading">¶</a></h2>

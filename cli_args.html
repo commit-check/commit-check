@@ -841,7 +841,20 @@
 
 
 <h1 id="commit-check-help">commit-check –help<a class="headerlink" href="#commit-check-help" title="Link to this heading">¶</a></h1>
-<p>usage: commit-check [-h] [-v] [-c CONFIG] [-m [MESSAGE]] [-b] [-n] [-e] [-d]</p>
+<dl class="simple">
+<dt>usage: commit-check [-h] [-v] [-c CONFIG] [-m [MESSAGE]] [-b] [-n] [-e] [-d]</dt><dd><p>[–conventional-commits BOOL] [–subject-capitalized BOOL]
+[–subject-imperative BOOL] [–subject-max-length INT]
+[–subject-min-length INT] [–allow-commit-types LIST]
+[–allow-merge-commits BOOL] [–allow-revert-commits BOOL]
+[–allow-empty-commits BOOL] [–allow-fixup-commits BOOL]
+[–allow-wip-commits BOOL] [–require-body BOOL]
+[–require-signed-off-by BOOL] [–ignore-authors LIST]
+[–conventional-branch BOOL] [–allow-branch-types LIST]
+[–allow-branch-names LIST]
+[–require-rebase-target BRANCH]
+[–branch-ignore-authors LIST]</p>
+</dd>
+</dl>
 <p>Check commit message, branch name, author name, email, and more.</p>
 <p>options:</p>
 <dl class="std option objdesc">
@@ -923,6 +936,69 @@ otherwise reads from stdin if available</p>
 <dd><dl class="option-list">
 <dt><kbd><span class="option">-d</span>, <span class="option">--dry-run</span></kbd></dt>
 <dd><p>perform a dry run without failing (always returns 0)</p>
+</dd>
+<dt><kbd><span class="option">--conventional-commits <var>BOOL</var></span></kbd></dt>
+<dd><p>enforce conventional commits format (true/false)</p>
+</dd>
+<dt><kbd><span class="option">--subject-capitalized <var>BOOL</var></span></kbd></dt>
+<dd><p>require subject to start with capital letter
+(true/false)</p>
+</dd>
+<dt><kbd><span class="option">--subject-imperative <var>BOOL</var></span></kbd></dt>
+<dd><p>require subject to use imperative mood (true/false)</p>
+</dd>
+<dt><kbd><span class="option">--subject-max-length <var>INT</var></span></kbd></dt>
+<dd><p>maximum length of commit subject</p>
+</dd>
+<dt><kbd><span class="option">--subject-min-length <var>INT</var></span></kbd></dt>
+<dd><p>minimum length of commit subject</p>
+</dd>
+<dt><kbd><span class="option">--allow-commit-types <var>LIST</var></span></kbd></dt>
+<dd><p>comma-separated list of allowed commit types (e.g.,
+feat,fix,docs)</p>
+</dd>
+<dt><kbd><span class="option">--allow-merge-commits <var>BOOL</var></span></kbd></dt>
+<dd><p>allow merge commits (true/false)</p>
+</dd>
+<dt><kbd><span class="option">--allow-revert-commits <var>BOOL</var></span></kbd></dt>
+<dd><p>allow revert commits (true/false)</p>
+</dd>
+<dt><kbd><span class="option">--allow-empty-commits <var>BOOL</var></span></kbd></dt>
+<dd><p>allow empty commit messages (true/false)</p>
+</dd>
+<dt><kbd><span class="option">--allow-fixup-commits <var>BOOL</var></span></kbd></dt>
+<dd><p>allow fixup commits (true/false)</p>
+</dd>
+<dt><kbd><span class="option">--allow-wip-commits <var>BOOL</var></span></kbd></dt>
+<dd><p>allow WIP commits (true/false)</p>
+</dd>
+<dt><kbd><span class="option">--require-body <var>BOOL</var></span></kbd></dt>
+<dd><p>require commit body (true/false)</p>
+</dd>
+<dt><kbd><span class="option">--require-signed-off-by <var>BOOL</var></span></kbd></dt>
+<dd><p>require ‘Signed-off-by’ trailer (true/false)</p>
+</dd>
+<dt><kbd><span class="option">--ignore-authors <var>LIST</var></span></kbd></dt>
+<dd><p>comma-separated list of authors to ignore for commit
+checks</p>
+</dd>
+<dt><kbd><span class="option">--conventional-branch <var>BOOL</var></span></kbd></dt>
+<dd><p>enforce conventional branch naming (true/false)</p>
+</dd>
+<dt><kbd><span class="option">--allow-branch-types <var>LIST</var></span></kbd></dt>
+<dd><p>comma-separated list of allowed branch types (e.g.,
+feature,bugfix,hotfix)</p>
+</dd>
+<dt><kbd><span class="option">--allow-branch-names <var>LIST</var></span></kbd></dt>
+<dd><p>comma-separated list of additional allowed branch
+names</p>
+</dd>
+<dt><kbd><span class="option">--require-rebase-target <var>BRANCH</var></span></kbd></dt>
+<dd><p>target branch for rebase validation</p>
+</dd>
+<dt><kbd><span class="option">--branch-ignore-authors <var>LIST</var></span></kbd></dt>
+<dd><p>comma-separated list of authors to ignore for branch
+checks</p>
 </dd>
 </dl>
 </dd></dl>

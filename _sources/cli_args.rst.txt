@@ -2,6 +2,17 @@ commit-check --help
 ==============================
 
 usage: commit-check [-h] [-v] [-c CONFIG] [-m [MESSAGE]] [-b] [-n] [-e] [-d]
+                    [--conventional-commits BOOL] [--subject-capitalized BOOL]
+                    [--subject-imperative BOOL] [--subject-max-length INT]
+                    [--subject-min-length INT] [--allow-commit-types LIST]
+                    [--allow-merge-commits BOOL] [--allow-revert-commits BOOL]
+                    [--allow-empty-commits BOOL] [--allow-fixup-commits BOOL]
+                    [--allow-wip-commits BOOL] [--require-body BOOL]
+                    [--require-signed-off-by BOOL] [--ignore-authors LIST]
+                    [--conventional-branch BOOL] [--allow-branch-types LIST]
+                    [--allow-branch-names LIST]
+                    [--require-rebase-target BRANCH]
+                    [--branch-ignore-authors LIST]
 
 Check commit message, branch name, author name, email, and more.
 
@@ -44,3 +55,46 @@ options:
 .. std:option:: -d, --dry-run
 
   -d, --dry-run         perform a dry run without failing (always returns 0)
+  --conventional-commits BOOL
+                        enforce conventional commits format (true/false)
+  --subject-capitalized BOOL
+                        require subject to start with capital letter
+                        (true/false)
+  --subject-imperative BOOL
+                        require subject to use imperative mood (true/false)
+  --subject-max-length INT
+                        maximum length of commit subject
+  --subject-min-length INT
+                        minimum length of commit subject
+  --allow-commit-types LIST
+                        comma-separated list of allowed commit types (e.g.,
+                        feat,fix,docs)
+  --allow-merge-commits BOOL
+                        allow merge commits (true/false)
+  --allow-revert-commits BOOL
+                        allow revert commits (true/false)
+  --allow-empty-commits BOOL
+                        allow empty commit messages (true/false)
+  --allow-fixup-commits BOOL
+                        allow fixup commits (true/false)
+  --allow-wip-commits BOOL
+                        allow WIP commits (true/false)
+  --require-body BOOL   require commit body (true/false)
+  --require-signed-off-by BOOL
+                        require 'Signed-off-by' trailer (true/false)
+  --ignore-authors LIST
+                        comma-separated list of authors to ignore for commit
+                        checks
+  --conventional-branch BOOL
+                        enforce conventional branch naming (true/false)
+  --allow-branch-types LIST
+                        comma-separated list of allowed branch types (e.g.,
+                        feature,bugfix,hotfix)
+  --allow-branch-names LIST
+                        comma-separated list of additional allowed branch
+                        names
+  --require-rebase-target BRANCH
+                        target branch for rebase validation
+  --branch-ignore-authors LIST
+                        comma-separated list of authors to ignore for branch
+                        checks
