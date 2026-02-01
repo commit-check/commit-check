@@ -106,7 +106,7 @@ For one-off checks or CI/CD pipelines, you can configure via CLI arguments or en
     # In pre-commit hooks (.pre-commit-config.yaml)
     repos:
       - repo: https://github.com/commit-check/commit-check
-        rev: v2.2.0
+        rev: v2.3.0
         hooks:
           - id: commit-check
             args:
