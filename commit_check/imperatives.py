@@ -70,6 +70,8 @@ IMPERATIVES = {
     "encapsulate",
     "encode",
     "end",
+    "enforce",
+    "enhance",
     "ensure",
     "enumerate",
     "establish",
