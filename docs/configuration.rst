@@ -121,14 +121,13 @@ The primary use case for CLI arguments is configuring commit-check in ``.pre-com
 
     repos:
       - repo: https://github.com/commit-check/commit-check
-        rev: v2.2.0
+        rev: v2.3.0
         hooks:
           - id: commit-check
             args:
               - --subject-imperative=false
               - --subject-max-length=100
               - --allow-merge-commits=false
-
 
 Environment Variables
 ---------------------
