@@ -31,6 +31,7 @@ def _get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="commit-check",
         description="Check commit message, branch name, author name, email, and more.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
     parser.add_argument(
@@ -46,7 +47,12 @@ def _get_parser() -> argparse.ArgumentParser:
         help="path to config file (cchk.toml or commit-check.toml). If not specified, searches for config in: cchk.toml, commit-check.toml, .github/cchk.toml, .github/commit-check.toml",
     )
 
-    parser.add_argument(
+    # Main check type arguments
+    check_group = parser.add_argument_group(
+        "check types", "Specify which validation checks to run"
+    )
+
+    check_group.add_argument(
         "-m",
         "--message",
         nargs="?",
@@ -54,7 +60,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="validate commit message. Optionally specify file path, otherwise reads from stdin if available",
     )
 
-    parser.add_argument(
+    check_group.add_argument(
         "-b",
         "--branch",
         help="check current git branch name",
@@ -62,7 +68,7 @@ def _get_parser() -> argparse.ArgumentParser:
         required=False,
     )
 
-    parser.add_argument(
+    check_group.add_argument(
         "-n",
         "--author-name",
         help="check git author name",
@@ -70,7 +76,7 @@ def _get_parser() -> argparse.ArgumentParser:
         required=False,
     )
 
-    parser.add_argument(
+    check_group.add_argument(
         "-e",
         "--author-email",
         help="check git author email",
@@ -78,7 +84,7 @@ def _get_parser() -> argparse.ArgumentParser:
         required=False,
     )
 
-    parser.add_argument(
+    check_group.add_argument(
         "-d",
         "--dry-run",
         help="perform a dry run without failing (always returns 0)",
@@ -86,8 +92,12 @@ def _get_parser() -> argparse.ArgumentParser:
         required=False,
     )
 
-    # Commit configuration options
-    parser.add_argument(
+    # Commit message configuration options
+    commit_group = parser.add_argument_group(
+        "commit message options", "Configuration options for --message validation"
+    )
+
+    commit_group.add_argument(
         "--conventional-commits",
         type=parse_bool,
         default=None,
@@ -95,7 +105,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="enforce conventional commits format (true/false)",
     )
 
-    parser.add_argument(
+    commit_group.add_argument(
         "--subject-capitalized",
         type=parse_bool,
         default=None,
@@ -103,7 +113,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="require subject to start with capital letter (true/false)",
     )
 
-    parser.add_argument(
+    commit_group.add_argument(
         "--subject-imperative",
         type=parse_bool,
         default=None,
@@ -111,7 +121,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="require subject to use imperative mood (true/false)",
     )
 
-    parser.add_argument(
+    commit_group.add_argument(
         "--subject-max-length",
         type=parse_int,
         default=None,
@@ -119,7 +129,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="maximum length of commit subject",
     )
 
-    parser.add_argument(
+    commit_group.add_argument(
         "--subject-min-length",
         type=parse_int,
         default=None,
@@ -127,7 +137,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="minimum length of commit subject",
     )
 
-    parser.add_argument(
+    commit_group.add_argument(
         "--allow-commit-types",
         type=parse_list,
         default=None,
@@ -135,7 +145,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="comma-separated list of allowed commit types (e.g., feat,fix,docs)",
     )
 
-    parser.add_argument(
+    commit_group.add_argument(
         "--allow-merge-commits",
         type=parse_bool,
         default=None,
@@ -143,7 +153,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="allow merge commits (true/false)",
     )
 
-    parser.add_argument(
+    commit_group.add_argument(
         "--allow-revert-commits",
         type=parse_bool,
         default=None,
@@ -151,7 +161,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="allow revert commits (true/false)",
     )
 
-    parser.add_argument(
+    commit_group.add_argument(
         "--allow-empty-commits",
         type=parse_bool,
         default=None,
@@ -159,7 +169,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="allow empty commit messages (true/false)",
     )
 
-    parser.add_argument(
+    commit_group.add_argument(
         "--allow-fixup-commits",
         type=parse_bool,
         default=None,
@@ -167,7 +177,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="allow fixup commits (true/false)",
     )
 
-    parser.add_argument(
+    commit_group.add_argument(
         "--allow-wip-commits",
         type=parse_bool,
         default=None,
@@ -175,7 +185,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="allow WIP commits (true/false)",
     )
 
-    parser.add_argument(
+    commit_group.add_argument(
         "--require-body",
         type=parse_bool,
         default=None,
@@ -183,7 +193,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="require commit body (true/false)",
     )
 
-    parser.add_argument(
+    commit_group.add_argument(
         "--require-signed-off-by",
         type=parse_bool,
         default=None,
@@ -191,7 +201,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="require 'Signed-off-by' trailer (true/false)",
     )
 
-    parser.add_argument(
+    commit_group.add_argument(
         "--ignore-authors",
         type=parse_list,
         default=None,
@@ -200,7 +210,11 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     # Branch configuration options
-    parser.add_argument(
+    branch_group = parser.add_argument_group(
+        "branch options", "Configuration options for --branch validation"
+    )
+
+    branch_group.add_argument(
         "--conventional-branch",
         type=parse_bool,
         default=None,
@@ -208,7 +222,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="enforce conventional branch naming (true/false)",
     )
 
-    parser.add_argument(
+    branch_group.add_argument(
         "--allow-branch-types",
         type=parse_list,
         default=None,
@@ -216,7 +230,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="comma-separated list of allowed branch types (e.g., feature,bugfix,hotfix)",
     )
 
-    parser.add_argument(
+    branch_group.add_argument(
         "--allow-branch-names",
         type=parse_list,
         default=None,
@@ -224,7 +238,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="comma-separated list of additional allowed branch names",
     )
 
-    parser.add_argument(
+    branch_group.add_argument(
         "--require-rebase-target",
         type=str,
         default=None,
@@ -232,7 +246,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="target branch for rebase validation",
     )
 
-    parser.add_argument(
+    branch_group.add_argument(
         "--branch-ignore-authors",
         type=parse_list,
         default=None,
