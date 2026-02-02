@@ -142,6 +142,8 @@ IMPERATIVES = {
     "obtain",
     "open",
     "output",
+    "organize",
+    "orchestrate",
     "override",
     "overwrite",
     "package",
