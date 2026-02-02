@@ -123,7 +123,7 @@ The primary use case for CLI arguments is configuring commit-check in ``.pre-com
       - repo: https://github.com/commit-check/commit-check
         rev: v2.3.0
         hooks:
-          - id: commit-check
+          - id: check-message
             args:
               - --subject-imperative=false
               - --subject-max-length=100

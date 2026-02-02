@@ -108,7 +108,7 @@ For one-off checks or CI/CD pipelines, you can configure via CLI arguments or en
       - repo: https://github.com/commit-check/commit-check
         rev: v2.3.0
         hooks:
-          - id: commit-check
+          - id: check-message
             args:
               - --subject-imperative=false
               - --subject-max-length=100
