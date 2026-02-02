@@ -890,6 +890,10 @@ check.toml</p>
 </dl>
 </dd></dl>
 
+<dl class="simple">
+<dt>check types:</dt><dd><p>Specify which validation checks to run</p>
+</dd>
+</dl>
 <dl class="std option objdesc">
 <dt class="sig sig-object highlight std" id="cmdoption-m">
 <span id="cmdoption-message"></span><span class="sig-name descname"><span class="pre">-m</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--message</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-m" title="Link to this definition">¶</a></dt>
@@ -937,6 +941,12 @@ otherwise reads from stdin if available</p>
 <dt><kbd><span class="option">-d</span>, <span class="option">--dry-run</span></kbd></dt>
 <dd><p>perform a dry run without failing (always returns 0)</p>
 </dd>
+</dl>
+</dd></dl>
+
+<dl>
+<dt>commit message options:</dt><dd><p>Configuration options for –message validation</p>
+<dl class="option-list">
 <dt><kbd><span class="option">--conventional-commits <var>BOOL</var></span></kbd></dt>
 <dd><p>enforce conventional commits format (true/false)</p>
 </dd>
@@ -982,6 +992,10 @@ feat,fix,docs)</p>
 <dd><p>comma-separated list of authors to ignore for commit
 checks</p>
 </dd>
+</dl>
+</dd>
+<dt>branch options:</dt><dd><p>Configuration options for –branch validation</p>
+<dl class="option-list">
 <dt><kbd><span class="option">--conventional-branch <var>BOOL</var></span></kbd></dt>
 <dd><p>enforce conventional branch naming (true/false)</p>
 </dd>
@@ -1001,7 +1015,8 @@ names</p>
 checks</p>
 </dd>
 </dl>
-</dd></dl>
+</dd>
+</dl>
 
 
 

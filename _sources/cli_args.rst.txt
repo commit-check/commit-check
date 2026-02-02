@@ -34,6 +34,10 @@ options:
                         commit-check.toml, .github/cchk.toml, .github/commit-
                         check.toml
 
+check types:
+  Specify which validation checks to run
+
+
 .. std:option:: -m, --message
 
   -m [MESSAGE], --message [MESSAGE]
@@ -55,6 +59,10 @@ options:
 .. std:option:: -d, --dry-run
 
   -d, --dry-run         perform a dry run without failing (always returns 0)
+
+commit message options:
+  Configuration options for --message validation
+
   --conventional-commits BOOL
                         enforce conventional commits format (true/false)
   --subject-capitalized BOOL
@@ -85,6 +93,10 @@ options:
   --ignore-authors LIST
                         comma-separated list of authors to ignore for commit
                         checks
+
+branch options:
+  Configuration options for --branch validation
+
   --conventional-branch BOOL
                         enforce conventional branch naming (true/false)
   --allow-branch-types LIST
