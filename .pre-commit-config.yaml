@@ -31,7 +31,7 @@ repos:
     hooks:
     -   id: codespell
 -   repo: https://github.com/commit-check/commit-check
-    rev: v2.3.0
+    rev: v2.4.0
     hooks:
     -   id: check-message
         stages: [commit-msg]

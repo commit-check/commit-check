@@ -47,6 +47,13 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "commit_msg_file",
+        nargs="?",
+        default=None,
+        help="path to commit message file (positional argument for pre-commit compatibility)",
+    )
+
+    parser.add_argument(
         "-m",
         "--message",
         nargs="?",
@@ -295,6 +302,11 @@ def main() -> int:
         # Build validation rules from config
         rule_builder = RuleBuilder(config_data)
         all_rules = rule_builder.build_all_rules()
+
+        # Handle positional commit_msg_file argument for pre-commit compatibility
+        # If commit_msg_file is provided, treat it as if --message was specified with a file
+        if args.commit_msg_file and args.message is None:
+            args.message = args.commit_msg_file
 
         # Filter rules based on CLI arguments
         requested_checks = []
