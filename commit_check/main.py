@@ -105,6 +105,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     commit_group.add_argument(
         "--conventional-commits",
+        "--conventional_commits",
         type=parse_bool,
         default=None,
         metavar="BOOL",
@@ -113,6 +114,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     commit_group.add_argument(
         "--subject-capitalized",
+        "--subject_capitalized",
         type=parse_bool,
         default=None,
         metavar="BOOL",
@@ -121,6 +123,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     commit_group.add_argument(
         "--subject-imperative",
+        "--subject_imperative",
         type=parse_bool,
         default=None,
         metavar="BOOL",
@@ -129,6 +132,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     commit_group.add_argument(
         "--subject-max-length",
+        "--subject_max_length",
         type=parse_int,
         default=None,
         metavar="INT",
@@ -137,6 +141,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     commit_group.add_argument(
         "--subject-min-length",
+        "--subject_min_length",
         type=parse_int,
         default=None,
         metavar="INT",
@@ -145,6 +150,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     commit_group.add_argument(
         "--allow-commit-types",
+        "--allow_commit_types",
         type=parse_list,
         default=None,
         metavar="LIST",
@@ -153,6 +159,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     commit_group.add_argument(
         "--allow-merge-commits",
+        "--allow_merge_commits",
         type=parse_bool,
         default=None,
         metavar="BOOL",
@@ -161,6 +168,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     commit_group.add_argument(
         "--allow-revert-commits",
+        "--allow_revert_commits",
         type=parse_bool,
         default=None,
         metavar="BOOL",
@@ -169,6 +177,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     commit_group.add_argument(
         "--allow-empty-commits",
+        "--allow_empty_commits",
         type=parse_bool,
         default=None,
         metavar="BOOL",
@@ -177,6 +186,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     commit_group.add_argument(
         "--allow-fixup-commits",
+        "--allow_fixup_commits",
         type=parse_bool,
         default=None,
         metavar="BOOL",
@@ -185,6 +195,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     commit_group.add_argument(
         "--allow-wip-commits",
+        "--allow_wip_commits",
         type=parse_bool,
         default=None,
         metavar="BOOL",
@@ -193,6 +204,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     commit_group.add_argument(
         "--require-body",
+        "--require_body",
         type=parse_bool,
         default=None,
         metavar="BOOL",
@@ -201,6 +213,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     commit_group.add_argument(
         "--require-signed-off-by",
+        "--require_signed_off_by",
         type=parse_bool,
         default=None,
         metavar="BOOL",
@@ -209,6 +222,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     commit_group.add_argument(
         "--ignore-authors",
+        "--ignore_authors",
         type=parse_list,
         default=None,
         metavar="LIST",
@@ -222,6 +236,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     branch_group.add_argument(
         "--conventional-branch",
+        "--conventional_branch",
         type=parse_bool,
         default=None,
         metavar="BOOL",
@@ -230,6 +245,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     branch_group.add_argument(
         "--allow-branch-types",
+        "--allow_branch_types",
         type=parse_list,
         default=None,
         metavar="LIST",
@@ -238,6 +254,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     branch_group.add_argument(
         "--allow-branch-names",
+        "--allow_branch_names",
         type=parse_list,
         default=None,
         metavar="LIST",
@@ -246,6 +263,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     branch_group.add_argument(
         "--require-rebase-target",
+        "--require_rebase_target",
         type=str,
         default=None,
         metavar="BRANCH",
@@ -254,6 +272,7 @@ def _get_parser() -> argparse.ArgumentParser:
 
     branch_group.add_argument(
         "--branch-ignore-authors",
+        "--branch_ignore_authors",
         type=parse_list,
         default=None,
         metavar="LIST",
