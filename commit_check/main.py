@@ -47,6 +47,13 @@ def _get_parser() -> argparse.ArgumentParser:
         help="path to config file (cchk.toml or commit-check.toml). If not specified, searches for config in: cchk.toml, commit-check.toml, .github/cchk.toml, .github/commit-check.toml",
     )
 
+    parser.add_argument(
+        "commit_msg_file",
+        nargs="?",
+        default=None,
+        help="path to commit message file (positional argument for pre-commit compatibility)",
+    )
+
     # Main check type arguments
     check_group = parser.add_argument_group(
         "check types", "Specify which validation checks to run"
@@ -55,9 +62,8 @@ def _get_parser() -> argparse.ArgumentParser:
     check_group.add_argument(
         "-m",
         "--message",
-        nargs="?",
-        const="",
-        help="validate commit message. Optionally specify file path, otherwise reads from stdin if available",
+        action="store_true",
+        help="validate commit message (file path can be provided as positional argument for pre-commit compatibility)",
     )
 
     check_group.add_argument(
@@ -309,6 +315,16 @@ def main() -> int:
         # Build validation rules from config
         rule_builder = RuleBuilder(config_data)
         all_rules = rule_builder.build_all_rules()
+
+        # Handle positional commit_msg_file argument for pre-commit compatibility
+        # If commit_msg_file is provided and --message flag is set, use the file path
+        if args.commit_msg_file and args.message:
+            args.message = args.commit_msg_file
+        elif args.commit_msg_file and not any(
+            [args.branch, args.author_name, args.author_email]
+        ):
+            # If only positional arg provided without other check flags, enable message checking
+            args.message = args.commit_msg_file
 
         # Filter rules based on CLI arguments
         requested_checks = []
