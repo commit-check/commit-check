@@ -474,3 +474,90 @@ class TestConfigPriority:
         sys.argv = ["commit-check", "--message"]
         result = main()
         assert result == 1  # Env var wins, should fail
+
+
+class TestPositionalArgumentFeature:
+    """Test positional commit_msg_file argument for pre-commit compatibility."""
+
+    @pytest.mark.benchmark
+    def test_positional_arg_without_message_flag(self):
+        """Test using just the positional argument without --message flag."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+            f.write("feat: add positional argument support")
+            f.flush()
+
+            try:
+                # Use positional argument only (no --message flag)
+                sys.argv = ["commit-check", f.name]
+                result = main()
+                assert result == 0  # Should pass validation
+            finally:
+                os.unlink(f.name)
+
+    @pytest.mark.benchmark
+    def test_positional_arg_with_message_flag(self):
+        """Test using positional argument with --message flag."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+            f.write("fix: resolve bug in validation")
+            f.flush()
+
+            try:
+                # Use both positional argument and --message flag
+                sys.argv = ["commit-check", "--message", f.name]
+                result = main()
+                assert result == 0  # Should pass validation
+            finally:
+                os.unlink(f.name)
+
+    @pytest.mark.benchmark
+    def test_positional_arg_with_branch_flag(self, mocker):
+        """Test positional argument with other check flags (edge case)."""
+        # Mock git command to return a valid branch name
+        mocker.patch(
+            "subprocess.run",
+            return_value=type(
+                "MockResult", (), {"stdout": "feature/test-branch", "returncode": 0}
+            )(),
+        )
+
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+            f.write("chore: update documentation")
+            f.flush()
+
+            try:
+                # Use positional argument with --branch flag
+                sys.argv = ["commit-check", "--branch", f.name]
+                result = main()
+                # Should validate both commit message and branch name
+                assert result == 0  # Should pass both validations
+            finally:
+                os.unlink(f.name)
+
+    @pytest.mark.benchmark
+    def test_positional_arg_invalid_commit(self):
+        """Test that positional argument correctly rejects invalid commits."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+            f.write("invalid commit message without type")
+            f.flush()
+
+            try:
+                # Use positional argument with invalid message
+                sys.argv = ["commit-check", f.name]
+                result = main()
+                assert result == 1  # Should fail validation
+            finally:
+                os.unlink(f.name)
+
+    @pytest.mark.benchmark
+    def test_positional_arg_nonexistent_file(self, mocker):
+        """Test that positional argument with non-existent file falls back to git."""
+        # Mock git to return a valid commit message
+        mocker.patch(
+            "commit_check.engine.get_commit_info",
+            return_value="feat: add fallback commit from git",
+        )
+
+        sys.argv = ["commit-check", "/nonexistent/commit_msg.txt"]
+        result = main()
+        # Should fall back to git and pass
+        assert result == 0
