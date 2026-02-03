@@ -317,20 +317,17 @@ def main() -> int:
         all_rules = rule_builder.build_all_rules()
 
         # Handle positional commit_msg_file argument for pre-commit compatibility
-        # If commit_msg_file is provided and --message flag is set, use the file path
-        if args.commit_msg_file and args.message:
-            args.message = args.commit_msg_file
-        elif args.commit_msg_file and not any(
-            [args.branch, args.author_name, args.author_email]
-        ):
-            # If only positional arg provided without other check flags, enable message checking
-            args.message = args.commit_msg_file
+        # Store the file path separately from the boolean flag
+        commit_msg_file_path = None
+        if args.commit_msg_file:
+            commit_msg_file_path = args.commit_msg_file
+            # If a file was provided positionally, enable message checking
+            if not any([args.branch, args.author_name, args.author_email]):
+                args.message = True
 
         # Filter rules based on CLI arguments
         requested_checks = []
-        if (
-            args.message is not None
-        ):  # Check for None explicitly since empty string is valid
+        if args.message:  # args.message is now a boolean flag
             # Add commit message related checks
             requested_checks.extend(
                 [
@@ -370,18 +367,16 @@ def main() -> int:
         stdin_content = None
         commit_file_path = None
 
-        if (
-            args.message is not None
-        ):  # Check explicitly for None since empty string is valid
-            if args.message == "":
-                # Only set stdin_content if there's actual piped input
+        if args.message:  # args.message is a boolean flag
+            # Check if we have a file path from positional argument
+            if commit_msg_file_path:
+                commit_file_path = commit_msg_file_path
+            else:
+                # No file path provided, try reading from stdin
                 stdin_content = stdin_reader.read_piped_input()
                 if not stdin_content:
                     # No stdin and no file - let validators get data from git themselves
                     stdin_content = None
-            else:
-                # Message is a file path
-                commit_file_path = args.message
         elif not any([args.branch, args.author_name, args.author_email]):
             # If no specific validation type is requested, don't read stdin
             pass
