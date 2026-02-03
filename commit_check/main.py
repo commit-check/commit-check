@@ -321,9 +321,8 @@ def main() -> int:
         commit_msg_file_path = None
         if args.commit_msg_file:
             commit_msg_file_path = args.commit_msg_file
-            # If a file was provided positionally, enable message checking
-            if not any([args.branch, args.author_name, args.author_email]):
-                args.message = True
+            # If a file was provided positionally, always enable message checking
+            args.message = True
 
         # Filter rules based on CLI arguments
         requested_checks = []
