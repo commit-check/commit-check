@@ -47,6 +47,13 @@ def _get_parser() -> argparse.ArgumentParser:
         help="path to config file (cchk.toml or commit-check.toml). If not specified, searches for config in: cchk.toml, commit-check.toml, .github/cchk.toml, .github/commit-check.toml",
     )
 
+    parser.add_argument(
+        "commit_msg_file",
+        nargs="?",
+        default=None,
+        help="path to commit message file (positional argument for pre-commit compatibility)",
+    )
+
     # Main check type arguments
     check_group = parser.add_argument_group(
         "check types", "Specify which validation checks to run"
@@ -55,9 +62,8 @@ def _get_parser() -> argparse.ArgumentParser:
     check_group.add_argument(
         "-m",
         "--message",
-        nargs="?",
-        const="",
-        help="validate commit message. Optionally specify file path, otherwise reads from stdin if available",
+        action="store_true",
+        help="validate commit message (file path can be provided as positional argument for pre-commit compatibility)",
     )
 
     check_group.add_argument(
@@ -310,11 +316,17 @@ def main() -> int:
         rule_builder = RuleBuilder(config_data)
         all_rules = rule_builder.build_all_rules()
 
+        # Handle positional commit_msg_file argument for pre-commit compatibility
+        # Store the file path separately from the boolean flag
+        commit_msg_file_path = None
+        if args.commit_msg_file:
+            commit_msg_file_path = args.commit_msg_file
+            # If a file was provided positionally, always enable message checking
+            args.message = True
+
         # Filter rules based on CLI arguments
         requested_checks = []
-        if (
-            args.message is not None
-        ):  # Check for None explicitly since empty string is valid
+        if args.message:  # args.message is now a boolean flag
             # Add commit message related checks
             requested_checks.extend(
                 [
@@ -354,18 +366,16 @@ def main() -> int:
         stdin_content = None
         commit_file_path = None
 
-        if (
-            args.message is not None
-        ):  # Check explicitly for None since empty string is valid
-            if args.message == "":
-                # Only set stdin_content if there's actual piped input
+        if args.message:  # args.message is a boolean flag
+            # Check if we have a file path from positional argument
+            if commit_msg_file_path:
+                commit_file_path = commit_msg_file_path
+            else:
+                # No file path provided, try reading from stdin
                 stdin_content = stdin_reader.read_piped_input()
                 if not stdin_content:
                     # No stdin and no file - let validators get data from git themselves
                     stdin_content = None
-            else:
-                # Message is a file path
-                commit_file_path = args.message
         elif not any([args.branch, args.author_name, args.author_email]):
             # If no specific validation type is requested, don't read stdin
             pass

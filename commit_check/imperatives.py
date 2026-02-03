@@ -171,6 +171,7 @@ IMPERATIVES = {
     "read",
     "record",
     "redesign",
+    "refactor",
     "refer",
     "refresh",
     "register",
