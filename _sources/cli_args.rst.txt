@@ -1,7 +1,7 @@
 commit-check --help
 ==============================
 
-usage: commit-check [-h] [-v] [-c CONFIG] [-m [MESSAGE]] [-b] [-n] [-e] [-d]
+usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-d]
                     [--conventional-commits BOOL] [--subject-capitalized BOOL]
                     [--subject-imperative BOOL] [--subject-max-length INT]
                     [--subject-min-length INT] [--allow-commit-types LIST]
@@ -13,8 +13,13 @@ usage: commit-check [-h] [-v] [-c CONFIG] [-m [MESSAGE]] [-b] [-n] [-e] [-d]
                     [--allow-branch-names LIST]
                     [--require-rebase-target BRANCH]
                     [--branch-ignore-authors LIST]
+                    [commit_msg_file]
 
 Check commit message, branch name, author name, email, and more.
+
+positional arguments:
+  commit_msg_file       path to commit message file (positional argument for
+                        pre-commit compatibility)
 
 options:
 
@@ -40,9 +45,8 @@ check types:
 
 .. std:option:: -m, --message
 
-  -m [MESSAGE], --message [MESSAGE]
-                        validate commit message. Optionally specify file path,
-                        otherwise reads from stdin if available
+  -m, --message         validate commit message (file path can be provided as
+                        positional argument for pre-commit compatibility)
 
 .. std:option:: -b, --branch
 

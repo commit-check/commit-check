@@ -842,7 +842,7 @@
 
 <h1 id="commit-check-help">commit-check –help<a class="headerlink" href="#commit-check-help" title="Link to this heading">¶</a></h1>
 <dl class="simple">
-<dt>usage: commit-check [-h] [-v] [-c CONFIG] [-m [MESSAGE]] [-b] [-n] [-e] [-d]</dt><dd><p>[–conventional-commits BOOL] [–subject-capitalized BOOL]
+<dt>usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-d]</dt><dd><p>[–conventional-commits BOOL] [–subject-capitalized BOOL]
 [–subject-imperative BOOL] [–subject-max-length INT]
 [–subject-min-length INT] [–allow-commit-types LIST]
 [–allow-merge-commits BOOL] [–allow-revert-commits BOOL]
@@ -852,10 +852,18 @@
 [–conventional-branch BOOL] [–allow-branch-types LIST]
 [–allow-branch-names LIST]
 [–require-rebase-target BRANCH]
-[–branch-ignore-authors LIST]</p>
+[–branch-ignore-authors LIST]
+[commit_msg_file]</p>
 </dd>
 </dl>
 <p>Check commit message, branch name, author name, email, and more.</p>
+<dl class="simple">
+<dt>positional arguments:</dt><dd><dl class="simple">
+<dt>commit_msg_file       path to commit message file (positional argument for</dt><dd><p>pre-commit compatibility)</p>
+</dd>
+</dl>
+</dd>
+</dl>
 <p>options:</p>
 <dl class="std option objdesc">
 <dt class="sig sig-object highlight std" id="cmdoption-h">
@@ -897,9 +905,10 @@ check.toml</p>
 <dl class="std option objdesc">
 <dt class="sig sig-object highlight std" id="cmdoption-m">
 <span id="cmdoption-message"></span><span class="sig-name descname"><span class="pre">-m</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--message</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-m" title="Link to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>-m [MESSAGE], –message [MESSAGE]</dt><dd><p>validate commit message. Optionally specify file path,
-otherwise reads from stdin if available</p>
+<dd><dl class="option-list">
+<dt><kbd><span class="option">-m</span>, <span class="option">--message</span></kbd></dt>
+<dd><p>validate commit message (file path can be provided as
+positional argument for pre-commit compatibility)</p>
 </dd>
 </dl>
 </dd></dl>
