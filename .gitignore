@@ -13,6 +13,7 @@ tests/__pycache__
 coverage.xml
 .nox
 _build/
+.codspeed/
 
 # docs
 docs/_build

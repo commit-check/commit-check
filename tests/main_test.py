@@ -536,17 +536,23 @@ class TestPositionalArgumentFeature:
     @pytest.mark.benchmark
     def test_positional_arg_invalid_commit(self):
         """Test that positional argument correctly rejects invalid commits."""
-        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+        # Save original sys.argv to ensure isolation
+        original_argv = sys.argv.copy()
+        
+        # Create temp file with invalid commit message
+        f = tempfile.NamedTemporaryFile(mode="w", delete=False)
+        try:
             f.write("invalid commit message without type")
-            f.flush()
-
-            try:
-                # Use positional argument with invalid message
-                sys.argv = ["commit-check", f.name]
-                result = main()
-                assert result == 1  # Should fail validation
-            finally:
-                os.unlink(f.name)
+            f.close()  # Explicitly close file before using it
+            
+            # Use positional argument with invalid message
+            sys.argv = ["commit-check", f.name]
+            result = main()
+            assert result == 1  # Should fail validation
+        finally:
+            # Clean up
+            os.unlink(f.name)
+            sys.argv = original_argv
 
     @pytest.mark.benchmark
     def test_positional_arg_nonexistent_file(self, mocker):
