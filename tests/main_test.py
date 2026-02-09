@@ -55,15 +55,20 @@ class TestMain:
     @pytest.mark.benchmark
     def test_message_validation_from_file(self):
         """Test validation of commit message from a file."""
-        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+        # Save original sys.argv to ensure isolation
+        original_argv = sys.argv.copy()
+        
+        # Create temp file with valid commit message
+        f = tempfile.NamedTemporaryFile(mode="w", delete=False)
+        try:
             f.write("fix: resolve bug")
-            f.flush()
-
-            try:
-                sys.argv = [CMD, "-m", f.name]
-                assert main() == 0
-            finally:
-                os.unlink(f.name)
+            f.close()  # Explicitly close file before using it
+            
+            sys.argv = [CMD, "-m", f.name]
+            assert main() == 0
+        finally:
+            os.unlink(f.name)
+            sys.argv = original_argv
 
     @pytest.mark.benchmark
     def test_branch_validation(self, mocker):
@@ -211,16 +216,21 @@ class TestMainFunctionEdgeCases:
     @pytest.mark.benchmark
     def test_main_with_message_file_argument(self):
         """Test main function with --message pointing to a file."""
-        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+        # Save original sys.argv to ensure isolation
+        original_argv = sys.argv.copy()
+        
+        # Create temp file with valid commit message
+        f = tempfile.NamedTemporaryFile(mode="w", delete=False)
+        try:
             f.write("feat: add new feature")
-            f.flush()
-
-            try:
-                sys.argv = ["commit-check", "--message", f.name]
-                result = main()
-                assert result == 0
-            finally:
-                os.unlink(f.name)
+            f.close()  # Explicitly close file before using it
+            
+            sys.argv = ["commit-check", "--message", f.name]
+            result = main()
+            assert result == 0
+        finally:
+            os.unlink(f.name)
+            sys.argv = original_argv
 
     @pytest.mark.benchmark
     def test_main_with_message_empty_string_and_stdin(self, mocker):
@@ -482,36 +492,49 @@ class TestPositionalArgumentFeature:
     @pytest.mark.benchmark
     def test_positional_arg_without_message_flag(self):
         """Test using just the positional argument without --message flag."""
-        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+        # Save original sys.argv to ensure isolation
+        original_argv = sys.argv.copy()
+        
+        # Create temp file with valid commit message
+        f = tempfile.NamedTemporaryFile(mode="w", delete=False)
+        try:
             f.write("feat: add positional argument support")
-            f.flush()
-
-            try:
-                # Use positional argument only (no --message flag)
-                sys.argv = ["commit-check", f.name]
-                result = main()
-                assert result == 0  # Should pass validation
-            finally:
-                os.unlink(f.name)
+            f.close()  # Explicitly close file before using it
+            
+            # Use positional argument only (no --message flag)
+            sys.argv = ["commit-check", f.name]
+            result = main()
+            assert result == 0  # Should pass validation
+        finally:
+            os.unlink(f.name)
+            sys.argv = original_argv
 
     @pytest.mark.benchmark
     def test_positional_arg_with_message_flag(self):
         """Test using positional argument with --message flag."""
-        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+        # Save original sys.argv to ensure isolation
+        original_argv = sys.argv.copy()
+        
+        # Create temp file with valid commit message
+        f = tempfile.NamedTemporaryFile(mode="w", delete=False)
+        try:
             f.write("fix: resolve bug in validation")
-            f.flush()
-
-            try:
-                # Use both positional argument and --message flag
-                sys.argv = ["commit-check", "--message", f.name]
-                result = main()
-                assert result == 0  # Should pass validation
-            finally:
-                os.unlink(f.name)
+            f.close()  # Explicitly close file before using it
+            
+            # Use both positional argument and --message flag
+            sys.argv = ["commit-check", "--message", f.name]
+            result = main()
+            assert result == 0  # Should pass validation
+        finally:
+            os.unlink(f.name)
+            sys.argv = original_argv
 
     @pytest.mark.benchmark
     def test_positional_arg_with_branch_flag(self, mocker):
         """Test positional argument with other check flags (edge case)."""
+        # Save original sys.argv to ensure isolation
+        original_argv = sys.argv.copy()
+        
         # Mock git command to return a valid branch name
         mocker.patch(
             "subprocess.run",
@@ -520,18 +543,20 @@ class TestPositionalArgumentFeature:
             )(),
         )
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+        # Create temp file with valid commit message
+        f = tempfile.NamedTemporaryFile(mode="w", delete=False)
+        try:
             f.write("chore: update documentation")
-            f.flush()
-
-            try:
-                # Use positional argument with --branch flag
-                sys.argv = ["commit-check", "--branch", f.name]
-                result = main()
-                # Should validate both commit message and branch name
-                assert result == 0  # Should pass both validations
-            finally:
-                os.unlink(f.name)
+            f.close()  # Explicitly close file before using it
+            
+            # Use positional argument with --branch flag
+            sys.argv = ["commit-check", "--branch", f.name]
+            result = main()
+            # Should validate both commit message and branch name
+            assert result == 0  # Should pass both validations
+        finally:
+            os.unlink(f.name)
+            sys.argv = original_argv
 
     @pytest.mark.benchmark
     def test_positional_arg_invalid_commit(self):
