@@ -57,13 +57,13 @@ class TestMain:
         """Test validation of commit message from a file."""
         # Save original sys.argv to ensure isolation
         original_argv = sys.argv.copy()
-        
+
         # Create temp file with valid commit message
         f = tempfile.NamedTemporaryFile(mode="w", delete=False)
         try:
             f.write("fix: resolve bug")
             f.close()  # Explicitly close file before using it
-            
+
             sys.argv = [CMD, "-m", f.name]
             assert main() == 0
         finally:
@@ -218,13 +218,13 @@ class TestMainFunctionEdgeCases:
         """Test main function with --message pointing to a file."""
         # Save original sys.argv to ensure isolation
         original_argv = sys.argv.copy()
-        
+
         # Create temp file with valid commit message
         f = tempfile.NamedTemporaryFile(mode="w", delete=False)
         try:
             f.write("feat: add new feature")
             f.close()  # Explicitly close file before using it
-            
+
             sys.argv = ["commit-check", "--message", f.name]
             result = main()
             assert result == 0
@@ -494,13 +494,13 @@ class TestPositionalArgumentFeature:
         """Test using just the positional argument without --message flag."""
         # Save original sys.argv to ensure isolation
         original_argv = sys.argv.copy()
-        
+
         # Create temp file with valid commit message
         f = tempfile.NamedTemporaryFile(mode="w", delete=False)
         try:
             f.write("feat: add positional argument support")
             f.close()  # Explicitly close file before using it
-            
+
             # Use positional argument only (no --message flag)
             sys.argv = ["commit-check", f.name]
             result = main()
@@ -514,13 +514,13 @@ class TestPositionalArgumentFeature:
         """Test using positional argument with --message flag."""
         # Save original sys.argv to ensure isolation
         original_argv = sys.argv.copy()
-        
+
         # Create temp file with valid commit message
         f = tempfile.NamedTemporaryFile(mode="w", delete=False)
         try:
             f.write("fix: resolve bug in validation")
             f.close()  # Explicitly close file before using it
-            
+
             # Use both positional argument and --message flag
             sys.argv = ["commit-check", "--message", f.name]
             result = main()
@@ -534,7 +534,7 @@ class TestPositionalArgumentFeature:
         """Test positional argument with other check flags (edge case)."""
         # Save original sys.argv to ensure isolation
         original_argv = sys.argv.copy()
-        
+
         # Mock git command to return a valid branch name
         mocker.patch(
             "subprocess.run",
@@ -548,7 +548,7 @@ class TestPositionalArgumentFeature:
         try:
             f.write("chore: update documentation")
             f.close()  # Explicitly close file before using it
-            
+
             # Use positional argument with --branch flag
             sys.argv = ["commit-check", "--branch", f.name]
             result = main()
@@ -563,13 +563,13 @@ class TestPositionalArgumentFeature:
         """Test that positional argument correctly rejects invalid commits."""
         # Save original sys.argv to ensure isolation
         original_argv = sys.argv.copy()
-        
+
         # Create temp file with invalid commit message
         f = tempfile.NamedTemporaryFile(mode="w", delete=False)
         try:
             f.write("invalid commit message without type")
             f.close()  # Explicitly close file before using it
-            
+
             # Use positional argument with invalid message
             sys.argv = ["commit-check", f.name]
             result = main()
