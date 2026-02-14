@@ -538,7 +538,7 @@ class TestPositionalArgumentFeature:
         """Test that positional argument correctly rejects invalid commits."""
         # Mock git author to ensure it's not in any ignore list
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
-        
+
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("invalid commit message without type")
             f.flush()
