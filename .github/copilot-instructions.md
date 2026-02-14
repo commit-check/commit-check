@@ -4,6 +4,46 @@ Commit Check is a Python CLI tool and pre-commit hook that validates commit mess
 
 Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
 
+## Architecture (v2.0)
+
+### Core Design Principles
+**v2.0** is a complete rewrite following SOLID principles with TOML-based configuration (replacing YAML from v1.x).
+
+**Configuration Priority Cascade** (highest to lowest):
+1. CLI arguments (`--subject-max-length=72`)
+2. Environment variables (`CCHK_SUBJECT_MAX_LENGTH=72`)
+3. TOML configuration files (`cchk.toml`, `commit-check.toml`, `.github/cchk.toml`, `.github/commit-check.toml`)
+4. Built-in defaults (see `commit_check/__init__.py`)
+
+### Module Responsibilities
+
+```
+commit_check/
+├── main.py              # CLI entry point, argument parsing
+├── config_merger.py     # Merges CLI→Env→TOML→Defaults
+├── config.py           # TOML file loading logic
+├── rule_builder.py     # Builds ValidationRule objects from config
+├── rules_catalog.py    # Catalog of all validation rules (COMMIT_RULES, BRANCH_RULES)
+├── engine.py           # ValidationEngine orchestrates BaseValidator subclasses
+├── imperatives.py      # Imperative verb list for subject validation
+└── util.py             # Git operations, output formatting, helpers
+```
+
+**Key Flow**: `main()` → `ConfigMerger` → `RuleBuilder` → `ValidationEngine` → `BaseValidator` subclasses → exit code 0/1
+
+### Configuration Discovery
+Tool searches for TOML files in this order:
+1. Path from `--config` argument
+2. `cchk.toml` in current directory
+3. `commit-check.toml` in current directory
+4. `.github/cchk.toml`
+5. `.github/commit-check.toml`
+
+### Pre-commit Integration Patterns
+- **File argument**: `commit-check -m .git/COMMIT_EDITMSG` (from pre-commit hook)
+- **Stdin piped**: `echo "feat: add feature" | commit-check -m`
+- **Git commands**: Uses `subprocess.run()` to invoke git for branch names, author info, etc.
+
 ## Working Effectively
 
 ### Prerequisites and Setup
@@ -95,7 +135,7 @@ python3 -m commit_check.main --help
 python3 -m commit_check.main --version
 
 # Test 6: Configuration validation
-python3 -m commit_check.main --config .commit-check.yml --dry-run
+python3 -m commit_check.main --config cchk.toml --dry-run
 
 # Test 7: Multiple checks at once
 python3 -m commit_check.main --message test_commit.txt --branch --dry-run
@@ -134,26 +174,34 @@ cchk --help  # Verify alias works
 ### Repository Structure
 ```
 .
-├── commit_check/           # Main Python package
-│   ├── __init__.py        # Package configuration and defaults
-│   ├── main.py           # CLI entry point
-│   ├── commit.py         # Commit message validation
-│   ├── branch.py         # Branch name validation
-│   ├── author.py         # Author validation
-│   └── util.py           # Utility functions
-├── tests/                 # Test suite (108 tests)
-├── docs/                  # Sphinx documentation
-├── .commit-check.yml      # Default configuration
-├── pyproject.toml        # Package metadata and build config
-├── noxfile.py           # Build automation
-└── .pre-commit-config.yaml # Pre-commit configuration
+├── commit_check/              # Main Python package
+│   ├── __init__.py           # Package constants, defaults (DEFAULT_COMMIT_TYPES, DEFAULT_BRANCH_TYPES)
+│   ├── main.py              # CLI entry point, StdinReader, argument parsing
+│   ├── config_merger.py     # ConfigMerger: CLI→Env→TOML→Defaults priority cascade
+│   ├── config.py            # TOML file loading (uses tomllib/tomli)
+│   ├── rule_builder.py      # RuleBuilder: creates ValidationRule from config + catalog
+│   ├── rules_catalog.py     # COMMIT_RULES, BRANCH_RULES catalogs (RuleCatalogEntry)
+│   ├── engine.py            # ValidationEngine, BaseValidator, ValidationContext
+│   ├── imperatives.py       # List of imperative verbs for subject validation
+│   └── util.py              # Git operations, output formatting (_print_failure)
+├── tests/                    # Test suite (~564 tests in main_test.py alone)
+│   ├── main_test.py         # CLI integration tests
+│   ├── engine_test.py       # Validator tests
+│   ├── config_merger_test.py # Config merging tests
+│   └── rule_builder_test.py # Rule building tests
+├── docs/                     # Sphinx documentation
+├── cchk.toml                # Example TOML configuration (v2.0 format)
+├── pyproject.toml           # Package metadata, build config, tool settings
+├── noxfile.py              # Build automation sessions
+└── .pre-commit-hooks.yaml  # Pre-commit hook definitions
 ```
 
 ### Key Files
-- **pyproject.toml**: Package configuration, dependencies, entry points
-- **noxfile.py**: Automated build tasks (lint, test, build, docs)
-- **.commit-check.yml**: Default validation rules for the tool itself
-- **commit_check/__init__.py**: Default configuration templates and constants
+- **pyproject.toml**: Package metadata, dependencies, entry points (`commit-check` and `cchk`)
+- **noxfile.py**: Automated build tasks (lint, test, build, docs, coverage)
+- **cchk.toml**: TOML configuration example for this repo
+- **commit_check/__init__.py**: DEFAULT_COMMIT_TYPES, DEFAULT_BRANCH_TYPES, DEFAULT_BOOLEAN_RULES
+- **commit_check/engine.py**: ValidationResult (PASS=0, FAIL=1), BaseValidator ABC
 
 ## Common Commands Summary
 
@@ -164,6 +212,8 @@ cchk --help  # Verify alias works
 | `nox -s coverage` | Tests + coverage | 5+ min | Often times out |
 | `nox -s lint` | Code quality | 2-5 min | Often times out |
 | `python3 -m commit_check.main --help` | CLI help | Instant | Always works |
+| `commit-check -m <file>` | Validate commit msg file | <1s | Pre-commit hook usage |
+| `echo "msg" \| commit-check -m` | Validate from stdin | <1s | Pipe usage |
 
 ## Tool Behavior and Features
 
