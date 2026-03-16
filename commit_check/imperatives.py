@@ -46,8 +46,7 @@ IMPERATIVES = {
     "control",
     "convert",
     "copy",
-    "correct"
-    "count",
+    "correctcount",
     "create",
     "customize",
     "declare",
