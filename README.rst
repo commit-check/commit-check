@@ -123,6 +123,12 @@ For detailed usage instructions including pre-commit hooks, CLI commands, and ST
 Examples
 --------
 
+.. image:: https://github.com/commit-check/commit-check/raw/main/docs/demo.gif
+    :alt: commit-check demo
+    :align: center
+
+|
+
 Check Commit Message Failed
 
 .. code-block:: text
@@ -141,9 +147,8 @@ Check Commit Message Failed
     Commit rejected.
 
     Type message check failed ==> test commit message check
-    It doesn't match regex: ^(chore|ci|docs|feat|fix|refactor|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)
     The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
-    Suggest: Use <type>(<scope>): <description> with allowed types
+    Suggest: Use <type>(<scope>): <description>, where <type> is one of: feat, fix, docs, style, refactor, test, chore, ci
 
 
 Check Branch Naming Failed
@@ -164,9 +169,8 @@ Check Branch Naming Failed
     Commit rejected.
 
     Type branch check failed ==> test-branch
-    It doesn't match regex: ^(feature|bugfix|hotfix|release|chore|feat|fix)\/.+|(master)|(main)|(HEAD)|(PR-.+)
     The branch should follow Conventional Branch. See https://conventional-branch.github.io/
-    Suggest: Use <type>/<description> with allowed types or ignore_authors in config branch section to bypass
+    Suggest: Use <type>/<description> with allowed types or add branch name to allow_branch_names in config, or use ignore_authors in config branch section to bypass
 
 More examples see `example documentation <https://commit-check.github.io/commit-check/example.html>`_.
 
