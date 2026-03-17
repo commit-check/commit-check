@@ -29,8 +29,8 @@ COMMIT_RULES = [
     RuleCatalogEntry(
         check="subject_imperative",
         regex=None,
-        error="Commit message should use imperative mood (e.g., 'Add feature' not 'Added feature')",
-        suggest="Use imperative mood in the subject line",
+        error="Commit message should use imperative mood (e.g., 'fix bug' not 'fixed bug', 'add feature' not 'adding feature')",
+        suggest="Change the first verb to imperative form, e.g., 'fix' instead of 'fixed'/'fixes'/'fixing'",
     ),
     RuleCatalogEntry(
         check="subject_max_length",

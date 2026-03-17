@@ -329,7 +329,6 @@ class TestUtil:
             stdout, _ = capfd.readouterr()
             assert check_type in stdout
             assert type_failed_msg in stdout
-            assert f"It doesn't match regex: {dummy_regex}" in stdout
             assert dummy_error in stdout
 
     class TestPrintSuggestion:

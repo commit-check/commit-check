@@ -110,11 +110,16 @@ class RuleBuilder:
         allowed_types = self._get_allowed_commit_types()
         regex = self._build_conventional_commit_regex(allowed_types)
 
+        types_str = ", ".join(allowed_types)
+        suggest = (
+            f"Use <type>(<scope>): <description>, where <type> is one of: {types_str}"
+        )
+
         return ValidationRule(
             check=catalog_entry.check,
             regex=regex,
             error=catalog_entry.error,
-            suggest=catalog_entry.suggest,
+            suggest=suggest,
             allowed=allowed_types,
         )
 

@@ -255,8 +255,8 @@ def print_error_message(check_type: str, regex: str, error: str, reason: str):
         end="",
     )
     print("")
-    print(f"It doesn't match regex: {regex}")
-    print(error)
+    if error:
+        print(error)
 
 
 def print_suggestion(suggest: Optional[str]) -> None:
