@@ -850,6 +850,10 @@ repos:
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h2>
 <p>For detailed usage instructions including pre-commit hooks, CLI commands, and STDIN examples, see the <a class="reference external" href="https://commit-check.github.io/commit-check/example.html">Usage Examples documentation</a>.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Link to this heading">¶</a></h2>
+<img alt="commit-check demo" class="align-center" src="https://github.com/commit-check/commit-check/raw/main/docs/demo.gif" />
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
 <p>Check Commit Message Failed</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
@@ -865,9 +869,8 @@ repos:
 Commit rejected.
 
 Type message check failed ==&gt; test commit message check
-It doesn&#39;t match regex: ^(chore|ci|docs|feat|fix|refactor|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)
 The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
-Suggest: Use &lt;type&gt;(&lt;scope&gt;): &lt;description&gt; with allowed types
+Suggest: Use &lt;type&gt;(&lt;scope&gt;): &lt;description&gt;, where &lt;type&gt; is one of: feat, fix, docs, style, refactor, test, chore, ci
 </code></pre></div>
 </div>
 <p>Check Branch Naming Failed</p>
@@ -885,9 +888,8 @@ Suggest: Use &lt;type&gt;(&lt;scope&gt;): &lt;description&gt; with allowed types
 Commit rejected.
 
 Type branch check failed ==&gt; test-branch
-It doesn&#39;t match regex: ^(feature|bugfix|hotfix|release|chore|feat|fix)\/.+|(master)|(main)|(HEAD)|(PR-.+)
 The branch should follow Conventional Branch. See https://conventional-branch.github.io/
-Suggest: Use &lt;type&gt;/&lt;description&gt; with allowed types or ignore_authors in config branch section to bypass
+Suggest: Use &lt;type&gt;/&lt;description&gt; with allowed types or add branch name to allow_branch_names in config, or use ignore_authors in config branch section to bypass
 </code></pre></div>
 </div>
 <p>More examples see <a class="reference external" href="https://commit-check.github.io/commit-check/example.html">example documentation</a>.</p>
