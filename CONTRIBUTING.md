@@ -60,7 +60,7 @@ commit_check/
 BaseValidator (ABC)
 ├── CommitMessageValidator        # Full message: conventional commits format
 ├── SubjectValidator (ABC)
-│   ├── SubjectCapitalizationValidator  # First letter must be lowercase
+│   ├── SubjectCapitalizationValidator  # First letter must be uppercase
 │   ├── SubjectImperativeValidator      # Subject must start with imperative verb
 │   └── SubjectLengthValidator          # Subject length min/max
 ├── AuthorValidator               # Author name and email format
