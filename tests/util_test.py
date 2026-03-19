@@ -322,14 +322,12 @@ class TestUtil:
         @pytest.mark.benchmark
         def test_print_error_message(self, capfd, check_type, type_failed_msg):
             # Must print on stdout with given argument.
-            dummy_regex = "dummy regex"
             dummy_reason = "failure reason"
             dummy_error = "dummy error"
-            print_error_message(check_type, dummy_regex, dummy_error, dummy_reason)
+            print_error_message(check_type, dummy_error, dummy_reason)
             stdout, _ = capfd.readouterr()
             assert check_type in stdout
             assert type_failed_msg in stdout
-            assert f"It doesn't match regex: {dummy_regex}" in stdout
             assert dummy_error in stdout
 
     class TestPrintSuggestion:

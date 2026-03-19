@@ -36,7 +36,7 @@ def _print_failure(check: dict, regex: str, actual: str) -> None:
     """Print a standardized failure message."""
     if not print_error_header.has_been_called:
         print_error_header()
-    print_error_message(check["check"], regex, check.get("error", ""), actual)
+    print_error_message(check["check"], check.get("error", ""), actual)
     if check.get("suggest"):
         print_suggestion(check.get("suggest"))
 
@@ -241,10 +241,9 @@ def print_error_header():
     print("                                                                  ")
 
 
-def print_error_message(check_type: str, regex: str, error: str, reason: str):
+def print_error_message(check_type: str, error: str, reason: str):
     """Print error message.
     :param check_type:
-    :param regex:
     :param error:
     :param reason:
 
@@ -255,8 +254,8 @@ def print_error_message(check_type: str, regex: str, error: str, reason: str):
         end="",
     )
     print("")
-    print(f"It doesn't match regex: {regex}")
-    print(error)
+    if error:
+        print(error)
 
 
 def print_suggestion(suggest: Optional[str]) -> None:
