@@ -5,6 +5,25 @@ All **notable changes** to this project will be documented in this file.
 
 Full changelog available at `GitHub releases <https://github.com/commit-check/commit-check/releases>`_.
 
+v2.5.0 (2026-03-22)
+-------------------
+
+What's New
+~~~~~~~~~~
+
+* **Auto-fix commit messages** — Run ``cchk --message --fix`` to automatically repair non-compliant commit messages. Commit Check will propose the corrected message and prompt ``y/N`` before amending. Use ``--yes`` to apply fixes without prompting (useful in CI or pre-commit hooks).
+
+  Fixable violations:
+
+  - Incorrect verb tense in subject (``fixed bug`` → ``fix bug``, ``adding feature`` → ``add feature``)
+  - Missing capitalization after conventional commit prefix (``feat: fix bug`` → ``feat: Fix bug``)
+  - ``WIP:`` prefix that should be removed
+  - Missing ``Signed-off-by`` trailer (appended from ``git config user.name`` / ``user.email``)
+
+  Violations that require human judgment (subject too long, missing body, wrong commit type) are reported with a clear explanation — the tool never silently drops content.
+
+* **Pre-commit hook support for --fix** — When a commit-msg file path is provided as a positional argument (``cchk "${1}" --fix --yes``), the fixed message is written back to the file instead of amending. Works with both ``commit-msg`` and ``prepare-commit-msg`` hook stages.
+
 v2.0.0 (2025-10-01)
 -------------------
 

@@ -120,6 +120,24 @@ Usage
 
 For detailed usage instructions including pre-commit hooks, CLI commands, and STDIN examples, see the `Usage Examples documentation <https://commit-check.github.io/commit-check/example.html>`_.
 
+Auto-fix Violations
+~~~~~~~~~~~~~~~~~~~
+
+Use ``--fix`` to automatically repair non-compliant commit messages. Commit Check will propose a corrected message and prompt you before amending:
+
+.. code-block:: bash
+
+    # Validate and propose a fix (prompts y/N before amending)
+    cchk --message --fix
+
+    # Apply the fix automatically without prompting
+    cchk --message --fix --yes
+
+    # In a pre-commit hook (commit-msg stage) — writes the fix back to the file
+    cchk "${1}" --fix --yes
+
+Fixable violations include: incorrect verb tense (``fixed`` → ``fix``), missing capitalization, ``WIP:`` prefix, and missing ``Signed-off-by`` trailer. Violations that require manual attention (e.g., subject too long, missing body) are reported with an explanation.
+
 Examples
 --------
 

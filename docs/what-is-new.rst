@@ -5,6 +5,33 @@ What's New
 
 This document highlights the major changes and improvements in each version of commit-check.
 
+Version 2.5.0 - Auto-fix
+--------------------------
+
+**You can now fix commit messages automatically.**
+
+Run ``cchk --message --fix`` and Commit Check will propose a corrected message based on your configured rules, then prompt you before amending. Add ``--yes`` to apply without prompting.
+
+.. code-block:: bash
+
+    # Interactive — shows the proposed fix and prompts y/N
+    cchk --message --fix
+
+    # Non-interactive — applies the fix automatically
+    cchk --message --fix --yes
+
+    # Pre-commit hook (commit-msg stage) — writes fix back to the file
+    cchk "${1}" --fix --yes
+
+**What gets fixed automatically:**
+
+* Verb tense in subject line (``fixed bug`` → ``fix bug``, ``adding feature`` → ``add feature``)
+* Capitalization after conventional commit prefix (``feat: fix bug`` → ``feat: Fix bug``)
+* ``WIP:`` prefix removal
+* Missing ``Signed-off-by`` trailer (from your ``git config`` identity)
+
+Violations that need human attention — subject too long, missing body, wrong commit type — are reported with a clear explanation. The tool never silently drops or rewrites meaning.
+
 Version 2.0.0 - Major Release
 -----------------------------
 

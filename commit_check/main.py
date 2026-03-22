@@ -5,9 +5,17 @@ import sys
 import argparse
 from typing import Optional
 
+import subprocess
+
 from commit_check.config_merger import ConfigMerger, parse_bool, parse_list, parse_int
 from commit_check.rule_builder import RuleBuilder
-from commit_check.engine import ValidationEngine, ValidationContext, ValidationResult
+from commit_check.engine import (
+    ValidationEngine,
+    ValidationContext,
+    ValidationResult,
+)
+from commit_check.fixer import CommitFixer
+from commit_check.util import get_commit_info
 from . import __version__
 
 
@@ -260,6 +268,24 @@ def _get_parser() -> argparse.ArgumentParser:
         help="comma-separated list of authors to ignore for branch checks",
     )
 
+    # Fix options
+    fix_group = parser.add_argument_group(
+        "fix options", "Auto-repair non-compliant commit messages"
+    )
+
+    fix_group.add_argument(
+        "--fix",
+        action="store_true",
+        help="validate then propose fixes; prompt y/N before amending"
+        " (only valid with --message; requires a tty or --yes)",
+    )
+
+    fix_group.add_argument(
+        "--yes",
+        action="store_true",
+        help="auto-apply fixes without prompting (requires --fix)",
+    )
+
     return parser
 
 
@@ -298,6 +324,111 @@ def _get_message_content(
         return None
 
 
+def _run_fix_flow(
+    args: argparse.Namespace,
+    engine: "ValidationEngine",
+    context: "ValidationContext",
+) -> int:
+    """Execute the --fix flow. Returns exit code."""
+    # Mode C: piped stdin is incompatible with --fix
+    if context.stdin_text is not None:
+        print("Error: --fix cannot be used with piped input", file=sys.stderr)
+        return 1
+
+    # Non-interactive guard (no tty and no --yes)
+    if not sys.stdin.isatty() and not args.yes:
+        print(
+            "Error: --fix requires a tty or use --fix --yes in non-interactive contexts",
+            file=sys.stderr,
+        )
+        return 1
+
+    # Determine mode and get the message to fix
+    if context.commit_file:
+        # Mode B: pre-commit hook — read from file
+        try:
+            with open(context.commit_file, "r", encoding="utf-8") as f:
+                message = f.read().strip()
+        except OSError as e:
+            print(
+                f"Error reading commit file '{context.commit_file}': {e}",
+                file=sys.stderr,
+            )
+            return 1
+    else:
+        # Mode A: latest git commit
+        subject = get_commit_info("s")
+        body = get_commit_info("b")
+        message = f"{subject}\n\n{body}".strip()
+
+    # Run detailed validation to get failed check names
+    check_results = engine.validate_all_detailed(context)
+    failed_checks = [
+        r.check for r in check_results if r.result == ValidationResult.FAIL
+    ]
+
+    if not failed_checks:
+        print("Commit message already compliant.")
+        return 0
+
+    # Apply rule-driven fixes
+    fixer = CommitFixer()
+    fix_result = fixer.fix(message, failed_checks)
+
+    # Display proposed changes
+    if fix_result.fixed:
+        print("\nProposed fix:")
+        print(f"  Before: {fix_result.original_message!r}")
+        print(f"  After:  {fix_result.fixed_message!r}")
+        print(f"  Fixed:  {', '.join(fix_result.fixed)}")
+
+    # Report unfixable items
+    for check, reason in fix_result.unfixable:
+        print(f"  Cannot fix '{check}': {reason}", file=sys.stderr)
+
+    # Nothing fixable — exit without amending
+    if not fix_result.fixed:
+        return 1
+
+    # Prompt or auto-apply
+    if not args.yes:
+        try:
+            response = input("\nApply fix? [y/N] ")
+        except EOFError:
+            response = ""
+        if response.strip().lower() != "y":
+            print("Aborted.", file=sys.stderr)
+            return 1
+
+    # Apply the fix
+    if context.commit_file:
+        # Mode B: write fixed message back to the commit-msg file
+        try:
+            with open(context.commit_file, "w", encoding="utf-8") as f:
+                f.write(fix_result.fixed_message)
+        except OSError as e:
+            print(
+                f"Error writing commit file '{context.commit_file}': {e}",
+                file=sys.stderr,
+            )
+            return 1
+    else:
+        # Mode A: amend the latest commit
+        try:
+            subprocess.check_call(
+                ["git", "commit", "--amend", "-m", fix_result.fixed_message]
+            )
+        except subprocess.CalledProcessError as e:
+            print(
+                f"Error: git commit --amend failed (exit {e.returncode})",
+                file=sys.stderr,
+            )
+            return 1
+
+    # Exit 1 if any checks remain unfixable, 0 if everything was resolved
+    return 1 if fix_result.unfixable else 0
+
+
 def main() -> int:
     """The main entrypoint of commit-check program."""
     parser = _get_parser()
@@ -305,6 +436,13 @@ def main() -> int:
 
     if args.dry_run:
         return 0
+
+    if args.yes and not args.fix:
+        print("Error: --yes requires --fix", file=sys.stderr)
+        return 1
+    if args.fix and (args.branch or args.author_name or args.author_email):
+        print("Error: --fix is only valid with --message", file=sys.stderr)
+        return 1
 
     stdin_reader = StdinReader()
 
@@ -390,6 +528,9 @@ def main() -> int:
         )
 
         # Run validation
+        if args.fix:
+            return _run_fix_flow(args, engine, context)
+
         result = engine.validate_all(context)
 
         # Return appropriate exit code

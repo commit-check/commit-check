@@ -7,6 +7,7 @@ from unittest.mock import mock_open, patch
 from commit_check.engine import (
     ValidationResult,
     ValidationContext,
+    CheckResult,
     BaseValidator,
     ValidationEngine,
     CommitMessageValidator,
@@ -948,4 +949,107 @@ class TestSubjectImperativeValidator:
 
         # "resolve" is a valid imperative word with scope and breaking change notation
         result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+
+# ---------------------------------------------------------------------------
+# CheckResult dataclass
+# ---------------------------------------------------------------------------
+
+
+class TestCheckResult:
+    @pytest.mark.benchmark
+    def test_check_result_fields(self):
+        cr = CheckResult(check="subject_imperative", result=ValidationResult.PASS)
+        assert cr.check == "subject_imperative"
+        assert cr.result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_check_result_fail(self):
+        cr = CheckResult(check="message", result=ValidationResult.FAIL)
+        assert cr.result == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_check_result_frozen(self):
+        cr = CheckResult(check="branch", result=ValidationResult.PASS)
+        with pytest.raises((AttributeError, TypeError)):
+            cr.check = "other"  # type: ignore[misc]
+
+
+# ---------------------------------------------------------------------------
+# ValidationEngine.validate_all_detailed()
+# ---------------------------------------------------------------------------
+
+
+class TestValidateAllDetailed:
+    def _make_engine(self, checks: list[str]) -> ValidationEngine:
+        rules = [ValidationRule(check=c) for c in checks]
+        return ValidationEngine(rules)
+
+    @pytest.mark.benchmark
+    def test_returns_list_of_check_results(self):
+        engine = self._make_engine(["subject_imperative"])
+        context = ValidationContext(stdin_text="fix: add feature")
+        results = engine.validate_all_detailed(context)
+        assert isinstance(results, list)
+        assert all(isinstance(r, CheckResult) for r in results)
+
+    @pytest.mark.benchmark
+    def test_pass_check_present_in_results(self):
+        engine = self._make_engine(["subject_imperative"])
+        context = ValidationContext(stdin_text="fix: add feature")
+        results = engine.validate_all_detailed(context)
+        check_names = [r.check for r in results]
+        assert "subject_imperative" in check_names
+        matching = [r for r in results if r.check == "subject_imperative"]
+        assert matching[0].result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_fail_check_present_in_results(self):
+        engine = self._make_engine(["subject_imperative"])
+        context = ValidationContext(stdin_text="fix: added feature")
+        with patch("commit_check.util._print_failure"):
+            results = engine.validate_all_detailed(context)
+        matching = [r for r in results if r.check == "subject_imperative"]
+        assert matching[0].result == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_unknown_check_skipped(self):
+        """Unknown validator names produce no CheckResult entry."""
+        rules = [ValidationRule(check="totally_unknown_check")]
+        engine = ValidationEngine(rules)
+        context = ValidationContext(stdin_text="fix: add thing")
+        results = engine.validate_all_detailed(context)
+        assert results == []
+
+    @pytest.mark.benchmark
+    def test_multiple_checks_all_returned(self):
+        engine = self._make_engine(["subject_imperative", "subject_capitalized"])
+        context = ValidationContext(stdin_text="fix: add feature")
+        results = engine.validate_all_detailed(context)
+        check_names = [r.check for r in results]
+        assert "subject_imperative" in check_names
+        assert "subject_capitalized" in check_names
+
+    @pytest.mark.benchmark
+    def test_validate_all_delegates_to_detailed(self):
+        """validate_all() still returns ValidationResult enum (backward compat)."""
+        engine = self._make_engine(["subject_imperative"])
+        context = ValidationContext(stdin_text="fix: add feature")
+        result = engine.validate_all(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_validate_all_fail_when_any_fail(self):
+        engine = self._make_engine(["subject_imperative"])
+        context = ValidationContext(stdin_text="fix: added feature")
+        with patch("commit_check.util._print_failure"):
+            result = engine.validate_all(context)
+        assert result == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_validate_all_pass_when_all_pass(self):
+        engine = self._make_engine(["subject_imperative", "subject_capitalized"])
+        context = ValidationContext(stdin_text="fix: Add feature")
+        result = engine.validate_all(context)
         assert result == ValidationResult.PASS

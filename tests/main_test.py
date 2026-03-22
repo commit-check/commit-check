@@ -564,3 +564,261 @@ class TestPositionalArgumentFeature:
         result = main()
         # Should fall back to git and pass
         assert result == 0
+
+
+# ---------------------------------------------------------------------------
+# --fix / --yes guard conditions
+# ---------------------------------------------------------------------------
+
+
+class TestFixGuards:
+    @pytest.mark.benchmark
+    def test_yes_without_fix_exits_1(self, capfd):
+        sys.argv = [CMD, "--message", "--yes"]
+        assert main() == 1
+        _, err = capfd.readouterr()
+        assert "--yes requires --fix" in err
+
+    @pytest.mark.benchmark
+    def test_fix_with_branch_exits_1(self, capfd):
+        sys.argv = [CMD, "--message", "--branch", "--fix"]
+        assert main() == 1
+        _, err = capfd.readouterr()
+        assert "--fix is only valid with --message" in err
+
+    @pytest.mark.benchmark
+    def test_fix_with_author_name_exits_1(self, capfd):
+        sys.argv = [CMD, "--message", "--author-name", "--fix"]
+        assert main() == 1
+        _, err = capfd.readouterr()
+        assert "--fix is only valid with --message" in err
+
+    @pytest.mark.benchmark
+    def test_fix_with_author_email_exits_1(self, capfd):
+        sys.argv = [CMD, "--message", "--author-email", "--fix"]
+        assert main() == 1
+        _, err = capfd.readouterr()
+        assert "--fix is only valid with --message" in err
+
+    @pytest.mark.benchmark
+    def test_fix_no_tty_no_yes_exits_1(self, mocker, capfd):
+        """--fix without --yes when stdin is not a tty should fail with helpful message."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="fixed the bug")
+        sys.argv = [CMD, "--message", "--fix"]
+        # Mode C: piped stdin detected → error (stdin_text will be set)
+        assert main() == 1
+
+
+# ---------------------------------------------------------------------------
+# --fix Mode A: git commit (latest commit)
+# ---------------------------------------------------------------------------
+
+
+class TestFixModeA:
+    @pytest.mark.benchmark
+    def test_already_compliant_exits_0(self, mocker, capfd):
+        """When commit already passes all checks, prints compliant and exits 0."""
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch(
+            "commit_check.engine.get_commit_info",
+            side_effect=lambda fmt: {
+                "s": "feat: Add new feature",
+                "b": "",
+                "an": "Author",
+            }.get(fmt, ""),
+        )
+        mocker.patch(
+            "commit_check.main.get_commit_info",
+            side_effect=lambda fmt: {
+                "s": "feat: Add new feature",
+                "b": "",
+                "an": "Author",
+            }.get(fmt, ""),
+        )
+        sys.argv = [CMD, "--message", "--fix", "--yes"]
+        result = main()
+        out, _ = capfd.readouterr()
+        assert result == 0
+        assert "compliant" in out
+
+    @pytest.mark.benchmark
+    def test_fixable_amends_and_exits_0(self, mocker, capfd):
+        """Fixable violation with --yes: amends commit, exits 0."""
+        # Use conventional prefix so only subject_imperative fails (message check passes)
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch(
+            "commit_check.engine.get_commit_info",
+            side_effect=lambda fmt: {
+                "s": "feat: fixed the login bug",
+                "b": "",
+                "an": "Author",
+            }.get(fmt, ""),
+        )
+        mocker.patch(
+            "commit_check.main.get_commit_info",
+            side_effect=lambda fmt: {
+                "s": "feat: fixed the login bug",
+                "b": "",
+                "an": "Author",
+            }.get(fmt, ""),
+        )
+        mock_check_call = mocker.patch("commit_check.main.subprocess.check_call")
+        sys.argv = [CMD, "--message", "--fix", "--yes"]
+        result = main()
+        assert result == 0
+        mock_check_call.assert_called_once()
+        call_args = mock_check_call.call_args[0][0]
+        assert "git" in call_args
+        assert "--amend" in call_args
+
+    @pytest.mark.benchmark
+    def test_user_says_n_aborts(self, mocker, capfd):
+        """When user responds 'n' to prompt, exits 1 without amending."""
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch(
+            "commit_check.engine.get_commit_info",
+            side_effect=lambda fmt: {
+                "s": "feat: fixed the login bug",
+                "b": "",
+                "an": "Author",
+            }.get(fmt, ""),
+        )
+        mocker.patch(
+            "commit_check.main.get_commit_info",
+            side_effect=lambda fmt: {
+                "s": "feat: fixed the login bug",
+                "b": "",
+                "an": "Author",
+            }.get(fmt, ""),
+        )
+        mocker.patch("commit_check.main.input", return_value="n")
+        mock_check_call = mocker.patch("commit_check.main.subprocess.check_call")
+        sys.argv = [CMD, "--message", "--fix"]
+        result = main()
+        assert result == 1
+        mock_check_call.assert_not_called()
+
+    @pytest.mark.benchmark
+    def test_user_says_y_amends(self, mocker, capfd):
+        """When user responds 'y' to prompt, amends commit."""
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch(
+            "commit_check.engine.get_commit_info",
+            side_effect=lambda fmt: {
+                "s": "feat: fixed the login bug",
+                "b": "",
+                "an": "Author",
+            }.get(fmt, ""),
+        )
+        mocker.patch(
+            "commit_check.main.get_commit_info",
+            side_effect=lambda fmt: {
+                "s": "feat: fixed the login bug",
+                "b": "",
+                "an": "Author",
+            }.get(fmt, ""),
+        )
+        mocker.patch("commit_check.main.input", return_value="y")
+        mock_check_call = mocker.patch("commit_check.main.subprocess.check_call")
+        sys.argv = [CMD, "--message", "--fix"]
+        result = main()
+        assert result == 0
+        mock_check_call.assert_called_once()
+
+    @pytest.mark.benchmark
+    def test_amend_failure_exits_1(self, mocker, capfd):
+        """When git commit --amend fails, exits 1 with error message."""
+        import subprocess as sp
+
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch(
+            "commit_check.engine.get_commit_info",
+            side_effect=lambda fmt: {
+                "s": "feat: fixed the login bug",
+                "b": "",
+                "an": "Author",
+            }.get(fmt, ""),
+        )
+        mocker.patch(
+            "commit_check.main.get_commit_info",
+            side_effect=lambda fmt: {
+                "s": "feat: fixed the login bug",
+                "b": "",
+                "an": "Author",
+            }.get(fmt, ""),
+        )
+        mocker.patch(
+            "commit_check.main.subprocess.check_call",
+            side_effect=sp.CalledProcessError(1, "git"),
+        )
+        sys.argv = [CMD, "--message", "--fix", "--yes"]
+        result = main()
+        assert result == 1
+        _, err = capfd.readouterr()
+        assert "amend failed" in err
+
+
+# ---------------------------------------------------------------------------
+# --fix Mode B: pre-commit hook (commit_msg_file)
+# ---------------------------------------------------------------------------
+
+
+class TestFixModeB:
+    @pytest.mark.benchmark
+    def test_file_fixed_and_written_back(self, mocker, tmp_path):
+        """commit_msg_file + --fix --yes: fixed message written back to file."""
+        commit_file = tmp_path / "COMMIT_EDITMSG"
+        # Use conventional prefix so only subject_imperative fails (message check passes)
+        commit_file.write_text("feat: fixed bug\n")
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch("commit_check.engine.get_commit_info", return_value="Author")
+        sys.argv = [CMD, str(commit_file), "--fix", "--yes"]
+        result = main()
+        assert result == 0
+        content = commit_file.read_text()
+        assert "fix" in content.lower()
+        assert content != "feat: fixed bug\n"
+
+    @pytest.mark.benchmark
+    def test_file_unfixable_exits_1(self, mocker, tmp_path, capfd):
+        """commit_msg_file with unfixable violation exits 1."""
+        commit_file = tmp_path / "COMMIT_EDITMSG"
+        long_subject = "x" * 200
+        commit_file.write_text(long_subject + "\n")
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch("commit_check.engine.get_commit_info", return_value="Author")
+        sys.argv = [CMD, str(commit_file), "--fix", "--yes"]
+        result = main()
+        assert result == 1
+
+    @pytest.mark.benchmark
+    def test_file_interactive_user_says_n_unchanged(self, mocker, tmp_path):
+        """Interactive mode with 'n': file not modified, exits 1."""
+        commit_file = tmp_path / "COMMIT_EDITMSG"
+        commit_file.write_text("feat: fixed bug\n")
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch("commit_check.engine.get_commit_info", return_value="Author")
+        mocker.patch("commit_check.main.input", return_value="n")
+        sys.argv = [CMD, str(commit_file), "--fix"]
+        result = main()
+        assert result == 1
+        assert commit_file.read_text() == "feat: fixed bug\n"
+
+
+# ---------------------------------------------------------------------------
+# --fix Mode C: piped stdin → error
+# ---------------------------------------------------------------------------
+
+
+class TestFixModeC:
+    @pytest.mark.benchmark
+    def test_piped_stdin_with_fix_exits_1(self, mocker, capfd):
+        """--fix with piped stdin exits 1 with error about piped input."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="fixed the bug\n")
+        sys.argv = [CMD, "--message", "--fix", "--yes"]
+        result = main()
+        assert result == 1
+        _, err = capfd.readouterr()
+        assert "piped" in err.lower() or "non-interactive" in err.lower()

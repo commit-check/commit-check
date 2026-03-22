@@ -32,6 +32,14 @@ class ValidationContext:
     config: Dict = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class CheckResult:
+    """Result of a single validation check."""
+
+    check: str
+    result: ValidationResult
+
+
 class BaseValidator(ABC):
     """Abstract base validator."""
 
@@ -542,8 +550,8 @@ class ValidationEngine:
     def __init__(self, rules: List[ValidationRule]):
         self.rules = rules
 
-    def validate_all(self, context: ValidationContext) -> ValidationResult:
-        """Run all validations and return overall result."""
+    def validate_all_detailed(self, context: ValidationContext) -> List[CheckResult]:
+        """Run all validations and return per-check results."""
         results = []
 
         for rule in self.rules:
@@ -553,11 +561,15 @@ class ValidationEngine:
 
             validator: BaseValidator = validator_class(rule)
             result = validator.validate(context)
-            results.append(result)
+            results.append(CheckResult(check=rule.check, result=result))
 
-        # Return FAIL if any validation failed
+        return results
+
+    def validate_all(self, context: ValidationContext) -> ValidationResult:
+        """Run all validations and return overall result."""
+        results = self.validate_all_detailed(context)
         return (
             ValidationResult.FAIL
-            if ValidationResult.FAIL in results
+            if any(r.result == ValidationResult.FAIL for r in results)
             else ValidationResult.PASS
         )

@@ -35,6 +35,11 @@ CLI args / Env vars / TOML file
            ▼
    BaseValidator subclasses  ← Each validator performs one focused check
            │
+           ├─ (--fix flag) → CommitFixer ← Applies rule-driven transforms to fix violations
+           │                               (imperative tense, capitalization, WIP strip, signoff)
+           │                     │
+           │                     ▼
+           │             git commit --amend  ← or write back to commit-msg file (pre-commit)
            ▼
        Exit code 0/1
 ```
@@ -44,12 +49,13 @@ CLI args / Env vars / TOML file
 ```
 commit_check/
 ├── __init__.py          # Package constants: DEFAULT_COMMIT_TYPES, DEFAULT_BRANCH_TYPES, DEFAULT_BOOLEAN_RULES
-├── main.py              # CLI entry point, argument parsing, StdinReader
+├── main.py              # CLI entry point, argument parsing, StdinReader, --fix flow
 ├── config.py            # TOML file loading (uses tomllib on Python 3.11+, tomli on older)
 ├── config_merger.py     # ConfigMerger: merges CLI → Env → TOML → Defaults
 ├── rule_builder.py      # RuleBuilder: creates ValidationRule objects from config + catalog
 ├── rules_catalog.py     # Catalog of all rules (COMMIT_RULES, BRANCH_RULES)
-├── engine.py            # ValidationEngine, BaseValidator ABC, ValidationContext, ValidationResult
+├── engine.py            # ValidationEngine, BaseValidator ABC, ValidationContext, ValidationResult, CheckResult
+├── fixer.py             # CommitFixer: rule-driven commit message auto-repair (--fix / --yes)
 ├── imperatives.py       # ~258 English imperative verbs for subject validation
 └── util.py              # Git operations, output formatting (_print_failure)
 ```
@@ -69,6 +75,13 @@ BaseValidator (ABC)
 ├── SignoffValidator              # Signed-off-by trailer presence
 ├── BodyValidator                 # Commit body presence
 └── CommitTypeValidator           # Handles merge/revert/fixup/wip/empty commits
+
+CommitFixer (standalone, in fixer.py)
+└── fix(message, failed_checks) → FixResult
+    ├── _fix_wip()            # Strip "WIP:" prefix
+    ├── _fix_imperative()     # Convert past/present tense to imperative
+    ├── _fix_capitalized()    # Capitalize description after conventional prefix
+    └── _fix_signoff()        # Append Signed-off-by from git config
 ```
 
 ### Configuration priority cascade
