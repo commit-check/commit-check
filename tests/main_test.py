@@ -805,6 +805,40 @@ class TestFixModeB:
         assert result == 1
         assert commit_file.read_text() == "feat: fixed bug\n"
 
+    @pytest.mark.benchmark
+    def test_file_read_error_exits_1(self, mocker, tmp_path, capfd):
+        """OSError reading commit file: exits 1 with error message."""
+        missing = tmp_path / "DOES_NOT_EXIST"
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch("commit_check.engine.get_commit_info", return_value="Author")
+        sys.argv = [CMD, str(missing), "--fix", "--yes"]
+        result = main()
+        assert result == 1
+        _, err = capfd.readouterr()
+        assert "Error" in err
+
+    @pytest.mark.benchmark
+    def test_file_write_error_exits_1(self, mocker, tmp_path, capfd):
+        """OSError writing fixed message back to file: exits 1 with error message."""
+        commit_file = tmp_path / "COMMIT_EDITMSG"
+        commit_file.write_text("feat: fixed bug\n")
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch("commit_check.engine.get_commit_info", return_value="Author")
+        # Patch open to fail only on write (mode 'w')
+        original_open = open
+
+        def selective_open(path, mode="r", **kwargs):
+            if str(path) == str(commit_file) and "w" in mode:
+                raise OSError("disk full")
+            return original_open(path, mode, **kwargs)
+
+        mocker.patch("commit_check.main.open", side_effect=selective_open)
+        sys.argv = [CMD, str(commit_file), "--fix", "--yes"]
+        result = main()
+        assert result == 1
+        _, err = capfd.readouterr()
+        assert "Error" in err
+
 
 # ---------------------------------------------------------------------------
 # --fix Mode C: piped stdin → error

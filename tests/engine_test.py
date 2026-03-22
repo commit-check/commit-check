@@ -1053,3 +1053,23 @@ class TestValidateAllDetailed:
         context = ValidationContext(stdin_text="fix: Add feature")
         result = engine.validate_all(context)
         assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_validate_all_detailed_silent_suppresses_output(self, capsys):
+        """silent=True must suppress the rejection banner and per-check messages."""
+        engine = self._make_engine(["subject_imperative"])
+        context = ValidationContext(stdin_text="fix: added feature")
+        results = engine.validate_all_detailed(context, silent=True)
+        out, err = capsys.readouterr()
+        assert out == ""
+        assert err == ""
+        assert any(r.result == ValidationResult.FAIL for r in results)
+
+    @pytest.mark.benchmark
+    def test_validate_all_detailed_not_silent_prints_output(self, capsys):
+        """silent=False (default) still prints failure output."""
+        engine = self._make_engine(["subject_imperative"])
+        context = ValidationContext(stdin_text="fix: added feature")
+        with patch("commit_check.util._print_failure"):
+            results = engine.validate_all_detailed(context, silent=False)
+        assert any(r.result == ValidationResult.FAIL for r in results)

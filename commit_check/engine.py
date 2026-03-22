@@ -550,8 +550,20 @@ class ValidationEngine:
     def __init__(self, rules: List[ValidationRule]):
         self.rules = rules
 
-    def validate_all_detailed(self, context: ValidationContext) -> List[CheckResult]:
-        """Run all validations and return per-check results."""
+    def validate_all_detailed(
+        self, context: ValidationContext, silent: bool = False
+    ) -> List[CheckResult]:
+        """Run all validations and return per-check results.
+
+        Args:
+            context: Validation context.
+            silent: When True, suppress all stdout/stderr output from validators.
+                    Used by --fix mode so the rejection banner does not appear
+                    before the proposed fix.
+        """
+        import contextlib
+        import io
+
         results = []
 
         for rule in self.rules:
@@ -560,7 +572,14 @@ class ValidationEngine:
                 continue  # Skip unknown validators
 
             validator: BaseValidator = validator_class(rule)
-            result = validator.validate(context)
+            if silent:
+                with (
+                    contextlib.redirect_stdout(io.StringIO()),
+                    contextlib.redirect_stderr(io.StringIO()),
+                ):
+                    result = validator.validate(context)
+            else:
+                result = validator.validate(context)
             results.append(CheckResult(check=rule.check, result=result))
 
         return results

@@ -1,11 +1,11 @@
 """Modern commit-check CLI with clean architecture and TOML support."""
 
 from __future__ import annotations
-import sys
-import argparse
-from typing import Optional
 
+import argparse
 import subprocess
+import sys
+from typing import Optional
 
 from commit_check.config_merger import ConfigMerger, parse_bool, parse_list, parse_int
 from commit_check.rule_builder import RuleBuilder
@@ -361,8 +361,9 @@ def _run_fix_flow(
         body = get_commit_info("b")
         message = f"{subject}\n\n{body}".strip()
 
-    # Run detailed validation to get failed check names
-    check_results = engine.validate_all_detailed(context)
+    # Run detailed validation to get failed check names.
+    # silent=True suppresses the rejection banner — the fix output IS the diagnosis.
+    check_results = engine.validate_all_detailed(context, silent=True)
     failed_checks = [
         r.check for r in check_results if r.result == ValidationResult.FAIL
     ]
