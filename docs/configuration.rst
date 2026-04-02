@@ -55,20 +55,25 @@ For organizations that want to share a common base configuration across many rep
 
 **How it works:**
 
-1. The ``inherit_from`` value can be a **local file path** or an **HTTPS URL**.
+1. The ``inherit_from`` value can be a ``github:`` shorthand, a local file path, or an HTTPS URL.
 2. The parent (inherited) configuration is loaded first.
 3. Local settings in the current config file **override** the parent values.
 4. The ``inherit_from`` key itself is not passed to the validation engine.
 
-**Example — inherit from a URL:**
+**Example — inherit from a GitHub repository (recommended):**
 
 .. code-block:: toml
 
     # .github/cchk.toml
-    inherit_from = "https://raw.githubusercontent.com/my-org/.github/main/cchk.toml"
+    inherit_from = "github:my-org/.github:cchk.toml"
 
     [commit]
     subject_max_length = 72  # Overrides parent value
+
+**GitHub shorthand format:**
+
+* ``github:owner/repo:path/to/cchk.toml`` — uses ``HEAD`` (default branch)
+* ``github:owner/repo@main:path/to/cchk.toml`` — pins to the ``main`` branch
 
 **Example — inherit from a local file:**
 
@@ -80,8 +85,15 @@ For organizations that want to share a common base configuration across many rep
     [commit]
     allow_wip_commits = true  # Override for this project only
 
+**Example — inherit from an HTTPS URL:**
+
+.. code-block:: toml
+
+    # .github/cchk.toml
+    inherit_from = "https://example.com/shared/cchk.toml"
+
 .. note::
-  If the ``inherit_from`` URL or file is unreachable, commit-check silently ignores the inheritance and uses only the local configuration.
+  If the ``inherit_from`` target is unreachable or the format is unrecognized, commit-check silently ignores the inheritance and uses only the local configuration. HTTP (non-TLS) URLs are rejected for security.
 
 Example Configuration
 ---------------------

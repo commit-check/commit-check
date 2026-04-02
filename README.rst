@@ -213,15 +213,19 @@ Share a base configuration across all repositories in your organization using ``
 .. code-block:: toml
 
     # .github/cchk.toml — inherits from org-level config, then overrides locally
-    inherit_from = "https://raw.githubusercontent.com/my-org/.github/main/cchk.toml"
+    inherit_from = "github:my-org/.github:cchk.toml"
 
     [commit]
     subject_max_length = 72  # Local override
 
 The ``inherit_from`` field accepts:
 
+* A **GitHub shorthand** (recommended): ``inherit_from = "github:owner/repo:path/to/cchk.toml"``
+* A **GitHub shorthand with ref**: ``inherit_from = "github:owner/repo@main:path/to/cchk.toml"``
 * A **local file path** (relative or absolute): ``inherit_from = "../shared/cchk.toml"``
-* An **HTTPS URL**: ``inherit_from = "https://raw.githubusercontent.com/org/.github/main/cchk.toml"``
+* An **HTTPS URL**: ``inherit_from = "https://example.com/cchk.toml"``
+
+The ``github:`` shorthand fetches from ``raw.githubusercontent.com``. HTTP (non-TLS) URLs are rejected for security.
 
 Local settings always **override** the inherited base configuration.
 

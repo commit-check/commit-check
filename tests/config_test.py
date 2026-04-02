@@ -6,7 +6,14 @@ import os
 import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from commit_check.config import load_config, DEFAULT_CONFIG_PATHS, _deep_merge, _resolve_inherit_from, _load_from_url
+from commit_check.config import (
+    load_config,
+    DEFAULT_CONFIG_PATHS,
+    _deep_merge,
+    _resolve_inherit_from,
+    _load_from_url,
+    _github_shorthand_to_url,
+)
 
 
 class TestConfig:
@@ -627,6 +634,86 @@ subject_max_length = 100
             result = _resolve_inherit_from(config)
             mock_urlopen.assert_not_called()
         assert result == {"fallback": True}
+
+    @pytest.mark.benchmark
+    def test_inherit_from_github_shorthand(self):
+        """Test inherit_from with github: shorthand."""
+        parent_toml = b"[commit]\nsubject_max_length = 100\n"
+        mock_response = MagicMock()
+        mock_response.read.return_value = parent_toml
+        mock_response.__enter__ = lambda s: s
+        mock_response.__exit__ = MagicMock(return_value=False)
+
+        with patch("urllib.request.urlopen", return_value=mock_response) as mock_open:
+            config = {
+                "inherit_from": "github:my-org/.github:cchk.toml",
+                "commit": {"subject_max_length": 72},
+            }
+            result = _resolve_inherit_from(config)
+
+        # Should have fetched the right URL
+        call_url = mock_open.call_args[0][0]
+        assert "raw.githubusercontent.com" in call_url
+        assert "my-org/.github" in call_url
+        assert "cchk.toml" in call_url
+        # Local override wins
+        assert result["commit"]["subject_max_length"] == 72
+
+    @pytest.mark.benchmark
+    def test_inherit_from_github_shorthand_with_ref(self):
+        """Test inherit_from with github: shorthand specifying a ref."""
+        parent_toml = b"[commit]\nconventional_commits = true\n"
+        mock_response = MagicMock()
+        mock_response.read.return_value = parent_toml
+        mock_response.__enter__ = lambda s: s
+        mock_response.__exit__ = MagicMock(return_value=False)
+
+        with patch("urllib.request.urlopen", return_value=mock_response) as mock_open:
+            config = {
+                "inherit_from": "github:my-org/.github@main:cchk.toml",
+            }
+            result = _resolve_inherit_from(config)
+
+        call_url = mock_open.call_args[0][0]
+        assert "/main/" in call_url
+        assert result["commit"]["conventional_commits"] is True
+
+
+class TestGithubShorthandToUrl:
+    """Tests for the _github_shorthand_to_url helper."""
+
+    @pytest.mark.benchmark
+    def test_basic_shorthand(self):
+        """github:owner/repo:path resolves to raw URL with HEAD."""
+        url = _github_shorthand_to_url("github:my-org/.github:cchk.toml")
+        assert url == "https://raw.githubusercontent.com/my-org/.github/HEAD/cchk.toml"
+
+    @pytest.mark.benchmark
+    def test_shorthand_with_ref(self):
+        """github:owner/repo@ref:path resolves to raw URL with given ref."""
+        url = _github_shorthand_to_url("github:my-org/.github@main:cchk.toml")
+        assert url == "https://raw.githubusercontent.com/my-org/.github/main/cchk.toml"
+
+    @pytest.mark.benchmark
+    def test_shorthand_with_subdirectory(self):
+        """github:owner/repo:subdir/path resolves correctly."""
+        url = _github_shorthand_to_url("github:my-org/config@v1.0:.github/cchk.toml")
+        assert url == "https://raw.githubusercontent.com/my-org/config/v1.0/.github/cchk.toml"
+
+    @pytest.mark.benchmark
+    def test_missing_colon_separator_returns_none(self):
+        """Shorthand without file path separator returns None."""
+        assert _github_shorthand_to_url("github:my-org/.github") is None
+
+    @pytest.mark.benchmark
+    def test_missing_owner_returns_none(self):
+        """Shorthand with only a repo name (no owner/repo) returns None."""
+        assert _github_shorthand_to_url("github:just-a-name:cchk.toml") is None
+
+    @pytest.mark.benchmark
+    def test_empty_path_returns_none(self):
+        """Shorthand with empty file path returns None."""
+        assert _github_shorthand_to_url("github:my-org/.github:") is None
 
 
 class TestLoadFromUrl:

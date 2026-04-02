@@ -1,6 +1,6 @@
 """TOML config loader and schema for commit-check."""
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from pathlib import Path
 import urllib.request
 import urllib.error
@@ -33,8 +33,44 @@ def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any
     return result
 
 
+def _github_shorthand_to_url(value: str) -> Optional[str]:
+    """Convert a ``github:`` shorthand to a raw GitHub content URL.
+
+    Supported formats (modelled after Release Drafter's convention):
+
+    * ``github:owner/repo:path/to/file.toml``
+      → ``https://raw.githubusercontent.com/owner/repo/HEAD/path/to/file.toml``
+    * ``github:owner/repo@ref:path/to/file.toml``
+      → ``https://raw.githubusercontent.com/owner/repo/ref/path/to/file.toml``
+
+    :param value: The raw ``inherit_from`` value starting with ``github:``.
+    :returns: A resolved HTTPS URL, or ``None`` if the format is unrecognized.
+    """
+    # Strip the "github:" prefix
+    rest = value[len("github:"):]
+
+    # The path separator between repo spec and file path is ":"
+    if ":" not in rest:
+        return None
+
+    repo_spec, file_path = rest.split(":", 1)
+    if not repo_spec or not file_path:
+        return None
+
+    # Support optional ref via "@": "owner/repo@ref"
+    if "@" in repo_spec:
+        repo_part, ref = repo_spec.split("@", 1)
+    else:
+        repo_part, ref = repo_spec, "HEAD"
+
+    if "/" not in repo_part:
+        return None
+
+    return f"https://raw.githubusercontent.com/{repo_part}/{ref}/{file_path}"
+
+
 def _load_from_url(url: str) -> Dict[str, Any]:
-    """Load TOML config from a URL.
+    """Load TOML config from an HTTPS URL.
 
     :param url: HTTPS URL pointing to a TOML config file.
     :returns: Parsed config dict, or empty dict on failure.
@@ -52,8 +88,13 @@ def _load_from_url(url: str) -> Dict[str, Any]:
 def _resolve_inherit_from(config: Dict[str, Any]) -> Dict[str, Any]:
     """Resolve ``inherit_from`` directive, merging parent config with local.
 
-    The ``inherit_from`` key at the top level of a config file may be a local
-    file path or an HTTPS URL pointing to another TOML config.  The parent
+    The ``inherit_from`` key at the top level of a config file may be:
+
+    * A ``github:owner/repo:path`` shorthand (fetches via raw.githubusercontent.com)
+    * An HTTPS URL pointing to a TOML config file
+    * A local file path
+
+    HTTP (non-TLS) URLs are rejected to prevent MITM attacks.  The parent
     config is loaded first; local settings override the parent.
 
     :param config: Already-parsed local TOML dict (may contain ``inherit_from``).
@@ -64,7 +105,11 @@ def _resolve_inherit_from(config: Dict[str, Any]) -> Dict[str, Any]:
         return config
 
     parent: Dict[str, Any] = {}
-    if inherit_from.startswith("https://"):
+    if inherit_from.startswith("github:"):
+        url = _github_shorthand_to_url(inherit_from)
+        if url:
+            parent = _load_from_url(url)
+    elif inherit_from.startswith("https://"):
         parent = _load_from_url(inherit_from)
     elif inherit_from.startswith("http://"):
         # Reject insecure HTTP to prevent MITM attacks when loading remote config
@@ -87,8 +132,8 @@ def load_config(path_hint: str = "") -> Dict[str, Any]:
     """Load and validate config from TOML file.
 
     Supports ``inherit_from`` at the top level to merge an organization-level
-    configuration from a local file path or a URL before applying local
-    overrides.
+    configuration from a local file path, a ``github:`` shorthand, or an HTTPS
+    URL before applying local overrides.
     """
     if path_hint:
         p = Path(path_hint)
