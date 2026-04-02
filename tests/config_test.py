@@ -5,8 +5,15 @@ import tempfile
 import os
 import sys
 from pathlib import Path
-from unittest.mock import patch
-from commit_check.config import load_config, DEFAULT_CONFIG_PATHS
+from unittest.mock import patch, MagicMock
+from commit_check.config import (
+    load_config,
+    DEFAULT_CONFIG_PATHS,
+    _deep_merge,
+    _resolve_inherit_from,
+    _load_from_url,
+    _github_shorthand_to_url,
+)
 
 
 class TestConfig:
@@ -507,3 +514,278 @@ value = "test"
 
             finally:
                 os.unlink(f.name)
+
+
+class TestDeepMerge:
+    """Tests for the _deep_merge helper."""
+
+    @pytest.mark.benchmark
+    def test_deep_merge_simple(self):
+        base = {"a": 1, "b": 2}
+        override = {"b": 3, "c": 4}
+        result = _deep_merge(base, override)
+        assert result == {"a": 1, "b": 3, "c": 4}
+
+    @pytest.mark.benchmark
+    def test_deep_merge_nested(self):
+        base = {"commit": {"conventional_commits": True, "subject_max_length": 80}}
+        override = {"commit": {"subject_max_length": 72}}
+        result = _deep_merge(base, override)
+        assert result["commit"]["conventional_commits"] is True
+        assert result["commit"]["subject_max_length"] == 72
+
+    @pytest.mark.benchmark
+    def test_deep_merge_does_not_mutate_base(self):
+        base = {"a": {"x": 1}}
+        override = {"a": {"y": 2}}
+        _deep_merge(base, override)
+        # _deep_merge returns a new dict; base itself may be used but result is new
+        assert _deep_merge(base, override)["a"] == {"x": 1, "y": 2}
+
+
+class TestResolveInheritFrom:
+    """Tests for the _resolve_inherit_from helper."""
+
+    @pytest.mark.benchmark
+    def test_no_inherit_from_returns_config_unchanged(self):
+        config = {"commit": {"conventional_commits": True}}
+        result = _resolve_inherit_from(dict(config))
+        assert result == config
+
+    @pytest.mark.benchmark
+    def test_inherit_from_local_file(self):
+        parent_content = b"""
+[commit]
+conventional_commits = true
+subject_max_length = 100
+"""
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".toml", delete=False) as f:
+            f.write(parent_content)
+            parent_path = f.name
+
+        try:
+            config = {
+                "inherit_from": parent_path,
+                "commit": {"subject_max_length": 72},
+            }
+            result = _resolve_inherit_from(config)
+            # Local config overrides parent
+            assert result["commit"]["subject_max_length"] == 72
+            # Parent value preserved when not overridden
+            assert result["commit"]["conventional_commits"] is True
+        finally:
+            os.unlink(parent_path)
+
+    @pytest.mark.benchmark
+    def test_inherit_from_nonexistent_file_is_ignored(self):
+        config = {"inherit_from": "/nonexistent/path/config.toml", "custom": "value"}
+        result = _resolve_inherit_from(config)
+        assert result == {"custom": "value"}
+
+    @pytest.mark.benchmark
+    def test_inherit_from_key_is_removed_from_result(self):
+        config = {"inherit_from": "/nonexistent.toml", "commit": {"key": "val"}}
+        result = _resolve_inherit_from(config)
+        assert "inherit_from" not in result
+
+    @pytest.mark.benchmark
+    def test_inherit_from_url_success(self):
+        parent_toml = b"[commit]\nsubject_max_length = 100\n"
+        mock_response = MagicMock()
+        mock_response.read.return_value = parent_toml
+        mock_response.__enter__ = lambda s: s
+        mock_response.__exit__ = MagicMock(return_value=False)
+
+        with patch("urllib.request.urlopen", return_value=mock_response):
+            config = {
+                "inherit_from": "https://example.com/cchk.toml",
+                "commit": {"subject_max_length": 72},
+            }
+            result = _resolve_inherit_from(config)
+            assert result["commit"]["subject_max_length"] == 72
+
+    @pytest.mark.benchmark
+    def test_inherit_from_url_failure_is_ignored(self):
+        import urllib.error
+
+        with patch(
+            "urllib.request.urlopen",
+            side_effect=urllib.error.URLError("network error"),
+        ):
+            config = {
+                "inherit_from": "https://example.com/cchk.toml",
+                "fallback": True,
+            }
+            result = _resolve_inherit_from(config)
+            assert result == {"fallback": True}
+
+    @pytest.mark.benchmark
+    def test_inherit_from_http_url_is_rejected(self):
+        """HTTP URLs are rejected for security; only HTTPS is allowed."""
+        config = {
+            "inherit_from": "http://example.com/cchk.toml",
+            "fallback": True,
+        }
+        # urlopen should NOT be called for http:// URLs
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            result = _resolve_inherit_from(config)
+            mock_urlopen.assert_not_called()
+        assert result == {"fallback": True}
+
+    @pytest.mark.benchmark
+    def test_inherit_from_github_shorthand(self):
+        """Test inherit_from with github: shorthand."""
+        parent_toml = b"[commit]\nsubject_max_length = 100\n"
+        mock_response = MagicMock()
+        mock_response.read.return_value = parent_toml
+        mock_response.__enter__ = lambda s: s
+        mock_response.__exit__ = MagicMock(return_value=False)
+
+        with patch("urllib.request.urlopen", return_value=mock_response) as mock_open:
+            config = {
+                "inherit_from": "github:my-org/.github:cchk.toml",
+                "commit": {"subject_max_length": 72},
+            }
+            result = _resolve_inherit_from(config)
+
+        # Should have fetched the right URL
+        call_url = mock_open.call_args[0][0]
+        assert "raw.githubusercontent.com" in call_url
+        assert "my-org/.github" in call_url
+        assert "cchk.toml" in call_url
+        # Local override wins
+        assert result["commit"]["subject_max_length"] == 72
+
+    @pytest.mark.benchmark
+    def test_inherit_from_github_shorthand_with_ref(self):
+        """Test inherit_from with github: shorthand specifying a ref."""
+        parent_toml = b"[commit]\nconventional_commits = true\n"
+        mock_response = MagicMock()
+        mock_response.read.return_value = parent_toml
+        mock_response.__enter__ = lambda s: s
+        mock_response.__exit__ = MagicMock(return_value=False)
+
+        with patch("urllib.request.urlopen", return_value=mock_response) as mock_open:
+            config = {
+                "inherit_from": "github:my-org/.github@main:cchk.toml",
+            }
+            result = _resolve_inherit_from(config)
+
+        call_url = mock_open.call_args[0][0]
+        assert "/main/" in call_url
+        assert result["commit"]["conventional_commits"] is True
+
+
+class TestGithubShorthandToUrl:
+    """Tests for the _github_shorthand_to_url helper."""
+
+    @pytest.mark.benchmark
+    def test_basic_shorthand(self):
+        """github:owner/repo:path resolves to raw URL with HEAD."""
+        url = _github_shorthand_to_url("github:my-org/.github:cchk.toml")
+        assert url == "https://raw.githubusercontent.com/my-org/.github/HEAD/cchk.toml"
+
+    @pytest.mark.benchmark
+    def test_shorthand_with_ref(self):
+        """github:owner/repo@ref:path resolves to raw URL with given ref."""
+        url = _github_shorthand_to_url("github:my-org/.github@main:cchk.toml")
+        assert url == "https://raw.githubusercontent.com/my-org/.github/main/cchk.toml"
+
+    @pytest.mark.benchmark
+    def test_shorthand_with_subdirectory(self):
+        """github:owner/repo:subdir/path resolves correctly."""
+        url = _github_shorthand_to_url("github:my-org/config@v1.0:.github/cchk.toml")
+        assert (
+            url
+            == "https://raw.githubusercontent.com/my-org/config/v1.0/.github/cchk.toml"
+        )
+
+    @pytest.mark.benchmark
+    def test_missing_colon_separator_returns_none(self):
+        """Shorthand without file path separator returns None."""
+        assert _github_shorthand_to_url("github:my-org/.github") is None
+
+    @pytest.mark.benchmark
+    def test_missing_owner_returns_none(self):
+        """Shorthand with only a repo name (no owner/repo) returns None."""
+        assert _github_shorthand_to_url("github:just-a-name:cchk.toml") is None
+
+    @pytest.mark.benchmark
+    def test_empty_path_returns_none(self):
+        """Shorthand with empty file path returns None."""
+        assert _github_shorthand_to_url("github:my-org/.github:") is None
+
+
+class TestLoadFromUrl:
+    """Tests for the _load_from_url helper."""
+
+    @pytest.mark.benchmark
+    def test_load_from_url_success(self):
+        toml_content = b"[commit]\nconventional_commits = true\n"
+        mock_response = MagicMock()
+        mock_response.read.return_value = toml_content
+        mock_response.__enter__ = lambda s: s
+        mock_response.__exit__ = MagicMock(return_value=False)
+
+        with patch("urllib.request.urlopen", return_value=mock_response):
+            result = _load_from_url("https://example.com/cchk.toml")
+            assert result == {"commit": {"conventional_commits": True}}
+
+    @pytest.mark.benchmark
+    def test_load_from_url_network_error(self):
+        import urllib.error
+
+        with patch(
+            "urllib.request.urlopen",
+            side_effect=urllib.error.URLError("network error"),
+        ):
+            result = _load_from_url("https://example.com/cchk.toml")
+            assert result == {}
+
+    @pytest.mark.benchmark
+    def test_load_from_url_http_error(self):
+        import urllib.error
+
+        with patch(
+            "urllib.request.urlopen",
+            side_effect=urllib.error.HTTPError(
+                "https://example.com/cchk.toml", 404, "Not Found", {}, None
+            ),
+        ):
+            result = _load_from_url("https://example.com/cchk.toml")
+            assert result == {}
+
+
+class TestLoadConfigInheritFrom:
+    """Integration tests for load_config with inherit_from."""
+
+    @pytest.mark.benchmark
+    def test_load_config_with_inherit_from_local(self):
+        parent_content = b"""
+[commit]
+conventional_commits = true
+subject_max_length = 100
+"""
+        local_content = b"""
+inherit_from = "{parent_path}"
+
+[commit]
+subject_max_length = 72
+"""
+        original_cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            os.chdir(tmpdir)
+            try:
+                parent_path = os.path.join(tmpdir, "parent.toml")
+                with open(parent_path, "wb") as f:
+                    f.write(parent_content)
+
+                local = local_content.replace(b"{parent_path}", parent_path.encode())
+                with open("cchk.toml", "wb") as f:
+                    f.write(local)
+
+                config = load_config()
+                assert config["commit"]["conventional_commits"] is True
+                assert config["commit"]["subject_max_length"] == 72
+            finally:
+                os.chdir(original_cwd)

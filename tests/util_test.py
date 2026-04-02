@@ -578,3 +578,48 @@ checks:
             """Test _load_toml returns empty dict when toml library not available."""
             result = _load_toml(PurePath("/some/path/config.toml"))
             assert result == {}
+
+
+class TestGetGitConfigValue:
+    """Tests for get_git_config_value utility function."""
+
+    @pytest.mark.benchmark
+    def test_get_git_config_value_success(self, mocker):
+        """Test getting a git config value successfully."""
+        from commit_check.util import get_git_config_value
+
+        mocker.patch("commit_check.util.cmd_output", return_value="John Doe\n")
+        result = get_git_config_value("user.name")
+        assert result == "John Doe"
+
+    @pytest.mark.benchmark
+    def test_get_git_config_value_not_set(self, mocker):
+        """Test getting a git config value when it is not set."""
+        from commit_check.util import get_git_config_value
+
+        mocker.patch("commit_check.util.cmd_output", return_value="")
+        result = get_git_config_value("user.name")
+        assert result == ""
+
+    @pytest.mark.benchmark
+    def test_get_git_config_value_exception(self, mocker):
+        """Test get_git_config_value returns empty string on CalledProcessError."""
+        from commit_check.util import get_git_config_value
+
+        mocker.patch(
+            "commit_check.util.cmd_output",
+            side_effect=CalledProcessError(
+                returncode=1, cmd="git config --get user.name"
+            ),
+        )
+        result = get_git_config_value("user.name")
+        assert result == ""
+
+    @pytest.mark.benchmark
+    def test_get_git_config_value_email(self, mocker):
+        """Test getting user.email from git config."""
+        from commit_check.util import get_git_config_value
+
+        mocker.patch("commit_check.util.cmd_output", return_value="alice@example.com\n")
+        result = get_git_config_value("user.email")
+        assert result == "alice@example.com"

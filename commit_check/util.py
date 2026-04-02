@@ -108,6 +108,19 @@ def get_commit_info(format_string: str, sha: str = "HEAD") -> str:
     return output
 
 
+def get_git_config_value(key: str) -> str:
+    """Get a value from git config.
+    :param key: git config key, e.g., 'user.name' or 'user.email'
+    :returns: The configured value as a `str`, or empty string if not set.
+    """
+    try:
+        commands = ["git", "config", "--get", key]
+        output = cmd_output(commands)
+        return output.strip()
+    except CalledProcessError:
+        return ""
+
+
 def git_merge_base(target_branch: str, current_branch: str) -> int:
     """Check ancestors for a given commit.
     :param target_branch: target branch
