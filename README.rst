@@ -25,17 +25,84 @@ Commit Check
     :target: https://slsa.dev
     :alt: SLSA
 
-|ci-badge| |sonar-badge| |pypi-version| |commit-check-badge| |codecov-badge| |slsa-badge|
+.. |pypi-downloads| image:: https://img.shields.io/pypi/dm/commit-check?color=%232c9ccd
+    :target: https://pypi.org/project/commit-check/
+    :alt: PyPI Downloads
+
+.. |python-versions| image:: https://img.shields.io/pypi/pyversions/commit-check?logo=python&logoColor=white
+    :target: https://pypi.org/project/commit-check/
+    :alt: Python Versions
+
+|ci-badge| |sonar-badge| |pypi-version| |pypi-downloads| |python-versions| |commit-check-badge| |codecov-badge| |slsa-badge|
 
 Overview
 --------
 
-**Commit Check** (aka **cchk**) is an open-source tool that enforces commit metadata standards — including commit messages, branch naming, committer name/email, commit signoff, and more — helping teams maintain consistency and compliance.
+**Commit Check** (aka **cchk**) is the most comprehensive open-source tool for enforcing Git commit standards — including commit messages, branch naming, author identity, commit signoff, and more — helping teams maintain consistency and compliance across every repository.
 
-As a lightweight alternative to GitHub Enterprise `Metadata restrictions <https://docs.github.com/en/enterprise-server@3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions>`_
-and Bitbucket's paid plugin `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_, Commit Check integrates DevOps principles and Infrastructure as Code (IaC) practices for a modern workflow.
+As a lightweight, free alternative to GitHub Enterprise `Metadata restrictions <https://docs.github.com/en/enterprise-server@3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions>`_
+and Bitbucket's paid `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_ plugin, Commit Check integrates DevOps principles and Infrastructure as Code (IaC) practices for a modern workflow.
 
-What’s New in v2.0.0
+**Why Commit Check?**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 20 20 20
+
+   * - Feature
+     - Commit Check ✅
+     - commitlint
+     - pre-commit hooks
+   * - Conventional Commits enforcement
+     - ✅
+     - ✅
+     - ✅
+   * - Branch naming validation
+     - ✅
+     - ❌
+     - Partial
+   * - Author name / email validation
+     - ✅
+     - ❌
+     - ❌
+   * - Signoff / DCO check
+     - ✅
+     - ❌
+     - ❌
+   * - Co-author ignore list
+     - ✅
+     - ❌
+     - ❌
+   * - Organization-level config inheritance
+     - ✅
+     - ❌
+     - ❌
+   * - Zero-config defaults
+     - ✅
+     - ❌
+     - ❌
+   * - Works without Node.js
+     - ✅
+     - ❌
+     - ✅
+   * - TOML configuration
+     - ✅
+     - ❌
+     - ✅
+   * - pre-commit framework integration
+     - ✅
+     - ✅
+     - ✅
+   * - CI/CD environment variables
+     - ✅
+     - Partial
+     - ❌
+   * - SLSA Level 3 supply chain security
+     - ✅
+     - ❌
+     - ❌
+
+What's New in v2.0.0
 --------------------
 
 Version 2.0.0 is a major release featuring a new configuration format, a modernized architecture, and an improved user experience.
@@ -45,6 +112,9 @@ Version 2.0.0 is a major release featuring a new configuration format, a moderni
 * **TOML Configuration** — Replaces ``.commit-check.yml`` with ``cchk.toml`` or ``commit-check.toml`` for clearer, more consistent syntax.
 * **Simplified CLI & Hooks** — Legacy pre-commit hooks and options removed to deliver a cleaner, more streamlined interface.
 * **New Validation Engine** — Fully redesigned for greater flexibility, performance, and maintainability.
+* **Co-author ignore support** — Bypass checks when a commit is co-authored by a bot or trusted identity in ``ignore_authors``.
+* **Organization-level configuration** — Use ``inherit_from`` to share a base config across all repositories in your org.
+* **Git config author validation** — ``--author-name`` and ``--author-email`` now validate the configured identity for the next commit.
 
 For the full list of updates and improvements, visit the `What's New <https://commit-check.github.io/commit-check/what-is-new.html>`_ page.
 
@@ -67,6 +137,34 @@ Then, run ``commit-check --help`` or ``cchk --help`` (alias for ``commit-check``
 For more information, see the `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
 
 
+Quick Start
+-----------
+
+**1. Install and run with zero configuration:**
+
+.. code-block:: bash
+
+    pip install commit-check
+    commit-check --message --branch
+
+**2. Add to your pre-commit hooks** (``.pre-commit-config.yaml``):
+
+.. code-block:: yaml
+
+    repos:
+      - repo: https://github.com/commit-check/commit-check
+        rev: v2.3.0
+        hooks:
+          - id: check-message
+          - id: check-branch
+
+**3. Add a badge to your repository:**
+
+.. code-block:: text
+
+    [![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white&color=%232c9ccd)](https://github.com/commit-check/commit-check)
+
+
 Configuration
 -------------
 
@@ -87,6 +185,45 @@ Use Custom Configuration File
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To customize the behavior, create a configuration file named ``cchk.toml`` or ``commit-check.toml`` in your repository's root directory or in the ``.github`` folder, e.g., `cchk.toml <https://github.com/commit-check/commit-check/blob/main/cchk.toml>`_ or ``.github/cchk.toml``.
+
+.. code-block:: toml
+
+    [commit]
+    # https://www.conventionalcommits.org
+    conventional_commits = true
+    subject_imperative = true
+    subject_max_length = 80
+    allow_commit_types = ["feat", "fix", "docs", "style", "refactor", "test", "chore", "ci"]
+    allow_merge_commits = true
+    allow_wip_commits = false
+    require_signed_off_by = false
+    # Bypass checks for bot/automation authors and co-authors:
+    ignore_authors = ["dependabot[bot]", "renovate[bot]", "copilot[bot]"]
+
+    [branch]
+    # https://conventional-branch.github.io/
+    conventional_branch = true
+    allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
+
+Organization-Level Configuration (inherit_from)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Share a base configuration across all repositories in your organization using ``inherit_from``:
+
+.. code-block:: toml
+
+    # .github/cchk.toml — inherits from org-level config, then overrides locally
+    inherit_from = "https://raw.githubusercontent.com/my-org/.github/main/cchk.toml"
+
+    [commit]
+    subject_max_length = 72  # Local override
+
+The ``inherit_from`` field accepts:
+
+* A **local file path** (relative or absolute): ``inherit_from = "../shared/cchk.toml"``
+* An **HTTPS URL**: ``inherit_from = "https://raw.githubusercontent.com/org/.github/main/cchk.toml"``
+
+Local settings always **override** the inherited base configuration.
 
 Use CLI Arguments or Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -161,7 +298,7 @@ Check Branch Naming Failed
        / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
      __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
     (_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-       || E ||      || R ||      || R ||      || O ||      || R ||
+       || E ||      || R ||      || O ||      || R ||      || R ||
      _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
     (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
      `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´

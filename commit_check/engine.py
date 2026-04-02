@@ -9,6 +9,7 @@ from dataclasses import field
 from commit_check.rule_builder import ValidationRule
 from commit_check.util import (
     get_commit_info,
+    get_git_config_value,
     get_branch_name,
     has_commits,
     git_merge_base,
@@ -59,13 +60,39 @@ class BaseValidator(ABC):
         """
         Determine if commit validation should be skipped.
 
-        Skip if the current author is in the ignore_authors list for commits,
-        or if no stdin_text, no commit_file, and no commits exist.
+        Skip if the current author or any co-author is in the ignore_authors list
+        for commits, or if no stdin_text, no commit_file, and no commits exist.
         """
+        import re
+
         ignore_authors = context.config.get("commit", {}).get("ignore_authors", [])
         current_author = get_commit_info("an")
         if current_author and current_author in ignore_authors:
             return True
+
+        # Check co-authors from the commit message body
+        if ignore_authors:
+            message = ""
+            if context.stdin_text:
+                message = context.stdin_text
+            elif context.commit_file:
+                try:
+                    with open(context.commit_file, "r") as f:
+                        message = f.read()
+                except (OSError, IOError):
+                    pass
+            else:
+                message = get_commit_info("b")
+            if message:
+                co_authors = re.findall(
+                    r"^Co-authored-by:\s*([^<\n]+?)\s*(?:<|$)",
+                    message,
+                    re.MULTILINE,
+                )
+                for co_author in co_authors:
+                    if co_author.strip() in ignore_authors:
+                        return True
+
         return (
             context.stdin_text is None
             and context.commit_file is None
@@ -250,15 +277,32 @@ class AuthorValidator(BaseValidator):
         return self._validate_author(author_value)
 
     def _get_author_value(self, context: ValidationContext) -> str:
-        """Get author value based on rule type."""
+        """Get author value based on rule type.
+
+        Checks git config first (for pre-commit validation of the configured identity),
+        then falls back to the last commit's author info.
+        """
         if context.stdin_text:
             return context.stdin_text.strip()
 
-        format_map = {
+        git_config_map = {
+            "author_name": "user.name",
+            "author_email": "user.email",
+        }
+        git_log_map = {
             "author_name": "an",
             "author_email": "ae",
         }
-        format_str = format_map.get(self.rule.check, "")
+
+        # Try git config first (validates configured identity for new commits)
+        config_key = git_config_map.get(self.rule.check, "")
+        if config_key:
+            config_value = get_git_config_value(config_key)
+            if config_value:
+                return config_value
+
+        # Fall back to last commit's author info
+        format_str = git_log_map.get(self.rule.check, "")
         return get_commit_info(format_str) if format_str else ""
 
     def _validate_author(self, author_value: str) -> ValidationResult:

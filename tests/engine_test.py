@@ -272,12 +272,16 @@ class TestBranchValidator:
 
 class TestAuthorValidator:
     @patch("commit_check.engine.has_commits")
+    @patch("commit_check.engine.get_git_config_value")
     @patch("commit_check.engine.get_commit_info")
     @pytest.mark.benchmark
-    def test_author_validator_name_valid(self, mock_get_commit_info, mock_has_commits):
+    def test_author_validator_name_valid(
+        self, mock_get_commit_info, mock_get_git_config_value, mock_has_commits
+    ):
         """Test AuthorValidator for author name."""
         mock_has_commits.return_value = True
         mock_get_commit_info.return_value = "John Doe"
+        mock_get_git_config_value.return_value = ""
         rule = ValidationRule(check="author_name", regex=r"^[A-Z][a-z]+ [A-Z][a-z]+$")
         validator = AuthorValidator(rule)
         config = {"commit": {"ignore_authors": ["ignored"]}}
@@ -286,12 +290,16 @@ class TestAuthorValidator:
         assert result == ValidationResult.PASS
 
     @patch("commit_check.engine.has_commits")
+    @patch("commit_check.engine.get_git_config_value")
     @patch("commit_check.engine.get_commit_info")
     @pytest.mark.benchmark
-    def test_author_validator_email_valid(self, mock_get_commit_info, mock_has_commits):
+    def test_author_validator_email_valid(
+        self, mock_get_commit_info, mock_get_git_config_value, mock_has_commits
+    ):
         """Test AuthorValidator for author email."""
         mock_has_commits.return_value = True
         mock_get_commit_info.return_value = "john.doe@example.com"
+        mock_get_git_config_value.return_value = ""
         rule = ValidationRule(
             check="author_email",
             regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
@@ -301,15 +309,15 @@ class TestAuthorValidator:
         context = ValidationContext(config=config)
         result = validator.validate(context)
         assert result == ValidationResult.PASS
-        # Called once for skip logic ("an"), once for value ("ae")
-        assert mock_get_commit_info.call_count == 2
+        # Called once for skip logic ("an"), once for co-author check ("b"), once for value ("ae")
+        assert mock_get_commit_info.call_count == 3
         assert mock_get_commit_info.call_args_list[0][0][0] == "an"
-        assert mock_get_commit_info.call_args_list[1][0][0] == "ae"
+        assert mock_get_commit_info.call_args_list[2][0][0] == "ae"
         assert result == ValidationResult.PASS
-        # Called once for skip logic ("an"), once for value ("ae")
-        assert mock_get_commit_info.call_count == 2
+        # Called once for skip logic ("an"), once for co-author check ("b"), once for value ("ae")
+        assert mock_get_commit_info.call_count == 3
         assert mock_get_commit_info.call_args_list[0][0][0] == "an"
-        assert mock_get_commit_info.call_args_list[1][0][0] == "ae"
+        assert mock_get_commit_info.call_args_list[2][0][0] == "ae"
 
     @patch("commit_check.engine.get_commit_info")
     @pytest.mark.benchmark
@@ -368,6 +376,8 @@ class TestAuthorValidator:
         context = ValidationContext()
 
         with patch(
+            "commit_check.engine.get_git_config_value", return_value=""
+        ), patch(
             "commit_check.engine.get_commit_info", return_value="test@example.com"
         ):
             author_value = validator._get_author_value(context)
@@ -948,4 +958,147 @@ class TestSubjectImperativeValidator:
 
         # "resolve" is a valid imperative word with scope and breaking change notation
         result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+
+class TestCoAuthorSkip:
+    """Tests for co-author bypass logic in _should_skip_commit_validation."""
+
+    @pytest.mark.benchmark
+    def test_co_author_in_ignore_list_skips_validation(self):
+        """Test that a commit with a co-author in ignore_authors is skipped."""
+        rule = ValidationRule(
+            check="message",
+            regex=r"^(feat|fix): .+",
+            error="Bad commit",
+            suggest="Use conventional format",
+        )
+        validator = CommitMessageValidator(rule)
+
+        message = (
+            "Update README\n\n"
+            "Co-authored-by: coderabbitai[bot] <bot@example.com>"
+        )
+        config = {"commit": {"ignore_authors": ["coderabbitai[bot]"]}}
+        context = ValidationContext(stdin_text=message, config=config)
+
+        with patch("commit_check.engine.get_commit_info", return_value="other-author"):
+            result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_co_author_not_in_ignore_list_does_not_skip(self):
+        """Test that co-author not in ignore list does not bypass validation."""
+        rule = ValidationRule(
+            check="message",
+            regex=r"^(feat|fix): .+",
+            error="Bad commit",
+            suggest="Use conventional format",
+        )
+        validator = CommitMessageValidator(rule)
+
+        message = (
+            "Update README\n\n"
+            "Co-authored-by: someuser <user@example.com>"
+        )
+        config = {"commit": {"ignore_authors": ["coderabbitai[bot]"]}}
+        context = ValidationContext(stdin_text=message, config=config)
+
+        with patch("commit_check.engine.get_commit_info", return_value="other-author"):
+            with patch("commit_check.util._print_failure"):
+                result = validator.validate(context)
+        assert result == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_co_author_in_ignore_list_from_commit_file(self):
+        """Test co-author skip logic when message comes from a commit file."""
+        import tempfile
+        import os
+
+        rule = ValidationRule(
+            check="message",
+            regex=r"^(feat|fix): .+",
+            error="Bad commit",
+            suggest="Use conventional format",
+        )
+        validator = CommitMessageValidator(rule)
+
+        message = "Update docs\n\nCo-authored-by: dependabot[bot] <bot@github.com>"
+        config = {"commit": {"ignore_authors": ["dependabot[bot]"]}}
+
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+            f.write(message)
+            commit_file = f.name
+
+        try:
+            context = ValidationContext(commit_file=commit_file, config=config)
+            with patch("commit_check.engine.get_commit_info", return_value="main-author"):
+                result = validator.validate(context)
+            assert result == ValidationResult.PASS
+        finally:
+            os.unlink(commit_file)
+
+
+class TestGetGitConfigValue:
+    """Tests for the AuthorValidator using git config (Issue #298)."""
+
+    @pytest.mark.benchmark
+    def test_author_name_uses_git_config_when_available(self):
+        """Author name validation uses git config user.name when set."""
+        rule = ValidationRule(
+            check="author_name",
+            regex=r"^[A-Za-z ]+$",
+            error="Invalid author name",
+            suggest="Set a valid name",
+        )
+        validator = AuthorValidator(rule)
+        context = ValidationContext()
+
+        with patch(
+            "commit_check.engine.get_commit_info", return_value="some-author"
+        ), patch(
+            "commit_check.engine.get_git_config_value", return_value="01 Invalid Name"
+        ):
+            with patch("commit_check.util._print_failure"):
+                result = validator.validate(context)
+        assert result == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_author_name_falls_back_to_git_log_when_config_empty(self):
+        """Author name validation falls back to git log when git config is empty."""
+        rule = ValidationRule(
+            check="author_name",
+            regex=r"^[A-Za-z ]+$",
+            error="Invalid author name",
+            suggest="Set a valid name",
+        )
+        validator = AuthorValidator(rule)
+        context = ValidationContext()
+
+        with patch(
+            "commit_check.engine.get_git_config_value", return_value=""
+        ), patch(
+            "commit_check.engine.get_commit_info", return_value="Valid Name"
+        ):
+            result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_author_email_uses_git_config_when_available(self):
+        """Author email validation uses git config user.email when set."""
+        rule = ValidationRule(
+            check="author_email",
+            regex=r"^.+@.+$",
+            error="Invalid email",
+            suggest="Set a valid email",
+        )
+        validator = AuthorValidator(rule)
+        context = ValidationContext()
+
+        with patch(
+            "commit_check.engine.get_commit_info", return_value="some-author"
+        ), patch(
+            "commit_check.engine.get_git_config_value", return_value="user@example.com"
+        ):
+            result = validator.validate(context)
         assert result == ValidationResult.PASS
