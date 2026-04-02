@@ -541,6 +541,16 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#organization-level-configuration-inherit-from" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Organization-<wbr>Level Configuration <wbr>(inherit_<wbr>from)</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#example-configuration" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -765,6 +775,16 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#organization-level-configuration-inherit-from" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Organization-<wbr>Level Configuration <wbr>(inherit_<wbr>from)</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#example-configuration" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -871,6 +891,45 @@
 <p><strong>GitHub Best Practice</strong></p>
 <p>Placing configuration files in the <code class="docutils literal notranslate"><span class="pre">.github</span></code> folder helps keep your repository root clean and follows GitHub conventions used by tools like Dependabot and Renovate.</p>
 </div>
+<h2 id="organization-level-configuration-inherit-from">Organization-Level Configuration (inherit_from)<a class="headerlink" href="#organization-level-configuration-inherit-from" title="Link to this heading">¶</a></h2>
+<p>For organizations that want to share a common base configuration across many repositories, commit-check supports an <code class="docutils literal notranslate"><span class="pre">inherit_from</span></code> directive at the top level of your TOML config file.</p>
+<p><strong>How it works:</strong></p>
+<ol class="arabic simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">inherit_from</span></code> value can be a <code class="docutils literal notranslate"><span class="pre">github:</span></code> shorthand, a local file path, or an HTTPS URL.</p></li>
+<li><p>The parent (inherited) configuration is loaded first.</p></li>
+<li><p>Local settings in the current config file <strong>override</strong> the parent values.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">inherit_from</span></code> key itself is not passed to the validation engine.</p></li>
+</ol>
+<p><strong>Example — inherit from a GitHub repository (recommended):</strong></p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># .github/cchk.toml</span>
+<span class="n">inherit_from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;github:my-org/.github:cchk.toml&quot;</span>
+
+<span class="k">[commit]</span>
+<span class="n">subject_max_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">72</span><span class="w">  </span><span class="c1"># Overrides parent value</span>
+</code></pre></div>
+</div>
+<p><strong>GitHub shorthand format:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo:path/to/cchk.toml</span></code> — uses <code class="docutils literal notranslate"><span class="pre">HEAD</span></code> (default branch)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo&#64;main:path/to/cchk.toml</span></code> — pins to the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch</p></li>
+</ul>
+<p><strong>Example — inherit from a local file:</strong></p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># repo/.github/cchk.toml</span>
+<span class="n">inherit_from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;../../shared/org-cchk.toml&quot;</span>
+
+<span class="k">[commit]</span>
+<span class="n">allow_wip_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">  </span><span class="c1"># Override for this project only</span>
+</code></pre></div>
+</div>
+<p><strong>Example — inherit from an HTTPS URL:</strong></p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># .github/cchk.toml</span>
+<span class="n">inherit_from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://example.com/shared/cchk.toml&quot;</span>
+</code></pre></div>
+</div>
+<div class="note admonition">
+<p class="admonition-title">Note</p>
+<p>If the <code class="docutils literal notranslate"><span class="pre">inherit_from</span></code> target is unreachable or the format is unrecognized, commit-check silently ignores the inheritance and uses only the local configuration. HTTP (non-TLS) URLs are rejected for security.</p>
+</div>
 <h2 id="example-configuration">Example Configuration<a class="headerlink" href="#example-configuration" title="Link to this heading">¶</a></h2>
 <div class="copy highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="k">[commit]</span>
 <span class="c1"># https://www.conventionalcommits.org</span>
@@ -886,7 +945,7 @@
 <span class="n">allow_fixup_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="n">allow_wip_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 <span class="n">require_body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
-<span class="c1"># ignore_authors = []      # Optional - no authors ignored by default</span>
+<span class="c1"># ignore_authors = []      # Optional - bypass checks for these commit/co-authors</span>
 <span class="n">require_signed_off_by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 <span class="c1"># required_signoff_name = &quot;Your Name&quot;      # Optional</span>
 <span class="c1"># required_signoff_email = &quot;your.email@example.com&quot;  # Optional</span>
@@ -1155,7 +1214,7 @@ commit-check<span class="w"> </span>--message<span class="w"> </span>--subject-m
 <td><p>ignore_authors</p></td>
 <td><p>list[str]</p></td>
 <td><p>[] (none ignored)</p></td>
-<td><p>List of authors to ignore (i.e., always allow).</p></td>
+<td><p>List of commit authors <strong>or co-authors</strong> (<code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span></code> lines) to bypass all commit checks. Useful for bots (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;dependabot[bot]&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;coderabbitai[bot]&quot;</span></code>).</p></td>
 </tr>
 <tr class="row-odd"><td><p>commit</p></td>
 <td><p>require_signed_off_by</p></td>

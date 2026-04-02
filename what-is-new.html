@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#version-2-0-0-major-release" class="md-skip">
+        <a href="#version-2-5-0-new-features" class="md-skip">
           Skip to content
         </a>
       
@@ -490,6 +490,52 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#version-2-5-0-new-features" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Version 2.<wbr>5.<wbr>0 — New Features</span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Version 2.5.0 — New Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#co-author-bypass-in-ignore-authors" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Co-<wbr>author Bypass in ignore_<wbr>authors</span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#organization-level-config-inheritance-inherit-from" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Organization-<wbr>Level Config Inheritance <wbr>(inherit_<wbr>from)</span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-config-author-validation" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Git Config Author Validation</span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#version-2-0-0-major-release" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -859,6 +905,52 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#version-2-5-0-new-features" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Version 2.<wbr>5.<wbr>0 — New Features</span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Version 2.5.0 — New Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#co-author-bypass-in-ignore-authors" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Co-<wbr>author Bypass in ignore_<wbr>authors</span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#organization-level-config-inheritance-inherit-from" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Organization-<wbr>Level Config Inheritance <wbr>(inherit_<wbr>from)</span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-config-author-validation" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Git Config Author Validation</span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#version-2-0-0-major-release" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -1060,6 +1152,35 @@
 
 <h1 id="what-s-new">What’s New<a class="headerlink" href="#what-s-new" title="Link to this heading">¶</a></h1>
 <p>This document highlights the major changes and improvements in each version of commit-check.</p>
+<h2 id="version-2-5-0-new-features">Version 2.5.0 — New Features<a class="headerlink" href="#version-2-5-0-new-features" title="Link to this heading">¶</a></h2>
+<h3 id="co-author-bypass-in-ignore-authors">Co-author Bypass in <code class="docutils literal notranslate"><span class="pre">ignore_authors</span></code><a class="headerlink" href="#co-author-bypass-in-ignore-authors" title="Link to this heading">¶</a></h3>
+<p>commit-check can now skip validation when a <strong>co-author</strong> of the commit matches an entry in <code class="docutils literal notranslate"><span class="pre">ignore_authors</span></code>, not just the primary commit author.</p>
+<p>This is especially useful for AI-assisted workflows where a bot (e.g., <code class="docutils literal notranslate"><span class="pre">coderabbitai[bot]</span></code>, <code class="docutils literal notranslate"><span class="pre">copilot[bot]</span></code>) co-authors a commit that does not follow Conventional Commits format:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="k">[commit]</span>
+<span class="n">ignore_authors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;dependabot[bot]&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;renovate[bot]&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;coderabbitai[bot]&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;copilot[bot]&quot;</span><span class="p">]</span>
+</code></pre></div>
+</div>
+<p>When a <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span></code> trailer in the commit message body matches any entry in the list, all commit checks are skipped for that commit.</p>
+<h3 id="organization-level-config-inheritance-inherit-from">Organization-Level Config Inheritance (<code class="docutils literal notranslate"><span class="pre">inherit_from</span></code>)<a class="headerlink" href="#organization-level-config-inheritance-inherit-from" title="Link to this heading">¶</a></h3>
+<p>Teams can now share a <strong>centralized base configuration</strong> across all repositories in an organization using the new <code class="docutils literal notranslate"><span class="pre">inherit_from</span></code> top-level key.</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># .github/cchk.toml — in every repo</span>
+<span class="n">inherit_from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;github:my-org/.github:cchk.toml&quot;</span>
+
+<span class="k">[commit]</span>
+<span class="n">subject_max_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">72</span><span class="w">  </span><span class="c1"># Local override</span>
+</code></pre></div>
+</div>
+<p><strong>Supported source formats:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo:path/to/cchk.toml</span></code> — fetches from the default branch via <code class="docutils literal notranslate"><span class="pre">raw.githubusercontent.com</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo&#64;main:path/to/cchk.toml</span></code> — pins to a specific branch, tag, or SHA</p></li>
+<li><p>A local file path (relative or absolute)</p></li>
+<li><p>An HTTPS URL</p></li>
+</ul>
+<p>Local settings always <strong>override</strong> the inherited configuration. HTTP (non-TLS) URLs are rejected for security. If the source is unreachable, the local config is used as-is.</p>
+<h3 id="git-config-author-validation">Git Config Author Validation<a class="headerlink" href="#git-config-author-validation" title="Link to this heading">¶</a></h3>
+<p>Author name and email validation now checks <strong>``git config user.name`` / ``user.email``</strong> first — the identity that will be used for the <em>next</em> commit — and falls back to the last commit’s author only if git config is unset.</p>
+<p>Previously, a developer with a misconfigured <code class="docutils literal notranslate"><span class="pre">user.name</span></code> (e.g., starting with a digit) would pass validation as long as their most recent commit had a valid author name. This fix closes that gap.</p>
 <h2 id="version-2-0-0-major-release">Version 2.0.0 - Major Release<a class="headerlink" href="#version-2-0-0-major-release" title="Link to this heading">¶</a></h2>
 <p>Version 2.0.0 represents a complete architectural overhaul of commit-check, introducing significant improvements in configuration, usability, and maintainability.</p>
 <h3 id="overview"><strong>Overview</strong><a class="headerlink" href="#overview" title="Link to this heading">¶</a></h3>

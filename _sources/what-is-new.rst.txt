@@ -5,6 +5,52 @@ What's New
 
 This document highlights the major changes and improvements in each version of commit-check.
 
+Version 2.5.0 — New Features
+------------------------------
+
+Co-author Bypass in ``ignore_authors``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+commit-check can now skip validation when a **co-author** of the commit matches an entry in ``ignore_authors``, not just the primary commit author.
+
+This is especially useful for AI-assisted workflows where a bot (e.g., ``coderabbitai[bot]``, ``copilot[bot]``) co-authors a commit that does not follow Conventional Commits format:
+
+.. code-block:: toml
+
+    [commit]
+    ignore_authors = ["dependabot[bot]", "renovate[bot]", "coderabbitai[bot]", "copilot[bot]"]
+
+When a ``Co-authored-by:`` trailer in the commit message body matches any entry in the list, all commit checks are skipped for that commit.
+
+Organization-Level Config Inheritance (``inherit_from``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Teams can now share a **centralized base configuration** across all repositories in an organization using the new ``inherit_from`` top-level key.
+
+.. code-block:: toml
+
+    # .github/cchk.toml — in every repo
+    inherit_from = "github:my-org/.github:cchk.toml"
+
+    [commit]
+    subject_max_length = 72  # Local override
+
+**Supported source formats:**
+
+* ``github:owner/repo:path/to/cchk.toml`` — fetches from the default branch via ``raw.githubusercontent.com``
+* ``github:owner/repo@main:path/to/cchk.toml`` — pins to a specific branch, tag, or SHA
+* A local file path (relative or absolute)
+* An HTTPS URL
+
+Local settings always **override** the inherited configuration. HTTP (non-TLS) URLs are rejected for security. If the source is unreachable, the local config is used as-is.
+
+Git Config Author Validation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Author name and email validation now checks **``git config user.name`` / ``user.email``** first — the identity that will be used for the *next* commit — and falls back to the last commit's author only if git config is unset.
+
+Previously, a developer with a misconfigured ``user.name`` (e.g., starting with a digit) would pass validation as long as their most recent commit had a valid author name. This fix closes that gap.
+
 Version 2.0.0 - Major Release
 -----------------------------
 

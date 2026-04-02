@@ -644,7 +644,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#whats-new-in-v2-0-0" class="md-nav__link">
+  <a href="#what-s-new-in-v2-0-0" class="md-nav__link">
     
     <span class="md-ellipsis">
       <span>What’s New in v2.<wbr>0.<wbr>0</span>
@@ -658,6 +658,16 @@
     
     <span class="md-ellipsis">
       <span>Installation</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Quick Start</span>
     </span>
   </a>
   
@@ -689,6 +699,16 @@
     
     <span class="md-ellipsis">
       <span>Use Custom Configuration File</span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#organization-level-configuration-inherit-from" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Organization-<wbr>Level Configuration <wbr>(inherit_<wbr>from)</span>
     </span>
   </a>
   
@@ -786,18 +806,99 @@
 
 
 <h1 id="commit-check">Commit Check<a class="headerlink" href="#commit-check" title="Link to this heading">¶</a></h1>
-<p><a class="reference external" href="https://github.com/commit-check/commit-check/actions/workflows/main.yml"><img alt="CI" src="https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg" /></a> <a class="reference external" href="https://sonarcloud.io/summary/new_code?id=commit-check_commit-check"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&amp;metric=alert_status" /></a> <a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="PyPI" src="https://img.shields.io/pypi/v/commit-check?logo=python&amp;logoColor=white&amp;color=%232c9ccd" /></a> <a class="reference external" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white&amp;color=%232c9ccd" /></a> <a class="reference external" href="https://codecov.io/gh/commit-check/commit-check"><img alt="CodeCov" src="https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT" /></a> <a class="reference external" href="https://slsa.dev"><img alt="SLSA" src="https://slsa.dev/images/gh-badge-level3.svg" /></a></p>
+<p><a class="reference external" href="https://github.com/commit-check/commit-check/actions/workflows/main.yml"><img alt="CI" src="https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg" /></a> <a class="reference external" href="https://sonarcloud.io/summary/new_code?id=commit-check_commit-check"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&amp;metric=alert_status" /></a> <a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="PyPI" src="https://img.shields.io/pypi/v/commit-check?logo=python&amp;logoColor=white&amp;color=%232c9ccd" /></a> <a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="PyPI Downloads" src="https://img.shields.io/pypi/dm/commit-check?color=%232c9ccd" /></a> <a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/commit-check?logo=python&amp;logoColor=white" /></a> <a class="reference external" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white&amp;color=%232c9ccd" /></a> <a class="reference external" href="https://codecov.io/gh/commit-check/commit-check"><img alt="CodeCov" src="https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT" /></a> <a class="reference external" href="https://slsa.dev"><img alt="SLSA" src="https://slsa.dev/images/gh-badge-level3.svg" /></a></p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
-<p><strong>Commit Check</strong> (aka <strong>cchk</strong>) is an open-source tool that enforces commit metadata standards — including commit messages, branch naming, committer name/email, commit signoff, and more — helping teams maintain consistency and compliance.</p>
-<p>As a lightweight alternative to GitHub Enterprise <a class="reference external" href="https://docs.github.com/en/enterprise-server&#64;3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions">Metadata restrictions</a>
-and Bitbucket’s paid plugin <a class="reference external" href="https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&amp;hosting=datacenter">Yet Another Commit Checker</a>, Commit Check integrates DevOps principles and Infrastructure as Code (IaC) practices for a modern workflow.</p>
-<h2 id="whats-new-in-v2-0-0">What’s New in v2.0.0<a class="headerlink" href="#whats-new-in-v2-0-0" title="Link to this heading">¶</a></h2>
+<p><strong>Commit Check</strong> (aka <strong>cchk</strong>) is the most comprehensive open-source tool for enforcing Git commit standards — including commit messages, branch naming, author identity, commit signoff, and more — helping teams maintain consistency and compliance across every repository.</p>
+<p>As a lightweight, free alternative to GitHub Enterprise <a class="reference external" href="https://docs.github.com/en/enterprise-server&#64;3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions">Metadata restrictions</a>
+and Bitbucket’s paid <a class="reference external" href="https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&amp;hosting=datacenter">Yet Another Commit Checker</a> plugin, Commit Check integrates DevOps principles and Infrastructure as Code (IaC) practices for a modern workflow.</p>
+<p><strong>Why Commit Check?</strong></p>
+<table class="docutils data align-default">
+<colgroup>
+<col style="width: 40.0%" />
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Feature</p></th>
+<th class="head"><p>Commit Check ✅</p></th>
+<th class="head"><p>commitlint</p></th>
+<th class="head"><p>pre-commit hooks</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Conventional Commits enforcement</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-odd"><td><p>Branch naming validation</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>Partial</p></td>
+</tr>
+<tr class="row-even"><td><p>Author name / email validation</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-odd"><td><p>Signoff / DCO check</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-even"><td><p>Co-author ignore list</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-odd"><td><p>Organization-level config inheritance</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-even"><td><p>Zero-config defaults</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-odd"><td><p>Works without Node.js</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p>TOML configuration</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-odd"><td><p>pre-commit framework integration</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p>CI/CD environment variables</p></td>
+<td><p>✅</p></td>
+<td><p>Partial</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-odd"><td><p>SLSA Level 3 supply chain security</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+</tbody>
+</table>
+<h2 id="what-s-new-in-v2-0-0">What’s New in v2.0.0<a class="headerlink" href="#what-s-new-in-v2-0-0" title="Link to this heading">¶</a></h2>
 <p>Version 2.0.0 is a major release featuring a new configuration format, a modernized architecture, and an improved user experience.</p>
 <p><strong>✨ Highlights</strong></p>
 <ul class="simple">
 <li><p><strong>TOML Configuration</strong> — Replaces <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code> with <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> for clearer, more consistent syntax.</p></li>
 <li><p><strong>Simplified CLI &amp; Hooks</strong> — Legacy pre-commit hooks and options removed to deliver a cleaner, more streamlined interface.</p></li>
 <li><p><strong>New Validation Engine</strong> — Fully redesigned for greater flexibility, performance, and maintainability.</p></li>
+<li><p><strong>Co-author ignore support</strong> — Bypass checks when a commit is co-authored by a bot or trusted identity in <code class="docutils literal notranslate"><span class="pre">ignore_authors</span></code>.</p></li>
+<li><p><strong>Organization-level configuration</strong> — Use <code class="docutils literal notranslate"><span class="pre">inherit_from</span></code> to share a base config across all repositories in your org.</p></li>
+<li><p><strong>Git config author validation</strong> — <code class="docutils literal notranslate"><span class="pre">--author-name</span></code> and <code class="docutils literal notranslate"><span class="pre">--author-email</span></code> now validate the configured identity for the next commit.</p></li>
 </ul>
 <p>For the full list of updates and improvements, visit the <a class="reference external" href="https://commit-check.github.io/commit-check/what-is-new.html">What’s New</a> page.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h2>
@@ -811,6 +912,25 @@ and Bitbucket’s paid plugin <a class="reference external" href="https://market
 </div>
 <p>Then, run <code class="docutils literal notranslate"><span class="pre">commit-check</span> <span class="pre">--help</span></code> or <code class="docutils literal notranslate"><span class="pre">cchk</span> <span class="pre">--help</span></code> (alias for <code class="docutils literal notranslate"><span class="pre">commit-check</span></code>) from the command line.
 For more information, see the <a class="reference external" href="https://commit-check.github.io/commit-check/cli_args.html">docs</a>.</p>
+<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading">¶</a></h2>
+<p><strong>1. Install and run with zero configuration:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>commit-check
+commit-check<span class="w"> </span>--message<span class="w"> </span>--branch
+</code></pre></div>
+</div>
+<p><strong>2. Add to your pre-commit hooks</strong> (<code class="docutils literal notranslate"><span class="pre">.pre-commit-config.yaml</span></code>):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">repos</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/commit-check/commit-check</span>
+<span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v2.3.0</span>
+<span class="w">    </span><span class="nt">hooks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-message</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-branch</span>
+</code></pre></div>
+</div>
+<p><strong>3. Add a badge to your repository:</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>[![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white&amp;color=%232c9ccd)](https://github.com/commit-check/commit-check)
+</code></pre></div>
+</div>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
 <p>Commit Check can be configured in three ways (in order of priority):</p>
 <ol class="arabic simple">
@@ -825,6 +945,42 @@ For more information, see the <a class="reference external" href="https://commit
 </ul>
 <h3 id="use-custom-configuration-file">Use Custom Configuration File<a class="headerlink" href="#use-custom-configuration-file" title="Link to this heading">¶</a></h3>
 <p>To customize the behavior, create a configuration file named <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> in your repository’s root directory or in the <code class="docutils literal notranslate"><span class="pre">.github</span></code> folder, e.g., <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/cchk.toml">cchk.toml</a> or <code class="docutils literal notranslate"><span class="pre">.github/cchk.toml</span></code>.</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="k">[commit]</span>
+<span class="c1"># https://www.conventionalcommits.org</span>
+<span class="n">conventional_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">subject_imperative</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">subject_max_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">80</span>
+<span class="n">allow_commit_types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;feat&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;docs&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;style&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;refactor&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;test&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;chore&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ci&quot;</span><span class="p">]</span>
+<span class="n">allow_merge_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">allow_wip_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<span class="n">require_signed_off_by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<span class="c1"># Bypass checks for bot/automation authors and co-authors:</span>
+<span class="n">ignore_authors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;dependabot[bot]&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;renovate[bot]&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;copilot[bot]&quot;</span><span class="p">]</span>
+
+<span class="k">[branch]</span>
+<span class="c1"># https://conventional-branch.github.io/</span>
+<span class="n">conventional_branch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">allow_branch_types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;feature&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;bugfix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;hotfix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;release&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;chore&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;feat&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fix&quot;</span><span class="p">]</span>
+</code></pre></div>
+</div>
+<h3 id="organization-level-configuration-inherit-from">Organization-Level Configuration (inherit_from)<a class="headerlink" href="#organization-level-configuration-inherit-from" title="Link to this heading">¶</a></h3>
+<p>Share a base configuration across all repositories in your organization using <code class="docutils literal notranslate"><span class="pre">inherit_from</span></code>:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># .github/cchk.toml — inherits from org-level config, then overrides locally</span>
+<span class="n">inherit_from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;github:my-org/.github:cchk.toml&quot;</span>
+
+<span class="k">[commit]</span>
+<span class="n">subject_max_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">72</span><span class="w">  </span><span class="c1"># Local override</span>
+</code></pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">inherit_from</span></code> field accepts:</p>
+<ul class="simple">
+<li><p>A <strong>GitHub shorthand</strong> (recommended): <code class="docutils literal notranslate"><span class="pre">inherit_from</span> <span class="pre">=</span> <span class="pre">&quot;github:owner/repo:path/to/cchk.toml&quot;</span></code></p></li>
+<li><p>A <strong>GitHub shorthand with ref</strong>: <code class="docutils literal notranslate"><span class="pre">inherit_from</span> <span class="pre">=</span> <span class="pre">&quot;github:owner/repo&#64;main:path/to/cchk.toml&quot;</span></code></p></li>
+<li><p>A <strong>local file path</strong> (relative or absolute): <code class="docutils literal notranslate"><span class="pre">inherit_from</span> <span class="pre">=</span> <span class="pre">&quot;../shared/cchk.toml&quot;</span></code></p></li>
+<li><p>An <strong>HTTPS URL</strong>: <code class="docutils literal notranslate"><span class="pre">inherit_from</span> <span class="pre">=</span> <span class="pre">&quot;https://example.com/cchk.toml&quot;</span></code></p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">github:</span></code> shorthand fetches from <code class="docutils literal notranslate"><span class="pre">raw.githubusercontent.com</span></code>. HTTP (non-TLS) URLs are rejected for security.</p>
+<p>Local settings always <strong>override</strong> the inherited base configuration.</p>
 <h3 id="use-cli-arguments-or-environment-variables">Use CLI Arguments or Environment Variables<a class="headerlink" href="#use-cli-arguments-or-environment-variables" title="Link to this heading">¶</a></h3>
 <p>For one-off checks or CI/CD pipelines, you can configure via CLI arguments or environment variables:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># Using CLI arguments</span>
