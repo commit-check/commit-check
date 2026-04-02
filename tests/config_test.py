@@ -696,7 +696,10 @@ class TestGithubShorthandToUrl:
     def test_shorthand_with_subdirectory(self):
         """github:owner/repo:subdir/path resolves correctly."""
         url = _github_shorthand_to_url("github:my-org/config@v1.0:.github/cchk.toml")
-        assert url == "https://raw.githubusercontent.com/my-org/config/v1.0/.github/cchk.toml"
+        assert (
+            url
+            == "https://raw.githubusercontent.com/my-org/config/v1.0/.github/cchk.toml"
+        )
 
     @pytest.mark.benchmark
     def test_missing_colon_separator_returns_none(self):
