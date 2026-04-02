@@ -608,7 +608,9 @@ class TestGetGitConfigValue:
 
         mocker.patch(
             "commit_check.util.cmd_output",
-            side_effect=CalledProcessError(returncode=1, cmd="git config --get user.name"),
+            side_effect=CalledProcessError(
+                returncode=1, cmd="git config --get user.name"
+            ),
         )
         result = get_git_config_value("user.name")
         assert result == ""
@@ -618,8 +620,6 @@ class TestGetGitConfigValue:
         """Test getting user.email from git config."""
         from commit_check.util import get_git_config_value
 
-        mocker.patch(
-            "commit_check.util.cmd_output", return_value="alice@example.com\n"
-        )
+        mocker.patch("commit_check.util.cmd_output", return_value="alice@example.com\n")
         result = get_git_config_value("user.email")
         assert result == "alice@example.com"

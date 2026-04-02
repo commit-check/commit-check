@@ -560,9 +560,7 @@ class TestResolveInheritFrom:
 conventional_commits = true
 subject_max_length = 100
 """
-        with tempfile.NamedTemporaryFile(
-            mode="wb", suffix=".toml", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".toml", delete=False) as f:
             f.write(parent_content)
             parent_path = f.name
 
@@ -780,9 +778,7 @@ subject_max_length = 72
                 with open(parent_path, "wb") as f:
                     f.write(parent_content)
 
-                local = local_content.replace(
-                    b"{parent_path}", parent_path.encode()
-                )
+                local = local_content.replace(b"{parent_path}", parent_path.encode())
                 with open("cchk.toml", "wb") as f:
                     f.write(local)
 
