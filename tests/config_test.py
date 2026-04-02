@@ -615,6 +615,19 @@ subject_max_length = 100
             result = _resolve_inherit_from(config)
             assert result == {"fallback": True}
 
+    @pytest.mark.benchmark
+    def test_inherit_from_http_url_is_rejected(self):
+        """HTTP URLs are rejected for security; only HTTPS is allowed."""
+        config = {
+            "inherit_from": "http://example.com/cchk.toml",
+            "fallback": True,
+        }
+        # urlopen should NOT be called for http:// URLs
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            result = _resolve_inherit_from(config)
+            mock_urlopen.assert_not_called()
+        assert result == {"fallback": True}
+
 
 class TestLoadFromUrl:
     """Tests for the _load_from_url helper."""

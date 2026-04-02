@@ -64,8 +64,11 @@ def _resolve_inherit_from(config: Dict[str, Any]) -> Dict[str, Any]:
         return config
 
     parent: Dict[str, Any] = {}
-    if inherit_from.startswith("https://") or inherit_from.startswith("http://"):
+    if inherit_from.startswith("https://"):
         parent = _load_from_url(inherit_from)
+    elif inherit_from.startswith("http://"):
+        # Reject insecure HTTP to prevent MITM attacks when loading remote config
+        pass
     else:
         parent_path = Path(inherit_from)
         if parent_path.exists():
