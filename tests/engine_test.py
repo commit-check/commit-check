@@ -375,10 +375,11 @@ class TestAuthorValidator:
         validator = AuthorValidator(rule)
         context = ValidationContext()
 
-        with patch(
-            "commit_check.engine.get_git_config_value", return_value=""
-        ), patch(
-            "commit_check.engine.get_commit_info", return_value="test@example.com"
+        with (
+            patch("commit_check.engine.get_git_config_value", return_value=""),
+            patch(
+                "commit_check.engine.get_commit_info", return_value="test@example.com"
+            ),
         ):
             author_value = validator._get_author_value(context)
             assert author_value == "test@example.com"
@@ -975,10 +976,7 @@ class TestCoAuthorSkip:
         )
         validator = CommitMessageValidator(rule)
 
-        message = (
-            "Update README\n\n"
-            "Co-authored-by: coderabbitai[bot] <bot@example.com>"
-        )
+        message = "Update README\n\nCo-authored-by: coderabbitai[bot] <bot@example.com>"
         config = {"commit": {"ignore_authors": ["coderabbitai[bot]"]}}
         context = ValidationContext(stdin_text=message, config=config)
 
@@ -997,10 +995,7 @@ class TestCoAuthorSkip:
         )
         validator = CommitMessageValidator(rule)
 
-        message = (
-            "Update README\n\n"
-            "Co-authored-by: someuser <user@example.com>"
-        )
+        message = "Update README\n\nCo-authored-by: someuser <user@example.com>"
         config = {"commit": {"ignore_authors": ["coderabbitai[bot]"]}}
         context = ValidationContext(stdin_text=message, config=config)
 
@@ -1032,7 +1027,9 @@ class TestCoAuthorSkip:
 
         try:
             context = ValidationContext(commit_file=commit_file, config=config)
-            with patch("commit_check.engine.get_commit_info", return_value="main-author"):
+            with patch(
+                "commit_check.engine.get_commit_info", return_value="main-author"
+            ):
                 result = validator.validate(context)
             assert result == ValidationResult.PASS
         finally:
@@ -1054,10 +1051,12 @@ class TestGetGitConfigValue:
         validator = AuthorValidator(rule)
         context = ValidationContext()
 
-        with patch(
-            "commit_check.engine.get_commit_info", return_value="some-author"
-        ), patch(
-            "commit_check.engine.get_git_config_value", return_value="01 Invalid Name"
+        with (
+            patch("commit_check.engine.get_commit_info", return_value="some-author"),
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="01 Invalid Name",
+            ),
         ):
             with patch("commit_check.util._print_failure"):
                 result = validator.validate(context)
@@ -1075,10 +1074,9 @@ class TestGetGitConfigValue:
         validator = AuthorValidator(rule)
         context = ValidationContext()
 
-        with patch(
-            "commit_check.engine.get_git_config_value", return_value=""
-        ), patch(
-            "commit_check.engine.get_commit_info", return_value="Valid Name"
+        with (
+            patch("commit_check.engine.get_git_config_value", return_value=""),
+            patch("commit_check.engine.get_commit_info", return_value="Valid Name"),
         ):
             result = validator.validate(context)
         assert result == ValidationResult.PASS
@@ -1095,10 +1093,12 @@ class TestGetGitConfigValue:
         validator = AuthorValidator(rule)
         context = ValidationContext()
 
-        with patch(
-            "commit_check.engine.get_commit_info", return_value="some-author"
-        ), patch(
-            "commit_check.engine.get_git_config_value", return_value="user@example.com"
+        with (
+            patch("commit_check.engine.get_commit_info", return_value="some-author"),
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="user@example.com",
+            ),
         ):
             result = validator.validate(context)
         assert result == ValidationResult.PASS
