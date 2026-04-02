@@ -1,5 +1,6 @@
 """Clean validation engine following SOLID principles."""
 
+import re
 from typing import List, Optional, Dict, Type
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -9,6 +10,7 @@ from dataclasses import field
 from commit_check.rule_builder import ValidationRule
 from commit_check.util import (
     get_commit_info,
+    get_git_config,
     get_branch_name,
     has_commits,
     git_merge_base,
@@ -63,14 +65,26 @@ class BaseValidator(ABC):
         or if no stdin_text, no commit_file, and no commits exist.
         """
         ignore_authors = context.config.get("commit", {}).get("ignore_authors", [])
-        current_author = get_commit_info("an")
-        if current_author and current_author in ignore_authors:
-            return True
+        if ignore_authors:
+            current_author = get_commit_info("an")
+            if current_author and current_author in ignore_authors:
+                return True
         return (
             context.stdin_text is None
             and context.commit_file is None
             and not has_commits()
         )
+
+    def _should_skip_for_co_author(
+        self, message: str, ignore_authors: List[str]
+    ) -> bool:
+        """Return True if any co-author found in *message* is in *ignore_authors*."""
+        if not ignore_authors:
+            return False
+        for co_author in self._get_co_authors(message):
+            if co_author in ignore_authors:
+                return True
+        return False
 
     def _should_skip_branch_validation(self, context: ValidationContext) -> bool:
         """
@@ -84,6 +98,40 @@ class BaseValidator(ABC):
         if current_author and current_author in ignore_authors:
             return True
         return context.stdin_text is None and not has_commits()
+
+    def _get_commit_message(self, context: ValidationContext) -> str:
+        """Get commit message from context (stdin/file) or from git log."""
+        if context.stdin_text:
+            return context.stdin_text.strip()
+
+        if context.commit_file:
+            try:
+                with open(context.commit_file, "r") as f:
+                    return f.read().strip()
+            except FileNotFoundError:
+                pass
+
+        # Fallback to git log
+        subject = get_commit_info("s")
+        body = get_commit_info("b")
+        return f"{subject}\n\n{body}".strip()
+
+    @staticmethod
+    def _get_co_authors(message: str) -> List[str]:
+        """Extract co-author names from ``Co-authored-by:`` trailers.
+
+        Each trailer line has the form::
+
+            Co-authored-by: Name <email>
+
+        Returns a list of name strings (without the email part).
+        """
+        co_authors = []
+        for line in message.splitlines():
+            match = re.match(r"Co-authored-by:\s*(.+?)\s*<", line.strip())
+            if match:
+                co_authors.append(match.group(1).strip())
+        return co_authors
 
     def _print_failure(self, actual_value: str, regex_or_constraint: str = "") -> None:
         """Print standardized failure message."""
@@ -105,30 +153,16 @@ class CommitMessageValidator(BaseValidator):
         if not message:
             return ValidationResult.PASS
 
-        import re
+        # Skip if any co-author is in the ignore list
+        ignore_authors = context.config.get("commit", {}).get("ignore_authors", [])
+        if self._should_skip_for_co_author(message, ignore_authors):
+            return ValidationResult.PASS
 
         if self.rule.regex and re.match(self.rule.regex, message):
             return ValidationResult.PASS
 
         self._print_failure(message)
         return ValidationResult.FAIL
-
-    def _get_commit_message(self, context: ValidationContext) -> str:
-        """Get commit message from context or git."""
-        if context.stdin_text:
-            return context.stdin_text.strip()
-
-        if context.commit_file:
-            try:
-                with open(context.commit_file, "r") as f:
-                    return f.read().strip()
-            except FileNotFoundError:
-                pass
-
-        # Fallback to git log
-        subject = get_commit_info("s")
-        body = get_commit_info("b")
-        return f"{subject}\n\n{body}".strip()
 
 
 class SubjectValidator(BaseValidator):
@@ -141,6 +175,13 @@ class SubjectValidator(BaseValidator):
         subject = self._get_subject(context)
         if not subject:
             return ValidationResult.PASS
+
+        # Skip if any co-author is in the ignore list
+        ignore_authors = context.config.get("commit", {}).get("ignore_authors", [])
+        if ignore_authors:
+            message = self._get_commit_message(context)
+            if self._should_skip_for_co_author(message, ignore_authors):
+                return ValidationResult.PASS
 
         return self._validate_subject(subject)
 
@@ -173,8 +214,6 @@ class SubjectCapitalizationValidator(SubjectValidator):
             return ValidationResult.PASS
 
         # For conventional commits, check the description part after the colon
-        import re
-
         match = re.match(r"^(?:\w+(?:\([^)]*\))?[!:]?\s*)(.*)", subject)
         if match:
             description = match.group(1).strip()
@@ -198,8 +237,6 @@ class SubjectImperativeValidator(SubjectValidator):
             return ValidationResult.PASS
 
         # Extract first word (ignore conventional commit prefixes)
-        import re
-
         # support breaking changes (feat!:)
         match = re.match(r"^(?:\w+(?:\([^)]*\))?!?:\s*)?(\w+)", subject)
         if not match:
@@ -238,9 +275,15 @@ class SubjectLengthValidator(SubjectValidator):
 class AuthorValidator(BaseValidator):
     """Validates author information."""
 
+    # Mapping from rule check name to (git-log format, git config key)
+    _AUTHOR_MAP: Dict[str, tuple] = {
+        "author_name": ("an", "user.name"),
+        "author_email": ("ae", "user.email"),
+    }
+
     def validate(self, context: ValidationContext) -> ValidationResult:
         # Use commit skip logic for ignore_authors
-        if self._should_skip_commit_validation(context):
+        if self._should_skip_author_validation(context):
             return ValidationResult.PASS
 
         author_value = self._get_author_value(context)
@@ -249,23 +292,47 @@ class AuthorValidator(BaseValidator):
 
         return self._validate_author(author_value)
 
+    def _should_skip_author_validation(self, context: ValidationContext) -> bool:
+        """
+        Determine if author validation should be skipped.
+
+        Unlike commit message validation, author checks do not skip when there
+        are no commits – the current git config provides the value to check.
+        """
+        ignore_authors = context.config.get("commit", {}).get("ignore_authors", [])
+        if ignore_authors:
+            current_author = get_commit_info("an") or self._get_author_from_config()
+            if current_author and current_author in ignore_authors:
+                return True
+        # Skip only when we have neither stdin nor any way to resolve the author
+        if context.stdin_text:
+            return False
+        return not has_commits() and not self._get_author_from_config()
+
+    def _get_author_from_config(self) -> str:
+        """Get the author name from git config (current user)."""
+        if self.rule.check == "author_email":
+            return get_git_config("user.email")
+        return get_git_config("user.name")
+
     def _get_author_value(self, context: ValidationContext) -> str:
         """Get author value based on rule type."""
         if context.stdin_text:
             return context.stdin_text.strip()
 
-        format_map = {
-            "author_name": "an",
-            "author_email": "ae",
-        }
-        format_str = format_map.get(self.rule.check, "")
-        return get_commit_info(format_str) if format_str else ""
+        log_fmt = self._AUTHOR_MAP.get(self.rule.check, ("", ""))[0]
+        if not log_fmt:
+            return ""
+
+        # Prefer git log (last commit); fall back to git config for new repos
+        value = get_commit_info(log_fmt)
+        if not value:
+            value = self._get_author_from_config()
+        return value
 
     def _validate_author(self, author_value: str) -> ValidationResult:
         """Validate author against rule constraints."""
         if self.rule.regex:
-            import re
-
             if re.match(self.rule.regex, author_value):
                 return ValidationResult.PASS
             self._print_failure(author_value)
@@ -293,8 +360,6 @@ class BranchValidator(BaseValidator):
 
         if not self.rule.regex:
             return ValidationResult.PASS
-
-        import re
 
         if re.match(self.rule.regex, branch_name):
             return ValidationResult.PASS
@@ -331,7 +396,6 @@ class MergeBaseValidator(BaseValidator):
     def _find_target_branch(self, pattern: str) -> Optional[str]:
         """Find target branch matching the pattern."""
         import subprocess
-        import re
 
         try:
             all_branches = subprocess.check_output(
@@ -361,30 +425,11 @@ class SignoffValidator(BaseValidator):
         if not message:
             return ValidationResult.PASS
 
-        import re
-
         if self.rule.regex and re.search(self.rule.regex, message):
             return ValidationResult.PASS
 
         self._print_failure(message)
         return ValidationResult.FAIL
-
-    def _get_commit_message(self, context: ValidationContext) -> str:
-        """Get commit message from context or git."""
-        if context.stdin_text:
-            return context.stdin_text.strip()
-
-        if context.commit_file:
-            try:
-                with open(context.commit_file, "r") as f:
-                    return f.read().strip()
-            except FileNotFoundError:
-                pass
-
-        # Fallback to git log
-        subject = get_commit_info("s")
-        body = get_commit_info("b")
-        return f"{subject}\n\n{body}".strip()
 
 
 class BodyValidator(BaseValidator):
@@ -416,23 +461,6 @@ class BodyValidator(BaseValidator):
 
         self._print_failure(message)
         return ValidationResult.FAIL
-
-    def _get_commit_message(self, context: ValidationContext) -> str:
-        """Get commit message from context or git."""
-        if context.stdin_text:
-            return context.stdin_text.strip()
-
-        if context.commit_file:
-            try:
-                with open(context.commit_file, "r") as f:
-                    return f.read().strip()
-            except FileNotFoundError:
-                pass
-
-        # Fallback to git log
-        subject = get_commit_info("s")
-        body = get_commit_info("b")
-        return f"{subject}\n\n{body}".strip()
 
 
 class CommitTypeValidator(BaseValidator):
@@ -497,23 +525,6 @@ class CommitTypeValidator(BaseValidator):
         """Check if WIP commits are allowed."""
         is_wip = message.upper().startswith("WIP:")
         return not is_wip or self.rule.value
-
-    def _get_commit_message(self, context: ValidationContext) -> str:
-        """Get commit message from context or git."""
-        if context.stdin_text:
-            return context.stdin_text.strip()
-
-        if context.commit_file:
-            try:
-                with open(context.commit_file, "r") as f:
-                    return f.read().strip()
-            except FileNotFoundError:
-                pass
-
-        # Fallback to git log
-        subject = get_commit_info("s")
-        body = get_commit_info("b")
-        return f"{subject}\n\n{body}".strip()
 
 
 class ValidationEngine:

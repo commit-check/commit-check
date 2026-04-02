@@ -8,6 +8,7 @@ from commit_check.util import (
     has_commits,
     git_merge_base,
     get_commit_info,
+    get_git_config,
     cmd_output,
     print_error_header,
     print_error_message,
@@ -172,14 +173,16 @@ class TestUtil:
         )
         @pytest.mark.benchmark
         def test_get_commit_info(self, mocker, format_string):
-            # Must call get_commit_info with given argument when there are commits.
-            mocker.patch("commit_check.util.has_commits", return_value=True)
-            m_cmd_output = mocker.patch(
-                "commit_check.util.cmd_output", return_value=" fake commit message "
-            )
+            # Must call subprocess.run with the right arguments and return stdout.
+            class _Result:
+                returncode = 0
+                stdout = " fake commit message "
+                stderr = ""
+
+            m_run = mocker.patch("commit_check.util.subprocess.run", return_value=_Result())
             retval = get_commit_info(format_string)
-            assert m_cmd_output.call_count == 1
-            assert m_cmd_output.call_args[0][0] == [
+            assert m_run.call_count == 1
+            assert m_run.call_args[0][0] == [
                 "git",
                 "log",
                 "-n",
@@ -191,41 +194,64 @@ class TestUtil:
 
         @pytest.mark.benchmark
         def test_get_commit_info_no_commits(self, mocker):
-            # Must return 'Repo has no commits yet.' when there are no commits.
-            mocker.patch("commit_check.util.has_commits", return_value=False)
-            mocker.patch(
-                "commit_check.util.cmd_output", return_value=" fake commit message "
-            )
+            # When there are no commits, git returns non-zero; must return empty string.
+            class _Result:
+                returncode = 128
+                stdout = ""
+                stderr = "fatal: ambiguous argument 'HEAD'"
+
+            mocker.patch("commit_check.util.subprocess.run", return_value=_Result())
             format_string = "s"
             retval = get_commit_info(format_string)
-            assert retval == " fake commit message "
+            assert retval == ""
 
         @pytest.mark.benchmark
         def test_get_commit_info_with_exception(self, mocker):
-            # Must return empty string when exception raises in cmd_output.
-            mocker.patch("commit_check.util.has_commits", return_value=True)
-            m_cmd_output = mocker.patch(
-                "commit_check.util.cmd_output", return_value=" fake commit message "
-            )
-            # CalledProcessError's args also dummy
-            dummy_ret_code, dummy_cmd_name = 1, "dcmd"
-            m_cmd_output.side_effect = CalledProcessError(
-                dummy_ret_code, dummy_cmd_name
+            # Must return empty string when subprocess.run raises an exception.
+            mocker.patch(
+                "commit_check.util.subprocess.run",
+                side_effect=Exception("subprocess error"),
             )
             format_string = "s"
             retval = get_commit_info(format_string)
-            assert m_cmd_output.call_count == 1
-            assert m_cmd_output.call_args[0][0] == [
-                "git",
-                "log",
-                "-n",
-                "1",
-                f"--pretty=format:%{format_string}",
-                "HEAD",
-            ]
             assert retval == ""
 
-    class TestCmdOutput:
+    class TestGetGitConfig:
+        @pytest.mark.benchmark
+        def test_get_git_config_success(self, mocker):
+            """Must return git config value when command succeeds."""
+            class _Result:
+                returncode = 0
+                stdout = "Jane Doe\n"
+                stderr = ""
+
+            mocker.patch("commit_check.util.subprocess.run", return_value=_Result())
+            retval = get_git_config("user.name")
+            assert retval == "Jane Doe"
+
+        @pytest.mark.benchmark
+        def test_get_git_config_not_set(self, mocker):
+            """Must return empty string when the key is not set."""
+            class _Result:
+                returncode = 1
+                stdout = ""
+                stderr = ""
+
+            mocker.patch("commit_check.util.subprocess.run", return_value=_Result())
+            retval = get_git_config("user.name")
+            assert retval == ""
+
+        @pytest.mark.benchmark
+        def test_get_git_config_exception(self, mocker):
+            """Must return empty string when subprocess.run raises."""
+            mocker.patch(
+                "commit_check.util.subprocess.run",
+                side_effect=Exception("no git"),
+            )
+            retval = get_git_config("user.name")
+            assert retval == ""
+
+
         # use DummyProcessResult in this test to access returncode, stdout and stderr attribute
         class DummyProcessResult:
             def __init__(self, returncode, stdout, stderr):

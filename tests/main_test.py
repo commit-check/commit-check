@@ -237,7 +237,7 @@ class TestMainFunctionEdgeCases:
         """Test main function with --message (empty), no stdin, git fallback."""
         mocker.patch("sys.stdin.isatty", return_value=True)
         mocker.patch(
-            "commit_check.util.get_commit_info", return_value="feat: Git commit message"
+            "commit_check.engine.get_commit_info", return_value="feat: add feature from git"
         )
 
         sys.argv = ["commit-check", "--message"]

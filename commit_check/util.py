@@ -41,6 +41,26 @@ def _print_failure(check: dict, regex: str, actual: str) -> None:
         print_suggestion(check.get("suggest"))
 
 
+def get_git_config(key: str) -> str:
+    """Get a git configuration value for the current repository or global config.
+
+    :param key: the config key, e.g. ``user.name`` or ``user.email``
+    :returns: The config value as a string, or empty string if not set.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "config", "--get", key],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return ""
+
+
 def get_branch_name() -> str:
     """Identify current branch name.
     .. note::
@@ -91,21 +111,27 @@ def get_commit_info(format_string: str, sha: str = "HEAD") -> str:
         - H  - commit hash
     more: https://git-scm.com/docs/pretty-formats
 
-    :returns: A `str`.
+    :returns: A `str`, or empty string when the command fails (e.g. no commits yet).
     """
     try:
-        commands = [
-            "git",
-            "log",
-            "-n",
-            "1",
-            f"--pretty=format:%{format_string}",
-            f"{sha}",
-        ]
-        output = cmd_output(commands)
-    except CalledProcessError:
-        output = ""
-    return output
+        result = subprocess.run(
+            [
+                "git",
+                "log",
+                "-n",
+                "1",
+                f"--pretty=format:%{format_string}",
+                f"{sha}",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+        )
+        if result.returncode == 0:
+            return result.stdout
+    except Exception:
+        pass
+    return ""
 
 
 def git_merge_base(target_branch: str, current_branch: str) -> int:
