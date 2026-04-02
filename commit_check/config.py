@@ -47,7 +47,7 @@ def _github_shorthand_to_url(value: str) -> Optional[str]:
     :returns: A resolved HTTPS URL, or ``None`` if the format is unrecognized.
     """
     # Strip the "github:" prefix
-    rest = value[len("github:"):]
+    rest = value[len("github:") :]
 
     # The path separator between repo spec and file path is ":"
     if ":" not in rest:
@@ -74,7 +74,10 @@ def _load_from_url(url: str) -> Dict[str, Any]:
 
     :param url: HTTPS URL pointing to a TOML config file.
     :returns: Parsed config dict, or empty dict on failure.
+    :raises ValueError: If the URL does not use HTTPS.
     """
+    if not url.startswith("https://"):
+        return {}
     try:
         with urllib.request.urlopen(url, timeout=10) as response:  # noqa: S310
             data = response.read()
