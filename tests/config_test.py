@@ -538,7 +538,6 @@ class TestDeepMerge:
     def test_deep_merge_does_not_mutate_base(self):
         base = {"a": {"x": 1}}
         override = {"a": {"y": 2}}
-        original_base = {"a": {"x": 1}}
         _deep_merge(base, override)
         # _deep_merge returns a new dict; base itself may be used but result is new
         assert _deep_merge(base, override)["a"] == {"x": 1, "y": 2}
