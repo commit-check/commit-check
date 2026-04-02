@@ -1,7 +1,7 @@
 """Clean validation engine following SOLID principles."""
 
 import re
-from typing import List, Optional, Dict, Type
+from typing import List, Optional, Dict, Type, Tuple
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum
@@ -276,7 +276,7 @@ class AuthorValidator(BaseValidator):
     """Validates author information."""
 
     # Mapping from rule check name to (git-log format, git config key)
-    _AUTHOR_MAP: Dict[str, tuple] = {
+    _AUTHOR_MAP: Dict[str, Tuple[str, str]] = {
         "author_name": ("an", "user.name"),
         "author_email": ("ae", "user.email"),
     }
