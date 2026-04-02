@@ -5,7 +5,7 @@ All **notable changes** to this project will be documented in this file.
 
 Full changelog available at `GitHub releases <https://github.com/commit-check/commit-check/releases>`_.
 
-v2.5.0 (Unreleased)
+v2.5.0 (2026-04-03)
 -------------------
 
 New Features
