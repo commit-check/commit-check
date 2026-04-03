@@ -1,5 +1,3 @@
-:status: new
-
 Configuration
 =============
 
@@ -168,7 +166,7 @@ The primary use case for CLI arguments is configuring commit-check in ``.pre-com
 
     repos:
       - repo: https://github.com/commit-check/commit-check
-        rev: v2.3.0
+        rev: v2.5.0
         hooks:
           - id: check-message
             args:
