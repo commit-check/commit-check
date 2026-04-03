@@ -442,14 +442,6 @@
     
   </span>
   
-    
-  
-  
-    <span class="md-status md-status--new" title="Recently added">
-    </span>
-  
-
-  
 
       </a>
     </li>
@@ -472,14 +464,6 @@
     <span>Configuration</span>
     
   </span>
-  
-    
-  
-  
-    <span class="md-status md-status--new" title="Recently added">
-    </span>
-  
-
   
 
       </a>
@@ -526,14 +510,6 @@
     <span>Migration Guide</span>
     
   </span>
-  
-    
-  
-  
-    <span class="md-status md-status--new" title="Recently added">
-    </span>
-  
-
   
 
       </a>
@@ -638,16 +614,6 @@
     
     <span class="md-ellipsis">
       <span>Overview</span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-s-new-in-v2-0-0" class="md-nav__link">
-    
-    <span class="md-ellipsis">
-      <span>What’s New in v2.<wbr>0.<wbr>0</span>
     </span>
   </a>
   
@@ -889,18 +855,6 @@ and Bitbucket’s paid <a class="reference external" href="https://marketplace.a
 </tr>
 </tbody>
 </table>
-<h2 id="what-s-new-in-v2-0-0">What’s New in v2.0.0<a class="headerlink" href="#what-s-new-in-v2-0-0" title="Link to this heading">¶</a></h2>
-<p>Version 2.0.0 is a major release featuring a new configuration format, a modernized architecture, and an improved user experience.</p>
-<p><strong>✨ Highlights</strong></p>
-<ul class="simple">
-<li><p><strong>TOML Configuration</strong> — Replaces <code class="docutils literal notranslate"><span class="pre">.commit-check.yml</span></code> with <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> for clearer, more consistent syntax.</p></li>
-<li><p><strong>Simplified CLI &amp; Hooks</strong> — Legacy pre-commit hooks and options removed to deliver a cleaner, more streamlined interface.</p></li>
-<li><p><strong>New Validation Engine</strong> — Fully redesigned for greater flexibility, performance, and maintainability.</p></li>
-<li><p><strong>Co-author ignore support</strong> — Bypass checks when a commit is co-authored by a bot or trusted identity in <code class="docutils literal notranslate"><span class="pre">ignore_authors</span></code>.</p></li>
-<li><p><strong>Organization-level configuration</strong> — Use <code class="docutils literal notranslate"><span class="pre">inherit_from</span></code> to share a base config across all repositories in your org.</p></li>
-<li><p><strong>Git config author validation</strong> — <code class="docutils literal notranslate"><span class="pre">--author-name</span></code> and <code class="docutils literal notranslate"><span class="pre">--author-email</span></code> now validate the configured identity for the next commit.</p></li>
-</ul>
-<p>For the full list of updates and improvements, visit the <a class="reference external" href="https://commit-check.github.io/commit-check/what-is-new.html">What’s New</a> page.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h2>
 <p>To install Commit Check, you can use pip:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>commit-check
@@ -921,7 +875,7 @@ commit-check<span class="w"> </span>--message<span class="w"> </span>--branch
 <p><strong>2. Add to your pre-commit hooks</strong> (<code class="docutils literal notranslate"><span class="pre">.pre-commit-config.yaml</span></code>):</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">repos</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/commit-check/commit-check</span>
-<span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v2.3.0</span>
+<span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v2.5.0</span>
 <span class="w">    </span><span class="nt">hooks</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-message</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-branch</span>
@@ -994,7 +948,7 @@ commit-check<span class="w"> </span>--message
 <span class="c1"># In pre-commit hooks (.pre-commit-config.yaml)</span>
 repos:
 <span class="w">  </span>-<span class="w"> </span>repo:<span class="w"> </span>https://github.com/commit-check/commit-check
-<span class="w">    </span>rev:<span class="w"> </span>v2.3.0
+<span class="w">    </span>rev:<span class="w"> </span>v2.5.0
 <span class="w">    </span>hooks:
 <span class="w">      </span>-<span class="w"> </span>id:<span class="w"> </span>check-message
 <span class="w">        </span>args:
