@@ -102,22 +102,6 @@ and Bitbucket's paid `Yet Another Commit Checker <https://marketplace.atlassian.
      - ❌
      - ❌
 
-What's New in v2.0.0
---------------------
-
-Version 2.0.0 is a major release featuring a new configuration format, a modernized architecture, and an improved user experience.
-
-**✨ Highlights**
-
-* **TOML Configuration** — Replaces ``.commit-check.yml`` with ``cchk.toml`` or ``commit-check.toml`` for clearer, more consistent syntax.
-* **Simplified CLI & Hooks** — Legacy pre-commit hooks and options removed to deliver a cleaner, more streamlined interface.
-* **New Validation Engine** — Fully redesigned for greater flexibility, performance, and maintainability.
-* **Co-author ignore support** — Bypass checks when a commit is co-authored by a bot or trusted identity in ``ignore_authors``.
-* **Organization-level configuration** — Use ``inherit_from`` to share a base config across all repositories in your org.
-* **Git config author validation** — ``--author-name`` and ``--author-email`` now validate the configured identity for the next commit.
-
-For the full list of updates and improvements, visit the `What's New <https://commit-check.github.io/commit-check/what-is-new.html>`_ page.
-
 Installation
 ------------
 
@@ -153,7 +137,7 @@ Quick Start
 
     repos:
       - repo: https://github.com/commit-check/commit-check
-        rev: v2.3.0
+        rev: v2.5.0
         hooks:
           - id: check-message
           - id: check-branch
@@ -247,7 +231,7 @@ For one-off checks or CI/CD pipelines, you can configure via CLI arguments or en
     # In pre-commit hooks (.pre-commit-config.yaml)
     repos:
       - repo: https://github.com/commit-check/commit-check
-        rev: v2.3.0
+        rev: v2.5.0
         hooks:
           - id: check-message
             args:
