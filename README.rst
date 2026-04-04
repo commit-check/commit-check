@@ -66,9 +66,9 @@ reflects a DIY approach rather than built-in product features.
      - ✅
      - ❌
      - DIY
-   * - Signoff / DCO check
+   * - Signed-off-by trailer enforcement
      - ✅
-     - Partial
+     - ✅
      - DIY
    * - Co-author ignore list
      - ✅
@@ -76,7 +76,7 @@ reflects a DIY approach rather than built-in product features.
      - DIY
    * - Organization-level shared config
      - ✅
-     - Partial
+     - ✅
      - DIY
    * - Zero-config defaults
      - ✅
@@ -99,9 +99,10 @@ reflects a DIY approach rather than built-in product features.
      - Partial
      - DIY
 
-``Partial`` means the capability exists but is narrower or requires extra
-wrappers/config. ``DIY`` means you can implement it with custom Git hooks or
-``pre-commit`` scripts, but it is not provided as a turnkey policy layer.
+For ``commitlint``, organization-level shared config is typically delivered via
+shareable config packages or local files. ``DIY`` means you can implement a
+capability with custom Git hooks or ``pre-commit`` scripts, but it is not
+provided as a turnkey policy layer.
 
 Installation
 ------------
