@@ -1,5 +1,6 @@
 """Clean validation engine following SOLID principles."""
 
+import difflib
 from typing import List, Optional, Dict, Type
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -8,6 +9,7 @@ from dataclasses import field
 
 from commit_check.rule_builder import ValidationRule
 from commit_check.util import (
+    _print_failure,
     get_commit_info,
     get_git_config_value,
     get_branch_name,
@@ -114,8 +116,6 @@ class BaseValidator(ABC):
 
     def _print_failure(self, actual_value: str, regex_or_constraint: str = "") -> None:
         """Print standardized failure message."""
-        from commit_check.util import _print_failure
-
         rule_dict = self.rule.to_dict()
         constraint = regex_or_constraint or rule_dict.get("regex", "")
         _print_failure(rule_dict, constraint, actual_value)
@@ -348,8 +348,6 @@ class BranchValidator(BaseValidator):
 
     def _get_close_match_suggestion(self, branch_name: str) -> Optional[str]:
         """Return a typo-correction suggestion when the branch type prefix is a close match."""
-        import difflib
-
         if "/" not in branch_name:
             return None
 
@@ -363,13 +361,10 @@ class BranchValidator(BaseValidator):
 
     def _print_branch_failure(self, branch_name: str) -> None:
         """Print branch validation failure, using a typo-correction suggestion when available."""
-        from commit_check.util import _print_failure
-
         rule_dict = self.rule.to_dict()
         close_match_suggest = self._get_close_match_suggestion(branch_name)
         if close_match_suggest:
-            rule_dict = dict(rule_dict)
-            rule_dict["suggest"] = close_match_suggest
+            rule_dict = {**rule_dict, "suggest": close_match_suggest}
         _print_failure(rule_dict, rule_dict.get("regex", ""), branch_name)
 
 
