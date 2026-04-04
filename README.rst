@@ -21,10 +21,6 @@ Commit Check
     :target: https://github.com/commit-check/commit-check
     :alt: commit-check
 
-.. |slsa-badge| image:: https://slsa.dev/images/gh-badge-level3.svg
-    :target: https://slsa.dev
-    :alt: SLSA
-
 .. |pypi-downloads| image:: https://img.shields.io/pypi/dm/commit-check?color=%232c9ccd
     :target: https://pypi.org/project/commit-check/
     :alt: PyPI Downloads
@@ -33,7 +29,7 @@ Commit Check
     :target: https://pypi.org/project/commit-check/
     :alt: Python Versions
 
-|ci-badge| |sonar-badge| |pypi-version| |pypi-downloads| |python-versions| |commit-check-badge| |codecov-badge| |slsa-badge|
+|ci-badge| |sonar-badge| |pypi-version| |pypi-downloads| |python-versions| |commit-check-badge| |codecov-badge|
 
 Overview
 --------
@@ -45,38 +41,43 @@ and Bitbucket's paid `Yet Another Commit Checker <https://marketplace.atlassian.
 
 **Why Commit Check?**
 
+The table below compares common approaches to commit policy enforcement.
+``commitlint`` is a specialized commit-message linter. Custom Git hooks and
+the ``pre-commit`` framework are integration mechanisms, so the last column
+reflects a DIY approach rather than built-in product features.
+
 .. list-table::
    :header-rows: 1
-   :widths: 40 20 20 20
+   :widths: 36 18 18 28
 
    * - Feature
      - Commit Check ✅
      - commitlint
-     - pre-commit hooks
+     - Custom hooks
    * - Conventional Commits enforcement
      - ✅
      - ✅
-     - ✅
+     - DIY
    * - Branch naming validation
      - ✅
      - ❌
-     - Partial
+     - DIY
    * - Author name / email validation
      - ✅
      - ❌
-     - ❌
+     - DIY
    * - Signoff / DCO check
      - ✅
-     - ❌
-     - ❌
+     - Partial
+     - DIY
    * - Co-author ignore list
      - ✅
      - ❌
-     - ❌
-   * - Organization-level config inheritance
+     - DIY
+   * - Organization-level shared config
      - ✅
-     - ❌
-     - ❌
+     - Partial
+     - DIY
    * - Zero-config defaults
      - ✅
      - ❌
@@ -84,23 +85,23 @@ and Bitbucket's paid `Yet Another Commit Checker <https://marketplace.atlassian.
    * - Works without Node.js
      - ✅
      - ❌
-     - ✅
-   * - TOML configuration
+     - Depends
+   * - Native TOML configuration
      - ✅
      - ❌
-     - ✅
-   * - pre-commit framework integration
-     - ✅
-     - ✅
-     - ✅
-   * - CI/CD environment variables
+     - Depends
+   * - Git hook / pre-commit integration
      - ✅
      - Partial
-     - ❌
-   * - SLSA Level 3 supply chain security
      - ✅
-     - ❌
-     - ❌
+   * - CI/CD-friendly configuration
+     - ✅
+     - Partial
+     - DIY
+
+``Partial`` means the capability exists but is narrower or requires extra
+wrappers/config. ``DIY`` means you can implement it with custom Git hooks or
+``pre-commit`` scripts, but it is not provided as a turnkey policy layer.
 
 Installation
 ------------
