@@ -772,56 +772,60 @@
 
 
 <h1 id="commit-check">Commit Check<a class="headerlink" href="#commit-check" title="Link to this heading">¶</a></h1>
-<p><a class="reference external" href="https://github.com/commit-check/commit-check/actions/workflows/main.yml"><img alt="CI" src="https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg" /></a> <a class="reference external" href="https://sonarcloud.io/summary/new_code?id=commit-check_commit-check"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&amp;metric=alert_status" /></a> <a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="PyPI" src="https://img.shields.io/pypi/v/commit-check?logo=python&amp;logoColor=white&amp;color=%232c9ccd" /></a> <a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="PyPI Downloads" src="https://img.shields.io/pypi/dm/commit-check?color=%232c9ccd" /></a> <a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/commit-check?logo=python&amp;logoColor=white" /></a> <a class="reference external" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white&amp;color=%232c9ccd" /></a> <a class="reference external" href="https://codecov.io/gh/commit-check/commit-check"><img alt="CodeCov" src="https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT" /></a> <a class="reference external" href="https://slsa.dev"><img alt="SLSA" src="https://slsa.dev/images/gh-badge-level3.svg" /></a></p>
+<p><a class="reference external" href="https://github.com/commit-check/commit-check/actions/workflows/main.yml"><img alt="CI" src="https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg" /></a> <a class="reference external" href="https://sonarcloud.io/summary/new_code?id=commit-check_commit-check"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&amp;metric=alert_status" /></a> <a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="PyPI" src="https://img.shields.io/pypi/v/commit-check?logo=python&amp;logoColor=white&amp;color=%232c9ccd" /></a> <a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="PyPI Downloads" src="https://img.shields.io/pypi/dm/commit-check?color=%232c9ccd" /></a> <a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/commit-check?logo=python&amp;logoColor=white" /></a> <a class="reference external" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white&amp;color=%232c9ccd" /></a> <a class="reference external" href="https://codecov.io/gh/commit-check/commit-check"><img alt="CodeCov" src="https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT" /></a></p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
 <p><strong>Commit Check</strong> (aka <strong>cchk</strong>) is the most comprehensive open-source tool for enforcing Git commit standards — including commit messages, branch naming, author identity, commit signoff, and more — helping teams maintain consistency and compliance across every repository.</p>
 <p>As a lightweight, free alternative to GitHub Enterprise <a class="reference external" href="https://docs.github.com/en/enterprise-server&#64;3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions">Metadata restrictions</a>
 and Bitbucket’s paid <a class="reference external" href="https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&amp;hosting=datacenter">Yet Another Commit Checker</a> plugin, Commit Check integrates DevOps principles and Infrastructure as Code (IaC) practices for a modern workflow.</p>
 <p><strong>Why Commit Check?</strong></p>
+<p>The table below compares common approaches to commit policy enforcement.
+<code class="docutils literal notranslate"><span class="pre">commitlint</span></code> is a specialized commit-message linter. Custom Git hooks and
+the <code class="docutils literal notranslate"><span class="pre">pre-commit</span></code> framework are integration mechanisms, so the last column
+reflects a DIY approach rather than built-in product features.</p>
 <table class="docutils data align-default">
 <colgroup>
-<col style="width: 40.0%" />
-<col style="width: 20.0%" />
-<col style="width: 20.0%" />
-<col style="width: 20.0%" />
+<col style="width: 36.0%" />
+<col style="width: 18.0%" />
+<col style="width: 18.0%" />
+<col style="width: 28.0%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Feature</p></th>
 <th class="head"><p>Commit Check ✅</p></th>
 <th class="head"><p>commitlint</p></th>
-<th class="head"><p>pre-commit hooks</p></th>
+<th class="head"><p>Custom hooks</p></th>
 </tr>
 </thead>
 <tbody>
 <tr class="row-even"><td><p>Conventional Commits enforcement</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
-<td><p>✅</p></td>
+<td><p>DIY</p></td>
 </tr>
 <tr class="row-odd"><td><p>Branch naming validation</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
-<td><p>Partial</p></td>
+<td><p>DIY</p></td>
 </tr>
 <tr class="row-even"><td><p>Author name / email validation</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
-<td><p>❌</p></td>
+<td><p>DIY</p></td>
 </tr>
-<tr class="row-odd"><td><p>Signoff / DCO check</p></td>
+<tr class="row-odd"><td><p>Signed-off-by trailer enforcement</p></td>
 <td><p>✅</p></td>
-<td><p>❌</p></td>
-<td><p>❌</p></td>
+<td><p>✅</p></td>
+<td><p>DIY</p></td>
 </tr>
 <tr class="row-even"><td><p>Co-author ignore list</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
-<td><p>❌</p></td>
+<td><p>DIY</p></td>
 </tr>
-<tr class="row-odd"><td><p>Organization-level config inheritance</p></td>
+<tr class="row-odd"><td><p>Organization-level shared config</p></td>
 <td><p>✅</p></td>
-<td><p>❌</p></td>
-<td><p>❌</p></td>
+<td><p>✅</p></td>
+<td><p>DIY</p></td>
 </tr>
 <tr class="row-even"><td><p>Zero-config defaults</p></td>
 <td><p>✅</p></td>
@@ -831,30 +835,29 @@ and Bitbucket’s paid <a class="reference external" href="https://marketplace.a
 <tr class="row-odd"><td><p>Works without Node.js</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
-<td><p>✅</p></td>
+<td><p>Depends</p></td>
 </tr>
-<tr class="row-even"><td><p>TOML configuration</p></td>
+<tr class="row-even"><td><p>Native TOML configuration</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
-<td><p>✅</p></td>
+<td><p>Depends</p></td>
 </tr>
-<tr class="row-odd"><td><p>pre-commit framework integration</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-</tr>
-<tr class="row-even"><td><p>CI/CD environment variables</p></td>
+<tr class="row-odd"><td><p>Git hook / pre-commit integration</p></td>
 <td><p>✅</p></td>
 <td><p>Partial</p></td>
-<td><p>❌</p></td>
-</tr>
-<tr class="row-odd"><td><p>SLSA Level 3 supply chain security</p></td>
 <td><p>✅</p></td>
-<td><p>❌</p></td>
-<td><p>❌</p></td>
+</tr>
+<tr class="row-even"><td><p>CI/CD-friendly configuration</p></td>
+<td><p>✅</p></td>
+<td><p>Partial</p></td>
+<td><p>DIY</p></td>
 </tr>
 </tbody>
 </table>
+<p>For <code class="docutils literal notranslate"><span class="pre">commitlint</span></code>, organization-level shared config is typically delivered via
+shareable config packages or local files. <code class="docutils literal notranslate"><span class="pre">DIY</span></code> means you can implement a
+capability with custom Git hooks or <code class="docutils literal notranslate"><span class="pre">pre-commit</span></code> scripts, but it is not
+provided as a turnkey policy layer.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h2>
 <p>To install Commit Check, you can use pip:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>commit-check
