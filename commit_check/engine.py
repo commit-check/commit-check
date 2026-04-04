@@ -343,8 +343,34 @@ class BranchValidator(BaseValidator):
         if re.match(self.rule.regex, branch_name):
             return ValidationResult.PASS
 
-        self._print_failure(branch_name)
+        self._print_branch_failure(branch_name)
         return ValidationResult.FAIL
+
+    def _get_close_match_suggestion(self, branch_name: str) -> Optional[str]:
+        """Return a typo-correction suggestion when the branch type prefix is a close match."""
+        import difflib
+
+        if "/" not in branch_name:
+            return None
+
+        prefix, rest = branch_name.split("/", 1)
+        allowed_types = self.rule.allowed or []
+        matches = difflib.get_close_matches(prefix, allowed_types, n=1, cutoff=0.6)
+        if matches:
+            corrected = f"{matches[0]}/{rest}"
+            return f"git branch -m {corrected}"
+        return None
+
+    def _print_branch_failure(self, branch_name: str) -> None:
+        """Print branch validation failure, using a typo-correction suggestion when available."""
+        from commit_check.util import _print_failure
+
+        rule_dict = self.rule.to_dict()
+        close_match_suggest = self._get_close_match_suggestion(branch_name)
+        if close_match_suggest:
+            rule_dict = dict(rule_dict)
+            rule_dict["suggest"] = close_match_suggest
+        _print_failure(rule_dict, rule_dict.get("regex", ""), branch_name)
 
 
 class MergeBaseValidator(BaseValidator):

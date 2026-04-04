@@ -269,6 +269,65 @@ class TestBranchValidator:
         result = validator.validate(context)
         assert result == ValidationResult.PASS
 
+    @pytest.mark.benchmark
+    def test_get_close_match_suggestion_typo(self):
+        """Test that a typo in the branch prefix produces a correction suggestion."""
+        rule = ValidationRule(
+            check="branch",
+            regex=r"^(feature|bugfix|hotfix)/.+",
+            allowed=["feature", "bugfix", "hotfix"],
+        )
+        validator = BranchValidator(rule)
+        suggestion = validator._get_close_match_suggestion("bugifx/update-readme")
+        assert suggestion == "git branch -m bugfix/update-readme"
+
+    @pytest.mark.benchmark
+    def test_get_close_match_suggestion_no_slash(self):
+        """Test that a branch name without a slash returns no suggestion."""
+        rule = ValidationRule(
+            check="branch",
+            regex=r"^(feature|bugfix|hotfix)/.+",
+            allowed=["feature", "bugfix", "hotfix"],
+        )
+        validator = BranchValidator(rule)
+        suggestion = validator._get_close_match_suggestion("invalid-branch")
+        assert suggestion is None
+
+    @pytest.mark.benchmark
+    def test_get_close_match_suggestion_no_close_match(self):
+        """Test that an unrelated prefix returns no suggestion."""
+        rule = ValidationRule(
+            check="branch",
+            regex=r"^(feature|bugfix|hotfix)/.+",
+            allowed=["feature", "bugfix", "hotfix"],
+        )
+        validator = BranchValidator(rule)
+        suggestion = validator._get_close_match_suggestion("xyz/some-branch")
+        assert suggestion is None
+
+    @patch("commit_check.engine.has_commits")
+    @patch("commit_check.engine.get_branch_name")
+    @pytest.mark.benchmark
+    def test_branch_validator_typo_shows_correction(
+        self, mock_get_branch_name, mock_has_commits, capsys
+    ):
+        """Test that a typo branch name produces a correction in the suggest output."""
+        mock_has_commits.return_value = True
+        mock_get_branch_name.return_value = "bugifx/update-readme"
+        rule = ValidationRule(
+            check="branch",
+            regex=r"^(feature|bugfix|hotfix)/.+",
+            suggest="Use <type>/<description>",
+            allowed=["feature", "bugfix", "hotfix"],
+        )
+        validator = BranchValidator(rule)
+        config = {"branch": {"ignore_authors": []}}
+        context = ValidationContext(config=config)
+        result = validator.validate(context)
+        assert result == ValidationResult.FAIL
+        captured = capsys.readouterr()
+        assert "git branch -m bugfix/update-readme" in captured.out
+
 
 class TestAuthorValidator:
     @patch("commit_check.engine.has_commits")
