@@ -62,10 +62,26 @@ class BaseValidator(ABC):
 
         Skip if the current author or any co-author is in the ignore_authors list
         for commits, or if no stdin_text, no commit_file, and no commits exist.
+
+        Checks both the git config identity (user.name / user.email) and the last
+        commit's author so that bots such as pre-commit-ci[bot] are correctly
+        detected even before their commit has been recorded (e.g. at commit-msg
+        hook stage).
         """
         import re
 
         ignore_authors = context.config.get("commit", {}).get("ignore_authors", [])
+
+        # Check git config identity first (covers commit-msg hook stage where the
+        # commit has not yet been created, so get_commit_info returns the previous
+        # commit's author rather than the current committer).
+        git_config_name = get_git_config_value("user.name")
+        if git_config_name and git_config_name in ignore_authors:
+            return True
+        git_config_email = get_git_config_value("user.email")
+        if git_config_email and git_config_email in ignore_authors:
+            return True
+
         current_author = get_commit_info("an")
         if current_author and current_author in ignore_authors:
             return True
@@ -105,8 +121,22 @@ class BaseValidator(ABC):
 
         Skip if the current author is in the ignore_authors list for branches,
         or if no stdin_text and no commits exist.
+
+        Checks both the git config identity (user.name / user.email) and the last
+        commit's author so that bots such as pre-commit-ci[bot] are correctly
+        detected even before their commit has been recorded.
         """
         ignore_authors = context.config.get("branch", {}).get("ignore_authors", [])
+
+        # Check git config identity first (covers cases where the commit has not
+        # yet been created and get_commit_info would return a stale author).
+        git_config_name = get_git_config_value("user.name")
+        if git_config_name and git_config_name in ignore_authors:
+            return True
+        git_config_email = get_git_config_value("user.email")
+        if git_config_email and git_config_email in ignore_authors:
+            return True
+
         current_author = get_commit_info("an")
         if current_author and current_author in ignore_authors:
             return True

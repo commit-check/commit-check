@@ -1102,3 +1102,161 @@ class TestGetGitConfigValue:
         ):
             result = validator.validate(context)
         assert result == ValidationResult.PASS
+
+
+class TestIgnoreAuthorsGitConfig:
+    """Tests that ignore_authors also matches the git config identity.
+
+    When a bot (e.g. pre-commit-ci[bot]) runs hooks at the commit-msg stage,
+    the commit has not been created yet, so get_commit_info("an") returns the
+    PREVIOUS commit's author.  The fix is to also check git config user.name
+    and user.email against ignore_authors.
+    """
+
+    @pytest.mark.benchmark
+    def test_commit_skip_via_git_config_user_name(self):
+        """Commit validation is skipped when git config user.name is in ignore_authors."""
+        rule = ValidationRule(
+            check="message",
+            regex=r"^(feat|fix): .+",
+            error="Bad commit",
+            suggest="Use conventional format",
+        )
+        validator = CommitMessageValidator(rule)
+        config = {"commit": {"ignore_authors": ["pre-commit-ci[bot]"]}}
+        # stdin_text has an invalid message that would otherwise fail
+        context = ValidationContext(
+            stdin_text="not a conventional commit", config=config
+        )
+
+        def git_config_side_effect(key):
+            return "pre-commit-ci[bot]" if key == "user.name" else ""
+
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value",
+                side_effect=git_config_side_effect,
+            ),
+            patch("commit_check.engine.get_commit_info", return_value="other-author"),
+        ):
+            result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_commit_skip_via_git_config_user_email(self):
+        """Commit validation is skipped when git config user.email is in ignore_authors."""
+        rule = ValidationRule(
+            check="message",
+            regex=r"^(feat|fix): .+",
+            error="Bad commit",
+            suggest="Use conventional format",
+        )
+        validator = CommitMessageValidator(rule)
+        config = {"commit": {"ignore_authors": ["bot@example.com"]}}
+        context = ValidationContext(
+            stdin_text="not a conventional commit", config=config
+        )
+
+        def git_config_side_effect(key):
+            return "bot@example.com" if key == "user.email" else "Some Bot"
+
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value",
+                side_effect=git_config_side_effect,
+            ),
+            patch("commit_check.engine.get_commit_info", return_value="other-author"),
+        ):
+            result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_branch_skip_via_git_config_user_name(self):
+        """Branch validation is skipped when git config user.name is in ignore_authors."""
+        rule = ValidationRule(
+            check="branch",
+            regex=r"^(feature|bugfix)/.+",
+            error="Bad branch",
+            suggest="Use conventional branch",
+        )
+        validator = BranchValidator(rule)
+        config = {"branch": {"ignore_authors": ["pre-commit-ci[bot]"]}}
+        context = ValidationContext(config=config)
+
+        def git_config_side_effect(key):
+            return "pre-commit-ci[bot]" if key == "user.name" else ""
+
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value",
+                side_effect=git_config_side_effect,
+            ),
+            patch("commit_check.engine.get_commit_info", return_value="other-author"),
+            patch(
+                "commit_check.engine.get_branch_name",
+                return_value="pre-commit-ci-update-config",
+            ),
+            patch("commit_check.engine.has_commits", return_value=True),
+        ):
+            result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_branch_skip_via_git_config_user_email(self):
+        """Branch validation is skipped when git config user.email is in ignore_authors."""
+        rule = ValidationRule(
+            check="branch",
+            regex=r"^(feature|bugfix)/.+",
+            error="Bad branch",
+            suggest="Use conventional branch",
+        )
+        validator = BranchValidator(rule)
+        config = {"branch": {"ignore_authors": ["bot@example.com"]}}
+        context = ValidationContext(config=config)
+
+        def git_config_side_effect(key):
+            return "bot@example.com" if key == "user.email" else "Some Bot"
+
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value",
+                side_effect=git_config_side_effect,
+            ),
+            patch("commit_check.engine.get_commit_info", return_value="other-author"),
+            patch(
+                "commit_check.engine.get_branch_name",
+                return_value="pre-commit-ci-update-config",
+            ),
+            patch("commit_check.engine.has_commits", return_value=True),
+        ):
+            result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_commit_not_skipped_when_git_config_not_in_ignore_list(self):
+        """Commit validation is NOT skipped when git config user is not in ignore_authors."""
+        rule = ValidationRule(
+            check="message",
+            regex=r"^(feat|fix): .+",
+            error="Bad commit",
+            suggest="Use conventional format",
+        )
+        validator = CommitMessageValidator(rule)
+        config = {"commit": {"ignore_authors": ["pre-commit-ci[bot]"]}}
+        context = ValidationContext(
+            stdin_text="not a conventional commit", config=config
+        )
+
+        def git_config_side_effect(key):
+            return "regular-developer" if key == "user.name" else "dev@example.com"
+
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value",
+                side_effect=git_config_side_effect,
+            ),
+            patch("commit_check.engine.get_commit_info", return_value="other-author"),
+            patch("commit_check.util._print_failure"),
+        ):
+            result = validator.validate(context)
+        assert result == ValidationResult.FAIL
