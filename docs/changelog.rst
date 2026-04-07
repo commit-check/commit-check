@@ -5,6 +5,21 @@ All **notable changes** to this project will be documented in this file.
 
 Full changelog available at `GitHub releases <https://github.com/commit-check/commit-check/releases>`_.
 
+v2.5.0 (2026-04-03)
+-------------------
+
+New Features
+~~~~~~~~~~~~
+
+* **Co-author bypass in ``ignore_authors``** — ``_should_skip_commit_validation()`` now parses ``Co-authored-by:`` trailers in the commit message body. If any co-author name matches ``ignore_authors``, all commit checks are skipped. Useful for AI bots that co-author commits (e.g., ``coderabbitai[bot]``).
+* **Organization-level config inheritance via ``inherit_from``** — New top-level TOML key that loads a parent config from a GitHub shorthand (``github:owner/repo:path``), a local file path, or an HTTPS URL, then deep-merges it with local settings. HTTP (non-TLS) URLs are rejected to prevent MITM attacks.
+* **Git config author validation** — ``AuthorValidator`` now checks ``git config user.name`` / ``user.email`` first (the identity used for the *next* commit), falling back to ``git log`` if unset. Previously, a misconfigured identity would pass if the last commit had a valid author.
+
+Bug Fixes
+~~~~~~~~~
+
+* Fixed incorrect mock target in ``test_main_with_message_empty_string_no_stdin_with_git``: was patching ``commit_check.util.get_commit_info`` (ineffective) instead of ``commit_check.engine.get_commit_info``.
+
 v2.0.0 (2025-10-01)
 -------------------
 

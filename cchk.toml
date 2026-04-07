@@ -13,7 +13,7 @@ allow_fixup_commits = true
 allow_wip_commits = false
 require_body = false
 require_signed_off_by = false
-ignore_authors = ["dependabot[bot]", "copilot[bot]", "pre-commit-ci[bot]"]
+ignore_authors = ["dependabot[bot]", "copilot[bot]", "pre-commit-ci[bot]", "coderabbitai[bot]"]
 
 [branch]
 # https://conventional-branch.github.io/

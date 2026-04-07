@@ -1,5 +1,3 @@
-:status: new
-
 Configuration
 =============
 
@@ -48,6 +46,53 @@ commit-check searches for configuration files in the following order (first foun
 
   Placing configuration files in the ``.github`` folder helps keep your repository root clean and follows GitHub conventions used by tools like Dependabot and Renovate.
 
+Organization-Level Configuration (inherit_from)
+-------------------------------------------------
+
+For organizations that want to share a common base configuration across many repositories, commit-check supports an ``inherit_from`` directive at the top level of your TOML config file.
+
+**How it works:**
+
+1. The ``inherit_from`` value can be a ``github:`` shorthand, a local file path, or an HTTPS URL.
+2. The parent (inherited) configuration is loaded first.
+3. Local settings in the current config file **override** the parent values.
+4. The ``inherit_from`` key itself is not passed to the validation engine.
+
+**Example — inherit from a GitHub repository (recommended):**
+
+.. code-block:: toml
+
+    # .github/cchk.toml
+    inherit_from = "github:my-org/.github:cchk.toml"
+
+    [commit]
+    subject_max_length = 72  # Overrides parent value
+
+**GitHub shorthand format:**
+
+* ``github:owner/repo:path/to/cchk.toml`` — uses ``HEAD`` (default branch)
+* ``github:owner/repo@main:path/to/cchk.toml`` — pins to the ``main`` branch
+
+**Example — inherit from a local file:**
+
+.. code-block:: toml
+
+    # repo/.github/cchk.toml
+    inherit_from = "../../shared/org-cchk.toml"
+
+    [commit]
+    allow_wip_commits = true  # Override for this project only
+
+**Example — inherit from an HTTPS URL:**
+
+.. code-block:: toml
+
+    # .github/cchk.toml
+    inherit_from = "https://example.com/shared/cchk.toml"
+
+.. note::
+  If the ``inherit_from`` target is unreachable or the format is unrecognized, commit-check silently ignores the inheritance and uses only the local configuration. HTTP (non-TLS) URLs are rejected for security.
+
 Example Configuration
 ---------------------
 
@@ -68,7 +113,7 @@ Example Configuration
     allow_fixup_commits = true
     allow_wip_commits = false
     require_body = false
-    # ignore_authors = []      # Optional - no authors ignored by default
+    # ignore_authors = []      # Optional - bypass checks for these commit/co-authors
     require_signed_off_by = false
     # required_signoff_name = "Your Name"      # Optional
     # required_signoff_email = "your.email@example.com"  # Optional
@@ -121,7 +166,7 @@ The primary use case for CLI arguments is configuring commit-check in ``.pre-com
 
     repos:
       - repo: https://github.com/commit-check/commit-check
-        rev: v2.3.0
+        rev: v2.5.0
         hooks:
           - id: check-message
             args:
@@ -323,7 +368,7 @@ Options Table Description
      - ignore_authors
      - list[str]
      - [] (none ignored)
-     - List of authors to ignore (i.e., always allow).
+     - List of commit authors **or co-authors** (``Co-authored-by:`` lines) to bypass all commit checks. Useful for bots (e.g., ``"dependabot[bot]"``, ``"coderabbitai[bot]"``).
    * - commit
      - require_signed_off_by
      - bool

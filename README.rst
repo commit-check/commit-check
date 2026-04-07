@@ -21,32 +21,88 @@ Commit Check
     :target: https://github.com/commit-check/commit-check
     :alt: commit-check
 
-.. |slsa-badge| image:: https://slsa.dev/images/gh-badge-level3.svg
-    :target: https://slsa.dev
-    :alt: SLSA
+.. |pypi-downloads| image:: https://img.shields.io/pypi/dm/commit-check?color=%232c9ccd
+    :target: https://pypi.org/project/commit-check/
+    :alt: PyPI Downloads
 
-|ci-badge| |sonar-badge| |pypi-version| |commit-check-badge| |codecov-badge| |slsa-badge|
+.. |python-versions| image:: https://img.shields.io/pypi/pyversions/commit-check?logo=python&logoColor=white
+    :target: https://pypi.org/project/commit-check/
+    :alt: Python Versions
+
+|ci-badge| |sonar-badge| |pypi-version| |pypi-downloads| |python-versions| |commit-check-badge| |codecov-badge|
 
 Overview
 --------
 
-**Commit Check** (aka **cchk**) is an open-source tool that enforces commit metadata standards — including commit messages, branch naming, committer name/email, commit signoff, and more — helping teams maintain consistency and compliance.
+**Commit Check** (aka **cchk**) is the most comprehensive open-source tool for enforcing Git commit standards — including commit messages, branch naming, author identity, commit signoff, and more — helping teams maintain consistency and compliance across every repository.
 
-As a lightweight alternative to GitHub Enterprise `Metadata restrictions <https://docs.github.com/en/enterprise-server@3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions>`_
-and Bitbucket's paid plugin `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_, Commit Check integrates DevOps principles and Infrastructure as Code (IaC) practices for a modern workflow.
+As a lightweight, free alternative to GitHub Enterprise `Metadata restrictions <https://docs.github.com/en/enterprise-server@3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions>`_
+and Bitbucket's paid `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_ plugin, Commit Check integrates DevOps principles and Infrastructure as Code (IaC) practices for a modern workflow.
 
-What’s New in v2.0.0
---------------------
+**Why Commit Check?**
 
-Version 2.0.0 is a major release featuring a new configuration format, a modernized architecture, and an improved user experience.
+The table below compares common approaches to commit policy enforcement.
+``commitlint`` is a specialized commit-message linter. Custom Git hooks and
+the ``pre-commit`` framework are integration mechanisms, so the last column
+reflects a DIY approach rather than built-in product features.
 
-**✨ Highlights**
+.. list-table::
+   :header-rows: 1
+   :widths: 36 18 18 28
 
-* **TOML Configuration** — Replaces ``.commit-check.yml`` with ``cchk.toml`` or ``commit-check.toml`` for clearer, more consistent syntax.
-* **Simplified CLI & Hooks** — Legacy pre-commit hooks and options removed to deliver a cleaner, more streamlined interface.
-* **New Validation Engine** — Fully redesigned for greater flexibility, performance, and maintainability.
+   * - Feature
+     - Commit Check ✅
+     - commitlint
+     - Custom hooks
+   * - Conventional Commits enforcement
+     - ✅
+     - ✅
+     - DIY
+   * - Branch naming validation
+     - ✅
+     - ❌
+     - DIY
+   * - Author name / email validation
+     - ✅
+     - ❌
+     - DIY
+   * - Signed-off-by trailer enforcement
+     - ✅
+     - ✅
+     - DIY
+   * - Co-author ignore list
+     - ✅
+     - ❌
+     - DIY
+   * - Organization-level shared config
+     - ✅
+     - ✅
+     - DIY
+   * - Zero-config defaults
+     - ✅
+     - ❌
+     - ❌
+   * - Works without Node.js
+     - ✅
+     - ❌
+     - Depends
+   * - Native TOML configuration
+     - ✅
+     - ❌
+     - Depends
+   * - Git hook / pre-commit integration
+     - ✅
+     - Partial
+     - ✅
+   * - CI/CD-friendly configuration
+     - ✅
+     - Partial
+     - DIY
 
-For the full list of updates and improvements, visit the `What's New <https://commit-check.github.io/commit-check/what-is-new.html>`_ page.
+For ``commitlint``, organization-level shared config is typically delivered via
+shareable config packages or local files. ``DIY`` means you can implement a
+capability with custom Git hooks or ``pre-commit`` scripts, but it is not
+provided as a turnkey policy layer.
 
 Installation
 ------------
@@ -65,6 +121,34 @@ Or install directly from the GitHub repository:
 
 Then, run ``commit-check --help`` or ``cchk --help`` (alias for ``commit-check``) from the command line.
 For more information, see the `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
+
+
+Quick Start
+-----------
+
+**1. Install and run with zero configuration:**
+
+.. code-block:: bash
+
+    pip install commit-check
+    commit-check --message --branch
+
+**2. Add to your pre-commit hooks** (``.pre-commit-config.yaml``):
+
+.. code-block:: yaml
+
+    repos:
+      - repo: https://github.com/commit-check/commit-check
+        rev: v2.5.0
+        hooks:
+          - id: check-message
+          - id: check-branch
+
+**3. Add a badge to your repository:**
+
+.. code-block:: text
+
+    [![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white&color=%232c9ccd)](https://github.com/commit-check/commit-check)
 
 
 Configuration
@@ -88,6 +172,49 @@ Use Custom Configuration File
 
 To customize the behavior, create a configuration file named ``cchk.toml`` or ``commit-check.toml`` in your repository's root directory or in the ``.github`` folder, e.g., `cchk.toml <https://github.com/commit-check/commit-check/blob/main/cchk.toml>`_ or ``.github/cchk.toml``.
 
+.. code-block:: toml
+
+    [commit]
+    # https://www.conventionalcommits.org
+    conventional_commits = true
+    subject_imperative = true
+    subject_max_length = 80
+    allow_commit_types = ["feat", "fix", "docs", "style", "refactor", "test", "chore", "ci"]
+    allow_merge_commits = true
+    allow_wip_commits = false
+    require_signed_off_by = false
+    # Bypass checks for bot/automation authors and co-authors:
+    ignore_authors = ["dependabot[bot]", "renovate[bot]", "copilot[bot]"]
+
+    [branch]
+    # https://conventional-branch.github.io/
+    conventional_branch = true
+    allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
+
+Organization-Level Configuration (inherit_from)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Share a base configuration across all repositories in your organization using ``inherit_from``:
+
+.. code-block:: toml
+
+    # .github/cchk.toml — inherits from org-level config, then overrides locally
+    inherit_from = "github:my-org/.github:cchk.toml"
+
+    [commit]
+    subject_max_length = 72  # Local override
+
+The ``inherit_from`` field accepts:
+
+* A **GitHub shorthand** (recommended): ``inherit_from = "github:owner/repo:path/to/cchk.toml"``
+* A **GitHub shorthand with ref**: ``inherit_from = "github:owner/repo@main:path/to/cchk.toml"``
+* A **local file path** (relative or absolute): ``inherit_from = "../shared/cchk.toml"``
+* An **HTTPS URL**: ``inherit_from = "https://example.com/cchk.toml"``
+
+The ``github:`` shorthand fetches from ``raw.githubusercontent.com``. HTTP (non-TLS) URLs are rejected for security.
+
+Local settings always **override** the inherited base configuration.
+
 Use CLI Arguments or Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -106,7 +233,7 @@ For one-off checks or CI/CD pipelines, you can configure via CLI arguments or en
     # In pre-commit hooks (.pre-commit-config.yaml)
     repos:
       - repo: https://github.com/commit-check/commit-check
-        rev: v2.3.0
+        rev: v2.5.0
         hooks:
           - id: check-message
             args:
@@ -122,6 +249,12 @@ For detailed usage instructions including pre-commit hooks, CLI commands, and ST
 
 Examples
 --------
+
+.. image:: https://github.com/commit-check/commit-check/raw/main/docs/demo.gif
+    :alt: commit-check demo
+    :align: center
+
+|
 
 Check Commit Message Failed
 
@@ -141,9 +274,8 @@ Check Commit Message Failed
     Commit rejected.
 
     Type message check failed ==> test commit message check
-    It doesn't match regex: ^(chore|ci|docs|feat|fix|refactor|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)
     The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
-    Suggest: Use <type>(<scope>): <description> with allowed types
+    Suggest: Use <type>(<scope>): <description>, where <type> is one of: feat, fix, docs, style, refactor, test, chore, ci
 
 
 Check Branch Naming Failed
@@ -164,9 +296,8 @@ Check Branch Naming Failed
     Commit rejected.
 
     Type branch check failed ==> test-branch
-    It doesn't match regex: ^(feature|bugfix|hotfix|release|chore|feat|fix)\/.+|(master)|(main)|(HEAD)|(PR-.+)
     The branch should follow Conventional Branch. See https://conventional-branch.github.io/
-    Suggest: Use <type>/<description> with allowed types or ignore_authors in config branch section to bypass
+    Suggest: Use <type>/<description> with allowed types or add branch name to allow_branch_names in config, or use ignore_authors in config branch section to bypass
 
 More examples see `example documentation <https://commit-check.github.io/commit-check/example.html>`_.
 

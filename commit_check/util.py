@@ -36,7 +36,7 @@ def _print_failure(check: dict, regex: str, actual: str) -> None:
     """Print a standardized failure message."""
     if not print_error_header.has_been_called:
         print_error_header()
-    print_error_message(check["check"], regex, check.get("error", ""), actual)
+    print_error_message(check["check"], check.get("error", ""), actual)
     if check.get("suggest"):
         print_suggestion(check.get("suggest"))
 
@@ -106,6 +106,19 @@ def get_commit_info(format_string: str, sha: str = "HEAD") -> str:
     except CalledProcessError:
         output = ""
     return output
+
+
+def get_git_config_value(key: str) -> str:
+    """Get a value from git config.
+    :param key: git config key, e.g., 'user.name' or 'user.email'
+    :returns: The configured value as a `str`, or empty string if not set.
+    """
+    try:
+        commands = ["git", "config", "--get", key]
+        output = cmd_output(commands)
+        return output.strip()
+    except CalledProcessError:
+        return ""
 
 
 def git_merge_base(target_branch: str, current_branch: str) -> int:
@@ -241,10 +254,9 @@ def print_error_header():
     print("                                                                  ")
 
 
-def print_error_message(check_type: str, regex: str, error: str, reason: str):
+def print_error_message(check_type: str, error: str, reason: str):
     """Print error message.
     :param check_type:
-    :param regex:
     :param error:
     :param reason:
 
@@ -255,8 +267,8 @@ def print_error_message(check_type: str, regex: str, error: str, reason: str):
         end="",
     )
     print("")
-    print(f"It doesn't match regex: {regex}")
-    print(error)
+    if error:
+        print(error)
 
 
 def print_suggestion(suggest: Optional[str]) -> None:

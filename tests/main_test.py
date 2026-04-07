@@ -247,7 +247,7 @@ class TestMainFunctionEdgeCases:
         """Test main function with --message (empty), no stdin, git fallback."""
         mocker.patch("sys.stdin.isatty", return_value=True)
         mocker.patch(
-            "commit_check.util.get_commit_info", return_value="feat: Git commit message"
+            "commit_check.engine.get_commit_info", return_value="feat: add feature"
         )
 
         sys.argv = ["commit-check", "--message"]
@@ -559,14 +559,12 @@ class TestPositionalArgumentFeature:
             sys.argv = original_argv
 
     @pytest.mark.benchmark
-    def test_positional_arg_invalid_commit(self):
+    def test_positional_arg_invalid_commit(self, mocker):
         """Test that positional argument correctly rejects invalid commits."""
-        # Save original sys.argv to ensure isolation
-        original_argv = sys.argv.copy()
+        # Mock git author to ensure it's not in any ignore list
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
 
-        # Create temp file with invalid commit message
-        f = tempfile.NamedTemporaryFile(mode="w", delete=False)
-        try:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("invalid commit message without type")
             f.close()  # Explicitly close file before using it
 
