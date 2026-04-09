@@ -248,6 +248,7 @@ IMPERATIVES = {
     "tweak",
     "unify",
     "update",
+    "upgrade",
     "upload",
     "use",
     "validate",
