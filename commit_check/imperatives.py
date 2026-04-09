@@ -65,6 +65,7 @@ IMPERATIVES = {
     "disable",
     "display",
     "download",
+    "downgrade",
     "drop",
     "dump",
     "emit",
