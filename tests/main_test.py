@@ -618,7 +618,7 @@ class TestJsonFormat:
 
         out, _ = capsys.readouterr()
         # Must be valid JSON
-        data = json.loads(out)
+        json.loads(out)
         # No ANSI codes or ASCII art strings in the JSON output
         assert "Commit rejected" not in out
         assert "\033[" not in out

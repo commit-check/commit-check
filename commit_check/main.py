@@ -409,11 +409,7 @@ def main() -> int:
         output_format: str = getattr(args, "output_format", "text")
         if output_format == "json":
             outcomes: list[CheckOutcome] = engine.validate_all_detailed(context)
-            overall = (
-                "fail"
-                if any(o.status == "fail" for o in outcomes)
-                else "pass"
-            )
+            overall = "fail" if any(o.status == "fail" for o in outcomes) else "pass"
             print(
                 json.dumps(
                     {
