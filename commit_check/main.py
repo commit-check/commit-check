@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import sys
 import argparse
-from typing import Optional, List
+from typing import Optional
 
 from commit_check.config_merger import ConfigMerger, parse_bool, parse_list, parse_int
 from commit_check.rule_builder import RuleBuilder
@@ -408,7 +408,7 @@ def main() -> int:
         # Run validation – choose output mode based on --format
         output_format: str = getattr(args, "output_format", "text")
         if output_format == "json":
-            outcomes: List[CheckOutcome] = engine.validate_all_detailed(context)
+            outcomes: list[CheckOutcome] = engine.validate_all_detailed(context)
             overall = (
                 "fail"
                 if any(o.status == "fail" for o in outcomes)

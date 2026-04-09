@@ -68,7 +68,7 @@ class BaseValidator(ABC):
         # human-readable terminal output while still collecting failure details.
         self._suppress_output: bool = False
         # Populated by _print_failure() on every failure, regardless of mode.
-        self._last_failure: Optional[Dict] = None
+        self._last_failure: Optional[Dict[str, str]] = None
 
     @abstractmethod
     def validate(self, context: ValidationContext) -> ValidationResult:

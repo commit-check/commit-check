@@ -35,14 +35,13 @@ Return-value schema (all functions)::
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-from commit_check.config_merger import ConfigMerger, get_default_config
+from commit_check.config_merger import get_default_config
 from commit_check.engine import (
     CheckOutcome,
     ValidationContext,
     ValidationEngine,
-    ValidationResult,
 )
 from commit_check.rule_builder import RuleBuilder
 
@@ -52,7 +51,7 @@ from commit_check.rule_builder import RuleBuilder
 # ---------------------------------------------------------------------------
 
 
-def _build_result(outcomes: List[CheckOutcome]) -> Dict[str, Any]:
+def _build_result(outcomes: list[CheckOutcome]) -> Dict[str, Any]:
     """Convert a list of :class:`~commit_check.engine.CheckOutcome` into the
     public return-value dict."""
     overall = "fail" if any(o.status == "fail" for o in outcomes) else "pass"
@@ -63,7 +62,7 @@ def _build_result(outcomes: List[CheckOutcome]) -> Dict[str, Any]:
 
 
 def _run_checks(
-    check_names: List[str],
+    check_names: list[str],
     context: ValidationContext,
     config: Dict[str, Any],
 ) -> Dict[str, Any]:
@@ -80,9 +79,13 @@ def _merge_config(user_config: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     """Return the effective config: user overrides merged on top of defaults."""
     base = get_default_config()
     if user_config:
+        import copy
         from commit_check.config_merger import deep_merge
 
-        deep_merge(base, user_config)
+        # deep_copy the user config so that deep_merge cannot mutate the
+        # caller's dict (deep_merge operates in-place on `base`, and may
+        # assign nested objects from `override` directly into `base`).
+        deep_merge(base, copy.deepcopy(user_config))
     return base
 
 
@@ -185,7 +188,7 @@ def validate_author(
         'pass'
     """
     cfg = _merge_config(config)
-    checks: List[str] = []
+    checks: list[str] = []
     if name is not None:
         checks.append("author_name")
     if email is not None:
@@ -253,7 +256,7 @@ def validate_all(
         >>> result["status"]
         'pass'
     """
-    all_checks: List[Dict[str, Any]] = []
+    all_checks: list[Dict[str, Any]] = []
 
     if message is not None:
         msg_result = validate_message(message, config=config)
