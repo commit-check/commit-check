@@ -39,89 +39,11 @@ Overview
 As a lightweight, free alternative to GitHub Enterprise `Metadata restrictions <https://docs.github.com/en/enterprise-server@3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions>`_
 and Bitbucket's paid `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_ plugin, Commit Check integrates DevOps principles and Infrastructure as Code (IaC) practices for a modern workflow.
 
-**Why Commit Check?**
+.. image:: https://github.com/commit-check/commit-check/raw/main/docs/demo.gif
+    :alt: commit-check demo
+    :align: center
 
-The table below compares common approaches to commit policy enforcement.
-``commitlint`` is a specialized commit-message linter. Custom Git hooks and
-the ``pre-commit`` framework are integration mechanisms, so the last column
-reflects a DIY approach rather than built-in product features.
-
-.. list-table::
-   :header-rows: 1
-   :widths: 36 18 18 28
-
-   * - Feature
-     - Commit Check ✅
-     - commitlint
-     - Custom hooks
-   * - Conventional Commits enforcement
-     - ✅
-     - ✅
-     - DIY
-   * - Branch naming validation
-     - ✅
-     - ❌
-     - DIY
-   * - Author name / email validation
-     - ✅
-     - ❌
-     - DIY
-   * - Signed-off-by trailer enforcement
-     - ✅
-     - ✅
-     - DIY
-   * - Co-author ignore list
-     - ✅
-     - ❌
-     - DIY
-   * - Organization-level shared config
-     - ✅
-     - ✅
-     - DIY
-   * - Zero-config defaults
-     - ✅
-     - ❌
-     - ❌
-   * - Works without Node.js
-     - ✅
-     - ❌
-     - Depends
-   * - Native TOML configuration
-     - ✅
-     - ❌
-     - Depends
-   * - Git hook / pre-commit integration
-     - ✅
-     - Partial
-     - ✅
-   * - CI/CD-friendly configuration
-     - ✅
-     - Partial
-     - DIY
-
-For ``commitlint``, organization-level shared config is typically delivered via
-shareable config packages or local files. ``DIY`` means you can implement a
-capability with custom Git hooks or ``pre-commit`` scripts, but it is not
-provided as a turnkey policy layer.
-
-Installation
-------------
-
-To install Commit Check, you can use pip:
-
-.. code-block:: bash
-
-    pip install commit-check
-
-Or install directly from the GitHub repository:
-
-.. code-block:: bash
-
-    pip install git+https://github.com/commit-check/commit-check.git@main
-
-Then, run ``commit-check --help`` or ``cchk --help`` (alias for ``commit-check``) from the command line.
-For more information, see the `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
-
+|
 
 Quick Start
 -----------
@@ -149,6 +71,24 @@ Quick Start
 .. code-block:: text
 
     [![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white&color=%232c9ccd)](https://github.com/commit-check/commit-check)
+
+Installation
+------------
+
+To install Commit Check, you can use pip:
+
+.. code-block:: bash
+
+    pip install commit-check
+
+Or install directly from the GitHub repository:
+
+.. code-block:: bash
+
+    pip install git+https://github.com/commit-check/commit-check.git@main
+
+Then, run ``commit-check --help`` or ``cchk --help`` (alias for ``commit-check``) from the command line.
+For more information, see the `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
 
 
 Configuration
@@ -356,19 +296,10 @@ Available API functions:
 * ``validate_author(name=None, email=None, *, config=None)`` — validate author name/email
 * ``validate_all(message, branch, author_name, author_email, *, config=None)`` — run all checks at once
 
-Usage
------
-
 For detailed usage instructions including pre-commit hooks, CLI commands, and STDIN examples, see the `Usage Examples documentation <https://commit-check.github.io/commit-check/example.html>`_.
 
 Examples
 --------
-
-.. image:: https://github.com/commit-check/commit-check/raw/main/docs/demo.gif
-    :alt: commit-check demo
-    :align: center
-
-|
 
 Check Commit Message Failed
 
@@ -437,6 +368,73 @@ reStructuredText
     .. image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white&color=%232c9ccd
         :target: https://github.com/commit-check/commit-check
         :alt: commit-check
+
+
+Why Commit Check?
+-----------------
+
+The table below compares common approaches to commit policy enforcement.
+``commitlint`` is a specialized commit-message linter. Custom Git hooks and
+the ``pre-commit`` framework are integration mechanisms, so the last column
+reflects a DIY approach rather than built-in product features.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 36 18 18 28
+
+   * - Feature
+     - Commit Check ✅
+     - commitlint
+     - Custom hooks
+   * - Conventional Commits enforcement
+     - ✅
+     - ✅
+     - DIY
+   * - Branch naming validation
+     - ✅
+     - ❌
+     - DIY
+   * - Author name / email validation
+     - ✅
+     - ❌
+     - DIY
+   * - Signed-off-by trailer enforcement
+     - ✅
+     - ✅
+     - DIY
+   * - Co-author ignore list
+     - ✅
+     - ❌
+     - DIY
+   * - Organization-level shared config
+     - ✅
+     - ✅
+     - DIY
+   * - Zero-config defaults
+     - ✅
+     - ❌
+     - ❌
+   * - Works without Node.js
+     - ✅
+     - ❌
+     - Depends
+   * - Native TOML configuration
+     - ✅
+     - ❌
+     - Depends
+   * - Git hook / pre-commit integration
+     - ✅
+     - Partial
+     - ✅
+   * - CI/CD-friendly configuration
+     - ✅
+     - Partial
+     - DIY
+
+For ``commitlint``, organization-level shared config is typically delivered via
+shareable config packages or local files. ``DIY`` means you can implement a
+capability with custom Git hooks or ``pre-commit`` scripts, but it is not
+provided as a turnkey policy layer.
 
 
 Versioning

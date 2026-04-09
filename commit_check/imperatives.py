@@ -189,6 +189,7 @@ IMPERATIVES = {
     "remove",
     "rename",
     "render",
+    "reorganize",
     "replace",
     "reply",
     "report",
