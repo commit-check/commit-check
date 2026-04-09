@@ -31,6 +31,11 @@ Commit Check
 
 |ci-badge| |sonar-badge| |pypi-version| |pypi-downloads| |python-versions| |commit-check-badge| |codecov-badge|
 
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+
 Overview
 --------
 
