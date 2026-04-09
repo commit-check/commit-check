@@ -11,4 +11,4 @@ on:
 
 jobs:
   draft-release:
-    uses: commit-check/.github/.github/workflows/release-drafter.yml@main
+    uses: commit-check/.github/.github/workflows/pr-labeler.yml@main
