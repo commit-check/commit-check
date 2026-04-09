@@ -564,3 +564,109 @@ class TestPositionalArgumentFeature:
         result = main()
         # Should fall back to git and pass
         assert result == 0
+
+
+class TestJsonFormat:
+    """Tests for --format json machine-readable output."""
+
+    @pytest.mark.benchmark
+    def test_json_format_valid_message_returns_pass(self, mocker, capsys):
+        """JSON output for a valid commit message has status=pass."""
+        import json
+
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
+
+        sys.argv = [CMD, "-m", "--format", "json"]
+        rc = main()
+
+        out, _ = capsys.readouterr()
+        data = json.loads(out)
+        assert rc == 0
+        assert data["status"] == "pass"
+        assert isinstance(data["checks"], list)
+        assert all("check" in c and "status" in c for c in data["checks"])
+
+    @pytest.mark.benchmark
+    def test_json_format_invalid_message_returns_fail(self, mocker, capsys):
+        """JSON output for an invalid commit message has status=fail."""
+        import json
+
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
+
+        sys.argv = [CMD, "-m", "--format", "json"]
+        rc = main()
+
+        out, _ = capsys.readouterr()
+        data = json.loads(out)
+        assert rc == 1
+        assert data["status"] == "fail"
+        failed = [c for c in data["checks"] if c["status"] == "fail"]
+        assert len(failed) >= 1
+        assert failed[0]["check"] == "message"
+        assert "error" in failed[0] and failed[0]["error"]
+        assert "suggest" in failed[0] and failed[0]["suggest"]
+
+    @pytest.mark.benchmark
+    def test_json_format_no_ascii_art_in_stdout(self, mocker, capsys):
+        """JSON mode must not include ASCII art / colour codes in stdout."""
+        import json
+
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="bad commit\n")
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
+
+        sys.argv = [CMD, "-m", "--format", "json"]
+        main()
+
+        out, _ = capsys.readouterr()
+        # Must be valid JSON
+        data = json.loads(out)
+        # No ANSI codes or ASCII art strings in the JSON output
+        assert "Commit rejected" not in out
+        assert "\033[" not in out
+
+    @pytest.mark.benchmark
+    def test_json_format_from_file(self, capsys):
+        """JSON mode works when reading commit message from a file."""
+        import json
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write("fix: resolve null pointer in auth module")
+            tmp_path = f.name
+
+        try:
+            sys.argv = [CMD, "-m", tmp_path, "--format", "json"]
+            rc = main()
+            out, _ = capsys.readouterr()
+            data = json.loads(out)
+            assert rc == 0
+            assert data["status"] == "pass"
+        finally:
+            os.unlink(tmp_path)
+
+    @pytest.mark.benchmark
+    def test_json_format_exit_code_matches_status(self, mocker, capsys):
+        """Exit code 1 when JSON status is fail, exit code 0 when pass."""
+        import json
+
+        # --- pass case ---
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="chore: update dependencies\n")
+        sys.argv = [CMD, "-m", "--format", "json"]
+        rc_pass = main()
+        out, _ = capsys.readouterr()
+        assert rc_pass == 0
+        assert json.loads(out)["status"] == "pass"
+
+        # --- fail case ---
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="not a conventional commit\n")
+        mocker.patch("commit_check.engine.get_commit_info", return_value="author")
+        sys.argv = [CMD, "-m", "--format", "json"]
+        rc_fail = main()
+        out, _ = capsys.readouterr()
+        assert rc_fail == 1
+        assert json.loads(out)["status"] == "fail"

@@ -242,6 +242,120 @@ For one-off checks or CI/CD pipelines, you can configure via CLI arguments or en
 
 See the `Configuration documentation <https://commit-check.github.io/commit-check/configuration.html>`_ for all available options.
 
+AI-Native Usage
+---------------
+
+Commit Check is designed to be consumed by AI agents, LLM toolchains, and
+automation scripts — not just by humans reading terminal output.
+
+Machine-Readable JSON Output (``--format json``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pass ``--format json`` to any CLI invocation to receive structured JSON instead
+of human-readable ASCII art.  The exit code is unchanged (``0`` = pass, ``1`` = fail),
+so existing CI scripts continue to work:
+
+.. code-block:: bash
+
+    echo "feat: add streaming support" | commit-check -m --format json
+
+.. code-block:: json
+
+    {
+      "status": "pass",
+      "checks": [
+        { "check": "message",           "status": "pass", "value": "", "error": "", "suggest": "" },
+        { "check": "subject_imperative", "status": "pass", "value": "", "error": "", "suggest": "" }
+      ]
+    }
+
+On failure the failing checks carry the full ``error`` and ``suggest`` fields
+an agent needs to self-correct:
+
+.. code-block:: bash
+
+    echo "wip bad commit" | commit-check -m --format json
+
+.. code-block:: json
+
+    {
+      "status": "fail",
+      "checks": [
+        {
+          "check":   "message",
+          "status":  "fail",
+          "value":   "wip bad commit",
+          "error":   "The commit message should follow Conventional Commits. See https://www.conventionalcommits.org",
+          "suggest": "Use <type>(<scope>): <description>, where <type> is one of: feat, fix, docs, ..."
+        }
+      ]
+    }
+
+Python API (no subprocess required)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``commit_check.api`` module exposes a lightweight, import-friendly interface
+so AI agents, tools, and scripts can validate commits **without spawning a
+subprocess**.  All functions return plain dicts that are easy to serialise,
+forward to an LLM, or chain into larger workflows:
+
+.. code-block:: python
+
+    from commit_check.api import validate_message, validate_branch, validate_all
+
+    # --- validate a single commit message ---
+    result = validate_message("feat: add streaming support")
+    print(result["status"])          # "pass"
+
+    # --- validate a branch name ---
+    result = validate_branch("feature/add-streaming")
+    print(result["status"])          # "pass"
+
+    # --- run multiple checks at once ---
+    result = validate_all(
+        message="feat: implement new feature",
+        branch="feature/new-feature",
+        author_name="Ada Lovelace",
+        author_email="ada@example.com",
+    )
+    if result["status"] == "fail":
+        for check in result["checks"]:
+            if check["status"] == "fail":
+                print(f"[{check['check']}] {check['error']}")
+                print(f"  suggestion: {check['suggest']}")
+
+    # --- supply a custom config to restrict allowed types ---
+    result = validate_message(
+        "docs: update readme",
+        config={"commit": {"allow_commit_types": ["feat", "fix"]}},
+    )
+    print(result["status"])          # "fail" — 'docs' not in allowed types
+
+**Return-value schema** (all API functions):
+
+.. code-block:: python
+
+    {
+        "status": "pass" | "fail",
+        "checks": [
+            {
+                "check":   "<rule name>",
+                "status":  "pass" | "fail",
+                "value":   "<actual value that was checked>",
+                "error":   "<human-readable error description>",
+                "suggest": "<how to fix>",
+            },
+            # ... one entry per active rule
+        ]
+    }
+
+Available API functions:
+
+* ``validate_message(message, *, config=None)`` — validate a commit message string
+* ``validate_branch(branch=None, *, config=None)`` — validate a branch name (defaults to current git branch)
+* ``validate_author(name=None, email=None, *, config=None)`` — validate author name/email
+* ``validate_all(message, branch, author_name, author_email, *, config=None)`` — run all checks at once
+
 Usage
 -----
 

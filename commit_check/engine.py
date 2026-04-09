@@ -33,11 +33,42 @@ class ValidationContext:
     config: Dict = field(default_factory=dict)
 
 
+@dataclass
+class CheckOutcome:
+    """Structured result of a single validation check.
+
+    Returned by :meth:`ValidationEngine.validate_all_detailed` so that
+    callers (e.g. ``--format json`` output, the Python API) can inspect
+    individual check results without parsing human-readable terminal output.
+    """
+
+    check: str
+    status: str  # "pass" or "fail"
+    value: str = ""
+    error: str = ""
+    suggest: str = ""
+
+    def to_dict(self) -> Dict:
+        """Serialise to a plain dict (suitable for JSON encoding)."""
+        return {
+            "check": self.check,
+            "status": self.status,
+            "value": self.value,
+            "error": self.error,
+            "suggest": self.suggest,
+        }
+
+
 class BaseValidator(ABC):
     """Abstract base validator."""
 
     def __init__(self, rule: ValidationRule):
         self.rule = rule
+        # Set to True by ValidationEngine.validate_all_detailed() to suppress
+        # human-readable terminal output while still collecting failure details.
+        self._suppress_output: bool = False
+        # Populated by _print_failure() on every failure, regardless of mode.
+        self._last_failure: Optional[Dict] = None
 
     @abstractmethod
     def validate(self, context: ValidationContext) -> ValidationResult:
@@ -113,12 +144,22 @@ class BaseValidator(ABC):
         return context.stdin_text is None and not has_commits()
 
     def _print_failure(self, actual_value: str, regex_or_constraint: str = "") -> None:
-        """Print standardized failure message."""
-        from commit_check.util import _print_failure
-
+        """Record and (unless suppressed) print a standardised failure message."""
         rule_dict = self.rule.to_dict()
         constraint = regex_or_constraint or rule_dict.get("regex", "")
-        _print_failure(rule_dict, constraint, actual_value)
+
+        # Always store structured failure details for programmatic consumers.
+        self._last_failure = {
+            "check": self.rule.check,
+            "value": actual_value,
+            "error": self.rule.error or "",
+            "suggest": self.rule.suggest or "",
+        }
+
+        if not self._suppress_output:
+            from commit_check.util import _print_failure
+
+            _print_failure(rule_dict, constraint, actual_value)
 
 
 class CommitMessageValidator(BaseValidator):
@@ -605,3 +646,45 @@ class ValidationEngine:
             if ValidationResult.FAIL in results
             else ValidationResult.PASS
         )
+
+    def validate_all_detailed(self, context: ValidationContext) -> List[CheckOutcome]:
+        """Run all validations and return structured :class:`CheckOutcome` objects.
+
+        Unlike :meth:`validate_all`, this method:
+
+        * **Suppresses** all human-readable terminal output (ASCII art, colour).
+        * Returns one :class:`CheckOutcome` per rule so callers can inspect or
+          serialise individual check results (e.g. as JSON for AI agents).
+
+        Example::
+
+            engine = ValidationEngine(rules)
+            outcomes = engine.validate_all_detailed(context)
+            failed = [o for o in outcomes if o.status == "fail"]
+        """
+        outcomes: List[CheckOutcome] = []
+
+        for rule in self.rules:
+            validator_class = self.VALIDATOR_MAP.get(rule.check)
+            if not validator_class:
+                continue
+
+            validator: BaseValidator = validator_class(rule)
+            validator._suppress_output = True  # collect, don't print
+            result = validator.validate(context)
+
+            if result == ValidationResult.FAIL:
+                failure = validator._last_failure or {}
+                outcomes.append(
+                    CheckOutcome(
+                        check=rule.check,
+                        status="fail",
+                        value=failure.get("value", ""),
+                        error=failure.get("error", ""),
+                        suggest=failure.get("suggest", ""),
+                    )
+                )
+            else:
+                outcomes.append(CheckOutcome(check=rule.check, status="pass"))
+
+        return outcomes

@@ -1,13 +1,19 @@
 """Modern commit-check CLI with clean architecture and TOML support."""
 
 from __future__ import annotations
+import json
 import sys
 import argparse
-from typing import Optional
+from typing import Optional, List
 
 from commit_check.config_merger import ConfigMerger, parse_bool, parse_list, parse_int
 from commit_check.rule_builder import RuleBuilder
-from commit_check.engine import ValidationEngine, ValidationContext, ValidationResult
+from commit_check.engine import (
+    ValidationEngine,
+    ValidationContext,
+    ValidationResult,
+    CheckOutcome,
+)
 from . import __version__
 
 
@@ -96,6 +102,16 @@ def _get_parser() -> argparse.ArgumentParser:
         help="perform a dry run without failing (always returns 0)",
         action="store_true",
         required=False,
+    )
+
+    check_group.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        dest="output_format",
+        metavar="FORMAT",
+        help="output format: 'text' (default) for human-readable output, "
+        "'json' for machine-readable JSON (useful for AI agents and tooling)",
     )
 
     # Commit message configuration options
@@ -389,7 +405,26 @@ def main() -> int:
             config=config_data,
         )
 
-        # Run validation
+        # Run validation – choose output mode based on --format
+        output_format: str = getattr(args, "output_format", "text")
+        if output_format == "json":
+            outcomes: List[CheckOutcome] = engine.validate_all_detailed(context)
+            overall = (
+                "fail"
+                if any(o.status == "fail" for o in outcomes)
+                else "pass"
+            )
+            print(
+                json.dumps(
+                    {
+                        "status": overall,
+                        "checks": [o.to_dict() for o in outcomes],
+                    },
+                    indent=2,
+                )
+            )
+            return 0 if overall == "pass" else 1
+
         result = engine.validate_all(context)
 
         # Return appropriate exit code
