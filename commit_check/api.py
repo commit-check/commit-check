@@ -35,6 +35,7 @@ Return-value schema (all functions)::
 
 from __future__ import annotations
 
+import copy
 from typing import Any, Dict, Optional
 
 from commit_check.config_merger import get_default_config
@@ -79,7 +80,6 @@ def _merge_config(user_config: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     """Return the effective config: user overrides merged on top of defaults."""
     base = get_default_config()
     if user_config:
-        import copy
         from commit_check.config_merger import deep_merge
 
         # deep_copy the user config so that deep_merge cannot mutate the

@@ -1,3 +1,4 @@
+import json
 import sys
 import pytest
 import tempfile
@@ -572,8 +573,6 @@ class TestJsonFormat:
     @pytest.mark.benchmark
     def test_json_format_valid_message_returns_pass(self, mocker, capsys):
         """JSON output for a valid commit message has status=pass."""
-        import json
-
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
 
@@ -590,8 +589,6 @@ class TestJsonFormat:
     @pytest.mark.benchmark
     def test_json_format_invalid_message_returns_fail(self, mocker, capsys):
         """JSON output for an invalid commit message has status=fail."""
-        import json
-
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
@@ -612,8 +609,6 @@ class TestJsonFormat:
     @pytest.mark.benchmark
     def test_json_format_no_ascii_art_in_stdout(self, mocker, capsys):
         """JSON mode must not include ASCII art / colour codes in stdout."""
-        import json
-
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="bad commit\n")
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
@@ -631,8 +626,6 @@ class TestJsonFormat:
     @pytest.mark.benchmark
     def test_json_format_from_file(self, capsys):
         """JSON mode works when reading commit message from a file."""
-        import json
-
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("fix: resolve null pointer in auth module")
             tmp_path = f.name
@@ -650,8 +643,6 @@ class TestJsonFormat:
     @pytest.mark.benchmark
     def test_json_format_exit_code_matches_status(self, mocker, capsys):
         """Exit code 1 when JSON status is fail, exit code 0 when pass."""
-        import json
-
         # --- pass case ---
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="chore: update dependencies\n")
