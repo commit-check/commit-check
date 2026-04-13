@@ -102,7 +102,9 @@ class RuleBuilder:
             allow = self.push_config.get(
                 "allow_force_push", DEFAULT_PUSH_RULES["allow_force_push"]
             )
-            # Only create rule when force push is not allowed
+            # When allow_force_push is True (default), force pushes are permitted
+            # so no blocking rule is needed.  Only build the rule when it is
+            # False, i.e. the user has explicitly opted in to blocking.
             if allow:
                 return None
             return ValidationRule(

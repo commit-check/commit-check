@@ -334,11 +334,12 @@ def main() -> int:
 
     try:
         # Load and merge configuration from all sources: CLI > Env > TOML > Defaults
-        # When --no-force-push is specified, override allow_force_push to False
-        # so the rule is built even if the TOML config defaults to True.
-        if args.no_force_push:
-            args.allow_force_push = False
         config_data = ConfigMerger.from_all_sources(args, args.config)
+
+        # When --no-force-push is explicitly passed, override allow_force_push to
+        # False so the rule is built even if the TOML config defaults to True.
+        if args.no_force_push:
+            config_data.setdefault("push", {})["allow_force_push"] = False
 
         # Build validation rules from config
         rule_builder = RuleBuilder(config_data)

@@ -235,17 +235,18 @@ def validate_push(
     :param push_refs: Push ref information in the format produced by git's
         pre-push hook: ``<local ref> <local sha1> <remote ref> <remote sha1>``,
         one entry per line.  If *None*, the check is skipped (returns pass).
-    :param config: Optional configuration override dict.  Set
-        ``{"push": {"allow_force_push": False}}`` to enable force-push
-        blocking (or use :ref:`cchk.toml`).
+    :param config: Optional configuration override dict.  The push check is
+        always enabled when calling this function; force pushes detected here
+        will always return ``"fail"``.
     :returns: A dict with ``"status"`` (``"pass"``/``"fail"``) and ``"checks"``.
 
     Example::
 
         >>> from commit_check.api import validate_push
-        >>> # Normal fast-forward push (remote SHA is ancestor of local SHA):
-        >>> # validate_push("refs/heads/main abc123 refs/heads/main def456")
-        >>> # Force push scenario requires real git SHAs to demonstrate.
+        >>> zero = "0000000000000000000000000000000000000000"
+        >>> result = validate_push(f"refs/heads/main abc123 refs/heads/main {zero}")
+        >>> result["status"]
+        'pass'
     """
     cfg = _merge_config(config)
     # Enable force push blocking in the config so the rule is built
