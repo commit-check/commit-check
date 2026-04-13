@@ -671,7 +671,9 @@ class TestNoForcePushFlag:
     @pytest.mark.benchmark
     def test_no_force_push_new_branch_passes(self, mocker):
         """Push to a new remote branch (zero SHA) always passes."""
-        push_info = f"refs/heads/feature/new abc123 refs/heads/feature/new {self.ZERO_SHA}"
+        push_info = (
+            f"refs/heads/feature/new abc123 refs/heads/feature/new {self.ZERO_SHA}"
+        )
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value=push_info)
 

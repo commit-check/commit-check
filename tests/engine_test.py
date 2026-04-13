@@ -1148,9 +1148,7 @@ class TestForcePushValidator:
 
         rule = self._make_rule()
         validator = ForcePushValidator(rule)
-        push_info = (
-            "refs/heads/main abc123 refs/heads/main def456"
-        )
+        push_info = "refs/heads/main abc123 refs/heads/main def456"
         context = ValidationContext(stdin_text=push_info)
 
         with patch("commit_check.engine.git_merge_base", return_value=0):
@@ -1165,9 +1163,7 @@ class TestForcePushValidator:
 
         rule = self._make_rule()
         validator = ForcePushValidator(rule)
-        push_info = (
-            "refs/heads/main abc123 refs/heads/main def456"
-        )
+        push_info = "refs/heads/main abc123 refs/heads/main def456"
         context = ValidationContext(stdin_text=push_info)
 
         with patch("commit_check.engine.git_merge_base", return_value=1):
@@ -1183,9 +1179,7 @@ class TestForcePushValidator:
 
         rule = self._make_rule()
         validator = ForcePushValidator(rule)
-        push_info = (
-            "refs/heads/main abc123 refs/heads/main def456"
-        )
+        push_info = "refs/heads/main abc123 refs/heads/main def456"
         context = ValidationContext(stdin_text=push_info)
 
         with patch("commit_check.engine.git_merge_base", return_value=128):

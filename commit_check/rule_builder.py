@@ -2,7 +2,12 @@
 
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
-from commit_check.rules_catalog import COMMIT_RULES, BRANCH_RULES, PUSH_RULES, RuleCatalogEntry
+from commit_check.rules_catalog import (
+    COMMIT_RULES,
+    BRANCH_RULES,
+    PUSH_RULES,
+    RuleCatalogEntry,
+)
 from commit_check import (
     DEFAULT_COMMIT_TYPES,
     DEFAULT_BRANCH_TYPES,
