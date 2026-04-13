@@ -8,10 +8,12 @@ from dataclasses import field
 
 from commit_check.rule_builder import ValidationRule
 from commit_check.util import (
+    fetch_upstream_ref,
     get_commit_info,
     get_git_config_value,
     get_branch_name,
     get_upstream_branch,
+    get_upstream_remote_sha,
     has_commits,
     git_merge_base,
 )
@@ -636,7 +638,15 @@ class ForcePushValidator(BaseValidator):
         if not upstream_ref:
             return ValidationResult.PASS
 
-        if git_merge_base(upstream_ref, "HEAD") == 1:
+        target_ref = get_upstream_remote_sha(upstream_ref) or upstream_ref
+        returncode = git_merge_base(target_ref, "HEAD")
+        if (
+            returncode == 128
+            and target_ref != upstream_ref
+            and fetch_upstream_ref(upstream_ref)
+        ):
+            returncode = git_merge_base(target_ref, "HEAD")
+        if returncode == 1:
             self._print_failure(f"{get_branch_name()} -> {upstream_ref}")
             return ValidationResult.FAIL
 

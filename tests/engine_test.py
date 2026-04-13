@@ -1157,9 +1157,35 @@ class TestForcePushValidator:
         with patch(
             "commit_check.engine.get_upstream_branch", return_value="origin/main"
         ):
-            with patch("commit_check.engine.git_merge_base", return_value=0):
-                result = validator.validate(context)
+            with patch(
+                "commit_check.engine.get_upstream_remote_sha", return_value="abc123"
+            ):
+                with patch("commit_check.engine.git_merge_base", return_value=0):
+                    result = validator.validate(context)
 
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_no_stdin_with_upstream_fallback_uses_tracking_ref_when_remote_sha_missing(
+        self,
+    ):
+        """Standalone mode falls back to the local tracking ref if lookup fails."""
+        from commit_check.engine import ForcePushValidator
+
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        context = ValidationContext(push_upstream_fallback=True)
+
+        with patch(
+            "commit_check.engine.get_upstream_branch", return_value="origin/main"
+        ):
+            with patch("commit_check.engine.get_upstream_remote_sha", return_value=""):
+                with patch(
+                    "commit_check.engine.git_merge_base", return_value=0
+                ) as mock_merge:
+                    result = validator.validate(context)
+
+        mock_merge.assert_called_once_with("origin/main", "HEAD")
         assert result == ValidationResult.PASS
 
     @pytest.mark.benchmark
@@ -1174,11 +1200,46 @@ class TestForcePushValidator:
         with patch(
             "commit_check.engine.get_upstream_branch", return_value="origin/main"
         ):
-            with patch("commit_check.engine.get_branch_name", return_value="main"):
-                with patch("commit_check.engine.git_merge_base", return_value=1):
-                    with patch("commit_check.util._print_failure"):
-                        result = validator.validate(context)
+            with patch(
+                "commit_check.engine.get_upstream_remote_sha", return_value="deadbeef"
+            ):
+                with patch("commit_check.engine.get_branch_name", return_value="main"):
+                    with patch(
+                        "commit_check.engine.git_merge_base", return_value=1
+                    ) as mock_merge:
+                        with patch("commit_check.util._print_failure"):
+                            result = validator.validate(context)
 
+        mock_merge.assert_called_once_with("deadbeef", "HEAD")
+        assert result == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_no_stdin_with_upstream_fallback_fetches_remote_commit_when_needed(self):
+        """Standalone mode fetches the upstream commit if the SHA is not local yet."""
+        from commit_check.engine import ForcePushValidator
+
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        context = ValidationContext(push_upstream_fallback=True)
+
+        with patch(
+            "commit_check.engine.get_upstream_branch", return_value="origin/main"
+        ):
+            with patch(
+                "commit_check.engine.get_upstream_remote_sha", return_value="deadbeef"
+            ):
+                with patch("commit_check.engine.get_branch_name", return_value="main"):
+                    with patch(
+                        "commit_check.engine.git_merge_base", side_effect=[128, 1]
+                    ) as mock_merge:
+                        with patch(
+                            "commit_check.engine.fetch_upstream_ref", return_value=True
+                        ) as mock_fetch:
+                            with patch("commit_check.util._print_failure"):
+                                result = validator.validate(context)
+
+        mock_fetch.assert_called_once_with("origin/main")
+        assert mock_merge.call_count == 2
         assert result == ValidationResult.FAIL
 
     @pytest.mark.benchmark

@@ -78,6 +78,41 @@ def get_upstream_branch() -> str:
     return ""
 
 
+def get_upstream_remote_sha(upstream_ref: str) -> str:
+    """Return the current remote SHA for an upstream ref when available."""
+    parts = upstream_ref.split("/", 1)
+    if len(parts) != 2:
+        return ""
+
+    remote_name, branch_name = parts
+    result = subprocess.run(
+        ["git", "ls-remote", "--exit-code", remote_name, f"refs/heads/{branch_name}"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    if result.returncode != 0 or not result.stdout:
+        return ""
+
+    return result.stdout.split()[0].strip()
+
+
+def fetch_upstream_ref(upstream_ref: str) -> bool:
+    """Fetch an upstream branch so its tip commit is available locally."""
+    parts = upstream_ref.split("/", 1)
+    if len(parts) != 2:
+        return False
+
+    remote_name, branch_name = parts
+    result = subprocess.run(
+        ["git", "fetch", "--quiet", "--no-tags", remote_name, branch_name],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    return result.returncode == 0
+
+
 def has_commits() -> bool:
     """Check if there are any commits in the current branch.
     :returns: `True` if there are commits, `False` otherwise.

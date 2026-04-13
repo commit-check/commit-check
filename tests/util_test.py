@@ -4,8 +4,10 @@ import tempfile
 import os
 from pathlib import Path, PurePath
 from commit_check.util import (
+    fetch_upstream_ref,
     get_branch_name,
     get_upstream_branch,
+    get_upstream_remote_sha,
     has_commits,
     git_merge_base,
     get_commit_info,
@@ -170,6 +172,109 @@ class TestUtil:
             )
 
             assert get_upstream_branch() == ""
+
+    class TestGetUpstreamRemoteSha:
+        @pytest.mark.benchmark
+        def test_get_upstream_remote_sha(self, mocker):
+            mock_run = mocker.patch(
+                "subprocess.run",
+                return_value=type(
+                    "MockResult",
+                    (),
+                    {
+                        "stdout": "abc123\trefs/heads/main\n",
+                        "stderr": "",
+                        "returncode": 0,
+                    },
+                )(),
+            )
+
+            result = get_upstream_remote_sha("origin/main")
+
+            mock_run.assert_called_once_with(
+                ["git", "ls-remote", "--exit-code", "origin", "refs/heads/main"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                encoding="utf-8",
+            )
+            assert result == "abc123"
+
+        @pytest.mark.benchmark
+        def test_get_upstream_remote_sha_with_nested_branch(self, mocker):
+            mocker.patch(
+                "subprocess.run",
+                return_value=type(
+                    "MockResult",
+                    (),
+                    {
+                        "stdout": "def456\trefs/heads/feature/topic\n",
+                        "stderr": "",
+                        "returncode": 0,
+                    },
+                )(),
+            )
+
+            assert get_upstream_remote_sha("origin/feature/topic") == "def456"
+
+        @pytest.mark.benchmark
+        def test_get_upstream_remote_sha_missing(self, mocker):
+            mocker.patch(
+                "subprocess.run",
+                return_value=type(
+                    "MockResult",
+                    (),
+                    {"stdout": "", "stderr": "fatal", "returncode": 2},
+                )(),
+            )
+
+            assert get_upstream_remote_sha("origin/main") == ""
+
+        @pytest.mark.benchmark
+        def test_get_upstream_remote_sha_invalid_ref(self, mocker):
+            mock_run = mocker.patch("subprocess.run")
+
+            assert get_upstream_remote_sha("main") == ""
+            mock_run.assert_not_called()
+
+    class TestFetchUpstreamRef:
+        @pytest.mark.benchmark
+        def test_fetch_upstream_ref(self, mocker):
+            mock_run = mocker.patch(
+                "subprocess.run",
+                return_value=type(
+                    "MockResult",
+                    (),
+                    {"stdout": "", "stderr": "", "returncode": 0},
+                )(),
+            )
+
+            assert fetch_upstream_ref("origin/main") is True
+            mock_run.assert_called_once_with(
+                ["git", "fetch", "--quiet", "--no-tags", "origin", "main"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                encoding="utf-8",
+            )
+
+        @pytest.mark.benchmark
+        def test_fetch_upstream_ref_failure(self, mocker):
+            mocker.patch(
+                "subprocess.run",
+                return_value=type(
+                    "MockResult",
+                    (),
+                    {"stdout": "", "stderr": "fatal", "returncode": 1},
+                )(),
+            )
+
+            assert fetch_upstream_ref("origin/main") is False
+
+        @pytest.mark.benchmark
+        def test_fetch_upstream_ref_invalid_ref(self, mocker):
+            mock_run = mocker.patch("subprocess.run")
+
+            assert fetch_upstream_ref("main") is False
+            mock_run.assert_not_called()
 
     class TestGitMergeBase:
         @pytest.mark.benchmark
