@@ -661,3 +661,58 @@ class TestJsonFormat:
         out, _ = capsys.readouterr()
         assert rc_fail == 1
         assert json.loads(out)["status"] == "fail"
+
+
+class TestNoForcePushFlag:
+    """Tests for the --no-force-push CLI flag."""
+
+    ZERO_SHA = "0000000000000000000000000000000000000000"
+
+    @pytest.mark.benchmark
+    def test_no_force_push_new_branch_passes(self, mocker):
+        """Push to a new remote branch (zero SHA) always passes."""
+        push_info = f"refs/heads/feature/new abc123 refs/heads/feature/new {self.ZERO_SHA}"
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=push_info)
+
+        sys.argv = [CMD, "--no-force-push"]
+        assert main() == 0
+
+    @pytest.mark.benchmark
+    def test_no_force_push_fast_forward_passes(self, mocker):
+        """Fast-forward push (remote is ancestor of local) passes."""
+        push_info = "refs/heads/main abc123 refs/heads/main def456"
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=push_info)
+        mocker.patch("commit_check.engine.git_merge_base", return_value=0)
+
+        sys.argv = [CMD, "--no-force-push"]
+        assert main() == 0
+
+    @pytest.mark.benchmark
+    def test_no_force_push_force_push_fails(self, mocker):
+        """Force push (remote is not ancestor of local) fails."""
+        push_info = "refs/heads/main abc123 refs/heads/main def456"
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=push_info)
+        mocker.patch("commit_check.engine.git_merge_base", return_value=1)
+
+        sys.argv = [CMD, "--no-force-push"]
+        assert main() == 1
+
+    @pytest.mark.benchmark
+    def test_no_force_push_no_stdin_passes(self, mocker):
+        """When no stdin is available (not a pre-push context), check is skipped."""
+        mocker.patch("sys.stdin.isatty", return_value=True)
+
+        sys.argv = [CMD, "--no-force-push"]
+        assert main() == 0
+
+    @pytest.mark.benchmark
+    def test_no_force_push_flag_in_help(self, capfd):
+        """The --no-force-push flag appears in help output."""
+        sys.argv = [CMD, "--help"]
+        with pytest.raises(SystemExit):
+            main()
+        out, _ = capfd.readouterr()
+        assert "--no-force-push" in out

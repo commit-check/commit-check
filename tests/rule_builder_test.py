@@ -226,3 +226,35 @@ class TestRuleBuilder:
         allowed_names = builder._get_allowed_branch_names()
         # Should deduplicate while preserving order
         assert allowed_names == ["develop", "staging"]
+
+
+class TestPushRuleBuilder:
+    """Tests for push rule building."""
+
+    @pytest.mark.benchmark
+    def test_push_rule_not_built_when_force_push_allowed(self):
+        """No rule is built when allow_force_push is True (default)."""
+        config = {"push": {"allow_force_push": True}}
+        builder = RuleBuilder(config)
+        rules = builder.build_all_rules()
+        push_rules = [r for r in rules if r.check == "no_force_push"]
+        assert len(push_rules) == 0
+
+    @pytest.mark.benchmark
+    def test_push_rule_built_when_force_push_disabled(self):
+        """A rule is built when allow_force_push is False."""
+        config = {"push": {"allow_force_push": False}}
+        builder = RuleBuilder(config)
+        rules = builder.build_all_rules()
+        push_rules = [r for r in rules if r.check == "no_force_push"]
+        assert len(push_rules) == 1
+        assert push_rules[0].error == "Force push is not allowed"
+        assert push_rules[0].suggest is not None
+
+    @pytest.mark.benchmark
+    def test_push_rule_not_built_by_default(self):
+        """No rule is built with empty config (default: allow force push)."""
+        builder = RuleBuilder({})
+        rules = builder.build_all_rules()
+        push_rules = [r for r in rules if r.check == "no_force_push"]
+        assert len(push_rules) == 0

@@ -225,6 +225,37 @@ def validate_author(
     return _run_checks(checks, context, cfg)
 
 
+def validate_push(
+    push_refs: Optional[str] = None,
+    *,
+    config: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Validate that a push is not a force push.
+
+    :param push_refs: Push ref information in the format produced by git's
+        pre-push hook: ``<local ref> <local sha1> <remote ref> <remote sha1>``,
+        one entry per line.  If *None*, the check is skipped (returns pass).
+    :param config: Optional configuration override dict.  Set
+        ``{"push": {"allow_force_push": False}}`` to enable force-push
+        blocking (or use :ref:`cchk.toml`).
+    :returns: A dict with ``"status"`` (``"pass"``/``"fail"``) and ``"checks"``.
+
+    Example::
+
+        >>> from commit_check.api import validate_push
+        >>> # Normal fast-forward push (remote SHA is ancestor of local SHA):
+        >>> # validate_push("refs/heads/main abc123 refs/heads/main def456")
+        >>> # Force push scenario requires real git SHAs to demonstrate.
+    """
+    cfg = _merge_config(config)
+    # Enable force push blocking in the config so the rule is built
+    if "push" not in cfg:
+        cfg["push"] = {}
+    cfg["push"]["allow_force_push"] = False
+    context = ValidationContext(stdin_text=push_refs, config=cfg)
+    return _run_checks(["no_force_push"], context, cfg)
+
+
 def validate_all(
     message: Optional[str] = None,
     branch: Optional[str] = None,

@@ -1102,3 +1102,154 @@ class TestGetGitConfigValue:
         ):
             result = validator.validate(context)
         assert result == ValidationResult.PASS
+
+
+class TestForcePushValidator:
+    """Tests for the ForcePushValidator class."""
+
+    def _make_rule(self):
+        return ValidationRule(
+            check="no_force_push",
+            error="Force push is not allowed",
+            suggest="Use a normal push instead of --force or --force-with-lease",
+            value=False,
+        )
+
+    @pytest.mark.benchmark
+    def test_no_stdin_skips_validation(self):
+        """Validator passes when no stdin is provided (not a pre-push context)."""
+        from commit_check.engine import ForcePushValidator
+
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        context = ValidationContext()  # stdin_text=None
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_new_branch_push_is_allowed(self):
+        """A push to a new (non-existent) remote branch is not a force push."""
+        from commit_check.engine import ForcePushValidator
+
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        zero_sha = "0000000000000000000000000000000000000000"
+        push_info = f"refs/heads/feature/new abc123 refs/heads/feature/new {zero_sha}"
+        context = ValidationContext(stdin_text=push_info)
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_fast_forward_push_is_allowed(self):
+        """A normal fast-forward push (remote is ancestor of local) is allowed."""
+        from commit_check.engine import ForcePushValidator
+
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        push_info = (
+            "refs/heads/main abc123 refs/heads/main def456"
+        )
+        context = ValidationContext(stdin_text=push_info)
+
+        with patch("commit_check.engine.git_merge_base", return_value=0):
+            result = validator.validate(context)
+
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_force_push_is_blocked(self):
+        """A force push (remote is NOT ancestor of local) is blocked."""
+        from commit_check.engine import ForcePushValidator
+
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        push_info = (
+            "refs/heads/main abc123 refs/heads/main def456"
+        )
+        context = ValidationContext(stdin_text=push_info)
+
+        with patch("commit_check.engine.git_merge_base", return_value=1):
+            with patch("commit_check.util._print_failure"):
+                result = validator.validate(context)
+
+        assert result == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_git_error_allows_push(self):
+        """When git cannot determine ancestry (exit 128), push is allowed."""
+        from commit_check.engine import ForcePushValidator
+
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        push_info = (
+            "refs/heads/main abc123 refs/heads/main def456"
+        )
+        context = ValidationContext(stdin_text=push_info)
+
+        with patch("commit_check.engine.git_merge_base", return_value=128):
+            result = validator.validate(context)
+
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_empty_lines_in_stdin_are_skipped(self):
+        """Empty lines in push info do not cause errors."""
+        from commit_check.engine import ForcePushValidator
+
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        # stdin has blank lines mixed in
+        push_info = "\n\nrefs/heads/main abc123 refs/heads/main def456\n\n"
+        context = ValidationContext(stdin_text=push_info)
+
+        with patch("commit_check.engine.git_merge_base", return_value=0):
+            result = validator.validate(context)
+
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_malformed_push_line_is_skipped(self):
+        """Lines that do not have 4 fields are silently skipped."""
+        from commit_check.engine import ForcePushValidator
+
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        push_info = "only two fields"
+        context = ValidationContext(stdin_text=push_info)
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_multiple_refs_one_force_push_blocks(self):
+        """If any pushed ref is a force push, the whole check fails."""
+        from commit_check.engine import ForcePushValidator
+
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        zero_sha = "0000000000000000000000000000000000000000"
+        push_info = (
+            f"refs/heads/feature/ok abc1 refs/heads/feature/ok {zero_sha}\n"
+            "refs/heads/main abc2 refs/heads/main def2"
+        )
+        context = ValidationContext(stdin_text=push_info)
+
+        # First line is a new branch (allowed); second is a force push
+        def side_effect(remote_sha, local_sha):
+            return 1  # force push
+
+        with patch("commit_check.engine.git_merge_base", side_effect=side_effect):
+            with patch("commit_check.util._print_failure"):
+                result = validator.validate(context)
+
+        assert result == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_validation_engine_includes_force_push_validator(self):
+        """ValidationEngine maps 'no_force_push' to ForcePushValidator."""
+        from commit_check.engine import ForcePushValidator, ValidationEngine
+
+        assert "no_force_push" in ValidationEngine.VALIDATOR_MAP
+        assert ValidationEngine.VALIDATOR_MAP["no_force_push"] is ForcePushValidator

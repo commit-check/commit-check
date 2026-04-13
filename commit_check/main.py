@@ -105,6 +105,14 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     check_group.add_argument(
+        "-p",
+        "--no-force-push",
+        help="check that no force push is being performed (for use in pre-push hooks)",
+        action="store_true",
+        required=False,
+    )
+
+    check_group.add_argument(
         "--format",
         choices=["text", "json"],
         default="text",
@@ -326,6 +334,10 @@ def main() -> int:
 
     try:
         # Load and merge configuration from all sources: CLI > Env > TOML > Defaults
+        # When --no-force-push is specified, override allow_force_push to False
+        # so the rule is built even if the TOML config defaults to True.
+        if args.no_force_push:
+            args.allow_force_push = False
         config_data = ConfigMerger.from_all_sources(args, args.config)
 
         # Build validation rules from config
@@ -366,6 +378,8 @@ def main() -> int:
             requested_checks.append("author_name")
         if args.author_email:
             requested_checks.append("author_email")
+        if args.no_force_push:
+            requested_checks.append("no_force_push")
 
         # If no specific checks requested, show help
         if not requested_checks:
@@ -392,11 +406,13 @@ def main() -> int:
                 if not stdin_content:
                     # No stdin and no file - let validators get data from git themselves
                     stdin_content = None
-        elif not any([args.branch, args.author_name, args.author_email]):
+        elif not any(
+            [args.branch, args.author_name, args.author_email, args.no_force_push]
+        ):
             # If no specific validation type is requested, don't read stdin
             pass
         else:
-            # For non-message validations (branch, author), check for stdin input
+            # For non-message validations (branch, author, push), check for stdin input
             stdin_content = stdin_reader.read_piped_input()
 
         context = ValidationContext(
