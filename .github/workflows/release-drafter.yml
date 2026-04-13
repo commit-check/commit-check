@@ -6,10 +6,11 @@ on:
       - "main"
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   draft-release:
+    permissions:
+      contents: write
+      pull-requests: read
     uses: commit-check/.github/.github/workflows/release-drafter.yml@main
