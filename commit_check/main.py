@@ -107,7 +107,7 @@ def _get_parser() -> argparse.ArgumentParser:
     check_group.add_argument(
         "-p",
         "--no-force-push",
-        help="check that no force push is being performed (for use in pre-push hooks)",
+        help="check that no force push is being performed (uses pre-push hook stdin when available, otherwise checks the current branch against its upstream)",
         action="store_true",
         required=False,
     )
@@ -420,6 +420,7 @@ def main() -> int:
             stdin_text=stdin_content,
             commit_file=commit_file_path,
             config=config_data,
+            push_upstream_fallback=args.no_force_push and stdin_content is None,
         )
 
         # Run validation – choose output mode based on --format

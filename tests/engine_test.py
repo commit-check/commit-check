@@ -36,10 +36,13 @@ class TestValidationContext:
     def test_validation_context_creation(self):
         """Test ValidationContext creation and properties."""
         context = ValidationContext(
-            stdin_text="test message", commit_file="/path/to/commit"
+            stdin_text="test message",
+            commit_file="/path/to/commit",
+            push_upstream_fallback=True,
         )
         assert context.stdin_text == "test message"
         assert context.commit_file == "/path/to/commit"
+        assert context.push_upstream_fallback is True
 
     @pytest.mark.benchmark
     def test_validation_context_defaults(self):
@@ -47,6 +50,7 @@ class TestValidationContext:
         context = ValidationContext()
         assert context.stdin_text is None
         assert context.commit_file is None
+        assert context.push_upstream_fallback is False
 
 
 class TestBaseValidator:
@@ -1126,6 +1130,56 @@ class TestForcePushValidator:
 
         result = validator.validate(context)
         assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_no_stdin_with_upstream_fallback_passes_without_upstream(self):
+        """Standalone mode passes when the current branch has no upstream."""
+        from commit_check.engine import ForcePushValidator
+
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        context = ValidationContext(push_upstream_fallback=True)
+
+        with patch("commit_check.engine.get_upstream_branch", return_value=""):
+            result = validator.validate(context)
+
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_no_stdin_with_upstream_fallback_passes_fast_forward(self):
+        """Standalone mode passes when upstream is an ancestor of HEAD."""
+        from commit_check.engine import ForcePushValidator
+
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        context = ValidationContext(push_upstream_fallback=True)
+
+        with patch(
+            "commit_check.engine.get_upstream_branch", return_value="origin/main"
+        ):
+            with patch("commit_check.engine.git_merge_base", return_value=0):
+                result = validator.validate(context)
+
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_no_stdin_with_upstream_fallback_blocks_force_push(self):
+        """Standalone mode fails when pushing HEAD to upstream requires force."""
+        from commit_check.engine import ForcePushValidator
+
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        context = ValidationContext(push_upstream_fallback=True)
+
+        with patch(
+            "commit_check.engine.get_upstream_branch", return_value="origin/main"
+        ):
+            with patch("commit_check.engine.get_branch_name", return_value="main"):
+                with patch("commit_check.engine.git_merge_base", return_value=1):
+                    with patch("commit_check.util._print_failure"):
+                        result = validator.validate(context)
+
+        assert result == ValidationResult.FAIL
 
     @pytest.mark.benchmark
     def test_new_branch_push_is_allowed(self):

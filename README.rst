@@ -187,6 +187,32 @@ For one-off checks or CI/CD pipelines, you can configure via CLI arguments or en
 
 See the `Configuration documentation <https://commit-check.github.io/commit-check/configuration.html>`_ for all available options.
 
+Check Push Safety
+~~~~~~~~~~~~~~~~~
+
+Use ``--no-force-push`` in a ``pre-push`` hook to inspect the ref updates Git
+provides on stdin, or run it directly to compare ``HEAD`` with the current
+branch's configured upstream:
+
+.. code-block:: bash
+
+    # Standalone preflight check against the current branch's upstream
+    commit-check --no-force-push
+
+.. code-block:: yaml
+
+    # In pre-commit hooks (.pre-commit-config.yaml)
+    repos:
+      - repo: https://github.com/commit-check/commit-check
+        rev: v2.6.0
+        hooks:
+          - id: check-no-force-push
+            stages: [pre-push]
+
+Piping ``git push`` into ``commit-check`` is not a prevention mechanism. The
+push has already been started, and standard ``git push`` output does not carry
+the pre-push ref metadata that ``commit-check`` uses.
+
 AI-Native Usage
 ---------------
 

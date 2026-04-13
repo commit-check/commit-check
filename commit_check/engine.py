@@ -11,6 +11,7 @@ from commit_check.util import (
     get_commit_info,
     get_git_config_value,
     get_branch_name,
+    get_upstream_branch,
     has_commits,
     git_merge_base,
 )
@@ -31,6 +32,7 @@ class ValidationContext:
     stdin_text: Optional[str] = None
     commit_file: Optional[str] = None
     config: Dict = field(default_factory=dict)
+    push_upstream_fallback: bool = False
 
 
 @dataclass
@@ -616,14 +618,27 @@ class ForcePushValidator(BaseValidator):
     ZERO_SHA = "0000000000000000000000000000000000000000"
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        # Only validate when push ref info is available via stdin
         if not context.stdin_text:
+            if context.push_upstream_fallback:
+                return self._check_current_branch_against_upstream()
             return ValidationResult.PASS
 
         for line in context.stdin_text.splitlines():
             result = self._check_push_line(line.strip())
             if result == ValidationResult.FAIL:
                 return ValidationResult.FAIL
+
+        return ValidationResult.PASS
+
+    def _check_current_branch_against_upstream(self) -> ValidationResult:
+        """Check whether pushing HEAD to its upstream would require force."""
+        upstream_ref = get_upstream_branch()
+        if not upstream_ref:
+            return ValidationResult.PASS
+
+        if git_merge_base(upstream_ref, "HEAD") == 1:
+            self._print_failure(f"{get_branch_name()} -> {upstream_ref}")
+            return ValidationResult.FAIL
 
         return ValidationResult.PASS
 

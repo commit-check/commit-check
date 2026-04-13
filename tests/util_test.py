@@ -5,6 +5,7 @@ import os
 from pathlib import Path, PurePath
 from commit_check.util import (
     get_branch_name,
+    get_upstream_branch,
     has_commits,
     git_merge_base,
     get_commit_info,
@@ -128,6 +129,47 @@ class TestUtil:
                 "check": True,
             }
             assert retval is False
+
+    class TestGetUpstreamBranch:
+        @pytest.mark.benchmark
+        def test_get_upstream_branch(self, mocker):
+            mock_run = mocker.patch(
+                "subprocess.run",
+                return_value=type(
+                    "MockResult",
+                    (),
+                    {"stdout": "origin/main\n", "stderr": "", "returncode": 0},
+                )(),
+            )
+
+            result = get_upstream_branch()
+
+            mock_run.assert_called_once_with(
+                [
+                    "git",
+                    "rev-parse",
+                    "--abbrev-ref",
+                    "--symbolic-full-name",
+                    "@{upstream}",
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                encoding="utf-8",
+            )
+            assert result == "origin/main"
+
+        @pytest.mark.benchmark
+        def test_get_upstream_branch_missing(self, mocker):
+            mocker.patch(
+                "subprocess.run",
+                return_value=type(
+                    "MockResult",
+                    (),
+                    {"stdout": "", "stderr": "fatal: no upstream", "returncode": 128},
+                )(),
+            )
+
+            assert get_upstream_branch() == ""
 
     class TestGitMergeBase:
         @pytest.mark.benchmark

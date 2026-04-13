@@ -704,11 +704,37 @@ class TestNoForcePushFlag:
 
     @pytest.mark.benchmark
     def test_no_force_push_no_stdin_passes(self, mocker):
-        """When no stdin is available (not a pre-push context), check is skipped."""
+        """When no stdin and no upstream are available, the check is skipped."""
         mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch("commit_check.engine.get_upstream_branch", return_value="")
 
         sys.argv = [CMD, "--no-force-push"]
         assert main() == 0
+
+    @pytest.mark.benchmark
+    def test_no_force_push_no_stdin_uses_upstream_fallback(self, mocker):
+        """Without stdin, the CLI falls back to checking the current upstream."""
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch(
+            "commit_check.engine.get_upstream_branch", return_value="origin/main"
+        )
+        mocker.patch("commit_check.engine.git_merge_base", return_value=0)
+
+        sys.argv = [CMD, "--no-force-push"]
+        assert main() == 0
+
+    @pytest.mark.benchmark
+    def test_no_force_push_no_stdin_blocks_non_fast_forward_upstream(self, mocker):
+        """Without stdin, a non-fast-forward upstream relationship fails."""
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch(
+            "commit_check.engine.get_upstream_branch", return_value="origin/main"
+        )
+        mocker.patch("commit_check.engine.get_branch_name", return_value="main")
+        mocker.patch("commit_check.engine.git_merge_base", return_value=1)
+
+        sys.argv = [CMD, "--no-force-push"]
+        assert main() == 1
 
     @pytest.mark.benchmark
     def test_no_force_push_flag_in_help(self, capfd):
@@ -718,3 +744,4 @@ class TestNoForcePushFlag:
             main()
         out, _ = capfd.readouterr()
         assert "--no-force-push" in out
+        assert "current branch against its upstream" in out

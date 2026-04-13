@@ -65,6 +65,19 @@ def get_branch_name() -> str:
     return branch_name.strip()
 
 
+def get_upstream_branch() -> str:
+    """Return the configured upstream ref for the current branch."""
+    result = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    if result.returncode == 0 and result.stdout:
+        return result.stdout.strip()
+    return ""
+
+
 def has_commits() -> bool:
     """Check if there are any commits in the current branch.
     :returns: `True` if there are commits, `False` otherwise.

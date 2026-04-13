@@ -153,6 +153,27 @@ Branch Validation Examples
     # - hotfix/security-patch
     # - release/v1.2.0
 
+Push Validation Examples
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    # Check whether pushing HEAD to its configured upstream would require force
+    commit-check --no-force-push
+
+.. code-block:: yaml
+
+    # Configure the dedicated pre-push hook
+    -   repo: https://github.com/commit-check/commit-check
+        rev: the tag or revision
+        hooks:
+        -   id: check-no-force-push
+            stages: [pre-push]
+
+``git push | commit-check --no-force-push`` is not a prevention mechanism. The
+push has already started, and normal ``git push`` output does not include the
+pre-push ref lines that Git provides to hooks.
+
 Author Validation Examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
