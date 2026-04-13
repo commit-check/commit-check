@@ -106,6 +106,16 @@ COMMIT_RULES = [
     ),
 ]
 
+# Push rules
+PUSH_RULES = [
+    RuleCatalogEntry(
+        check="no_force_push",
+        regex=None,
+        error="Force push is not allowed",
+        suggest="Use a normal push instead of --force or --force-with-lease",
+    ),
+]
+
 # Branch rules
 BRANCH_RULES = [
     RuleCatalogEntry(

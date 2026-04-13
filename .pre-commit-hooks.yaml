@@ -27,3 +27,11 @@
   args: [--author-email]
   pass_filenames: false
   language: python
+- id: check-no-force-push
+  name: check no force push
+  description: prevents force pushes to remote branches
+  entry: commit-check
+  args: [--no-force-push]
+  stages: [pre-push]
+  pass_filenames: false
+  language: python

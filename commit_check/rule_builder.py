@@ -2,12 +2,18 @@
 
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
-from commit_check.rules_catalog import COMMIT_RULES, BRANCH_RULES, RuleCatalogEntry
+from commit_check.rules_catalog import (
+    COMMIT_RULES,
+    BRANCH_RULES,
+    PUSH_RULES,
+    RuleCatalogEntry,
+)
 from commit_check import (
     DEFAULT_COMMIT_TYPES,
     DEFAULT_BRANCH_TYPES,
     DEFAULT_BRANCH_NAMES,
     DEFAULT_BOOLEAN_RULES,
+    DEFAULT_PUSH_RULES,
 )
 
 
@@ -48,12 +54,14 @@ class RuleBuilder:
         self.config = config
         self.commit_config = config.get("commit", {})
         self.branch_config = config.get("branch", {})
+        self.push_config = config.get("push", {})
 
     def build_all_rules(self) -> List[ValidationRule]:
         """Build all validation rules from config."""
         rules = []
         rules.extend(self._build_commit_rules())
         rules.extend(self._build_branch_rules())
+        rules.extend(self._build_push_rules())
         return rules
 
     def _build_commit_rules(self) -> List[ValidationRule]:
@@ -77,6 +85,41 @@ class RuleBuilder:
                 rules.append(rule)
 
         return rules
+
+    def _build_push_rules(self) -> List[ValidationRule]:
+        """Build push-related validation rules."""
+        rules = []
+
+        for catalog_entry in PUSH_RULES:
+            rule = self._build_push_rule(catalog_entry)
+            if rule:
+                rules.append(rule)
+
+        return rules
+
+    def _build_push_rule(
+        self, catalog_entry: RuleCatalogEntry
+    ) -> Optional[ValidationRule]:
+        """Build a single push validation rule from catalog entry and config."""
+        check = catalog_entry.check
+
+        if check == "no_force_push":
+            allow = self.push_config.get(
+                "allow_force_push", DEFAULT_PUSH_RULES["allow_force_push"]
+            )
+            # When allow_force_push is True (default), force pushes are permitted
+            # so no blocking rule is needed.  Only build the rule when it is
+            # False, i.e. the user has explicitly opted in to blocking.
+            if allow:
+                return None
+            return ValidationRule(
+                check=catalog_entry.check,
+                error=catalog_entry.error,
+                suggest=catalog_entry.suggest,
+                value=False,
+            )
+
+        return None
 
     def _build_single_rule(
         self, catalog_entry: RuleCatalogEntry, section_config: Dict[str, Any]

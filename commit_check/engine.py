@@ -8,9 +8,12 @@ from dataclasses import field
 
 from commit_check.rule_builder import ValidationRule
 from commit_check.util import (
+    fetch_upstream_ref,
     get_commit_info,
     get_git_config_value,
     get_branch_name,
+    get_upstream_branch,
+    get_upstream_remote_sha,
     has_commits,
     git_merge_base,
 )
@@ -31,6 +34,7 @@ class ValidationContext:
     stdin_text: Optional[str] = None
     commit_file: Optional[str] = None
     config: Dict = field(default_factory=dict)
+    push_upstream_fallback: bool = False
 
 
 @dataclass
@@ -601,6 +605,85 @@ class CommitTypeValidator(BaseValidator):
         return f"{subject}\n\n{body}".strip()
 
 
+class ForcePushValidator(BaseValidator):
+    """Validates that no force push is being performed.
+
+    Reads pushed ref information from stdin (provided by git's pre-push hook)
+    in the format::
+
+        <local ref> <local sha1> <remote ref> <remote sha1>
+
+    A force push is detected when the remote SHA is not an ancestor of the
+    local SHA, meaning local history would overwrite the remote.
+    """
+
+    ZERO_SHA = "0000000000000000000000000000000000000000"
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        if not context.stdin_text:
+            if context.push_upstream_fallback:
+                return self._check_current_branch_against_upstream()
+            return ValidationResult.PASS
+
+        for line in context.stdin_text.splitlines():
+            result = self._check_push_line(line.strip())
+            if result == ValidationResult.FAIL:
+                return ValidationResult.FAIL
+
+        return ValidationResult.PASS
+
+    def _check_current_branch_against_upstream(self) -> ValidationResult:
+        """Check whether pushing HEAD to its upstream would require force."""
+        upstream_ref = get_upstream_branch()
+        if not upstream_ref:
+            return ValidationResult.PASS
+
+        target_ref = get_upstream_remote_sha(upstream_ref) or upstream_ref
+        returncode = git_merge_base(target_ref, "HEAD")
+        if (
+            returncode == 128
+            and target_ref != upstream_ref
+            and fetch_upstream_ref(upstream_ref)
+        ):
+            returncode = git_merge_base(target_ref, "HEAD")
+        if returncode == 1:
+            self._print_failure(f"{get_branch_name()} -> {upstream_ref}")
+            return ValidationResult.FAIL
+
+        return ValidationResult.PASS
+
+    def _check_push_line(self, line: str) -> ValidationResult:
+        """Check a single pushed ref line for force push."""
+        if not line:
+            return ValidationResult.PASS
+
+        parts = line.split()
+        if len(parts) < 4:
+            return ValidationResult.PASS
+
+        local_ref, local_sha, remote_ref, remote_sha = (
+            parts[0],
+            parts[1],
+            parts[2],
+            parts[3],
+        )
+
+        # Zero SHA for remote means a new branch push (not a force push)
+        if remote_sha == self.ZERO_SHA:
+            return ValidationResult.PASS
+
+        # Check if the remote SHA is an ancestor of the local SHA.
+        # returncode 0  → remote is ancestor of local (fast-forward push, OK)
+        # returncode 1  → not an ancestor (force push detected)
+        # returncode 128 → git error / SHA unknown (cannot determine; allow)
+        returncode = git_merge_base(remote_sha, local_sha)
+        if returncode == 1:
+            self._print_failure(f"{local_ref} -> {remote_ref}")
+            return ValidationResult.FAIL
+
+        return ValidationResult.PASS
+
+
 class ValidationEngine:
     """Main validation engine that orchestrates all validations."""
 
@@ -622,6 +705,7 @@ class ValidationEngine:
         "allow_fixup_commits": CommitTypeValidator,
         "allow_wip_commits": CommitTypeValidator,
         "ignore_authors": CommitTypeValidator,
+        "no_force_push": ForcePushValidator,
     }
 
     def __init__(self, rules: List[ValidationRule]):
