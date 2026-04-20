@@ -661,3 +661,103 @@ class TestJsonFormat:
         out, _ = capsys.readouterr()
         assert rc_fail == 1
         assert json.loads(out)["status"] == "fail"
+
+
+class TestNoBanner:
+    """Tests for --no-banner flag."""
+
+    @pytest.mark.benchmark
+    def test_no_banner_suppresses_ascii_art(self, mocker, capsys):
+        """--no-banner must suppress the ASCII art / teddy bear header."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
+
+        sys.argv = [CMD, "-m", "--no-banner"]
+        rc = main()
+
+        out, _ = capsys.readouterr()
+        assert rc == 1
+        assert "Commit rejected by Commit-Check" not in out
+        assert "(c).-.(c)" not in out
+        # Error details should still appear
+        assert "check failed ==>" in out
+
+    @pytest.mark.benchmark
+    def test_no_banner_still_shows_error_details(self, mocker, capsys):
+        """--no-banner keeps error messages and suggestions."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
+
+        sys.argv = [CMD, "-m", "--no-banner"]
+        main()
+
+        out, _ = capsys.readouterr()
+        assert "check failed ==>" in out
+        assert "Suggest:" in out
+
+    @pytest.mark.benchmark
+    def test_no_banner_passes_valid_commit(self, mocker):
+        """--no-banner with a valid commit should still return 0."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
+
+        sys.argv = [CMD, "-m", "--no-banner"]
+        assert main() == 0
+
+
+class TestCompact:
+    """Tests for --compact flag."""
+
+    @pytest.mark.benchmark
+    def test_compact_suppresses_ascii_art(self, mocker, capsys):
+        """--compact must not include ASCII art in output."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
+
+        sys.argv = [CMD, "-m", "--compact"]
+        rc = main()
+
+        out, _ = capsys.readouterr()
+        assert rc == 1
+        assert "Commit rejected by Commit-Check" not in out
+        assert "(c).-.(c)" not in out
+
+    @pytest.mark.benchmark
+    def test_compact_shows_one_line_per_failure(self, mocker, capsys):
+        """--compact outputs one [FAIL] line per failing check."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
+
+        sys.argv = [CMD, "-m", "--compact"]
+        main()
+
+        out, _ = capsys.readouterr()
+        lines = [line for line in out.splitlines() if line.strip()]
+        assert all(line.startswith("[FAIL]") for line in lines)
+        assert len(lines) >= 1
+
+    @pytest.mark.benchmark
+    def test_compact_no_suggestions(self, mocker, capsys):
+        """--compact output must not include 'Suggest:' lines."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
+
+        sys.argv = [CMD, "-m", "--compact"]
+        main()
+
+        out, _ = capsys.readouterr()
+        assert "Suggest:" not in out
+
+    @pytest.mark.benchmark
+    def test_compact_passes_valid_commit(self, mocker):
+        """--compact with a valid commit should still return 0."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
+
+        sys.argv = [CMD, "-m", "--compact"]
+        assert main() == 0

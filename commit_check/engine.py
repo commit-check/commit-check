@@ -31,6 +31,8 @@ class ValidationContext:
     stdin_text: Optional[str] = None
     commit_file: Optional[str] = None
     config: Dict = field(default_factory=dict)
+    no_banner: bool = False
+    compact: bool = False
 
 
 @dataclass
@@ -67,6 +69,9 @@ class BaseValidator(ABC):
         # Set to True by ValidationEngine.validate_all_detailed() to suppress
         # human-readable terminal output while still collecting failure details.
         self._suppress_output: bool = False
+        # Set by ValidationEngine.validate_all() from ValidationContext flags.
+        self._no_banner: bool = False
+        self._compact: bool = False
         # Populated by _print_failure() on every failure, regardless of mode.
         self._last_failure: Optional[Dict[str, str]] = None
 
@@ -159,7 +164,13 @@ class BaseValidator(ABC):
         if not self._suppress_output:
             from commit_check.util import _print_failure
 
-            _print_failure(rule_dict, constraint, actual_value)
+            _print_failure(
+                rule_dict,
+                constraint,
+                actual_value,
+                no_banner=self._no_banner,
+                compact=self._compact,
+            )
 
 
 class CommitMessageValidator(BaseValidator):
@@ -637,6 +648,8 @@ class ValidationEngine:
                 continue  # Skip unknown validators
 
             validator: BaseValidator = validator_class(rule)
+            validator._no_banner = context.no_banner
+            validator._compact = context.compact
             result = validator.validate(context)
             results.append(result)
 
