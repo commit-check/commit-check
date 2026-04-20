@@ -34,7 +34,6 @@ def _find_check(checks: list, check_type: str) -> Optional[dict]:
 
 def _print_failure(
     check: dict,
-    regex: str,
     actual: str,
     no_banner: bool = False,
     compact: bool = False,

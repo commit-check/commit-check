@@ -166,7 +166,6 @@ class BaseValidator(ABC):
 
             _print_failure(
                 rule_dict,
-                constraint,
                 actual_value,
                 no_banner=self._no_banner,
                 compact=self._compact,
