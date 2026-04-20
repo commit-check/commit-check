@@ -151,7 +151,6 @@ class BaseValidator(ABC):
     def _print_failure(self, actual_value: str, regex_or_constraint: str = "") -> None:
         """Record and (unless suppressed) print a standardised failure message."""
         rule_dict = self.rule.to_dict()
-        constraint = regex_or_constraint or rule_dict.get("regex", "")
 
         # Always store structured failure details for programmatic consumers.
         self._last_failure = {
