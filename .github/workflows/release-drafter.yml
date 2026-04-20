@@ -12,5 +12,5 @@ jobs:
   draft-release:
     permissions:
       contents: write
-      pull-requests: read
+      pull-requests: write
     uses: commit-check/.github/.github/workflows/release-drafter.yml@main
