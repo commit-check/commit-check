@@ -818,15 +818,16 @@
 
 <h1 id="commit-check-help">commit-check –help<a class="headerlink" href="#commit-check-help" title="Link to this heading">¶</a></h1>
 <dl class="simple">
-<dt>usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-d]</dt><dd><p>[–format FORMAT] [–conventional-commits BOOL]
-[–subject-capitalized BOOL] [–subject-imperative BOOL]
-[–subject-max-length INT] [–subject-min-length INT]
-[–allow-commit-types LIST] [–allow-merge-commits BOOL]
-[–allow-revert-commits BOOL] [–allow-empty-commits BOOL]
-[–allow-fixup-commits BOOL] [–allow-wip-commits BOOL]
-[–require-body BOOL] [–require-signed-off-by BOOL]
-[–ignore-authors LIST] [–conventional-branch BOOL]
-[–allow-branch-types LIST] [–allow-branch-names LIST]
+<dt>usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-d]</dt><dd><p>[–format FORMAT] [–no-banner] [–compact]
+[–conventional-commits BOOL] [–subject-capitalized BOOL]
+[–subject-imperative BOOL] [–subject-max-length INT]
+[–subject-min-length INT] [–allow-commit-types LIST]
+[–allow-merge-commits BOOL] [–allow-revert-commits BOOL]
+[–allow-empty-commits BOOL] [–allow-fixup-commits BOOL]
+[–allow-wip-commits BOOL] [–require-body BOOL]
+[–require-signed-off-by BOOL] [–ignore-authors LIST]
+[–conventional-branch BOOL] [–allow-branch-types LIST]
+[–allow-branch-names LIST]
 [–require-rebase-target BRANCH]
 [–branch-ignore-authors LIST]
 [commit_msg_file]</p>
@@ -930,6 +931,13 @@ positional argument for pre-commit compatibility)</p>
 <dd><p>output format: ‘text’ (default) for human-readable
 output, ‘json’ for machine-readable JSON (useful for
 AI agents and tooling)</p>
+</dd>
+<dt><kbd><span class="option">--no-banner</span></kbd></dt>
+<dd><p>suppress the ASCII art banner on failure</p>
+</dd>
+<dt><kbd><span class="option">--compact</span></kbd></dt>
+<dd><p>show compact one-line-per-failure output (implies
+–no-banner)</p>
 </dd>
 </dl>
 </dd></dl>

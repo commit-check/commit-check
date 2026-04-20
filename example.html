@@ -1216,6 +1216,17 @@ Signed-off-by not found in latest commit
 Suggest: git commit --amend --signoff or use --signoff on commit
 </code></pre></div>
 </div>
+<p><strong>Commit Message Validation Failure without ASCII Banner (``–no-banner``):</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Type message check failed ==&gt; test commit message check
+It doesn&#39;t match regex: ^(chore|ci|docs|feat|fix|refactor|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)
+The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
+Suggest: Use &lt;type&gt;(&lt;scope&gt;): &lt;description&gt; with allowed types
+</code></pre></div>
+</div>
+<p><strong>Compact Failure Output (``–compact``):</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>[FAIL] message: test commit message check
+</code></pre></div>
+</div>
 <p><strong>Imperative Mood Validation Failure:</strong></p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
@@ -1244,6 +1255,12 @@ git<span class="w"> </span>log<span class="w"> </span>--format<span class="o">=<
 
 <span class="c1"># or just</span>
 commit-check<span class="w"> </span>-m
+
+<span class="c1"># Keep plain-text output but remove the ASCII art banner</span>
+git<span class="w"> </span>log<span class="w"> </span>--format<span class="o">=</span><span class="s2">&quot;%s&quot;</span><span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>commit-check<span class="w"> </span>-m<span class="w"> </span>--no-banner
+
+<span class="c1"># Emit one machine-friendly line per failure without switching to JSON</span>
+git<span class="w"> </span>log<span class="w"> </span>--format<span class="o">=</span><span class="s2">&quot;%s&quot;</span><span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>commit-check<span class="w"> </span>-m<span class="w"> </span>--compact
 </code></pre></div>
 </div>
 <h3 id="scripting">Scripting<a class="headerlink" href="#scripting" title="Link to this heading">¶</a></h3>

@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#v2-5-0-2026-04-03" class="md-skip">
+        <a href="#v2-6-0-2026-04-20" class="md-skip">
           Skip to content
         </a>
       
@@ -589,14 +589,14 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#v2-5-0-2026-04-03" class="md-nav__link">
+  <a href="#v2-6-0-2026-04-20" class="md-nav__link">
     
     <span class="md-ellipsis">
-      <span>v2.<wbr>5.<wbr>0 <wbr>(2026-<wbr>04-<wbr>03)</span>
+      <span>v2.<wbr>6.<wbr>0 <wbr>(2026-<wbr>04-<wbr>20)</span>
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="v2.5.0 (2026-04-03)">
+    <nav class="md-nav" aria-label="v2.6.0 (2026-04-20)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -611,6 +611,42 @@
         
           <li class="md-nav__item">
   <a href="#bug-fixes" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Bug Fixes</span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v2-5-0-2026-04-03" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>v2.<wbr>5.<wbr>0 <wbr>(2026-<wbr>04-<wbr>03)</span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v2.5.0 (2026-04-03)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#id1" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>New Features</span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#id2" class="md-nav__link">
     
     <span class="md-ellipsis">
       <span>Bug Fixes</span>
@@ -741,14 +777,14 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#v2-5-0-2026-04-03" class="md-nav__link">
+  <a href="#v2-6-0-2026-04-20" class="md-nav__link">
     
     <span class="md-ellipsis">
-      <span>v2.<wbr>5.<wbr>0 <wbr>(2026-<wbr>04-<wbr>03)</span>
+      <span>v2.<wbr>6.<wbr>0 <wbr>(2026-<wbr>04-<wbr>20)</span>
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="v2.5.0 (2026-04-03)">
+    <nav class="md-nav" aria-label="v2.6.0 (2026-04-20)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -763,6 +799,42 @@
         
           <li class="md-nav__item">
   <a href="#bug-fixes" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Bug Fixes</span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v2-5-0-2026-04-03" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>v2.<wbr>5.<wbr>0 <wbr>(2026-<wbr>04-<wbr>03)</span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v2.5.0 (2026-04-03)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#id1" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>New Features</span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#id2" class="md-nav__link">
     
     <span class="md-ellipsis">
       <span>Bug Fixes</span>
@@ -857,14 +929,24 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
 <p>All <strong>notable changes</strong> to this project will be documented in this file.</p>
 <p>Full changelog available at <a class="reference external" href="https://github.com/commit-check/commit-check/releases">GitHub releases</a>.</p>
-<h2 id="v2-5-0-2026-04-03">v2.5.0 (2026-04-03)<a class="headerlink" href="#v2-5-0-2026-04-03" title="Link to this heading">¶</a></h2>
+<h2 id="v2-6-0-2026-04-20">v2.6.0 (2026-04-20)<a class="headerlink" href="#v2-6-0-2026-04-20" title="Link to this heading">¶</a></h2>
 <h3 id="new-features">New Features<a class="headerlink" href="#new-features" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>Lower-noise CLI failure output</strong> — Added <code class="docutils literal notranslate"><span class="pre">--no-banner</span></code> to suppress the ASCII art header while preserving detailed errors and suggestions.</p></li>
+<li><p><strong>Compact failure mode</strong> — Added <code class="docutils literal notranslate"><span class="pre">--compact</span></code> to print one <code class="docutils literal notranslate"><span class="pre">[FAIL]</span></code> line per failing check for CI logs and automation-friendly terminal output. This mode also suppresses the banner.</p></li>
+</ul>
+<h3 id="bug-fixes">Bug Fixes<a class="headerlink" href="#bug-fixes" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Fixed <code class="docutils literal notranslate"><span class="pre">print_error_header</span></code> state handling so repeated validations stay consistent when <code class="docutils literal notranslate"><span class="pre">--compact</span></code> is used.</p></li>
+</ul>
+<h2 id="v2-5-0-2026-04-03">v2.5.0 (2026-04-03)<a class="headerlink" href="#v2-5-0-2026-04-03" title="Link to this heading">¶</a></h2>
+<h3 id="id1">New Features<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Co-author bypass in ``ignore_authors``</strong> — <code class="docutils literal notranslate"><span class="pre">_should_skip_commit_validation()</span></code> now parses <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span></code> trailers in the commit message body. If any co-author name matches <code class="docutils literal notranslate"><span class="pre">ignore_authors</span></code>, all commit checks are skipped. Useful for AI bots that co-author commits (e.g., <code class="docutils literal notranslate"><span class="pre">coderabbitai[bot]</span></code>).</p></li>
 <li><p><strong>Organization-level config inheritance via ``inherit_from``</strong> — New top-level TOML key that loads a parent config from a GitHub shorthand (<code class="docutils literal notranslate"><span class="pre">github:owner/repo:path</span></code>), a local file path, or an HTTPS URL, then deep-merges it with local settings. HTTP (non-TLS) URLs are rejected to prevent MITM attacks.</p></li>
 <li><p><strong>Git config author validation</strong> — <code class="docutils literal notranslate"><span class="pre">AuthorValidator</span></code> now checks <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">config</span> <span class="pre">user.name</span></code> / <code class="docutils literal notranslate"><span class="pre">user.email</span></code> first (the identity used for the <em>next</em> commit), falling back to <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">log</span></code> if unset. Previously, a misconfigured identity would pass if the last commit had a valid author.</p></li>
 </ul>
-<h3 id="bug-fixes">Bug Fixes<a class="headerlink" href="#bug-fixes" title="Link to this heading">¶</a></h3>
+<h3 id="id2">Bug Fixes<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed incorrect mock target in <code class="docutils literal notranslate"><span class="pre">test_main_with_message_empty_string_no_stdin_with_git</span></code>: was patching <code class="docutils literal notranslate"><span class="pre">commit_check.util.get_commit_info</span></code> (ineffective) instead of <code class="docutils literal notranslate"><span class="pre">commit_check.engine.get_commit_info</span></code>.</p></li>
 </ul>

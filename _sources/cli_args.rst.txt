@@ -2,15 +2,16 @@ commit-check --help
 ==============================
 
 usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-d]
-                    [--format FORMAT] [--conventional-commits BOOL]
-                    [--subject-capitalized BOOL] [--subject-imperative BOOL]
-                    [--subject-max-length INT] [--subject-min-length INT]
-                    [--allow-commit-types LIST] [--allow-merge-commits BOOL]
-                    [--allow-revert-commits BOOL] [--allow-empty-commits BOOL]
-                    [--allow-fixup-commits BOOL] [--allow-wip-commits BOOL]
-                    [--require-body BOOL] [--require-signed-off-by BOOL]
-                    [--ignore-authors LIST] [--conventional-branch BOOL]
-                    [--allow-branch-types LIST] [--allow-branch-names LIST]
+                    [--format FORMAT] [--no-banner] [--compact]
+                    [--conventional-commits BOOL] [--subject-capitalized BOOL]
+                    [--subject-imperative BOOL] [--subject-max-length INT]
+                    [--subject-min-length INT] [--allow-commit-types LIST]
+                    [--allow-merge-commits BOOL] [--allow-revert-commits BOOL]
+                    [--allow-empty-commits BOOL] [--allow-fixup-commits BOOL]
+                    [--allow-wip-commits BOOL] [--require-body BOOL]
+                    [--require-signed-off-by BOOL] [--ignore-authors LIST]
+                    [--conventional-branch BOOL] [--allow-branch-types LIST]
+                    [--allow-branch-names LIST]
                     [--require-rebase-target BRANCH]
                     [--branch-ignore-authors LIST]
                     [commit_msg_file]
@@ -66,6 +67,9 @@ check types:
   --format FORMAT       output format: 'text' (default) for human-readable
                         output, 'json' for machine-readable JSON (useful for
                         AI agents and tooling)
+  --no-banner           suppress the ASCII art banner on failure
+  --compact             show compact one-line-per-failure output (implies
+                        --no-banner)
 
 commit message options:
   Configuration options for --message validation

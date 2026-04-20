@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#version-2-5-0-new-features" class="md-skip">
+        <a href="#version-2-6-0-output-controls-for-cli-workflows" class="md-skip">
           Skip to content
         </a>
       
@@ -474,6 +474,32 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#version-2-6-0-output-controls-for-cli-workflows" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Version 2.<wbr>6.<wbr>0 — Output Controls for CLI Workflows</span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Version 2.6.0 — Output Controls for CLI Workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quieter-human-readable-failure-output" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Quieter Human-<wbr>Readable Failure Output</span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#version-2-5-0-new-features" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -873,6 +899,32 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#version-2-6-0-output-controls-for-cli-workflows" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Version 2.<wbr>6.<wbr>0 — Output Controls for CLI Workflows</span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Version 2.6.0 — Output Controls for CLI Workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quieter-human-readable-failure-output" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Quieter Human-<wbr>Readable Failure Output</span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#version-2-5-0-new-features" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -1120,6 +1172,19 @@
 
 <h1 id="what-s-new">What’s New<a class="headerlink" href="#what-s-new" title="Link to this heading">¶</a></h1>
 <p>This document highlights the major changes and improvements in each version of commit-check.</p>
+<h2 id="version-2-6-0-output-controls-for-cli-workflows">Version 2.6.0 — Output Controls for CLI Workflows<a class="headerlink" href="#version-2-6-0-output-controls-for-cli-workflows" title="Link to this heading">¶</a></h2>
+<h3 id="quieter-human-readable-failure-output">Quieter Human-Readable Failure Output<a class="headerlink" href="#quieter-human-readable-failure-output" title="Link to this heading">¶</a></h3>
+<p>commit-check now includes two CLI flags for workflows that want less verbose
+terminal output without switching to JSON mode:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--no-banner</span></code> suppresses the ASCII art failure banner while keeping the
+detailed error message and suggestion output.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--compact</span></code> prints a single <code class="docutils literal notranslate"><span class="pre">[FAIL]</span></code> line per failing check and implies
+<code class="docutils literal notranslate"><span class="pre">--no-banner</span></code>.</p></li>
+</ul>
+<p>These flags are useful in CI logs, pre-commit output, and agent-driven terminal
+sessions where the full banner is noisy but plain-text diagnostics are still
+helpful.</p>
 <h2 id="version-2-5-0-new-features">Version 2.5.0 — New Features<a class="headerlink" href="#version-2-5-0-new-features" title="Link to this heading">¶</a></h2>
 <h3 id="co-author-bypass-in-ignore-authors">Co-author Bypass in <code class="docutils literal notranslate"><span class="pre">ignore_authors</span></code><a class="headerlink" href="#co-author-bypass-in-ignore-authors" title="Link to this heading">¶</a></h3>
 <p>commit-check can now skip validation when a <strong>co-author</strong> of the commit matches an entry in <code class="docutils literal notranslate"><span class="pre">ignore_authors</span></code>, not just the primary commit author.</p>

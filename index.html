@@ -717,6 +717,16 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#quieter-human-readable-output" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Quieter Human-<wbr>Readable Output</span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#python-api-no-subprocess-required" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -826,15 +836,16 @@
 <li><p><a class="reference internal" href="#ai-native-usage" id="id9">AI-Native Usage</a></p>
 <ul>
 <li><p><a class="reference internal" href="#machine-readable-json-output-format-json" id="id10">Machine-Readable JSON Output (<code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">json</span></code>)</a></p></li>
-<li><p><a class="reference internal" href="#python-api-no-subprocess-required" id="id11">Python API (no subprocess required)</a></p></li>
+<li><p><a class="reference internal" href="#quieter-human-readable-output" id="id11">Quieter Human-Readable Output</a></p></li>
+<li><p><a class="reference internal" href="#python-api-no-subprocess-required" id="id12">Python API (no subprocess required)</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#examples" id="id12">Examples</a></p></li>
-<li><p><a class="reference internal" href="#badging-your-repository" id="id13">Badging your repository</a></p></li>
-<li><p><a class="reference internal" href="#why-commit-check" id="id14">Why Commit Check?</a></p></li>
-<li><p><a class="reference internal" href="#versioning" id="id15">Versioning</a></p></li>
-<li><p><a class="reference internal" href="#have-question-or-feedback" id="id16">Have question or feedback?</a></p></li>
-<li><p><a class="reference internal" href="#license" id="id17">License</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id13">Examples</a></p></li>
+<li><p><a class="reference internal" href="#badging-your-repository" id="id14">Badging your repository</a></p></li>
+<li><p><a class="reference internal" href="#why-commit-check" id="id15">Why Commit Check?</a></p></li>
+<li><p><a class="reference internal" href="#versioning" id="id16">Versioning</a></p></li>
+<li><p><a class="reference internal" href="#have-question-or-feedback" id="id17">Have question or feedback?</a></p></li>
+<li><p><a class="reference internal" href="#license" id="id18">License</a></p></li>
 </ul>
 </nav>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
@@ -983,6 +994,30 @@ an agent needs to self-correct:</p>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">]</span>
 <span class="p">}</span>
+</code></pre></div>
+</div>
+<h3 id="quieter-human-readable-output">Quieter Human-Readable Output<a class="headerlink" href="#quieter-human-readable-output" title="Link to this heading">¶</a></h3>
+<p>For terminal workflows that still want plain text, commit-check now supports
+two lower-noise output modes:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--no-banner</span></code> keeps the normal failure details and suggestions, but removes
+the ASCII-art failure banner.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--compact</span></code> emits a single <code class="docutils literal notranslate"><span class="pre">[FAIL]</span></code> line per failing check and implies
+<code class="docutils literal notranslate"><span class="pre">--no-banner</span></code>.</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;wip bad commit&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>commit-check<span class="w"> </span>-m<span class="w"> </span>--no-banner
+</code></pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Type message check failed ==&gt; wip bad commit
+It doesn&#39;t match regex: ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)
+The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
+Suggest: Use &lt;type&gt;(&lt;scope&gt;): &lt;description&gt;, where &lt;type&gt; is one of: feat, fix, docs, ...
+</code></pre></div>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;wip bad commit&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>commit-check<span class="w"> </span>-m<span class="w"> </span>--compact
+</code></pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>[FAIL] message: wip bad commit
 </code></pre></div>
 </div>
 <h3 id="python-api-no-subprocess-required">Python API (no subprocess required)<a class="headerlink" href="#python-api-no-subprocess-required" title="Link to this heading">¶</a></h3>
