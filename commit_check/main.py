@@ -114,6 +114,20 @@ def _get_parser() -> argparse.ArgumentParser:
         "'json' for machine-readable JSON (useful for AI agents and tooling)",
     )
 
+    check_group.add_argument(
+        "--no-banner",
+        action="store_true",
+        default=False,
+        help="suppress the ASCII art banner on failure",
+    )
+
+    check_group.add_argument(
+        "--compact",
+        action="store_true",
+        default=False,
+        help="show compact one-line-per-failure output (implies --no-banner)",
+    )
+
     # Commit message configuration options
     commit_group = parser.add_argument_group(
         "commit message options", "Configuration options for --message validation"
@@ -399,10 +413,18 @@ def main() -> int:
             # For non-message validations (branch, author), check for stdin input
             stdin_content = stdin_reader.read_piped_input()
 
+        # Reset banner state for this run so that multiple main() calls
+        # in the same process (e.g. tests) don't share banner state.
+        from commit_check.util import print_error_header as _peh
+
+        _peh.has_been_called = False
+
         context = ValidationContext(
             stdin_text=stdin_content,
             commit_file=commit_file_path,
             config=config_data,
+            no_banner=getattr(args, "no_banner", False),
+            compact=getattr(args, "compact", False),
         )
 
         # Run validation – choose output mode based on --format

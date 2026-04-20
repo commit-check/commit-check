@@ -236,6 +236,36 @@ an agent needs to self-correct:
       ]
     }
 
+Quieter Human-Readable Output
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For terminal workflows that still want plain text, commit-check now supports
+two lower-noise output modes:
+
+* ``--no-banner`` keeps the normal failure details and suggestions, but removes
+  the ASCII-art failure banner.
+* ``--compact`` emits a single ``[FAIL]`` line per failing check and implies
+  ``--no-banner``.
+
+.. code-block:: bash
+
+    echo "wip bad commit" | commit-check -m --no-banner
+
+.. code-block:: text
+
+    Type message check failed ==> wip bad commit
+    It doesn't match regex: ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)
+    The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
+    Suggest: Use <type>(<scope>): <description>, where <type> is one of: feat, fix, docs, ...
+
+.. code-block:: bash
+
+    echo "wip bad commit" | commit-check -m --compact
+
+.. code-block:: text
+
+    [FAIL] message: wip bad commit
+
 Python API (no subprocess required)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

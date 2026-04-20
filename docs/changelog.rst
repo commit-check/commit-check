@@ -5,6 +5,20 @@ All **notable changes** to this project will be documented in this file.
 
 Full changelog available at `GitHub releases <https://github.com/commit-check/commit-check/releases>`_.
 
+v2.6.0 (2026-04-20)
+-------------------
+
+New Features
+~~~~~~~~~~~~
+
+* **Lower-noise CLI failure output** — Added ``--no-banner`` to suppress the ASCII art header while preserving detailed errors and suggestions.
+* **Compact failure mode** — Added ``--compact`` to print one ``[FAIL]`` line per failing check for CI logs and automation-friendly terminal output. This mode also suppresses the banner.
+
+Bug Fixes
+~~~~~~~~~
+
+* Fixed ``print_error_header`` state handling so repeated validations stay consistent when ``--compact`` is used.
+
 v2.5.0 (2026-04-03)
 -------------------
 
