@@ -41,6 +41,8 @@ def _print_failure(
 ) -> None:
     """Print a standardized failure message."""
     if compact:
+        # Mark header as handled so state is consistent across all code paths.
+        print_error_header.has_been_called = True
         print(f"[FAIL] {check['check']}: {actual}")
         return
     if not no_banner and not print_error_header.has_been_called:
