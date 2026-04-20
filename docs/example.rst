@@ -292,6 +292,21 @@ Error Output Examples
     Signed-off-by not found in latest commit
     Suggest: git commit --amend --signoff or use --signoff on commit
 
+**Commit Message Validation Failure without ASCII Banner (``--no-banner``):**
+
+.. code-block:: text
+
+    Type message check failed ==> test commit message check
+    It doesn't match regex: ^(chore|ci|docs|feat|fix|refactor|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)
+    The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
+    Suggest: Use <type>(<scope>): <description> with allowed types
+
+**Compact Failure Output (``--compact``):**
+
+.. code-block:: text
+
+    [FAIL] message: test commit message check
+
 **Imperative Mood Validation Failure:**
 
 .. code-block:: text
@@ -330,6 +345,12 @@ You can use commit-check in CI/CD pipelines:
 
     # or just
     commit-check -m
+
+    # Keep plain-text output but remove the ASCII art banner
+    git log --format="%s" -n 1 | commit-check -m --no-banner
+
+    # Emit one machine-friendly line per failure without switching to JSON
+    git log --format="%s" -n 1 | commit-check -m --compact
 
 Scripting
 ~~~~~~~~~

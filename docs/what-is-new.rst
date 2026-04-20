@@ -3,6 +3,24 @@ What's New
 
 This document highlights the major changes and improvements in each version of commit-check.
 
+Version 2.6.0 — Output Controls for CLI Workflows
+-------------------------------------------------
+
+Quieter Human-Readable Failure Output
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+commit-check now includes two CLI flags for workflows that want less verbose
+terminal output without switching to JSON mode:
+
+* ``--no-banner`` suppresses the ASCII art failure banner while keeping the
+  detailed error message and suggestion output.
+* ``--compact`` prints a single ``[FAIL]`` line per failing check and implies
+  ``--no-banner``.
+
+These flags are useful in CI logs, pre-commit output, and agent-driven terminal
+sessions where the full banner is noisy but plain-text diagnostics are still
+helpful.
+
 Version 2.5.0 — New Features
 ------------------------------
 
