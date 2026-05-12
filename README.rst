@@ -455,6 +455,10 @@ reflects a DIY approach rather than built-in product features.
      - ✅
      - ❌
      - DIY
+   * - Force push blocking
+     - ✅
+     - ❌
+     - DIY
    * - Author name / email validation
      - ✅
      - ❌
