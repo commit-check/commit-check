@@ -44,6 +44,11 @@ DEFAULT_BRANCH_TYPES = [
 # Additional allowed branch names (e.g., develop, staging)
 DEFAULT_BRANCH_NAMES: list[str] = []
 
+# Push-related defaults
+DEFAULT_PUSH_RULES = {
+    "allow_force_push": True,
+}
+
 # Handle different default values for different rules
 DEFAULT_BOOLEAN_RULES = {
     "subject_capitalized": False,
