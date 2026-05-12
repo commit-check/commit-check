@@ -258,3 +258,11 @@ class TestPushRuleBuilder:
         rules = builder.build_all_rules()
         push_rules = [r for r in rules if r.check == "no_force_push"]
         assert len(push_rules) == 0
+
+    @pytest.mark.benchmark
+    def test_push_rule_unknown_check_returns_none(self):
+        """A push rule with an unrecognized check name returns None."""
+        builder = RuleBuilder({})
+        unknown_entry = RuleCatalogEntry(check="unknown_push_check")
+        rule = builder._build_push_rule(unknown_entry)
+        assert rule is None
