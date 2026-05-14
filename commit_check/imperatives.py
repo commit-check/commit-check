@@ -100,6 +100,7 @@ IMPERATIVES = {
     "force",
     "format",
     "forward",
+    "freeze",
     "generate",
     "get",
     "give",
