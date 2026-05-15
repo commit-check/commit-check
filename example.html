@@ -587,6 +587,16 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#push-validation-examples" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Push Validation Examples</span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#author-validation-examples" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -868,6 +878,16 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#push-validation-examples" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Push Validation Examples</span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#author-validation-examples" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -1099,6 +1119,22 @@ commit-check<span class="w"> </span>--branch
 <span class="c1"># - release/v1.2.0</span>
 </code></pre></div>
 </div>
+<h3 id="push-validation-examples">Push Validation Examples<a class="headerlink" href="#push-validation-examples" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># Check whether pushing HEAD to its configured upstream would require force</span>
+commit-check<span class="w"> </span>--no-force-push
+</code></pre></div>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># Configure the dedicated pre-push hook</span>
+<span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/commit-check/commit-check</span>
+<span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">the tag or revision</span>
+<span class="w">    </span><span class="nt">hooks</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w">   </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-no-force-push</span>
+<span class="w">        </span><span class="nt">stages</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pre-push</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span> <span class="pre">|</span> <span class="pre">commit-check</span> <span class="pre">--no-force-push</span></code> is not a prevention mechanism. The
+push has already started, and normal <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span></code> output does not include the
+pre-push ref lines that Git provides to hooks.</p>
 <h3 id="author-validation-examples">Author Validation Examples<a class="headerlink" href="#author-validation-examples" title="Link to this heading">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># Check author name</span>
 commit-check<span class="w"> </span>--author-name

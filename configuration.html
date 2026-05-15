@@ -918,6 +918,10 @@
 <span class="c1"># required_signoff_name = &quot;Your Name&quot;      # Optional</span>
 <span class="c1"># required_signoff_email = &quot;your.email@example.com&quot;  # Optional</span>
 
+<span class="k">[push]</span>
+<span class="c1"># Block force pushes when used as a pre-push hook or with --no-force-push</span>
+<span class="n">allow_force_push</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">  </span><span class="c1"># Set to false to block force pushes</span>
+
 <span class="k">[branch]</span>
 <span class="c1"># https://conventional-branch.github.io/</span>
 <span class="n">conventional_branch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
@@ -1075,7 +1079,11 @@ commit-check<span class="w"> </span>--branch<span class="w"> </span>--allow-bran
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_REQUIRE_REBASE_TARGET=main</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--require-rebase-target=main</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ignore_authors</span> <span class="pre">=</span> <span class="pre">[&quot;bot&quot;]</span></code> (in branch section)</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">allow_force_push</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_FORCE_PUSH=false</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--no-force-push</span></code> (enable via <code class="docutils literal notranslate"><span class="pre">--no-force-push</span></code> flag)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ignore_authors</span> <span class="pre">=</span> <span class="pre">[&quot;bot&quot;]</span></code> (in branch section)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_BRANCH_IGNORE_AUTHORS=bot,user</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--branch-ignore-authors=bot,user</span></code></p></td>
 </tr>
@@ -1214,7 +1222,13 @@ commit-check<span class="w"> </span>--message<span class="w"> </span>--subject-m
 <td><p>None (no requirement)</p></td>
 <td><p>Target branch for rebase requirement. If not set, no rebase validation is performed.</p></td>
 </tr>
-<tr class="row-even"><td><p>branch</p></td>
+<tr class="row-even"><td><p>push</p></td>
+<td><p>allow_force_push</p></td>
+<td><p>bool</p></td>
+<td><p>true</p></td>
+<td><p>Allow force pushes. Set to <code class="docutils literal notranslate"><span class="pre">false</span></code> to block force pushes when used as a pre-push hook or with <code class="docutils literal notranslate"><span class="pre">--no-force-push</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>branch</p></td>
 <td><p>ignore_authors</p></td>
 <td><p>list[str]</p></td>
 <td><p>[] (none ignored)</p></td>

@@ -690,6 +690,16 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#check-push-safety" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Check Push Safety</span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -831,21 +841,22 @@
 <li><p><a class="reference internal" href="#use-custom-configuration-file" id="id6">Use Custom Configuration File</a></p></li>
 <li><p><a class="reference internal" href="#organization-level-configuration-inherit-from" id="id7">Organization-Level Configuration (inherit_from)</a></p></li>
 <li><p><a class="reference internal" href="#use-cli-arguments-or-environment-variables" id="id8">Use CLI Arguments or Environment Variables</a></p></li>
+<li><p><a class="reference internal" href="#check-push-safety" id="id9">Check Push Safety</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#ai-native-usage" id="id9">AI-Native Usage</a></p>
+<li><p><a class="reference internal" href="#ai-native-usage" id="id10">AI-Native Usage</a></p>
 <ul>
-<li><p><a class="reference internal" href="#machine-readable-json-output-format-json" id="id10">Machine-Readable JSON Output (<code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">json</span></code>)</a></p></li>
-<li><p><a class="reference internal" href="#quieter-human-readable-output" id="id11">Quieter Human-Readable Output</a></p></li>
-<li><p><a class="reference internal" href="#python-api-no-subprocess-required" id="id12">Python API (no subprocess required)</a></p></li>
+<li><p><a class="reference internal" href="#machine-readable-json-output-format-json" id="id11">Machine-Readable JSON Output (<code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">json</span></code>)</a></p></li>
+<li><p><a class="reference internal" href="#quieter-human-readable-output" id="id12">Quieter Human-Readable Output</a></p></li>
+<li><p><a class="reference internal" href="#python-api-no-subprocess-required" id="id13">Python API (no subprocess required)</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#examples" id="id13">Examples</a></p></li>
-<li><p><a class="reference internal" href="#badging-your-repository" id="id14">Badging your repository</a></p></li>
-<li><p><a class="reference internal" href="#why-commit-check" id="id15">Why Commit Check?</a></p></li>
-<li><p><a class="reference internal" href="#versioning" id="id16">Versioning</a></p></li>
-<li><p><a class="reference internal" href="#have-question-or-feedback" id="id17">Have question or feedback?</a></p></li>
-<li><p><a class="reference internal" href="#license" id="id18">License</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id14">Examples</a></p></li>
+<li><p><a class="reference internal" href="#badging-your-repository" id="id15">Badging your repository</a></p></li>
+<li><p><a class="reference internal" href="#why-commit-check" id="id16">Why Commit Check?</a></p></li>
+<li><p><a class="reference internal" href="#versioning" id="id17">Versioning</a></p></li>
+<li><p><a class="reference internal" href="#have-question-or-feedback" id="id18">Have question or feedback?</a></p></li>
+<li><p><a class="reference internal" href="#license" id="id19">License</a></p></li>
 </ul>
 </nav>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
@@ -958,6 +969,26 @@ repos:
 </code></pre></div>
 </div>
 <p>See the <a class="reference external" href="https://commit-check.github.io/commit-check/configuration.html">Configuration documentation</a> for all available options.</p>
+<h3 id="check-push-safety">Check Push Safety<a class="headerlink" href="#check-push-safety" title="Link to this heading">¶</a></h3>
+<p>Use <code class="docutils literal notranslate"><span class="pre">--no-force-push</span></code> in a <code class="docutils literal notranslate"><span class="pre">pre-push</span></code> hook to inspect the ref updates Git
+provides on stdin, or run it directly to compare <code class="docutils literal notranslate"><span class="pre">HEAD</span></code> with the current
+branch’s configured upstream:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># Standalone preflight check against the current branch&#39;s upstream</span>
+commit-check<span class="w"> </span>--no-force-push
+</code></pre></div>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># In pre-commit hooks (.pre-commit-config.yaml)</span>
+<span class="nt">repos</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/commit-check/commit-check</span>
+<span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v2.6.0</span>
+<span class="w">    </span><span class="nt">hooks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check-no-force-push</span>
+<span class="w">        </span><span class="nt">stages</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pre-push</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+</div>
+<p>Piping <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span></code> into <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> is not a prevention mechanism. The
+push has already been started, and standard <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span></code> output does not carry
+the pre-push ref metadata that <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> uses.</p>
 <h2 id="ai-native-usage">AI-Native Usage<a class="headerlink" href="#ai-native-usage" title="Link to this heading">¶</a></h2>
 <p>Commit Check is designed to be consumed by AI agents, LLM toolchains, and
 automation scripts — not just by humans reading terminal output.</p>
@@ -1164,47 +1195,52 @@ reflects a DIY approach rather than built-in product features.</p>
 <td><p>❌</p></td>
 <td><p>DIY</p></td>
 </tr>
-<tr class="row-even"><td><p>Author name / email validation</p></td>
+<tr class="row-even"><td><p>Force push blocking</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
 <td><p>DIY</p></td>
 </tr>
-<tr class="row-odd"><td><p>Signed-off-by trailer enforcement</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>DIY</p></td>
-</tr>
-<tr class="row-even"><td><p>Co-author ignore list</p></td>
+<tr class="row-odd"><td><p>Author name / email validation</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
 <td><p>DIY</p></td>
 </tr>
-<tr class="row-odd"><td><p>Organization-level shared config</p></td>
+<tr class="row-even"><td><p>Signed-off-by trailer enforcement</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>DIY</p></td>
 </tr>
-<tr class="row-even"><td><p>Zero-config defaults</p></td>
+<tr class="row-odd"><td><p>Co-author ignore list</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>DIY</p></td>
+</tr>
+<tr class="row-even"><td><p>Organization-level shared config</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>DIY</p></td>
+</tr>
+<tr class="row-odd"><td><p>Zero-config defaults</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
 <td><p>❌</p></td>
 </tr>
-<tr class="row-odd"><td><p>Works without Node.js</p></td>
+<tr class="row-even"><td><p>Works without Node.js</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
 <td><p>Depends</p></td>
 </tr>
-<tr class="row-even"><td><p>Native TOML configuration</p></td>
+<tr class="row-odd"><td><p>Native TOML configuration</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
 <td><p>Depends</p></td>
 </tr>
-<tr class="row-odd"><td><p>Git hook / pre-commit integration</p></td>
+<tr class="row-even"><td><p>Git hook / pre-commit integration</p></td>
 <td><p>✅</p></td>
 <td><p>Partial</p></td>
 <td><p>✅</p></td>
 </tr>
-<tr class="row-even"><td><p>CI/CD-friendly configuration</p></td>
+<tr class="row-odd"><td><p>CI/CD-friendly configuration</p></td>
 <td><p>✅</p></td>
 <td><p>Partial</p></td>
 <td><p>DIY</p></td>
