@@ -7,6 +7,7 @@ from commit_check.api import (
     validate_branch,
     validate_author,
     validate_all,
+    validate_push,
 )
 
 
@@ -266,3 +267,70 @@ class TestValidateAll:
         check_names = {c["check"] for c in result["checks"]}
         assert "author_name" in check_names
         assert "author_email" in check_names
+
+
+class TestValidatePush:
+    """Tests for validate_push() – the programmatic push safety API."""
+
+    ZERO_SHA = "0000000000000000000000000000000000000000"
+
+    @pytest.mark.benchmark
+    def test_new_branch_push_passes(self):
+        """Push to a new (zero-SHA) remote ref returns status='pass'."""
+        push_info = f"refs/heads/feature/x abc1 refs/heads/feature/x {self.ZERO_SHA}"
+        result = validate_push(push_info)
+        assert result["status"] == "pass"
+        checks = result["checks"]
+        assert any(c["check"] == "no_force_push" for c in checks)
+
+    @pytest.mark.benchmark
+    def test_fast_forward_push_passes(self):
+        """A fast-forward push (ancestor check returns 0) passes."""
+        push_info = "refs/heads/main abc123 refs/heads/main def456"
+        with patch("commit_check.engine.git_merge_base", return_value=0):
+            result = validate_push(push_info)
+        assert result["status"] == "pass"
+
+    @pytest.mark.benchmark
+    def test_force_push_fails(self):
+        """A force push (ancestor check returns 1) returns status='fail'."""
+        push_info = "refs/heads/main abc1 refs/heads/main def2"
+        with patch("commit_check.engine.git_merge_base", return_value=1):
+            result = validate_push(push_info)
+        assert result["status"] == "fail"
+        failed = [c for c in result["checks"] if c["status"] == "fail"]
+        assert len(failed) >= 1
+        assert failed[0]["check"] == "no_force_push"
+        assert "Force push" in failed[0]["error"]
+
+    @pytest.mark.benchmark
+    def test_none_push_refs_passes(self):
+        """Calling with push_refs=None (no stdin) returns pass."""
+        result = validate_push(None)
+        assert result["status"] == "pass"
+
+    @pytest.mark.benchmark
+    def test_custom_config_is_merged(self):
+        """Custom config overrides are applied."""
+        push_info = f"refs/heads/main abc1 refs/heads/main {self.ZERO_SHA}"
+        # Even with allow_force_push=True in user config, validate_push
+        # always forces it to False so blocking is always active.
+        result = validate_push(
+            push_info,
+            config={"push": {"allow_force_push": True}},
+        )
+        assert result["status"] == "pass"
+
+    @pytest.mark.benchmark
+    def test_result_has_expected_structure(self):
+        """Result dict has 'status' and 'checks' with correct keys."""
+        push_info = f"refs/heads/main abc1 refs/heads/main {self.ZERO_SHA}"
+        result = validate_push(push_info)
+        assert "status" in result
+        assert "checks" in result
+        for c in result["checks"]:
+            assert "check" in c
+            assert "status" in c
+            assert "value" in c
+            assert "error" in c
+            assert "suggest" in c

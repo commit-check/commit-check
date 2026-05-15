@@ -74,6 +74,111 @@ def get_branch_name() -> str:
     return branch_name.strip()
 
 
+def get_upstream_branch() -> str:
+    """Return the configured upstream ref for the current branch.
+
+    :returns: The upstream tracking ref (e.g. ``origin/main``), or "" if none
+        is configured.
+    """
+    result = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    if result.returncode == 0 and result.stdout:
+        return result.stdout.strip()
+    return ""
+
+
+def get_upstream_remote_sha(upstream_ref: str) -> str:
+    """Return the current remote SHA for an upstream ref when available.
+
+    :param upstream_ref: An upstream tracking ref (e.g. ``origin/main``).
+    :returns: The 40-character remote SHA, or "" if not available.
+    """
+    parts = upstream_ref.split("/", 1)
+    if len(parts) != 2:
+        return ""
+
+    remote_name, branch_name = parts
+    return get_remote_branch_sha(remote_name, branch_name)
+
+
+def get_remote_branch_sha(remote_name: str, branch_name: str) -> str:
+    """Return the current remote SHA for a branch when available.
+
+    :param remote_name: Git remote name, e.g. ``origin``.
+    :param branch_name: Branch name on the remote, e.g. ``main``.
+    :returns: The 40-character remote SHA, or "" if not available.
+    """
+    if not remote_name or not branch_name:
+        return ""
+
+    result = subprocess.run(
+        ["git", "ls-remote", "--exit-code", remote_name, f"refs/heads/{branch_name}"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    if result.returncode != 0 or not result.stdout:
+        return ""
+
+    return result.stdout.split()[0].strip()
+
+
+def fetch_upstream_ref(upstream_ref: str) -> bool:
+    """Fetch an upstream branch so its tip commit is available locally.
+
+    :param upstream_ref: An upstream tracking ref (e.g. ``origin/main``).
+    :returns: ``True`` if the fetch succeeded, ``False`` otherwise.
+    """
+    parts = upstream_ref.split("/", 1)
+    if len(parts) != 2:
+        return False
+
+    remote_name, branch_name = parts
+    result = subprocess.run(
+        ["git", "fetch", "--quiet", "--no-tags", remote_name, branch_name],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    return result.returncode == 0
+
+
+def get_git_remotes() -> list[str]:
+    """Return configured git remote names."""
+    result = subprocess.run(
+        ["git", "remote"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    if result.returncode != 0 or not result.stdout:
+        return []
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+
+def fetch_remote_ref(remote_name: str, remote_ref: str) -> bool:
+    """Fetch a remote ref so its objects are available locally.
+
+    :param remote_name: The git remote name, e.g. ``origin``.
+    :param remote_ref: The full ref name, e.g. ``refs/heads/main``.
+    :returns: ``True`` if the fetch succeeded, ``False`` otherwise.
+    """
+    if not remote_name or not remote_ref:
+        return False
+
+    result = subprocess.run(
+        ["git", "fetch", "--quiet", "--no-tags", remote_name, remote_ref],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    return result.returncode == 0
+
+
 def has_commits() -> bool:
     """Check if there are any commits in the current branch.
     :returns: `True` if there are commits, `False` otherwise.

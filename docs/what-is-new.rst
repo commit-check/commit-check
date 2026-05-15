@@ -3,6 +3,64 @@ What's New
 
 This document highlights the major changes and improvements in each version of commit-check.
 
+Version 2.7.0 — Force Push Blocking
+-----------------------------------
+
+Force Push Detection and Prevention
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+commit-check now includes a **force push detection** feature that blocks
+accidental ``git push --force`` / ``git push -f`` by inspecting pushed ref
+ancestry via ``git merge-base --is-ancestor``.
+
+**How it works:**
+
+* Runs inside a Git ``pre-push`` hook — receives pushed ref metadata on stdin
+  and inspects the ancestry relationship.
+* New branch pushes (remote SHA is all zeros) always pass.
+* Fast-forward pushes (remote is ancestor of local) pass.
+* When the remote commit is **not** an ancestor of the local commit, a force
+  push is detected and **blocked**.
+* Git errors (e.g., unknown SHA) result in a safe pass.
+
+**Usage:**
+
+.. code-block:: bash
+
+    # Standalone: check whether pushing HEAD to its upstream requires force
+    commit-check --no-force-push
+
+.. code-block:: yaml
+
+    # As a pre-commit pre-push hook
+    repos:
+      - repo: https://github.com/commit-check/commit-check
+        rev: v2.7.0
+        hooks:
+          - id: check-no-force-push
+            stages: [pre-push]
+
+.. code-block:: toml
+
+    # Configurable in cchk.toml
+    [push]
+    allow_force_push = false  # default: true (force pushes allowed)
+
+**New Python API:**
+
+.. code-block:: python
+
+    from commit_check.api import validate_push
+
+    zero = "0000000000000000000000000000000000000000"
+    result = validate_push(f"refs/heads/main abc123 refs/heads/main {zero}")
+    print(result["status"])  # "pass"
+
+See the `Push Safety section in README <https://github.com/commit-check/commit-check#check-push-safety>`_
+and `Push Validation Examples <https://commit-check.github.io/commit-check/example.html#push-validation-examples>`_
+for more details.
+
+
 Version 2.6.0 — Output Controls for CLI Workflows
 -------------------------------------------------
 

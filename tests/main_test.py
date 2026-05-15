@@ -1,9 +1,15 @@
 import json
+import subprocess
 import sys
 import pytest
 import tempfile
 import os
-from commit_check.main import StdinReader, _get_message_content, main
+from commit_check.main import (
+    StdinReader,
+    _build_pre_commit_push_input,
+    _get_message_content,
+    main,
+)
 
 CMD = "commit-check"
 
@@ -761,3 +767,194 @@ class TestCompact:
 
         sys.argv = [CMD, "-m", "--compact"]
         assert main() == 0
+
+
+class TestNoForcePushFlag:
+    """Tests for the --no-force-push CLI flag."""
+
+    ZERO_SHA = "0000000000000000000000000000000000000000"
+
+    @pytest.mark.benchmark
+    def test_no_force_push_new_branch_passes(self, mocker):
+        """Push to a new remote branch (zero SHA) always passes."""
+        push_info = (
+            f"refs/heads/feature/new abc123 refs/heads/feature/new {self.ZERO_SHA}"
+        )
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=push_info)
+
+        sys.argv = [CMD, "--no-force-push"]
+        assert main() == 0
+
+    @pytest.mark.benchmark
+    def test_no_force_push_fast_forward_passes(self, mocker):
+        """Fast-forward push (remote is ancestor of local) passes."""
+        push_info = "refs/heads/main abc123 refs/heads/main def456"
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=push_info)
+        mocker.patch("commit_check.engine.git_merge_base", return_value=0)
+
+        sys.argv = [CMD, "--no-force-push"]
+        assert main() == 0
+
+    @pytest.mark.benchmark
+    def test_no_force_push_force_push_fails(self, mocker):
+        """Force push (remote is not ancestor of local) fails."""
+        push_info = "refs/heads/main abc123 refs/heads/main def456"
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=push_info)
+        mocker.patch("commit_check.engine.git_merge_base", return_value=1)
+
+        sys.argv = [CMD, "--no-force-push"]
+        assert main() == 1
+
+    @pytest.mark.benchmark
+    def test_no_force_push_no_stdin_passes(self, mocker):
+        """When no stdin and no upstream are available, the check is skipped."""
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch("commit_check.engine.get_upstream_branch", return_value="")
+
+        sys.argv = [CMD, "--no-force-push"]
+        assert main() == 0
+
+    @pytest.mark.benchmark
+    def test_no_force_push_no_stdin_uses_upstream_fallback(self, mocker):
+        """Without stdin, the CLI falls back to checking the current upstream."""
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch(
+            "commit_check.engine.get_upstream_branch", return_value="origin/main"
+        )
+        mocker.patch("commit_check.engine.git_merge_base", return_value=0)
+
+        sys.argv = [CMD, "--no-force-push"]
+        assert main() == 0
+
+    @pytest.mark.benchmark
+    def test_no_force_push_no_stdin_blocks_non_fast_forward_upstream(self, mocker):
+        """Without stdin, a non-fast-forward upstream relationship fails."""
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch(
+            "commit_check.engine.get_upstream_branch", return_value="origin/main"
+        )
+        mocker.patch("commit_check.engine.get_branch_name", return_value="main")
+        mocker.patch("commit_check.engine.git_merge_base", return_value=1)
+
+        sys.argv = [CMD, "--no-force-push"]
+        assert main() == 1
+
+    @pytest.mark.benchmark
+    def test_no_force_push_uses_pre_commit_env_before_upstream(self, mocker):
+        """pre-commit pre-push metadata drives the check when stdin is unavailable."""
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch.dict(
+            os.environ,
+            {
+                "PRE_COMMIT_LOCAL_BRANCH": "feature/topic",
+                "PRE_COMMIT_REMOTE_BRANCH": "main",
+                "PRE_COMMIT_TO_REF": "local-sha",
+                "PRE_COMMIT_FROM_REF": "remote-sha",
+            },
+            clear=True,
+        )
+        mock_merge = mocker.patch("commit_check.engine.git_merge_base", return_value=1)
+        mock_upstream = mocker.patch("commit_check.engine.get_upstream_branch")
+
+        sys.argv = [CMD, "--no-force-push"]
+        assert main() == 1
+
+        mock_merge.assert_called_once_with("remote-sha", "local-sha")
+        mock_upstream.assert_not_called()
+
+    @pytest.mark.benchmark
+    def test_no_force_push_pre_commit_env_fetches_remote_sha(self, mocker):
+        """pre-commit metadata can resolve the remote tip when FROM_REF is absent."""
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch.dict(
+            os.environ,
+            {
+                "PRE_COMMIT_REMOTE_NAME": "upstream",
+                "PRE_COMMIT_LOCAL_BRANCH": "feature/topic",
+                "PRE_COMMIT_REMOTE_BRANCH": "main",
+                "PRE_COMMIT_TO_REF": "local-sha",
+            },
+            clear=True,
+        )
+        mock_run = mocker.patch(
+            "subprocess.run",
+            return_value=subprocess.CompletedProcess(
+                args=[],
+                returncode=0,
+                stdout="remote-sha\trefs/heads/main\n",
+                stderr="",
+            ),
+        )
+        mock_merge = mocker.patch("commit_check.engine.git_merge_base", return_value=0)
+
+        sys.argv = [CMD, "--no-force-push"]
+        assert main() == 0
+
+        mock_run.assert_called_once_with(
+            ["git", "ls-remote", "--exit-code", "upstream", "refs/heads/main"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+        )
+        mock_merge.assert_called_once_with("remote-sha", "local-sha")
+
+    @pytest.mark.benchmark
+    def test_build_pre_commit_push_input_normalizes_branch_names(self, mocker):
+        """pre-commit branch names are converted to git pre-push ref rows."""
+        mocker.patch.dict(
+            os.environ,
+            {
+                "PRE_COMMIT_LOCAL_BRANCH": "feature/topic",
+                "PRE_COMMIT_REMOTE_BRANCH": "main",
+                "PRE_COMMIT_TO_REF": "local-sha",
+                "PRE_COMMIT_FROM_REF": "remote-sha",
+            },
+            clear=True,
+        )
+
+        assert (
+            _build_pre_commit_push_input()
+            == "refs/heads/feature/topic local-sha refs/heads/main remote-sha"
+        )
+
+    @pytest.mark.benchmark
+    def test_build_pre_commit_push_input_prefers_remote_sha(self, mocker):
+        """The real remote tip is preferred over pre-commit's FROM_REF range."""
+        mocker.patch.dict(
+            os.environ,
+            {
+                "PRE_COMMIT_REMOTE_NAME": "upstream",
+                "PRE_COMMIT_LOCAL_BRANCH": "feature/topic",
+                "PRE_COMMIT_REMOTE_BRANCH": "main",
+                "PRE_COMMIT_TO_REF": "local-sha",
+                "PRE_COMMIT_FROM_REF": "range-base-sha",
+            },
+            clear=True,
+        )
+        mocker.patch(
+            "subprocess.run",
+            return_value=subprocess.CompletedProcess(
+                args=[],
+                returncode=0,
+                stdout="remote-sha\trefs/heads/main\n",
+                stderr="",
+            ),
+        )
+
+        assert (
+            _build_pre_commit_push_input()
+            == "refs/heads/feature/topic local-sha refs/heads/main remote-sha"
+        )
+
+    @pytest.mark.benchmark
+    def test_no_force_push_flag_in_help(self, capfd):
+        """The --no-force-push flag appears in help output."""
+        sys.argv = [CMD, "--help"]
+        with pytest.raises(SystemExit):
+            main()
+        out, _ = capfd.readouterr()
+        assert "--no-force-push" in out
+        assert "current branch against its upstream" in out
