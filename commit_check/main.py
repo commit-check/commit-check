@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import json
+import os
 import sys
 import argparse
 from typing import Optional
@@ -30,6 +31,47 @@ class StdinReader:
         except (OSError, IOError):
             return None
         return None
+
+
+def _normalize_pre_commit_branch_ref(branch: Optional[str]) -> str:
+    """Return a full branch ref from a pre-commit branch environment value."""
+    if not branch:
+        return ""
+    if branch.startswith("refs/"):
+        return branch
+    return f"refs/heads/{branch}"
+
+
+def _build_pre_commit_push_input() -> Optional[str]:
+    """Build pre-push ref data from pre-commit's pre-push environment.
+
+    pre-commit consumes git's native pre-push stdin and exposes the active push
+    target through PRE_COMMIT_* variables. Convert that environment back into
+    the same four-field format used by git's native pre-push hook.
+    """
+    remote_name = os.getenv("PRE_COMMIT_REMOTE_NAME") or os.getenv(
+        "PRE_COMMIT_REMOTE_URL"
+    )
+    local_ref = _normalize_pre_commit_branch_ref(os.getenv("PRE_COMMIT_LOCAL_BRANCH"))
+    remote_ref = _normalize_pre_commit_branch_ref(os.getenv("PRE_COMMIT_REMOTE_BRANCH"))
+    local_sha = os.getenv("PRE_COMMIT_TO_REF") or ""
+    remote_sha = ""
+
+    if not (local_ref and remote_ref and local_sha):
+        return None
+
+    if remote_name:
+        from commit_check.util import get_remote_branch_sha
+
+        remote_branch = remote_ref.removeprefix("refs/heads/")
+        remote_sha = get_remote_branch_sha(remote_name, remote_branch)
+
+    remote_sha = remote_sha or os.getenv("PRE_COMMIT_FROM_REF") or ""
+
+    if not remote_sha:
+        return None
+
+    return f"{local_ref} {local_sha} {remote_ref} {remote_sha}"
 
 
 def _get_parser() -> argparse.ArgumentParser:
@@ -429,6 +471,8 @@ def main() -> int:
         else:
             # For non-message validations (branch, author, push), check for stdin input
             stdin_content = stdin_reader.read_piped_input()
+            if args.no_force_push and stdin_content is None:
+                stdin_content = _build_pre_commit_push_input()
 
         # Reset banner state for this run so that multiple main() calls
         # in the same process (e.g. tests) don't share banner state.

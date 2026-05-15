@@ -102,6 +102,19 @@ def get_upstream_remote_sha(upstream_ref: str) -> str:
         return ""
 
     remote_name, branch_name = parts
+    return get_remote_branch_sha(remote_name, branch_name)
+
+
+def get_remote_branch_sha(remote_name: str, branch_name: str) -> str:
+    """Return the current remote SHA for a branch when available.
+
+    :param remote_name: Git remote name, e.g. ``origin``.
+    :param branch_name: Branch name on the remote, e.g. ``main``.
+    :returns: The 40-character remote SHA, or "" if not available.
+    """
+    if not remote_name or not branch_name:
+        return ""
+
     result = subprocess.run(
         ["git", "ls-remote", "--exit-code", remote_name, f"refs/heads/{branch_name}"],
         stdout=subprocess.PIPE,

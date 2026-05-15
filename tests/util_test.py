@@ -8,6 +8,7 @@ from commit_check.util import (
     fetch_upstream_ref,
     get_branch_name,
     get_git_remotes,
+    get_remote_branch_sha,
     get_upstream_branch,
     get_upstream_remote_sha,
     has_commits,
@@ -240,6 +241,48 @@ class TestUtil:
             mock_run = mocker.patch("subprocess.run")
 
             assert get_upstream_remote_sha("main") == ""
+            mock_run.assert_not_called()
+
+    class TestGetRemoteBranchSha:
+        @pytest.mark.benchmark
+        def test_get_remote_branch_sha(self, mocker):
+            mock_run = mocker.patch(
+                "subprocess.run",
+                return_value=type(
+                    "MockResult",
+                    (),
+                    {
+                        "stdout": "abc123\trefs/heads/main\n",
+                        "stderr": "",
+                        "returncode": 0,
+                    },
+                )(),
+            )
+
+            result = get_remote_branch_sha("origin", "main")
+
+            mock_run.assert_called_once_with(
+                ["git", "ls-remote", "--exit-code", "origin", "refs/heads/main"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                encoding="utf-8",
+            )
+            assert result == "abc123"
+
+        @pytest.mark.benchmark
+        @pytest.mark.parametrize(
+            "remote_name,branch_name",
+            [
+                ("", "main"),
+                ("origin", ""),
+            ],
+        )
+        def test_get_remote_branch_sha_invalid_args(
+            self, mocker, remote_name, branch_name
+        ):
+            mock_run = mocker.patch("subprocess.run")
+
+            assert get_remote_branch_sha(remote_name, branch_name) == ""
             mock_run.assert_not_called()
 
     class TestFetchUpstreamRef:
