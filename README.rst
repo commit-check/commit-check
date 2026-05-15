@@ -444,7 +444,7 @@ reflects a DIY approach rather than built-in product features.
    :widths: 26 16 16 16 26
 
    * - Feature
-     - Commit Check ✅
+     - Commit Check
      - commitlint
      - YACC [#f2]_
      - Custom hooks
