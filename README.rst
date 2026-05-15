@@ -441,37 +441,45 @@ reflects a DIY approach rather than built-in product features.
 
 .. list-table::
    :header-rows: 1
-   :widths: 36 18 18 28
+   :widths: 26 16 16 16 26
 
    * - Feature
-     - Commit Check ✅
+     - Commit Check
      - commitlint
+     - YACC [#f2]_
      - Custom hooks
    * - Conventional Commits enforcement
      - ✅
      - ✅
+     - Partial
      - DIY
    * - Branch naming validation
      - ✅
      - ❌
+     - ✅
      - DIY
    * - Force push blocking
      - ✅
+     - ❌
      - ❌
      - DIY
    * - Author name / email validation
      - ✅
      - ❌
+     - ✅
      - DIY
    * - Signed-off-by trailer enforcement
      - ✅
-     - ✅
+     - Partial [#f1]_
+     - ❌
      - DIY
    * - Co-author ignore list
      - ✅
      - ❌
+     - Partial [#f3]_
      - DIY
    * - Organization-level shared config
+     - ✅
      - ✅
      - ✅
      - DIY
@@ -479,27 +487,70 @@ reflects a DIY approach rather than built-in product features.
      - ✅
      - ❌
      - ❌
+     - ❌
    * - Works without Node.js
      - ✅
      - ❌
+     - ✅
      - Depends
    * - Native TOML configuration
      - ✅
+     - ❌
      - ❌
      - Depends
    * - Git hook / pre-commit integration
      - ✅
      - Partial
+     - ❌
      - ✅
    * - CI/CD-friendly configuration
      - ✅
      - Partial
+     - ❌
      - DIY
+   * - Open source & free
+     - ✅
+     - ✅
+     - ❌
+     - ✅
+   * - Client-side (pre-commit) enforcement
+     - ✅
+     - ✅
+     - ❌
+     - ✅
+   * - AI-native (JSON API + Python SDK)
+     - ✅
+     - ❌
+     - ❌
+     - ❌
 
-For ``commitlint``, organization-level shared config is typically delivered via
-shareable config packages or local files. ``DIY`` means you can implement a
+*For* ``commitlint``, organization-level shared config is typically delivered via
+shareable config packages or local files.
+
+*For* ``YACC`` (Yet Another Commit Checker), conventional commit enforcement
+is regex-based rather than Conventional Commits-aware; author validation
+verifies committer name/email against Bitbucket user accounts or custom regex;
+the plugin supports global → project → repository config inheritance;
+it is a server-side pre-receive hook and merge check (no client-side
+pre-commit), is paid (per-user licensing), and runs on Java (no Node.js needed).
+
+``DIY`` means you can implement a
 capability with custom Git hooks or ``pre-commit`` scripts, but it is not
 provided as a turnkey policy layer.
+
+.. [#f1] ``commitlint`` provides a community ``signed-off-by`` rule
+   (``@commitlint/rule-signed-off-by``) that must be installed and configured
+   separately; it is not part of the default
+   ``@commitlint/config-conventional`` preset.
+
+.. [#f2] `Yet Another Commit Checker
+   <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker>`_
+   is a paid Bitbucket Server / Data Center plugin (server-side pre-receive hook
+   and merge check).
+
+.. [#f3] YACC can exclude commits from specific Bitbucket users, user groups,
+   or service users (bots), but does not parse ``Co-authored-by:`` trailers
+   in commit messages.
 
 
 Versioning
