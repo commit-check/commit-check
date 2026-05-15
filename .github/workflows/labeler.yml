@@ -1,12 +1,12 @@
 name: PR Autolabeler
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 on:
-  # pull_request_target is required for autolabeler to label PRs from forks.
-  pull_request_target:
+  # pull_request event is required for autolabeler
+  pull_request:
     types: [opened, reopened, synchronize]
 
 jobs:
