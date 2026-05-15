@@ -147,7 +147,6 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     check_group.add_argument(
-        "-p",
         "--no-force-push",
         help="check that no force push is being performed (uses pre-push hook stdin when available, otherwise checks the current branch against its upstream)",
         action="store_true",
