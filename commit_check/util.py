@@ -134,6 +134,38 @@ def fetch_upstream_ref(upstream_ref: str) -> bool:
     return result.returncode == 0
 
 
+def get_git_remotes() -> list[str]:
+    """Return configured git remote names."""
+    result = subprocess.run(
+        ["git", "remote"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    if result.returncode != 0 or not result.stdout:
+        return []
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+
+def fetch_remote_ref(remote_name: str, remote_ref: str) -> bool:
+    """Fetch a remote ref so its objects are available locally.
+
+    :param remote_name: The git remote name, e.g. ``origin``.
+    :param remote_ref: The full ref name, e.g. ``refs/heads/main``.
+    :returns: ``True`` if the fetch succeeded, ``False`` otherwise.
+    """
+    if not remote_name or not remote_ref:
+        return False
+
+    result = subprocess.run(
+        ["git", "fetch", "--quiet", "--no-tags", remote_name, remote_ref],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    return result.returncode == 0
+
+
 def has_commits() -> bool:
     """Check if there are any commits in the current branch.
     :returns: `True` if there are commits, `False` otherwise.

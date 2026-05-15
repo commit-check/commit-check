@@ -1271,16 +1271,104 @@ class TestForcePushValidator:
 
     @pytest.mark.benchmark
     def test_git_error_allows_push(self):
-        """When git cannot determine ancestry (exit 128), push is allowed."""
+        """When git cannot determine ancestry after fetch failure, push is allowed."""
         rule = self._make_rule()
         validator = ForcePushValidator(rule)
         push_info = "refs/heads/main abc123 refs/heads/main def456"
         context = ValidationContext(stdin_text=push_info)
 
         with patch("commit_check.engine.git_merge_base", return_value=128):
-            result = validator.validate(context)
+            with patch(
+                "commit_check.engine.fetch_remote_ref", return_value=False
+            ) as mock_fetch:
+                with patch(
+                    "commit_check.engine.get_git_remotes", return_value=["origin"]
+                ):
+                    with patch(
+                        "commit_check.engine.get_upstream_branch", return_value=""
+                    ):
+                        result = validator.validate(context)
 
+        mock_fetch.assert_called_once_with("origin", "refs/heads/main")
         assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_missing_remote_sha_is_fetched_then_force_push_is_blocked(self):
+        """A missing remote SHA is fetched before deciding the push is safe."""
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        push_info = "refs/heads/main abc123 refs/heads/main def456"
+        context = ValidationContext(stdin_text=push_info)
+
+        with patch(
+            "commit_check.engine.git_merge_base", side_effect=[128, 1]
+        ) as mock_merge:
+            with patch("commit_check.engine.get_upstream_branch", return_value=""):
+                with patch(
+                    "commit_check.engine.get_git_remotes", return_value=["origin"]
+                ):
+                    with patch(
+                        "commit_check.engine.fetch_remote_ref", return_value=True
+                    ) as mock_fetch:
+                        with patch("commit_check.util._print_failure"):
+                            result = validator.validate(context)
+
+        assert mock_merge.call_count == 2
+        mock_fetch.assert_called_once_with("origin", "refs/heads/main")
+        assert result == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_missing_remote_sha_fetch_prefers_matching_upstream_remote(self):
+        """The matching upstream remote is fetched before other remotes."""
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        push_info = "refs/heads/main abc123 refs/heads/main def456"
+        context = ValidationContext(stdin_text=push_info)
+
+        with patch("commit_check.engine.git_merge_base", side_effect=[128, 0]):
+            with patch(
+                "commit_check.engine.get_upstream_branch", return_value="upstream/main"
+            ):
+                with patch(
+                    "commit_check.engine.get_git_remotes",
+                    return_value=["origin", "upstream"],
+                ):
+                    with patch(
+                        "commit_check.engine.fetch_remote_ref", return_value=True
+                    ) as mock_fetch:
+                        result = validator.validate(context)
+
+        mock_fetch.assert_called_once_with("upstream", "refs/heads/main")
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_missing_remote_sha_tries_next_remote_until_resolved(self):
+        """Fetching one remote is not enough if it did not contain the SHA."""
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        push_info = "refs/heads/main abc123 refs/heads/main def456"
+        context = ValidationContext(stdin_text=push_info)
+
+        with patch(
+            "commit_check.engine.git_merge_base", side_effect=[128, 128, 1]
+        ) as mock_merge:
+            with patch("commit_check.engine.get_upstream_branch", return_value=""):
+                with patch(
+                    "commit_check.engine.get_git_remotes",
+                    return_value=["origin", "upstream"],
+                ):
+                    with patch(
+                        "commit_check.engine.fetch_remote_ref", return_value=True
+                    ) as mock_fetch:
+                        with patch("commit_check.util._print_failure"):
+                            result = validator.validate(context)
+
+        assert mock_merge.call_count == 3
+        assert [call.args for call in mock_fetch.call_args_list] == [
+            ("origin", "refs/heads/main"),
+            ("upstream", "refs/heads/main"),
+        ]
+        assert result == ValidationResult.FAIL
 
     @pytest.mark.benchmark
     def test_empty_lines_in_stdin_are_skipped(self):

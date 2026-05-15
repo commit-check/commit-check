@@ -8,10 +8,12 @@ from dataclasses import field
 
 from commit_check.rule_builder import ValidationRule
 from commit_check.util import (
+    fetch_remote_ref,
     fetch_upstream_ref,
     get_commit_info,
     get_git_config_value,
     get_branch_name,
+    get_git_remotes,
     get_upstream_branch,
     get_upstream_remote_sha,
     has_commits,
@@ -603,13 +605,35 @@ class ForcePushValidator(BaseValidator):
         # Check if the remote SHA is an ancestor of the local SHA.
         # returncode 0  -> remote is ancestor of local (fast-forward push, OK)
         # returncode 1  -> not an ancestor (force push detected)
-        # returncode 128 -> git error / SHA unknown (cannot determine; allow)
+        # returncode 128 -> SHA may be unknown locally; fetch remote ref and retry
         returncode = git_merge_base(remote_sha, local_sha)
+        if returncode == 128:
+            for remote in self._remote_candidates_for_push(remote_ref):
+                if not fetch_remote_ref(remote, remote_ref):
+                    continue
+                returncode = git_merge_base(remote_sha, local_sha)
+                if returncode != 128:
+                    break
         if returncode == 1:
             self._print_failure(f"{local_ref} -> {remote_ref}")
             return ValidationResult.FAIL
 
         return ValidationResult.PASS
+
+    def _remote_candidates_for_push(self, remote_ref: str) -> List[str]:
+        """Return remotes worth fetching for a pushed branch ref."""
+        if not remote_ref.startswith("refs/heads/"):
+            return []
+
+        remotes: List[str] = []
+        upstream_ref = get_upstream_branch()
+        upstream_parts = upstream_ref.split("/", 1)
+        remote_branch = remote_ref.removeprefix("refs/heads/")
+        if len(upstream_parts) == 2 and upstream_parts[1] == remote_branch:
+            remotes.append(upstream_parts[0])
+
+        remotes.extend(remote for remote in get_git_remotes() if remote not in remotes)
+        return remotes
 
 
 class CommitTypeValidator(BaseValidator):

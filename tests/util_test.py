@@ -4,8 +4,10 @@ import tempfile
 import os
 from pathlib import Path, PurePath
 from commit_check.util import (
+    fetch_remote_ref,
     fetch_upstream_ref,
     get_branch_name,
+    get_git_remotes,
     get_upstream_branch,
     get_upstream_remote_sha,
     has_commits,
@@ -278,6 +280,80 @@ class TestUtil:
             mock_run = mocker.patch("subprocess.run")
 
             assert fetch_upstream_ref("main") is False
+            mock_run.assert_not_called()
+
+    class TestGetGitRemotes:
+        @pytest.mark.benchmark
+        def test_get_git_remotes(self, mocker):
+            mocker.patch(
+                "subprocess.run",
+                return_value=type(
+                    "MockResult",
+                    (),
+                    {"stdout": "origin\nupstream\n", "stderr": "", "returncode": 0},
+                )(),
+            )
+
+            assert get_git_remotes() == ["origin", "upstream"]
+
+        @pytest.mark.benchmark
+        def test_get_git_remotes_failure(self, mocker):
+            mocker.patch(
+                "subprocess.run",
+                return_value=type(
+                    "MockResult",
+                    (),
+                    {"stdout": "", "stderr": "fatal", "returncode": 128},
+                )(),
+            )
+
+            assert get_git_remotes() == []
+
+    class TestFetchRemoteRef:
+        @pytest.mark.benchmark
+        def test_fetch_remote_ref(self, mocker):
+            mock_run = mocker.patch(
+                "subprocess.run",
+                return_value=type(
+                    "MockResult",
+                    (),
+                    {"stdout": "", "stderr": "", "returncode": 0},
+                )(),
+            )
+
+            assert fetch_remote_ref("origin", "refs/heads/main") is True
+            mock_run.assert_called_once_with(
+                ["git", "fetch", "--quiet", "--no-tags", "origin", "refs/heads/main"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                encoding="utf-8",
+            )
+
+        @pytest.mark.benchmark
+        def test_fetch_remote_ref_failure(self, mocker):
+            mocker.patch(
+                "subprocess.run",
+                return_value=type(
+                    "MockResult",
+                    (),
+                    {"stdout": "", "stderr": "fatal", "returncode": 1},
+                )(),
+            )
+
+            assert fetch_remote_ref("origin", "refs/heads/main") is False
+
+        @pytest.mark.benchmark
+        @pytest.mark.parametrize(
+            "remote_name,remote_ref",
+            [
+                ("", "refs/heads/main"),
+                ("origin", ""),
+            ],
+        )
+        def test_fetch_remote_ref_invalid_args(self, mocker, remote_name, remote_ref):
+            mock_run = mocker.patch("subprocess.run")
+
+            assert fetch_remote_ref(remote_name, remote_ref) is False
             mock_run.assert_not_called()
 
     class TestGitMergeBase:
