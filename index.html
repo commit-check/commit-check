@@ -832,31 +832,31 @@
 <nav class="contents local" id="table-of-contents">
 <p class="topic-title">Table of Contents</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="#overview" id="id1">Overview</a></p></li>
-<li><p><a class="reference internal" href="#quick-start" id="id2">Quick Start</a></p></li>
-<li><p><a class="reference internal" href="#installation" id="id3">Installation</a></p></li>
-<li><p><a class="reference internal" href="#configuration" id="id4">Configuration</a></p>
+<li><p><a class="reference internal" href="#overview" id="id5">Overview</a></p></li>
+<li><p><a class="reference internal" href="#quick-start" id="id6">Quick Start</a></p></li>
+<li><p><a class="reference internal" href="#installation" id="id7">Installation</a></p></li>
+<li><p><a class="reference internal" href="#configuration" id="id8">Configuration</a></p>
 <ul>
-<li><p><a class="reference internal" href="#use-default-configuration" id="id5">Use Default Configuration</a></p></li>
-<li><p><a class="reference internal" href="#use-custom-configuration-file" id="id6">Use Custom Configuration File</a></p></li>
-<li><p><a class="reference internal" href="#organization-level-configuration-inherit-from" id="id7">Organization-Level Configuration (inherit_from)</a></p></li>
-<li><p><a class="reference internal" href="#use-cli-arguments-or-environment-variables" id="id8">Use CLI Arguments or Environment Variables</a></p></li>
-<li><p><a class="reference internal" href="#check-push-safety" id="id9">Check Push Safety</a></p></li>
+<li><p><a class="reference internal" href="#use-default-configuration" id="id9">Use Default Configuration</a></p></li>
+<li><p><a class="reference internal" href="#use-custom-configuration-file" id="id10">Use Custom Configuration File</a></p></li>
+<li><p><a class="reference internal" href="#organization-level-configuration-inherit-from" id="id11">Organization-Level Configuration (inherit_from)</a></p></li>
+<li><p><a class="reference internal" href="#use-cli-arguments-or-environment-variables" id="id12">Use CLI Arguments or Environment Variables</a></p></li>
+<li><p><a class="reference internal" href="#check-push-safety" id="id13">Check Push Safety</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#ai-native-usage" id="id10">AI-Native Usage</a></p>
+<li><p><a class="reference internal" href="#ai-native-usage" id="id14">AI-Native Usage</a></p>
 <ul>
-<li><p><a class="reference internal" href="#machine-readable-json-output-format-json" id="id11">Machine-Readable JSON Output (<code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">json</span></code>)</a></p></li>
-<li><p><a class="reference internal" href="#quieter-human-readable-output" id="id12">Quieter Human-Readable Output</a></p></li>
-<li><p><a class="reference internal" href="#python-api-no-subprocess-required" id="id13">Python API (no subprocess required)</a></p></li>
+<li><p><a class="reference internal" href="#machine-readable-json-output-format-json" id="id15">Machine-Readable JSON Output (<code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">json</span></code>)</a></p></li>
+<li><p><a class="reference internal" href="#quieter-human-readable-output" id="id16">Quieter Human-Readable Output</a></p></li>
+<li><p><a class="reference internal" href="#python-api-no-subprocess-required" id="id17">Python API (no subprocess required)</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#examples" id="id14">Examples</a></p></li>
-<li><p><a class="reference internal" href="#badging-your-repository" id="id15">Badging your repository</a></p></li>
-<li><p><a class="reference internal" href="#why-commit-check" id="id16">Why Commit Check?</a></p></li>
-<li><p><a class="reference internal" href="#versioning" id="id17">Versioning</a></p></li>
-<li><p><a class="reference internal" href="#have-question-or-feedback" id="id18">Have question or feedback?</a></p></li>
-<li><p><a class="reference internal" href="#license" id="id19">License</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id18">Examples</a></p></li>
+<li><p><a class="reference internal" href="#badging-your-repository" id="id19">Badging your repository</a></p></li>
+<li><p><a class="reference internal" href="#why-commit-check" id="id20">Why Commit Check?</a></p></li>
+<li><p><a class="reference internal" href="#versioning" id="id21">Versioning</a></p></li>
+<li><p><a class="reference internal" href="#have-question-or-feedback" id="id22">Have question or feedback?</a></p></li>
+<li><p><a class="reference internal" href="#license" id="id23">License</a></p></li>
 </ul>
 </nav>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
@@ -1172,15 +1172,17 @@ the <code class="docutils literal notranslate"><span class="pre">pre-commit</spa
 reflects a DIY approach rather than built-in product features.</p>
 <table class="docutils data align-default">
 <colgroup>
-<col style="width: 36.0%" />
-<col style="width: 18.0%" />
-<col style="width: 18.0%" />
-<col style="width: 28.0%" />
+<col style="width: 26.0%" />
+<col style="width: 16.0%" />
+<col style="width: 16.0%" />
+<col style="width: 16.0%" />
+<col style="width: 26.0%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Feature</p></th>
-<th class="head"><p>Commit Check ✅</p></th>
+<th class="head"><p>Commit Check</p></th>
 <th class="head"><p>commitlint</p></th>
+<th class="head"><p>YACC <a class="footnote-reference brackets" href="#f2" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></th>
 <th class="head"><p>Custom hooks</p></th>
 </tr>
 </thead>
@@ -1188,34 +1190,41 @@ reflects a DIY approach rather than built-in product features.</p>
 <tr class="row-even"><td><p>Conventional Commits enforcement</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
+<td><p>Partial</p></td>
 <td><p>DIY</p></td>
 </tr>
 <tr class="row-odd"><td><p>Branch naming validation</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
+<td><p>✅</p></td>
 <td><p>DIY</p></td>
 </tr>
 <tr class="row-even"><td><p>Force push blocking</p></td>
 <td><p>✅</p></td>
+<td><p>❌</p></td>
 <td><p>❌</p></td>
 <td><p>DIY</p></td>
 </tr>
 <tr class="row-odd"><td><p>Author name / email validation</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
+<td><p>✅</p></td>
 <td><p>DIY</p></td>
 </tr>
 <tr class="row-even"><td><p>Signed-off-by trailer enforcement</p></td>
 <td><p>✅</p></td>
-<td><p>✅</p></td>
+<td><p>Partial <a class="footnote-reference brackets" href="#f1" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a></p></td>
+<td><p>❌</p></td>
 <td><p>DIY</p></td>
 </tr>
 <tr class="row-odd"><td><p>Co-author ignore list</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
+<td><p>Partial <a class="footnote-reference brackets" href="#f3" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
 <td><p>DIY</p></td>
 </tr>
 <tr class="row-even"><td><p>Organization-level shared config</p></td>
+<td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>DIY</p></td>
@@ -1224,33 +1233,84 @@ reflects a DIY approach rather than built-in product features.</p>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
 <td><p>❌</p></td>
+<td><p>❌</p></td>
 </tr>
 <tr class="row-even"><td><p>Works without Node.js</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
+<td><p>✅</p></td>
 <td><p>Depends</p></td>
 </tr>
 <tr class="row-odd"><td><p>Native TOML configuration</p></td>
 <td><p>✅</p></td>
+<td><p>❌</p></td>
 <td><p>❌</p></td>
 <td><p>Depends</p></td>
 </tr>
 <tr class="row-even"><td><p>Git hook / pre-commit integration</p></td>
 <td><p>✅</p></td>
 <td><p>Partial</p></td>
+<td><p>❌</p></td>
 <td><p>✅</p></td>
 </tr>
 <tr class="row-odd"><td><p>CI/CD-friendly configuration</p></td>
 <td><p>✅</p></td>
 <td><p>Partial</p></td>
+<td><p>❌</p></td>
 <td><p>DIY</p></td>
+</tr>
+<tr class="row-even"><td><p>Open source &amp; free</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-odd"><td><p>Client-side (pre-commit) enforcement</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p>AI-native (JSON API + Python SDK)</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
 </tr>
 </tbody>
 </table>
-<p>For <code class="docutils literal notranslate"><span class="pre">commitlint</span></code>, organization-level shared config is typically delivered via
-shareable config packages or local files. <code class="docutils literal notranslate"><span class="pre">DIY</span></code> means you can implement a
+<p><em>For</em> <code class="docutils literal notranslate"><span class="pre">commitlint</span></code>, organization-level shared config is typically delivered via
+shareable config packages or local files.</p>
+<p><em>For</em> <code class="docutils literal notranslate"><span class="pre">YACC</span></code> (Yet Another Commit Checker), conventional commit enforcement
+is regex-based rather than Conventional Commits-aware; author validation
+verifies committer name/email against Bitbucket user accounts or custom regex;
+the plugin supports global → project → repository config inheritance;
+it is a server-side pre-receive hook and merge check (no client-side
+pre-commit), is paid (per-user licensing), and runs on Java (no Node.js needed).</p>
+<p><code class="docutils literal notranslate"><span class="pre">DIY</span></code> means you can implement a
 capability with custom Git hooks or <code class="docutils literal notranslate"><span class="pre">pre-commit</span></code> scripts, but it is not
 provided as a turnkey policy layer.</p>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="f1" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">1</a><span class="fn-bracket">]</span></span>
+<p><code class="docutils literal notranslate"><span class="pre">commitlint</span></code> provides a community <code class="docutils literal notranslate"><span class="pre">signed-off-by</span></code> rule
+(<code class="docutils literal notranslate"><span class="pre">&#64;commitlint/rule-signed-off-by</span></code>) that must be installed and configured
+separately; it is not part of the default
+<code class="docutils literal notranslate"><span class="pre">&#64;commitlint/config-conventional</span></code> preset.</p>
+</aside>
+<aside class="footnote brackets" id="f2" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">2</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker">Yet Another Commit Checker</a>
+is a paid Bitbucket Server / Data Center plugin (server-side pre-receive hook
+and merge check).</p>
+</aside>
+<aside class="footnote brackets" id="f3" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">3</a><span class="fn-bracket">]</span></span>
+<p>YACC can exclude commits from specific Bitbucket users, user groups,
+or service users (bots), but does not parse <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span></code> trailers
+in commit messages.</p>
+</aside>
+</aside>
 <h2 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Link to this heading">¶</a></h2>
 <p>Versioning follows <a class="reference external" href="https://semver.org/">Semantic Versioning</a>.</p>
 <h2 id="have-question-or-feedback">Have question or feedback?<a class="headerlink" href="#have-question-or-feedback" title="Link to this heading">¶</a></h2>
