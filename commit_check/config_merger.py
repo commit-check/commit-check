@@ -11,6 +11,7 @@ from commit_check import (
     DEFAULT_BRANCH_TYPES,
     DEFAULT_BRANCH_NAMES,
     DEFAULT_BOOLEAN_RULES,
+    DEFAULT_PUSH_RULES,
 )
 
 
@@ -81,6 +82,9 @@ def get_default_config() -> Dict[str, Any]:
             "require_rebase_target": "",
             "ignore_authors": [],
         },
+        "push": {
+            "allow_force_push": DEFAULT_PUSH_RULES["allow_force_push"],
+        },
     }
 
 
@@ -119,6 +123,8 @@ class ConfigMerger:
         "CCHK_ALLOW_BRANCH_NAMES": ("branch", "allow_branch_names", parse_list),
         "CCHK_REQUIRE_REBASE_TARGET": ("branch", "require_rebase_target", str),
         "CCHK_BRANCH_IGNORE_AUTHORS": ("branch", "ignore_authors", parse_list),
+        # Push section
+        "CCHK_ALLOW_FORCE_PUSH": ("push", "allow_force_push", parse_bool),
     }
 
     # Mapping of CLI argument names to config keys
@@ -144,12 +150,14 @@ class ConfigMerger:
         "allow_branch_names": ("branch", "allow_branch_names"),
         "require_rebase_target": ("branch", "require_rebase_target"),
         "branch_ignore_authors": ("branch", "ignore_authors"),
+        # Push section
+        "allow_force_push": ("push", "allow_force_push"),
     }
 
     @staticmethod
     def parse_env_vars() -> Dict[str, Any]:
         """Parse environment variables with CCHK_ prefix into config dict."""
-        config: Dict[str, Any] = {"commit": {}, "branch": {}}
+        config: Dict[str, Any] = {"commit": {}, "branch": {}, "push": {}}
 
         for env_var, (section, key, parser) in ConfigMerger.ENV_VAR_MAPPING.items():
             value = os.environ.get(env_var)
@@ -168,7 +176,7 @@ class ConfigMerger:
     @staticmethod
     def parse_cli_args(args: argparse.Namespace) -> Dict[str, Any]:
         """Parse CLI arguments into config dict."""
-        config: Dict[str, Any] = {"commit": {}, "branch": {}}
+        config: Dict[str, Any] = {"commit": {}, "branch": {}, "push": {}}
 
         for arg_name, (section, key) in ConfigMerger.CLI_ARG_MAPPING.items():
             if hasattr(args, arg_name):

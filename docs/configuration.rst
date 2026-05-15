@@ -118,6 +118,10 @@ Example Configuration
     # required_signoff_name = "Your Name"      # Optional
     # required_signoff_email = "your.email@example.com"  # Optional
 
+    [push]
+    # Block force pushes when used as a pre-push hook or with --no-force-push
+    allow_force_push = true  # Set to false to block force pushes
+
     [branch]
     # https://conventional-branch.github.io/
     conventional_branch = true
@@ -269,6 +273,9 @@ Configuration can also be set via environment variables with the ``CCHK_`` prefi
    * - ``require_rebase_target = "main"``
      - ``CCHK_REQUIRE_REBASE_TARGET=main``
      - ``--require-rebase-target=main``
+   * - ``allow_force_push = true``
+     - ``CCHK_ALLOW_FORCE_PUSH=false``
+     - ``--no-force-push`` (enable via ``--no-force-push`` flag)
    * - ``ignore_authors = ["bot"]`` (in branch section)
      - ``CCHK_BRANCH_IGNORE_AUTHORS=bot,user``
      - ``--branch-ignore-authors=bot,user``
@@ -394,6 +401,11 @@ Options Table Description
      - str
      - None (no requirement)
      - Target branch for rebase requirement. If not set, no rebase validation is performed.
+   * - push
+     - allow_force_push
+     - bool
+     - true
+     - Allow force pushes. Set to ``false`` to block force pushes when used as a pre-push hook or with ``--no-force-push``.
    * - branch
      - ignore_authors
      - list[str]

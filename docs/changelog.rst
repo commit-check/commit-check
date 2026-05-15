@@ -5,6 +5,29 @@ All **notable changes** to this project will be documented in this file.
 
 Full changelog available at `GitHub releases <https://github.com/commit-check/commit-check/releases>`_.
 
+v2.7.0 (unreleased)
+-------------------
+
+New Features
+~~~~~~~~~~~~
+
+* **Force push detection and blocking** — Added ``--no-force-push`` CLI flag and
+  ``check-no-force-push`` pre-push hook that inspect pushed ref ancestry via
+  ``git merge-base --is-ancestor`` to detect and block ``git push --force`` and
+  ``git push -f``. A new ``[push]`` TOML config section with
+  ``allow_force_push`` (default ``true``) controls the behavior. Environment
+  variable ``CCHK_ALLOW_FORCE_PUSH`` is also supported.
+
+* **``validate_push()`` API** — New ``commit_check.api.validate_push()``
+  function for programmatic push safety checks, matching the ``--no-force-push``
+  CLI behavior without spawning a subprocess.
+
+* **Standalone mode** — When ``--no-force-push`` is run outside a pre-push hook
+  (no stdin), it checks whether pushing ``HEAD`` to its configured upstream
+  would require force, using ``git ls-remote`` and optional ``git fetch`` to
+  resolve the remote commit.
+
+
 v2.6.0 (2026-04-20)
 -------------------
 

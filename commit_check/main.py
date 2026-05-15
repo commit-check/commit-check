@@ -105,6 +105,14 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     check_group.add_argument(
+        "-p",
+        "--no-force-push",
+        help="check that no force push is being performed (uses pre-push hook stdin when available, otherwise checks the current branch against its upstream)",
+        action="store_true",
+        required=False,
+    )
+
+    check_group.add_argument(
         "--format",
         choices=["text", "json"],
         default="text",
@@ -342,6 +350,11 @@ def main() -> int:
         # Load and merge configuration from all sources: CLI > Env > TOML > Defaults
         config_data = ConfigMerger.from_all_sources(args, args.config)
 
+        # When --no-force-push is explicitly passed, override allow_force_push to
+        # False so the rule is built even if the TOML config defaults to True.
+        if args.no_force_push:
+            config_data.setdefault("push", {})["allow_force_push"] = False
+
         # Build validation rules from config
         rule_builder = RuleBuilder(config_data)
         all_rules = rule_builder.build_all_rules()
@@ -380,6 +393,8 @@ def main() -> int:
             requested_checks.append("author_name")
         if args.author_email:
             requested_checks.append("author_email")
+        if args.no_force_push:
+            requested_checks.append("no_force_push")
 
         # If no specific checks requested, show help
         if not requested_checks:
@@ -406,11 +421,13 @@ def main() -> int:
                 if not stdin_content:
                     # No stdin and no file - let validators get data from git themselves
                     stdin_content = None
-        elif not any([args.branch, args.author_name, args.author_email]):
+        elif not any(
+            [args.branch, args.author_name, args.author_email, args.no_force_push]
+        ):
             # If no specific validation type is requested, don't read stdin
             pass
         else:
-            # For non-message validations (branch, author), check for stdin input
+            # For non-message validations (branch, author, push), check for stdin input
             stdin_content = stdin_reader.read_piped_input()
 
         # Reset banner state for this run so that multiple main() calls
@@ -425,6 +442,7 @@ def main() -> int:
             config=config_data,
             no_banner=getattr(args, "no_banner", False),
             compact=getattr(args, "compact", False),
+            push_upstream_fallback=args.no_force_push and stdin_content is None,
         )
 
         # Run validation – choose output mode based on --format
