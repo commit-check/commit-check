@@ -24,6 +24,7 @@ IMPERATIVES = {
     "attempt",
     "authenticate",
     "authorize",
+    "auto",
     "batch",
     "bind",
     "block",
