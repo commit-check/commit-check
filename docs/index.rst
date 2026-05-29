@@ -6,7 +6,6 @@
    self
    what-is-new
    configuration
-   compare
    example
    migration
    troubleshoot

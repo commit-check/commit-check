@@ -455,19 +455,19 @@ reflects a DIY approach rather than built-in product features.
      - Commit Check
      - commitlint
      - YACC [#f2]_
-     - GitHub Rulesets [#f4]_
+     - GitHub Rulesets
      - Custom hooks
    * - Conventional Commits enforcement
      - ✅
      - ✅
      - Partial
-     - Partial [#f5]_
+     - Partial [#f4]_
      - DIY
    * - Branch naming validation
      - ✅
      - ❌
      - ✅
-     - ✅ [#f5]_
+     - ✅ [#f4]_
      - DIY
    * - Force push blocking
      - ✅
@@ -479,7 +479,7 @@ reflects a DIY approach rather than built-in product features.
      - ✅
      - ❌
      - ✅
-     - ✅ [#f5]_
+     - ✅ [#f4]_
      - DIY
    * - Signed-off-by trailer enforcement
      - ✅
@@ -503,7 +503,7 @@ reflects a DIY approach rather than built-in product features.
      - ✅
      - ❌
      - ❌
-     - ✅
+     - ❌
      - ❌
    * - Works without Node.js
      - ✅
@@ -533,7 +533,7 @@ reflects a DIY approach rather than built-in product features.
      - ✅
      - ✅
      - ❌
-     - ❌ [#f6]_
+     - ❌ [#f5]_
      - ✅
    * - Client-side (pre-commit) enforcement
      - ✅
@@ -584,15 +584,11 @@ provided as a turnkey policy layer.
    or service users (bots), but does not parse ``Co-authored-by:`` trailers
    in commit messages.
 
-.. [#f4] See `commit-check vs GitHub Rulesets
-   <https://commit-check.github.io/commit-check/compare.html>`_
-   for a detailed comparison and how they fit together.
-
-.. [#f5] GitHub Rulesets enforce these via regex patterns in push rulesets
+.. [#f4] GitHub Rulesets enforce these via regex patterns in push rulesets
    (metadata restrictions).  They are regex-based and do not understand
    Conventional Commits or Conventional Branch semantics.
 
-.. [#f6] GitHub Rulesets require a GitHub plan.  Push rulesets (metadata
+.. [#f5] GitHub Rulesets require a GitHub plan.  Push rulesets (metadata
    restrictions) require Team or Enterprise plans for private/internal repos;
    branch/tag rulesets are available on Free plans for public repos.
 
