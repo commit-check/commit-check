@@ -2,12 +2,11 @@ commit-check vs commitlint vs GitHub Rulesets
 ================================================
 
 Choosing the right tool depends on what you need to enforce, where you need to
-enforce it, and your team's existing stack.  This page compares **commit-check**
-with the two most common alternatives people ask about: `commitlint`_ and
-`GitHub Rulesets`_.
+enforce it, and your team's existing stack.  This page is the long-form
+companion to the `feature matrix in the README`_ — it explains the tradeoffs
+and how the tools fit together.
 
-.. _commitlint: https://commitlint.js.org/
-.. _GitHub Rulesets: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets
+.. _feature matrix in the README: https://github.com/commit-check/commit-check#why-commit-check
 
 
 TL;DR
@@ -28,68 +27,13 @@ TL;DR
   pre-commit hooks, and in CI pipelines on any platform.
 
 
-commit-check vs commitlint
---------------------------
+commitlint or commit-check?
+---------------------------
 
-.. list-table::
-   :header-rows: 1
-   :widths: 30 35 35
+See the `feature matrix in the README`_ for a side-by-side comparison of
+commitlint, commit-check, YACC, GitHub Rulesets, and custom hooks.
 
-   * - Feature
-     - Commit Check
-     - commitlint
-   * - Conventional Commits enforcement
-     - ✅ semantic-aware
-     - ✅ semantic-aware
-   * - Branch naming validation
-     - ✅ Conventional Branch
-     - ❌
-   * - Force push blocking
-     - ✅ pre-push hook
-     - ❌
-   * - Author name / email validation
-     - ✅
-     - ❌
-   * - Signed-off-by trailer enforcement
-     - ✅ built-in
-     - Partial (community plugin)
-   * - Bot / automation author bypass
-     - ✅
-     - ❌
-   * - Zero-config defaults
-     - ✅ works out of the box
-     - ❌ requires config file
-   * - Configuration format
-     - TOML
-     - JS / JSON / YAML / TS
-   * - Organization-level shared config
-     - ✅ ``inherit_from`` (github: or URL)
-     - ✅ shareable npm config packages
-   * - Runtime
-     - **Python** (3.9+)
-     - **Node.js** (≥22.12)
-   * - Pre-commit / Git hook integration
-     - ✅ first-class
-     - ✅ via husky
-   * - CI/CD integration
-     - ✅ env vars + CLI args
-     - ✅
-   * - GitHub Actions
-     - ✅ dedicated action
-     - ✅ community actions
-   * - Machine-readable JSON output
-     - ✅ ``--format json``, Python API
-     - ❌ (text formatters only)
-   * - Python API (no subprocess)
-     - ✅ ``commit_check.api``
-     - ❌ (JavaScript API only)
-   * - Open source
-     - ✅ MIT
-     - ✅ MIT
-
-
-Which one should you use?
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Here is the decision guide:
 
 **Use commitlint if:**
 

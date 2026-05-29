@@ -440,50 +440,61 @@ Why Commit Check?
 -----------------
 
 The table below compares common approaches to commit policy enforcement.
-``commitlint`` is a specialized commit-message linter. Custom Git hooks and
-the ``pre-commit`` framework are integration mechanisms, so the last column
+``commitlint`` is a specialized commit-message linter. `GitHub Rulesets`_
+are platform-native server-side enforcement.  Custom Git hooks and the
+``pre-commit`` framework are integration mechanisms, so the last column
 reflects a DIY approach rather than built-in product features.
+
+.. _GitHub Rulesets: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets
 
 .. list-table::
    :header-rows: 1
-   :widths: 26 16 16 16 26
+   :widths: 20 14 14 14 14 24
 
    * - Feature
      - Commit Check
      - commitlint
      - YACC [#f2]_
+     - GitHub Rulesets [#f4]_
      - Custom hooks
    * - Conventional Commits enforcement
      - ✅
      - ✅
      - Partial
+     - Partial [#f5]_
      - DIY
    * - Branch naming validation
      - ✅
      - ❌
      - ✅
+     - ✅ [#f5]_
      - DIY
    * - Force push blocking
      - ✅
      - ❌
      - ❌
+     - ✅
      - DIY
    * - Author name / email validation
      - ✅
      - ❌
      - ✅
+     - ✅ [#f5]_
      - DIY
    * - Signed-off-by trailer enforcement
      - ✅
      - Partial [#f1]_
+     - ❌
      - ❌
      - DIY
    * - Co-author ignore list
      - ✅
      - ❌
      - Partial [#f3]_
+     - ❌
      - DIY
    * - Organization-level shared config
+     - ✅
      - ✅
      - ✅
      - ✅
@@ -492,14 +503,17 @@ reflects a DIY approach rather than built-in product features.
      - ✅
      - ❌
      - ❌
+     - ✅
      - ❌
    * - Works without Node.js
      - ✅
      - ❌
      - ✅
+     - ✅
      - Depends
    * - Native TOML configuration
      - ✅
+     - ❌
      - ❌
      - ❌
      - Depends
@@ -507,24 +521,29 @@ reflects a DIY approach rather than built-in product features.
      - ✅
      - Partial
      - ❌
+     - ❌
      - ✅
    * - CI/CD-friendly configuration
      - ✅
      - Partial
+     - ❌
      - ❌
      - DIY
    * - Open source & free
      - ✅
      - ✅
      - ❌
+     - ❌ [#f6]_
      - ✅
    * - Client-side (pre-commit) enforcement
      - ✅
      - ✅
      - ❌
+     - ❌
      - ✅
    * - AI-native (JSON API + Python SDK)
      - ✅
+     - ❌
      - ❌
      - ❌
      - ❌
@@ -538,6 +557,14 @@ verifies committer name/email against Bitbucket user accounts or custom regex;
 the plugin supports global → project → repository config inheritance;
 it is a server-side pre-receive hook and merge check (no client-side
 pre-commit), is paid (per-user licensing), and runs on Java (no Node.js needed).
+
+*For* `GitHub Rulesets`_, push rulesets enforce metadata via regex patterns —
+they can match branch/tag names, commit messages, and author email, but have
+no awareness of Conventional Commits semantics (types, scopes, breaking-change
+markers).  They apply server-side and require a GitHub plan (Free for public
+repos, Team/Enterprise for private/internal repos with push rulesets).  They
+are not portable to other Git platforms and do not provide local pre-commit
+feedback.
 
 ``DIY`` means you can implement a
 capability with custom Git hooks or ``pre-commit`` scripts, but it is not
@@ -556,6 +583,18 @@ provided as a turnkey policy layer.
 .. [#f3] YACC can exclude commits from specific Bitbucket users, user groups,
    or service users (bots), but does not parse ``Co-authored-by:`` trailers
    in commit messages.
+
+.. [#f4] See `commit-check vs GitHub Rulesets
+   <https://commit-check.github.io/commit-check/compare.html>`_
+   for a detailed comparison and how they fit together.
+
+.. [#f5] GitHub Rulesets enforce these via regex patterns in push rulesets
+   (metadata restrictions).  They are regex-based and do not understand
+   Conventional Commits or Conventional Branch semantics.
+
+.. [#f6] GitHub Rulesets require a GitHub plan.  Push rulesets (metadata
+   restrictions) require Team or Enterprise plans for private/internal repos;
+   branch/tag rulesets are available on Free plans for public repos.
 
 
 Versioning
