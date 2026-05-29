@@ -832,37 +832,43 @@
 <nav class="contents local" id="table-of-contents">
 <p class="topic-title">Table of Contents</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="#overview" id="id5">Overview</a></p></li>
-<li><p><a class="reference internal" href="#quick-start" id="id6">Quick Start</a></p></li>
-<li><p><a class="reference internal" href="#installation" id="id7">Installation</a></p></li>
-<li><p><a class="reference internal" href="#configuration" id="id8">Configuration</a></p>
+<li><p><a class="reference internal" href="#overview" id="id4">Overview</a></p></li>
+<li><p><a class="reference internal" href="#quick-start" id="id5">Quick Start</a></p></li>
+<li><p><a class="reference internal" href="#installation" id="id6">Installation</a></p></li>
+<li><p><a class="reference internal" href="#configuration" id="id7">Configuration</a></p>
 <ul>
-<li><p><a class="reference internal" href="#use-default-configuration" id="id9">Use Default Configuration</a></p></li>
-<li><p><a class="reference internal" href="#use-custom-configuration-file" id="id10">Use Custom Configuration File</a></p></li>
-<li><p><a class="reference internal" href="#organization-level-configuration-inherit-from" id="id11">Organization-Level Configuration (inherit_from)</a></p></li>
-<li><p><a class="reference internal" href="#use-cli-arguments-or-environment-variables" id="id12">Use CLI Arguments or Environment Variables</a></p></li>
-<li><p><a class="reference internal" href="#check-push-safety" id="id13">Check Push Safety</a></p></li>
+<li><p><a class="reference internal" href="#use-default-configuration" id="id8">Use Default Configuration</a></p></li>
+<li><p><a class="reference internal" href="#use-custom-configuration-file" id="id9">Use Custom Configuration File</a></p></li>
+<li><p><a class="reference internal" href="#organization-level-configuration-inherit-from" id="id10">Organization-Level Configuration (inherit_from)</a></p></li>
+<li><p><a class="reference internal" href="#use-cli-arguments-or-environment-variables" id="id11">Use CLI Arguments or Environment Variables</a></p></li>
+<li><p><a class="reference internal" href="#check-push-safety" id="id12">Check Push Safety</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#ai-native-usage" id="id14">AI-Native Usage</a></p>
+<li><p><a class="reference internal" href="#ai-native-usage" id="id13">AI-Native Usage</a></p>
 <ul>
-<li><p><a class="reference internal" href="#machine-readable-json-output-format-json" id="id15">Machine-Readable JSON Output (<code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">json</span></code>)</a></p></li>
-<li><p><a class="reference internal" href="#quieter-human-readable-output" id="id16">Quieter Human-Readable Output</a></p></li>
-<li><p><a class="reference internal" href="#python-api-no-subprocess-required" id="id17">Python API (no subprocess required)</a></p></li>
+<li><p><a class="reference internal" href="#machine-readable-json-output-format-json" id="id14">Machine-Readable JSON Output (<code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">json</span></code>)</a></p></li>
+<li><p><a class="reference internal" href="#quieter-human-readable-output" id="id15">Quieter Human-Readable Output</a></p></li>
+<li><p><a class="reference internal" href="#python-api-no-subprocess-required" id="id16">Python API (no subprocess required)</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#examples" id="id18">Examples</a></p></li>
-<li><p><a class="reference internal" href="#badging-your-repository" id="id19">Badging your repository</a></p></li>
-<li><p><a class="reference internal" href="#why-commit-check" id="id20">Why Commit Check?</a></p></li>
-<li><p><a class="reference internal" href="#versioning" id="id21">Versioning</a></p></li>
-<li><p><a class="reference internal" href="#have-question-or-feedback" id="id22">Have question or feedback?</a></p></li>
-<li><p><a class="reference internal" href="#license" id="id23">License</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id17">Examples</a></p></li>
+<li><p><a class="reference internal" href="#badging-your-repository" id="id18">Badging your repository</a></p></li>
+<li><p><a class="reference internal" href="#why-commit-check" id="id19">Why Commit Check?</a></p></li>
+<li><p><a class="reference internal" href="#versioning" id="id20">Versioning</a></p></li>
+<li><p><a class="reference internal" href="#have-question-or-feedback" id="id21">Have question or feedback?</a></p></li>
+<li><p><a class="reference internal" href="#license" id="id22">License</a></p></li>
 </ul>
 </nav>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
-<p><strong>Commit Check</strong> (aka <strong>cchk</strong>) is the most comprehensive open-source tool for enforcing Git commit standards — including commit messages, branch naming, author identity, commit signoff, and more — helping teams maintain consistency and compliance across every repository.</p>
-<p>As a lightweight, free alternative to GitHub Enterprise <a class="reference external" href="https://docs.github.com/en/enterprise-server&#64;3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions">Metadata restrictions</a>
-and Bitbucket’s paid <a class="reference external" href="https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&amp;hosting=datacenter">Yet Another Commit Checker</a> plugin, Commit Check integrates DevOps principles and Infrastructure as Code (IaC) practices for a modern workflow.</p>
+<p><strong>Commit Check</strong> is a lightweight policy engine for Git commit metadata.</p>
+<p>It validates commit messages, branch names, author identity, signoff trailers,
+and push safety — using one versioned TOML policy across local hooks, CI,
+GitHub Actions, and AI automation.</p>
+<ul class="simple">
+<li><p><strong>One policy file:</strong> <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code></p></li>
+<li><p><strong>Multiple enforcement points:</strong> CLI, pre-commit, CI / GitHub Actions</p></li>
+<li><p><strong>Machine-readable output:</strong> JSON + Python API for automation and AI agents</p></li>
+</ul>
 <img alt="commit-check demo" class="align-center" src="https://github.com/commit-check/commit-check/raw/main/docs/demo.gif" />
 <div class="line-block">
 <div class="line"><br /></div>
