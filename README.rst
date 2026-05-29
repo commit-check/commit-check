@@ -39,10 +39,15 @@ Commit Check
 Overview
 --------
 
-**Commit Check** (aka **cchk**) is the most comprehensive open-source tool for enforcing Git commit standards — including commit messages, branch naming, author identity, commit signoff, and more — helping teams maintain consistency and compliance across every repository.
+**Commit Check** is a lightweight policy engine for Git commit metadata.
 
-As a lightweight, free alternative to GitHub Enterprise `Metadata restrictions <https://docs.github.com/en/enterprise-server@3.11/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions>`_
-and Bitbucket's paid `Yet Another Commit Checker <https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker?tab=overview&hosting=datacenter>`_ plugin, Commit Check integrates DevOps principles and Infrastructure as Code (IaC) practices for a modern workflow.
+It validates commit messages, branch names, author identity, signoff trailers,
+and push safety — using one versioned TOML policy across local hooks, CI,
+GitHub Actions, and AI automation.
+
+- **One policy file:** ``cchk.toml``
+- **Multiple enforcement points:** CLI, pre-commit, CI / GitHub Actions
+- **Machine-readable output:** JSON + Python API for automation and AI agents
 
 .. image:: https://github.com/commit-check/commit-check/raw/main/docs/demo.gif
     :alt: commit-check demo
