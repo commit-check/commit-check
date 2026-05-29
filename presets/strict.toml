@@ -1,0 +1,35 @@
+# Strict / Enterprise Policy Preset — for internal enterprise use
+#
+# What it checks (everything):
+#   - Conventional Commits + imperative mood + capitalized + length limits
+#   - Blocks WIP, empty, and fixup commits
+#   - Requires commit body and Signed-off-by trailer
+#   - Conventional Branch naming + rebase requirement
+#   - Blocks force pushes
+#   - Author name & email validation
+#
+# Use this when: you work in a regulated/internal enterprise environment
+#   that demands full traceability, sign-off, and clean history.
+
+[commit]
+conventional_commits = true
+subject_capitalized = true
+subject_imperative = true
+subject_max_length = 72
+subject_min_length = 10
+allow_commit_types = ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "build", "ci"]
+allow_merge_commits = true
+allow_revert_commits = true
+allow_empty_commits = false
+allow_fixup_commits = false
+allow_wip_commits = false
+require_body = true
+require_signed_off_by = true
+
+[branch]
+conventional_branch = true
+allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore"]
+require_rebase_target = "main"
+
+[push]
+allow_force_push = false

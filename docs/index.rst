@@ -4,6 +4,7 @@
    :hidden:
 
    self
+   presets
    what-is-new
    configuration
    example

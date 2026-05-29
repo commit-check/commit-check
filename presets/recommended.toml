@@ -1,0 +1,35 @@
+# Recommended Policy Preset — for open source projects
+#
+# What it checks:
+#   - Conventional Commits + imperative mood + subject length
+#   - Conventional Branch naming
+#   - Blocks force pushes
+#
+# What it allows:
+#   - Merge, revert, and fixup commits
+#   - Subject capitalization is NOT required (team preference varies)
+#
+# Use this when: you maintain an open source project and want predictable,
+#   review-friendly commit history without over-engineering.
+
+[commit]
+conventional_commits = true
+subject_capitalized = false
+subject_imperative = true
+subject_max_length = 80
+subject_min_length = 5
+allow_commit_types = ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "build", "ci"]
+allow_merge_commits = true
+allow_revert_commits = true
+allow_empty_commits = false
+allow_fixup_commits = true
+allow_wip_commits = false
+require_body = false
+require_signed_off_by = false
+
+[branch]
+conventional_branch = true
+allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
+
+[push]
+allow_force_push = false

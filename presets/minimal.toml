@@ -1,0 +1,38 @@
+# Minimal Policy Preset — for personal / solo projects
+#
+# What it checks:
+#   - Commit messages follow Conventional Commits format
+#   - Branch names follow Conventional Branch format
+#
+# What it does NOT enforce:
+#   - No imperative mood or capitalization requirements
+#   - No subject length limits
+#   - All commit flavors allowed (merge, revert, fixup, WIP, empty)
+#   - Force pushes allowed
+#   - No sign-off or body requirements
+#
+# Use this when: you work alone, want basic consistency without friction.
+#
+# Usage:
+#   inherit_from = "github:commit-check/commit-check:presets/minimal.toml"
+
+[commit]
+conventional_commits = true
+subject_capitalized = false
+subject_imperative = false
+# No subject_max_length / subject_min_length — no limits
+allow_commit_types = ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "build", "ci"]
+allow_merge_commits = true
+allow_revert_commits = true
+allow_empty_commits = true
+allow_fixup_commits = true
+allow_wip_commits = true
+require_body = false
+require_signed_off_by = false
+
+[branch]
+conventional_branch = true
+allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
+
+[push]
+allow_force_push = true

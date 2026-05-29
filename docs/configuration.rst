@@ -1,6 +1,11 @@
 Configuration
 =============
 
+.. tip::
+
+    **New to commit-check?** Start with a :doc:`Policy Preset <presets>` instead.
+    Pick Minimal, Recommended, or Strict — one line gets you going.
+
 ``commit-check`` can be configured in three ways with the following priority (highest to lowest):
 
 1. **Command-line arguments** (``--subject-imperative=true``)

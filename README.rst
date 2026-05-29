@@ -98,17 +98,43 @@ Or install directly from the GitHub repository:
     pip install git+https://github.com/commit-check/commit-check.git@main
 
 Then, run ``commit-check --help`` or ``cchk --help`` (alias for ``commit-check``) from the command line.
-For more information, see the `docs <https://commit-check.github.io/commit-check/cli_args.html>`_.
+For more information, see the `documentation <https://commit-check.github.io/commit-check/>`_.
 
 
 Configuration
 -------------
+
+.. tip::
+
+    **New: Policy Presets — don't guess, pick a preset.**  If you don't want to
+    wade through 20+ config options, start with one of three presets:
+
+    - ``presets/minimal.toml`` — personal / solo projects
+    - ``presets/recommended.toml`` — open source projects
+    - ``presets/strict.toml`` — enterprise / regulated teams
+
+    See the :doc:`Policy Presets & Adoption Kit <docs/presets>` for a side-by-side
+    comparison and one-liner setup.
 
 Commit Check can be configured in three ways (in order of priority):
 
 1. **Command-line arguments** — Override settings for specific runs
 2. **Environment variables** — Configure via ``CCHK_*`` environment variables
 3. **Configuration files** — Use ``cchk.toml`` or ``commit-check.toml``
+
+Use a Policy Preset (Recommended)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Create a ``.github/cchk.toml`` with a single ``inherit_from`` line:
+
+.. code-block:: toml
+
+    # .github/cchk.toml
+    inherit_from = "github:commit-check/commit-check:presets/recommended.toml"
+
+That's it.  The preset configures everything for you.  You can always add
+local overrides below the ``inherit_from`` line.  See :doc:`Policy Presets &
+Adoption Kit <docs/presets>` for the full comparison.
 
 Use Default Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
