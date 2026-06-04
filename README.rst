@@ -17,7 +17,7 @@ Commit Check
     :target: https://codecov.io/gh/commit-check/commit-check
     :alt: CodeCov
 
-.. |commit-check-badge| image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white&color=%232c9ccd
+.. |commit-check-badge| image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=https://avatars.githubusercontent.com/u/104338461&logoColor=white&color=%232c9ccd
     :target: https://github.com/commit-check/commit-check
     :alt: commit-check
 
