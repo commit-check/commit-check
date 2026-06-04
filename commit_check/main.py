@@ -5,7 +5,6 @@ import json
 import os
 import sys
 import argparse
-from typing import Optional
 
 from commit_check.config_merger import ConfigMerger, parse_bool, parse_list, parse_int
 from commit_check.rule_builder import RuleBuilder
@@ -22,7 +21,7 @@ class StdinReader:
     """Handles stdin reading with proper error handling."""
 
     @staticmethod
-    def read_piped_input() -> Optional[str]:
+    def read_piped_input() -> str | None:
         """Read commit message content if piped, with proper error handling."""
         try:
             if not sys.stdin.isatty():
@@ -33,7 +32,7 @@ class StdinReader:
         return None
 
 
-def _normalize_pre_commit_branch_ref(branch: Optional[str]) -> str:
+def _normalize_pre_commit_branch_ref(branch: str | None) -> str:
     """Return a full branch ref from a pre-commit branch environment value."""
     if not branch:
         return ""
@@ -42,7 +41,7 @@ def _normalize_pre_commit_branch_ref(branch: Optional[str]) -> str:
     return f"refs/heads/{branch}"
 
 
-def _build_pre_commit_push_input() -> Optional[str]:
+def _build_pre_commit_push_input() -> str | None:
     """Build pre-push ref data from pre-commit's pre-push environment.
 
     pre-commit consumes git's native pre-push stdin and exposes the active push
@@ -343,8 +342,8 @@ def _get_parser() -> argparse.ArgumentParser:
 
 
 def _get_message_content(
-    message_arg: Optional[str], stdin_reader: StdinReader
-) -> Optional[str]:
+    message_arg: str | None, stdin_reader: StdinReader
+) -> str | None:
     """Get commit message content from argument, file, or stdin."""
     if message_arg is None:
         return None
