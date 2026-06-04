@@ -11,10 +11,10 @@ license = "MIT"
 authors = [
     { name = "Xianpeng Shen", email = "xianpeng.shen@gmail.com" },
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "pyyaml",
-    "tomli>=1.1.0; python_version < '3.11'",
+    "tomli>=1.1.0",
 ]
 classifiers = [
     # https://pypi.org/pypi?%3Aaction=list_classifiers
@@ -22,7 +22,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Natural Language :: English",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

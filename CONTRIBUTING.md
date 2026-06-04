@@ -84,7 +84,7 @@ BaseValidator (ABC)
 
 ### Prerequisites
 
-- Python 3.9 or newer
+- Python 3.10 or newer
 - `nox` for running build sessions: `pip install nox`
 
 ### Install in development mode
