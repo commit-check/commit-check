@@ -17,7 +17,7 @@ Commit Check
     :target: https://codecov.io/gh/commit-check/commit-check
     :alt: CodeCov
 
-.. |commit-check-badge| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/commit-check/commit-check/main/docs/assets/badge-v0.json
+.. |commit-check-badge| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/commit-check/commit-check/feature/logo-patch/docs/assets/badge-v0.json
     :target: https://github.com/commit-check/commit-check
     :alt: commit-check
 
@@ -142,7 +142,7 @@ Badging your repository
 
 You can add a badge to your repository to show that you use commit-check!
 
-.. image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/commit-check/commit-check/main/docs/assets/badge-v0.json
+.. image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/commit-check/commit-check/feature/logo-patch/docs/assets/badge-v0.json
     :target: https://github.com/commit-check/commit-check
     :alt: commit-check
 
@@ -150,13 +150,13 @@ Markdown
 
 .. code-block:: text
 
-    [![commit-check](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/commit-check/commit-check/main/docs/assets/badge-v0.json)](https://github.com/commit-check/commit-check)
+    [![commit-check](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/commit-check/commit-check/feature/logo-patch/docs/assets/badge-v0.json)](https://github.com/commit-check/commit-check)
 
 reStructuredText
 
 .. code-block:: text
 
-    .. image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/commit-check/commit-check/main/docs/assets/badge-v0.json
+    .. image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/commit-check/commit-check/feature/logo-patch/docs/assets/badge-v0.json
         :target: https://github.com/commit-check/commit-check
         :alt: commit-check
 
