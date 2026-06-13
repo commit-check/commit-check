@@ -102,6 +102,7 @@ Example Configuration
     [commit]
     # https://www.conventionalcommits.org
     conventional_commits = true
+    # message_pattern = ""     # Optional - custom regex (overrides conventional_commits)
     subject_capitalized = false
     subject_imperative = false
     # subject_max_length = 50  # Optional - no limit by default
@@ -222,6 +223,9 @@ Configuration can also be set via environment variables with the ``CCHK_`` prefi
    * - ``conventional_commits = true``
      - ``CCHK_CONVENTIONAL_COMMITS=true``
      - ``--conventional-commits=true``
+   * - ``message_pattern = "^PROJ-\\d+: .+"``
+     - ``CCHK_MESSAGE_PATTERN=^PROJ-\\d+: .+``
+     - N/A (config file only)
    * - ``subject_capitalized = false``
      - ``CCHK_SUBJECT_CAPITALIZED=false``
      - ``--subject-capitalized=false``
@@ -316,6 +320,11 @@ Options Table Description
      - bool
      - true
      - Enforce Conventional Commits specification.
+   * - commit
+     - message_pattern
+     - str
+     - "" (disabled)
+     - Custom regex pattern for commit message validation.  When set, this pattern replaces the auto-generated Conventional Commits regex entirely, making it possible to enforce custom formats such as JIRA smart commits (e.g., ``"^PROJ-\\d+: .+"``).  When ``message_pattern`` is set (non-empty) it takes precedence over ``conventional_commits``.
    * - commit
      - subject_capitalized
      - bool

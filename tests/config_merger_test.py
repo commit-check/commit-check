@@ -194,6 +194,11 @@ class TestConfigMergerParseEnvVars:
         # Should return empty dict or dict with empty sections
         assert not config or all(not v for v in config.values())
 
+    def test_parse_message_pattern_env_var(self, monkeypatch):
+        monkeypatch.setenv("CCHK_MESSAGE_PATTERN", r"^PROJ-\d+: .+")
+        config = ConfigMerger.parse_env_vars()
+        assert config["commit"]["message_pattern"] == r"^PROJ-\d+: .+"
+
 
 class TestConfigMergerParseCliArgs:
     """Tests for ConfigMerger.parse_cli_args method."""
