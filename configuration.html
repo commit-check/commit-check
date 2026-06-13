@@ -902,6 +902,7 @@
 <div class="copy highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="k">[commit]</span>
 <span class="c1"># https://www.conventionalcommits.org</span>
 <span class="n">conventional_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="c1"># message_pattern = &quot;&quot;     # Optional - custom regex (overrides conventional_commits)</span>
 <span class="n">subject_capitalized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 <span class="n">subject_imperative</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 <span class="c1"># subject_max_length = 50  # Optional - no limit by default</span>
@@ -1011,79 +1012,83 @@ commit-check<span class="w"> </span>--branch<span class="w"> </span>--allow-bran
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_CONVENTIONAL_COMMITS=true</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--conventional-commits=true</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">subject_capitalized</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">message_pattern</span> <span class="pre">=</span> <span class="pre">&quot;^PROJ-\\d+:</span> <span class="pre">.+&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_MESSAGE_PATTERN=^PROJ-\\d+:</span> <span class="pre">.+</span></code></p></td>
+<td><p>N/A (config file only)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">subject_capitalized</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_SUBJECT_CAPITALIZED=false</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--subject-capitalized=false</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">subject_imperative</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">subject_imperative</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_SUBJECT_IMPERATIVE=true</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--subject-imperative=true</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">subject_max_length</span> <span class="pre">=</span> <span class="pre">80</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">subject_max_length</span> <span class="pre">=</span> <span class="pre">80</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_SUBJECT_MAX_LENGTH=80</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--subject-max-length=80</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">subject_min_length</span> <span class="pre">=</span> <span class="pre">5</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">subject_min_length</span> <span class="pre">=</span> <span class="pre">5</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_SUBJECT_MIN_LENGTH=5</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--subject-min-length=5</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">allow_commit_types</span> <span class="pre">=</span> <span class="pre">[&quot;feat&quot;,</span> <span class="pre">&quot;fix&quot;]</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">allow_commit_types</span> <span class="pre">=</span> <span class="pre">[&quot;feat&quot;,</span> <span class="pre">&quot;fix&quot;]</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_COMMIT_TYPES=feat,fix</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--allow-commit-types=feat,fix</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">allow_merge_commits</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">allow_merge_commits</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_MERGE_COMMITS=true</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--allow-merge-commits=true</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">allow_revert_commits</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">allow_revert_commits</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_REVERT_COMMITS=true</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--allow-revert-commits=true</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">allow_empty_commits</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">allow_empty_commits</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_EMPTY_COMMITS=false</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--allow-empty-commits=false</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">allow_fixup_commits</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">allow_fixup_commits</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_FIXUP_COMMITS=true</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--allow-fixup-commits=true</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">allow_wip_commits</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">allow_wip_commits</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_WIP_COMMITS=false</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--allow-wip-commits=false</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">require_body</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">require_body</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_REQUIRE_BODY=false</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--require-body=false</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">require_signed_off_by</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">require_signed_off_by</span> <span class="pre">=</span> <span class="pre">false</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_REQUIRE_SIGNED_OFF_BY=false</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--require-signed-off-by=false</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ignore_authors</span> <span class="pre">=</span> <span class="pre">[&quot;bot&quot;]</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ignore_authors</span> <span class="pre">=</span> <span class="pre">[&quot;bot&quot;]</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_IGNORE_AUTHORS=bot,user</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--ignore-authors=bot,user</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">conventional_branch</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">conventional_branch</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_CONVENTIONAL_BRANCH=true</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--conventional-branch=true</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">allow_branch_types</span> <span class="pre">=</span> <span class="pre">[&quot;feature&quot;]</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">allow_branch_types</span> <span class="pre">=</span> <span class="pre">[&quot;feature&quot;]</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_BRANCH_TYPES=feature,bugfix</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--allow-branch-types=feature,bugfix</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">allow_branch_names</span> <span class="pre">=</span> <span class="pre">[&quot;develop&quot;]</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">allow_branch_names</span> <span class="pre">=</span> <span class="pre">[&quot;develop&quot;]</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_BRANCH_NAMES=develop,staging</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--allow-branch-names=develop,staging</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">require_rebase_target</span> <span class="pre">=</span> <span class="pre">&quot;main&quot;</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">require_rebase_target</span> <span class="pre">=</span> <span class="pre">&quot;main&quot;</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_REQUIRE_REBASE_TARGET=main</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--require-rebase-target=main</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">allow_force_push</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">allow_force_push</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_FORCE_PUSH=false</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--no-force-push</span></code> (enable via <code class="docutils literal notranslate"><span class="pre">--no-force-push</span></code> flag)</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ignore_authors</span> <span class="pre">=</span> <span class="pre">[&quot;bot&quot;]</span></code> (in branch section)</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ignore_authors</span> <span class="pre">=</span> <span class="pre">[&quot;bot&quot;]</span></code> (in branch section)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_BRANCH_IGNORE_AUTHORS=bot,user</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--branch-ignore-authors=bot,user</span></code></p></td>
 </tr>
@@ -1121,114 +1126,120 @@ commit-check<span class="w"> </span>--message<span class="w"> </span>--subject-m
 <td><p>Enforce Conventional Commits specification.</p></td>
 </tr>
 <tr class="row-odd"><td><p>commit</p></td>
+<td><p>message_pattern</p></td>
+<td><p>str</p></td>
+<td><p>“” (disabled)</p></td>
+<td><p>Custom regex pattern for commit message validation.  When set, this pattern replaces the auto-generated Conventional Commits regex entirely, making it possible to enforce custom formats such as JIRA smart commits (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;^PROJ-\\d+:</span> <span class="pre">.+&quot;</span></code>).  When <code class="docutils literal notranslate"><span class="pre">message_pattern</span></code> is set (non-empty) it takes precedence over <code class="docutils literal notranslate"><span class="pre">conventional_commits</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p>commit</p></td>
 <td><p>subject_capitalized</p></td>
 <td><p>bool</p></td>
 <td><p>true</p></td>
 <td><p>Subject must start with a capital letter.</p></td>
 </tr>
-<tr class="row-even"><td><p>commit</p></td>
+<tr class="row-odd"><td><p>commit</p></td>
 <td><p>subject_imperative</p></td>
 <td><p>bool</p></td>
 <td><p>true</p></td>
 <td><p>Subject must be in imperative mood. Forms of verbs can be found at <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/commit_check/imperatives.py">imperatives.py</a></p></td>
 </tr>
-<tr class="row-odd"><td><p>commit</p></td>
+<tr class="row-even"><td><p>commit</p></td>
 <td><p>subject_max_length</p></td>
 <td><p>int</p></td>
 <td><p>None (no limit)</p></td>
 <td><p>Maximum length of the subject line.</p></td>
 </tr>
-<tr class="row-even"><td><p>commit</p></td>
+<tr class="row-odd"><td><p>commit</p></td>
 <td><p>subject_min_length</p></td>
 <td><p>int</p></td>
 <td><p>None (no limit)</p></td>
 <td><p>Minimum length of the subject line.</p></td>
 </tr>
-<tr class="row-odd"><td><p>commit</p></td>
+<tr class="row-even"><td><p>commit</p></td>
 <td><p>allow_commit_types</p></td>
 <td><p>list[str]</p></td>
 <td><p>[“feat”, “fix”, “docs”, “style”, “refactor”, “test”, “chore”]</p></td>
 <td><p>Allowed commit types when conventional_commits is true.</p></td>
 </tr>
-<tr class="row-even"><td><p>commit</p></td>
+<tr class="row-odd"><td><p>commit</p></td>
 <td><p>allow_merge_commits</p></td>
 <td><p>bool</p></td>
 <td><p>true</p></td>
 <td><p>Allow merge commits.</p></td>
 </tr>
-<tr class="row-odd"><td><p>commit</p></td>
+<tr class="row-even"><td><p>commit</p></td>
 <td><p>allow_revert_commits</p></td>
 <td><p>bool</p></td>
 <td><p>true</p></td>
 <td><p>Allow revert commits.</p></td>
 </tr>
-<tr class="row-even"><td><p>commit</p></td>
+<tr class="row-odd"><td><p>commit</p></td>
 <td><p>allow_empty_commits</p></td>
 <td><p>bool</p></td>
 <td><p>false</p></td>
 <td><p>Allow empty commits.</p></td>
 </tr>
-<tr class="row-odd"><td><p>commit</p></td>
+<tr class="row-even"><td><p>commit</p></td>
 <td><p>allow_fixup_commits</p></td>
 <td><p>bool</p></td>
 <td><p>true</p></td>
 <td><p>Allow fixup commits (e.g., “fixup! &lt;commit message&gt;”).</p></td>
 </tr>
-<tr class="row-even"><td><p>commit</p></td>
+<tr class="row-odd"><td><p>commit</p></td>
 <td><p>allow_wip_commits</p></td>
 <td><p>bool</p></td>
 <td><p>false</p></td>
 <td><p>Allow work-in-progress commits (e.g., “WIP: &lt;commit message&gt;”).</p></td>
 </tr>
-<tr class="row-odd"><td><p>commit</p></td>
+<tr class="row-even"><td><p>commit</p></td>
 <td><p>require_body</p></td>
 <td><p>bool</p></td>
 <td><p>false</p></td>
 <td><p>Require a body in the commit message.</p></td>
 </tr>
-<tr class="row-even"><td><p>commit</p></td>
+<tr class="row-odd"><td><p>commit</p></td>
 <td><p>ignore_authors</p></td>
 <td><p>list[str]</p></td>
 <td><p>[] (none ignored)</p></td>
 <td><p>List of commit authors <strong>or co-authors</strong> (<code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span></code> lines) to bypass all commit checks. Useful for bots (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;dependabot[bot]&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;coderabbitai[bot]&quot;</span></code>).</p></td>
 </tr>
-<tr class="row-odd"><td><p>commit</p></td>
+<tr class="row-even"><td><p>commit</p></td>
 <td><p>require_signed_off_by</p></td>
 <td><p>bool</p></td>
 <td><p>false</p></td>
 <td><p>Require “Signed-off-by” line in the commit message footer.</p></td>
 </tr>
-<tr class="row-even"><td><p>branch</p></td>
+<tr class="row-odd"><td><p>branch</p></td>
 <td><p>conventional_branch</p></td>
 <td><p>bool</p></td>
 <td><p>true</p></td>
 <td><p>Enforce Conventional Branch specification.</p></td>
 </tr>
-<tr class="row-odd"><td><p>branch</p></td>
+<tr class="row-even"><td><p>branch</p></td>
 <td><p>allow_branch_types</p></td>
 <td><p>list[str]</p></td>
 <td><p>[“feature”, “bugfix”, “hotfix”, “release”, “chore”, “feat”, “fix”]</p></td>
 <td><p>Allowed branch types when conventional_branch is true.</p></td>
 </tr>
-<tr class="row-even"><td><p>branch</p></td>
+<tr class="row-odd"><td><p>branch</p></td>
 <td><p>allow_branch_names</p></td>
 <td><p>list[str]</p></td>
 <td><p>[] (empty list)</p></td>
 <td><p>Additional standalone branch names allowed when conventional_branch is true (e.g., [“develop”, “staging”]). By default, master, main, HEAD, and PR-* are always allowed.</p></td>
 </tr>
-<tr class="row-odd"><td><p>branch</p></td>
+<tr class="row-even"><td><p>branch</p></td>
 <td><p>require_rebase_target</p></td>
 <td><p>str</p></td>
 <td><p>None (no requirement)</p></td>
 <td><p>Target branch for rebase requirement. If not set, no rebase validation is performed.</p></td>
 </tr>
-<tr class="row-even"><td><p>push</p></td>
+<tr class="row-odd"><td><p>push</p></td>
 <td><p>allow_force_push</p></td>
 <td><p>bool</p></td>
 <td><p>true</p></td>
 <td><p>Allow force pushes. Set to <code class="docutils literal notranslate"><span class="pre">false</span></code> to block force pushes when used as a pre-push hook or with <code class="docutils literal notranslate"><span class="pre">--no-force-push</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p>branch</p></td>
+<tr class="row-even"><td><p>branch</p></td>
 <td><p>ignore_authors</p></td>
 <td><p>list[str]</p></td>
 <td><p>[] (none ignored)</p></td>

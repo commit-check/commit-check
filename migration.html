@@ -593,6 +593,16 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#custom-regex-message-pattern" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Custom Regex <wbr>(message_<wbr>pattern)</span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -795,6 +805,16 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#custom-regex-message-pattern" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Custom Regex <wbr>(message_<wbr>pattern)</span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -978,6 +998,16 @@ commit-check<span class="w"> </span>--message<span class="w"> </span>--branch<sp
 commit-check<span class="w"> </span>--message<span class="w"> </span>--branch
 </code></pre></div>
 </div>
+<h3 id="custom-regex-message-pattern">Custom Regex (<code class="docutils literal notranslate"><span class="pre">message_pattern</span></code>)<a class="headerlink" href="#custom-regex-message-pattern" title="Link to this heading">¶</a></h3>
+<p>If you relied on the custom <code class="docutils literal notranslate"><span class="pre">regex</span></code> field in v1.x to enforce a non-Conventional-Commits
+format (e.g. JIRA smart commits <code class="docutils literal notranslate"><span class="pre">PROJ-123:</span> <span class="pre">description</span></code>), use the <code class="docutils literal notranslate"><span class="pre">message_pattern</span></code>
+option in the <code class="docutils literal notranslate"><span class="pre">[commit]</span></code> section:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="k">[commit]</span>
+<span class="n">message_pattern</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;^PROJ-</span><span class="se">\\</span><span class="s2">d+: .+&quot;</span>
+</code></pre></div>
+</div>
+<p>When <code class="docutils literal notranslate"><span class="pre">message_pattern</span></code> is set (non-empty), it replaces the auto-generated Conventional
+Commits regex entirely, giving you full control over the accepted message format.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">¶</a></h2>
 <h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading">¶</a></h3>
 <p><strong>Issue</strong>: “Configuration file not found”</p>
