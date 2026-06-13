@@ -56,7 +56,7 @@ class CheckOutcome:
     error: str = ""
     suggest: str = ""
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, str]:
         """Serialise to a plain dict (suitable for JSON encoding)."""
         return {
             "check": self.check,

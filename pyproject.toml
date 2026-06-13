@@ -14,7 +14,7 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "pyyaml",
-    "tomli>=1.1.0",
+    "tomli>=1.1.0; python_version < '3.11'",
 ]
 classifiers = [
     # https://pypi.org/pypi?%3Aaction=list_classifiers
@@ -52,6 +52,9 @@ docs = ['sphinx<9', 'sphinx-immaterial', 'sphinx-autobuild', 'sphinx_issues']
 [tool.setuptools]
 zip-safe = false
 packages = ["commit_check"]
+
+[tool.setuptools.package-data]
+commit_check = ["py.typed"]
 
 [tool.setuptools_scm]
 # It would be nice to include the commit hash in the version, but that

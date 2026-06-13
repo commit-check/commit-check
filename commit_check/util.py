@@ -314,7 +314,7 @@ def _find_config_file(path_hint: str) -> PurePath | None:
     return None
 
 
-def validate_config(path_hint: str) -> dict:
+def validate_config(path_hint: str) -> dict[str, Any]:
     """Validate and load configuration from TOML.
 
     Returns a dict containing a 'checks' list or empty dict if not found/invalid.
