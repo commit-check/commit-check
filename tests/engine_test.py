@@ -139,6 +139,27 @@ class TestCommitMessageValidator:
         # Should call get_commit_info three times: subject, body, and author
         assert mock_get_commit_info.call_count == 3
 
+    @patch("commit_check.engine.has_commits")
+    @patch("commit_check.engine.get_commit_info")
+    @pytest.mark.benchmark
+    def test_commit_message_validator_empty_message_passes(
+        self, mock_get_commit_info, mock_has_commits
+    ):
+        """CommitMessageValidator returns PASS when message is empty."""
+        mock_has_commits.return_value = True
+        mock_get_commit_info.side_effect = lambda fmt: {
+            "s": "",
+            "b": "",
+            "an": "author",
+        }.get(fmt, "")
+
+        rule = ValidationRule(check="message", regex=r"^feat:")
+        validator = CommitMessageValidator(rule)
+        context = ValidationContext()
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
     @pytest.mark.benchmark
     def test_commit_message_validator_custom_pattern_jira(self):
         """Test CommitMessageValidator with a custom JIRA-style regex."""
@@ -938,6 +959,27 @@ class TestSubjectValidator:
         ):
             subject = validator._get_subject(context)
             assert subject == "fallback message"
+
+    @patch("commit_check.engine.has_commits")
+    @patch("commit_check.engine.get_commit_info")
+    @pytest.mark.benchmark
+    def test_validate_empty_subject_passes(
+        self, mock_get_commit_info, mock_has_commits
+    ):
+        """SubjectValidator returns PASS when subject is empty."""
+        mock_has_commits.return_value = True
+        mock_get_commit_info.side_effect = lambda fmt: {
+            "s": "",
+            "b": "",
+            "an": "author",
+        }.get(fmt, "")
+
+        rule = ValidationRule(check="subject_capitalized")
+        validator = SubjectCapitalizationValidator(rule)
+        context = ValidationContext()
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
 
 
 class TestSubjectImperativeValidator:
