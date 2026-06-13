@@ -139,6 +139,42 @@ class TestCommitMessageValidator:
         # Should call get_commit_info three times: subject, body, and author
         assert mock_get_commit_info.call_count == 3
 
+    @pytest.mark.benchmark
+    def test_commit_message_validator_custom_pattern_jira(self):
+        """Test CommitMessageValidator with a custom JIRA-style regex."""
+        rule = ValidationRule(
+            check="message",
+            regex=r"^PROJ-\d+: .+",
+        )
+        validator = CommitMessageValidator(rule)
+
+        # Valid JIRA-style message
+        context = ValidationContext(stdin_text="PROJ-123: Fix login bug")
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+        # Invalid message (no issue key)
+        context = ValidationContext(stdin_text="fix: login bug")
+        result = validator.validate(context)
+        assert result == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_commit_message_validator_custom_pattern_github_issue(self):
+        """Test CommitMessageValidator with a GitHub issue reference pattern."""
+        rule = ValidationRule(
+            check="message",
+            regex=r".+#\d+.*",
+        )
+        validator = CommitMessageValidator(rule)
+
+        context = ValidationContext(stdin_text="Fix login bug #123")
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+        context = ValidationContext(stdin_text="Fix login bug")
+        result = validator.validate(context)
+        assert result == ValidationResult.FAIL
+
 
 class TestBranchValidator:
     @patch("commit_check.engine.has_commits")

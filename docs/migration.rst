@@ -143,6 +143,21 @@ The command-line interface has been simplified:
     commit-check --message --branch
 
 
+Custom Regex (``message_pattern``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you relied on the custom ``regex`` field in v1.x to enforce a non-Conventional-Commits
+format (e.g. JIRA smart commits ``PROJ-123: description``), use the ``message_pattern``
+option in the ``[commit]`` section:
+
+.. code-block:: toml
+
+    [commit]
+    message_pattern = "^PROJ-\\d+: .+"
+
+When ``message_pattern`` is set (non-empty), it replaces the auto-generated Conventional
+Commits regex entirely, giving you full control over the accepted message format.
+
 Troubleshooting
 ---------------
 

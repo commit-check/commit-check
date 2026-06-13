@@ -227,6 +227,68 @@ class TestRuleBuilder:
         # Should deduplicate while preserving order
         assert allowed_names == ["develop", "staging"]
 
+    @pytest.mark.benchmark
+    def test_message_pattern_takes_precedence(self):
+        """When message_pattern is set, it replaces the auto-generated regex."""
+        config = {
+            "commit": {
+                "conventional_commits": True,
+                "message_pattern": r"^PROJ-\d+: .+",
+            }
+        }
+
+        builder = RuleBuilder(config)
+        catalog_entry = RuleCatalogEntry(
+            check="message", regex="", error="Bad format", suggest="Use JIRA format"
+        )
+
+        rule = builder._build_conventional_commit_rule(catalog_entry)
+        assert rule is not None
+        assert rule.regex == r"^PROJ-\d+: .+"
+        assert rule.error == "Bad format"
+        assert "required pattern" in rule.suggest
+
+    @pytest.mark.benchmark
+    def test_message_pattern_overrides_conventional_commits(self):
+        """message_pattern works even when conventional_commits is false."""
+        config = {
+            "commit": {
+                "conventional_commits": False,
+                "message_pattern": r"^\[ISSUE-\d+\] .+",
+            }
+        }
+
+        builder = RuleBuilder(config)
+        catalog_entry = RuleCatalogEntry(
+            check="message", regex="", error="Bad format", suggest="Use correct format"
+        )
+
+        rule = builder._build_conventional_commit_rule(catalog_entry)
+        assert rule is not None
+        assert rule.regex == r"^\[ISSUE-\d+\] .+"
+
+    @pytest.mark.benchmark
+    def test_message_pattern_empty_falls_back(self):
+        """When message_pattern is empty string, fall back to conventional commits."""
+        config = {
+            "commit": {
+                "conventional_commits": True,
+                "message_pattern": "",
+                "allow_commit_types": ["feat", "fix"],
+            }
+        }
+
+        builder = RuleBuilder(config)
+        catalog_entry = RuleCatalogEntry(
+            check="message", regex="", error="Bad format", suggest="..."
+        )
+
+        rule = builder._build_conventional_commit_rule(catalog_entry)
+        assert rule is not None
+        # Should use auto-generated regex, not empty string
+        assert "feat" in rule.regex
+        assert "fix" in rule.regex
+
 
 class TestPushRuleBuilder:
     """Tests for push rule building."""

@@ -145,7 +145,22 @@ class RuleBuilder:
     def _build_conventional_commit_rule(
         self, catalog_entry: RuleCatalogEntry
     ) -> Optional[ValidationRule]:
-        """Build conventional commit message rule."""
+        """Build conventional commit message rule.
+
+        When ``message_pattern`` is set in config, it takes precedence over
+        the auto-generated conventional-commits regex.  This allows teams to
+        enforce custom formats such as JIRA smart commits
+        (``PROJ-123: description``).
+        """
+        custom_pattern = self.commit_config.get("message_pattern", "").strip()
+        if custom_pattern:
+            return ValidationRule(
+                check=catalog_entry.check,
+                regex=custom_pattern,
+                error=catalog_entry.error,
+                suggest="Commit message does not match the required pattern",
+            )
+
         if not self.commit_config.get("conventional_commits", True):
             return None
 
