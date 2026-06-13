@@ -36,7 +36,7 @@ Return-value schema (all functions)::
 from __future__ import annotations
 
 import copy
-from typing import Any, Dict, Optional
+from typing import Any
 
 from commit_check.config_merger import get_default_config
 from commit_check.engine import (
@@ -52,7 +52,7 @@ from commit_check.rule_builder import RuleBuilder
 # ---------------------------------------------------------------------------
 
 
-def _build_result(outcomes: list[CheckOutcome]) -> Dict[str, Any]:
+def _build_result(outcomes: list[CheckOutcome]) -> dict[str, Any]:
     """Convert a list of :class:`~commit_check.engine.CheckOutcome` into the
     public return-value dict."""
     overall = "fail" if any(o.status == "fail" for o in outcomes) else "pass"
@@ -65,8 +65,8 @@ def _build_result(outcomes: list[CheckOutcome]) -> Dict[str, Any]:
 def _run_checks(
     check_names: list[str],
     context: ValidationContext,
-    config: Dict[str, Any],
-) -> Dict[str, Any]:
+    config: dict[str, Any],
+) -> dict[str, Any]:
     """Build rules, filter to *check_names*, run the engine, return result."""
     rule_builder = RuleBuilder(config)
     all_rules = rule_builder.build_all_rules()
@@ -76,7 +76,7 @@ def _run_checks(
     return _build_result(outcomes)
 
 
-def _merge_config(user_config: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+def _merge_config(user_config: dict[str, Any] | None) -> dict[str, Any]:
     """Return the effective config: user overrides merged on top of defaults."""
     base = get_default_config()
     if user_config:
@@ -97,8 +97,8 @@ def _merge_config(user_config: Optional[Dict[str, Any]]) -> Dict[str, Any]:
 def validate_message(
     message: str,
     *,
-    config: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Validate a commit message string.
 
     :param message: The full commit message to validate (subject + optional body).
@@ -137,10 +137,10 @@ def validate_message(
 
 
 def validate_branch(
-    branch: Optional[str] = None,
+    branch: str | None = None,
     *,
-    config: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Validate a branch name.
 
     :param branch: Branch name to validate.  If *None*, the current git branch
@@ -167,10 +167,10 @@ def validate_branch(
 
 
 def validate_push(
-    push_refs: Optional[str] = None,
+    push_refs: str | None = None,
     *,
-    config: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Validate that a push is not a force push.
 
     :param push_refs: Push ref information in the format produced by git's
@@ -199,11 +199,11 @@ def validate_push(
 
 
 def validate_author(
-    name: Optional[str] = None,
-    email: Optional[str] = None,
+    name: str | None = None,
+    email: str | None = None,
     *,
-    config: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Validate commit author name and/or email.
 
     :param name: Author name to validate.  If *None*, the value from
@@ -258,13 +258,13 @@ def validate_author(
 
 
 def validate_all(
-    message: Optional[str] = None,
-    branch: Optional[str] = None,
-    author_name: Optional[str] = None,
-    author_email: Optional[str] = None,
+    message: str | None = None,
+    branch: str | None = None,
+    author_name: str | None = None,
+    author_email: str | None = None,
     *,
-    config: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Run all requested validations and return a combined result.
 
     This is the high-level entry point that mirrors the CLI ``commit-check -m -b``
@@ -288,7 +288,7 @@ def validate_all(
         >>> result["status"]
         'pass'
     """
-    all_checks: list[Dict[str, Any]] = []
+    all_checks: list[dict[str, Any]] = []
 
     if message is not None:
         msg_result = validate_message(message, config=config)

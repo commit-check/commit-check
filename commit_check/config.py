@@ -1,6 +1,7 @@
 """TOML config loader and schema for commit-check."""
 
-from typing import Any, Dict, Optional
+from __future__ import annotations
+from typing import Any
 from pathlib import Path
 import urllib.request
 import urllib.error
@@ -22,7 +23,7 @@ DEFAULT_CONFIG_PATHS = [
 ]
 
 
-def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     """Deep merge override into base, returning a new dict."""
     result = dict(base)
     for key, value in override.items():
@@ -33,7 +34,7 @@ def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any
     return result
 
 
-def _github_shorthand_to_url(value: str) -> Optional[str]:
+def _github_shorthand_to_url(value: str) -> str | None:
     """Convert a ``github:`` shorthand to a raw GitHub content URL.
 
     Supported formats (modelled after Release Drafter's convention):
@@ -69,7 +70,7 @@ def _github_shorthand_to_url(value: str) -> Optional[str]:
     return f"https://raw.githubusercontent.com/{repo_part}/{ref}/{file_path}"
 
 
-def _load_from_url(url: str) -> Dict[str, Any]:
+def _load_from_url(url: str) -> dict[str, Any]:
     """Load TOML config from an HTTPS URL.
 
     :param url: HTTPS URL pointing to a TOML config file.
@@ -88,7 +89,7 @@ def _load_from_url(url: str) -> Dict[str, Any]:
         return {}
 
 
-def _resolve_inherit_from(config: Dict[str, Any]) -> Dict[str, Any]:
+def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
     """Resolve ``inherit_from`` directive, merging parent config with local.
 
     The ``inherit_from`` key at the top level of a config file may be:
@@ -107,7 +108,7 @@ def _resolve_inherit_from(config: Dict[str, Any]) -> Dict[str, Any]:
     if not inherit_from or not isinstance(inherit_from, str):
         return config
 
-    parent: Dict[str, Any] = {}
+    parent: dict[str, Any] = {}
     if inherit_from.startswith("github:"):
         url = _github_shorthand_to_url(inherit_from)
         if url:
@@ -128,7 +129,7 @@ def _resolve_inherit_from(config: Dict[str, Any]) -> Dict[str, Any]:
     return config
 
 
-def load_config(path_hint: str = "") -> Dict[str, Any]:
+def load_config(path_hint: str = "") -> dict[str, Any]:
     """Load and validate config from TOML file.
 
     Supports ``inherit_from`` at the top level to merge an organization-level

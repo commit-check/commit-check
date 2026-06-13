@@ -3,7 +3,8 @@
 from __future__ import annotations
 import os
 import argparse
-from typing import Dict, Any, Optional, List, Callable, Tuple
+from collections.abc import Callable
+from typing import Any
 
 from commit_check.config import load_config as load_toml_config
 from commit_check import (
@@ -34,7 +35,7 @@ def parse_bool(value: Any) -> bool:
     raise TypeError(f"Cannot convert {type(value).__name__} to bool")
 
 
-def parse_list(value: Any) -> List[str]:
+def parse_list(value: Any) -> list[str]:
     """Parse a list from comma-separated string or list."""
     if isinstance(value, list):
         return value
@@ -56,7 +57,7 @@ def parse_int(value: Any) -> int:
     raise TypeError(f"Cannot convert {type(value).__name__} to int")
 
 
-def get_default_config() -> Dict[str, Any]:
+def get_default_config() -> dict[str, Any]:
     """Get the default configuration with all options."""
     return {
         "commit": {
@@ -89,7 +90,7 @@ def get_default_config() -> Dict[str, Any]:
     }
 
 
-def deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> None:
+def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> None:
     """Deep merge override into base dictionary (modifies base in-place)."""
     for key, value in override.items():
         if key in base and isinstance(base[key], dict) and isinstance(value, dict):
@@ -102,7 +103,7 @@ class ConfigMerger:
     """Merges configurations from multiple sources with priority: CLI > Env > TOML > Defaults."""
 
     # Mapping of environment variable names to config keys
-    ENV_VAR_MAPPING: Dict[str, Tuple[str, str, Callable[[Any], Any]]] = {
+    ENV_VAR_MAPPING: dict[str, tuple[str, str, Callable[[Any], Any]]] = {
         # Commit section
         "CCHK_CONVENTIONAL_COMMITS": ("commit", "conventional_commits", parse_bool),
         "CCHK_MESSAGE_PATTERN": ("commit", "message_pattern", str),
@@ -130,7 +131,7 @@ class ConfigMerger:
     }
 
     # Mapping of CLI argument names to config keys
-    CLI_ARG_MAPPING: Dict[str, Tuple[str, str]] = {
+    CLI_ARG_MAPPING: dict[str, tuple[str, str]] = {
         # Commit section
         "conventional_commits": ("commit", "conventional_commits"),
         "subject_capitalized": ("commit", "subject_capitalized"),
@@ -157,9 +158,9 @@ class ConfigMerger:
     }
 
     @staticmethod
-    def parse_env_vars() -> Dict[str, Any]:
+    def parse_env_vars() -> dict[str, Any]:
         """Parse environment variables with CCHK_ prefix into config dict."""
-        config: Dict[str, Any] = {"commit": {}, "branch": {}, "push": {}}
+        config: dict[str, Any] = {"commit": {}, "branch": {}, "push": {}}
 
         for env_var, (section, key, parser) in ConfigMerger.ENV_VAR_MAPPING.items():
             value = os.environ.get(env_var)
@@ -176,9 +177,9 @@ class ConfigMerger:
         return config
 
     @staticmethod
-    def parse_cli_args(args: argparse.Namespace) -> Dict[str, Any]:
+    def parse_cli_args(args: argparse.Namespace) -> dict[str, Any]:
         """Parse CLI arguments into config dict."""
-        config: Dict[str, Any] = {"commit": {}, "branch": {}, "push": {}}
+        config: dict[str, Any] = {"commit": {}, "branch": {}, "push": {}}
 
         for arg_name, (section, key) in ConfigMerger.CLI_ARG_MAPPING.items():
             if hasattr(args, arg_name):
@@ -192,8 +193,8 @@ class ConfigMerger:
 
     @staticmethod
     def from_all_sources(
-        cli_args: argparse.Namespace, config_path: Optional[str] = None
-    ) -> Dict[str, Any]:
+        cli_args: argparse.Namespace, config_path: str | None = None
+    ) -> dict[str, Any]:
         """Merge configs from all sources with priority: CLI > Env > TOML > Defaults.
 
         Args:

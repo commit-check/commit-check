@@ -1,6 +1,6 @@
 """Clean validation engine following SOLID principles."""
 
-from typing import List, Optional, Dict, Type
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum
@@ -33,9 +33,9 @@ class ValidationResult(IntEnum):
 class ValidationContext:
     """Context for validation operations."""
 
-    stdin_text: Optional[str] = None
-    commit_file: Optional[str] = None
-    config: Dict = field(default_factory=dict)
+    stdin_text: str | None = None
+    commit_file: str | None = None
+    config: dict = field(default_factory=dict)
     no_banner: bool = False
     compact: bool = False
     push_upstream_fallback: bool = False
@@ -56,7 +56,7 @@ class CheckOutcome:
     error: str = ""
     suggest: str = ""
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict[str, str]:
         """Serialise to a plain dict (suitable for JSON encoding)."""
         return {
             "check": self.check,
@@ -79,7 +79,7 @@ class BaseValidator(ABC):
         self._no_banner: bool = False
         self._compact: bool = False
         # Populated by _print_failure() on every failure, regardless of mode.
-        self._last_failure: Optional[Dict[str, str]] = None
+        self._last_failure: dict[str, str] | None = None
 
     @abstractmethod
     def validate(self, context: ValidationContext) -> ValidationResult:
@@ -428,7 +428,7 @@ class MergeBaseValidator(BaseValidator):
         self._print_failure(current_branch, f"target={target_branch}")
         return ValidationResult.FAIL
 
-    def _find_target_branch(self, pattern: str) -> Optional[str]:
+    def _find_target_branch(self, pattern: str) -> str | None:
         """Find target branch matching the pattern."""
         import subprocess
         import re
@@ -620,12 +620,12 @@ class ForcePushValidator(BaseValidator):
 
         return ValidationResult.PASS
 
-    def _remote_candidates_for_push(self, remote_ref: str) -> List[str]:
+    def _remote_candidates_for_push(self, remote_ref: str) -> list[str]:
         """Return remotes worth fetching for a pushed branch ref."""
         if not remote_ref.startswith("refs/heads/"):
             return []
 
-        remotes: List[str] = []
+        remotes: list[str] = []
         upstream_ref = get_upstream_branch()
         upstream_parts = upstream_ref.split("/", 1)
         remote_branch = remote_ref.removeprefix("refs/heads/")
@@ -720,7 +720,7 @@ class CommitTypeValidator(BaseValidator):
 class ValidationEngine:
     """Main validation engine that orchestrates all validations."""
 
-    VALIDATOR_MAP: Dict[str, Type[BaseValidator]] = {
+    VALIDATOR_MAP: dict[str, type[BaseValidator]] = {
         "message": CommitMessageValidator,
         "subject_capitalized": SubjectCapitalizationValidator,
         "subject_imperative": SubjectImperativeValidator,
@@ -741,7 +741,7 @@ class ValidationEngine:
         "no_force_push": ForcePushValidator,
     }
 
-    def __init__(self, rules: List[ValidationRule]):
+    def __init__(self, rules: list[ValidationRule]):
         self.rules = rules
 
     def validate_all(self, context: ValidationContext) -> ValidationResult:
@@ -766,7 +766,7 @@ class ValidationEngine:
             else ValidationResult.PASS
         )
 
-    def validate_all_detailed(self, context: ValidationContext) -> List[CheckOutcome]:
+    def validate_all_detailed(self, context: ValidationContext) -> list[CheckOutcome]:
         """Run all validations and return structured :class:`CheckOutcome` objects.
 
         Unlike :meth:`validate_all`, this method:
@@ -781,7 +781,7 @@ class ValidationEngine:
             outcomes = engine.validate_all_detailed(context)
             failed = [o for o in outcomes if o.status == "fail"]
         """
-        outcomes: List[CheckOutcome] = []
+        outcomes: list[CheckOutcome] = []
 
         for rule in self.rules:
             validator_class = self.VALIDATOR_MAP.get(rule.check)

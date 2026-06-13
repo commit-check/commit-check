@@ -1,6 +1,7 @@
 """Rule builder that creates validation rules from config and catalog."""
 
-from typing import Dict, Any, List, Optional
+from __future__ import annotations
+from typing import Any
 from dataclasses import dataclass
 from commit_check.rules_catalog import (
     COMMIT_RULES,
@@ -22,16 +23,16 @@ class ValidationRule:
     """A complete validation rule with all necessary information."""
 
     check: str
-    regex: Optional[str] = None
-    error: Optional[str] = None
-    suggest: Optional[str] = None
+    regex: str | None = None
+    error: str | None = None
+    suggest: str | None = None
     value: Any = None
-    allowed: Optional[List[str]] = None
-    ignored: Optional[List[str]] = None
+    allowed: list[str] | None = None
+    ignored: list[str] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for backward compatibility."""
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "check": self.check,
             "regex": self.regex or "",
             "error": self.error or "",
@@ -50,13 +51,13 @@ class ValidationRule:
 class RuleBuilder:
     """Builds validation rules from config and catalog entries."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.commit_config = config.get("commit", {})
         self.branch_config = config.get("branch", {})
         self.push_config = config.get("push", {})
 
-    def build_all_rules(self) -> List[ValidationRule]:
+    def build_all_rules(self) -> list[ValidationRule]:
         """Build all validation rules from config."""
         rules = []
         rules.extend(self._build_commit_rules())
@@ -64,7 +65,7 @@ class RuleBuilder:
         rules.extend(self._build_push_rules())
         return rules
 
-    def _build_commit_rules(self) -> List[ValidationRule]:
+    def _build_commit_rules(self) -> list[ValidationRule]:
         """Build commit-related validation rules."""
         rules = []
 
@@ -75,7 +76,7 @@ class RuleBuilder:
 
         return rules
 
-    def _build_branch_rules(self) -> List[ValidationRule]:
+    def _build_branch_rules(self) -> list[ValidationRule]:
         """Build branch-related validation rules."""
         rules = []
 
@@ -86,7 +87,7 @@ class RuleBuilder:
 
         return rules
 
-    def _build_push_rules(self) -> List[ValidationRule]:
+    def _build_push_rules(self) -> list[ValidationRule]:
         """Build push-related validation rules."""
         rules = []
 
@@ -99,7 +100,7 @@ class RuleBuilder:
 
     def _build_push_rule(
         self, catalog_entry: RuleCatalogEntry
-    ) -> Optional[ValidationRule]:
+    ) -> ValidationRule | None:
         """Build a single push validation rule from catalog entry and config."""
         check = catalog_entry.check
 
@@ -121,8 +122,8 @@ class RuleBuilder:
         return None
 
     def _build_single_rule(
-        self, catalog_entry: RuleCatalogEntry, section_config: Dict[str, Any]
-    ) -> Optional[ValidationRule]:
+        self, catalog_entry: RuleCatalogEntry, section_config: dict[str, Any]
+    ) -> ValidationRule | None:
         """Build a single validation rule from catalog entry and config."""
         check = catalog_entry.check
 
@@ -144,7 +145,7 @@ class RuleBuilder:
 
     def _build_conventional_commit_rule(
         self, catalog_entry: RuleCatalogEntry
-    ) -> Optional[ValidationRule]:
+    ) -> ValidationRule | None:
         """Build conventional commit message rule.
 
         When ``message_pattern`` is set in config, it takes precedence over
@@ -182,7 +183,7 @@ class RuleBuilder:
 
     def _build_conventional_branch_rule(
         self, catalog_entry: RuleCatalogEntry
-    ) -> Optional[ValidationRule]:
+    ) -> ValidationRule | None:
         """Build conventional branch naming rule."""
         if not self.branch_config.get("conventional_branch", True):
             return None
@@ -201,7 +202,7 @@ class RuleBuilder:
 
     def _build_length_rule(
         self, catalog_entry: RuleCatalogEntry, config_key: str
-    ) -> Optional[ValidationRule]:
+    ) -> ValidationRule | None:
         """Build subject length validation rule."""
         length = self.commit_config.get(config_key)
         if not isinstance(length, int):
@@ -222,7 +223,7 @@ class RuleBuilder:
 
     def _build_author_list_rule(
         self, catalog_entry: RuleCatalogEntry, config_key: str
-    ) -> Optional[ValidationRule]:
+    ) -> ValidationRule | None:
         """Build author allow/ignore list rule."""
         author_list = self.commit_config.get(config_key)
         if not isinstance(author_list, list) or not author_list:
@@ -234,7 +235,7 @@ class RuleBuilder:
 
     def _build_merge_base_rule(
         self, catalog_entry: RuleCatalogEntry
-    ) -> Optional[ValidationRule]:
+    ) -> ValidationRule | None:
         """Build merge base validation rule."""
         target = self.branch_config.get("require_rebase_target")
         if not isinstance(target, str) or not target:
@@ -248,8 +249,8 @@ class RuleBuilder:
         )
 
     def _build_boolean_rule(
-        self, catalog_entry: RuleCatalogEntry, section_config: Dict[str, Any]
-    ) -> Optional[ValidationRule]:
+        self, catalog_entry: RuleCatalogEntry, section_config: dict[str, Any]
+    ) -> ValidationRule | None:
         """Build boolean-based validation rule."""
         check = catalog_entry.check
 
@@ -276,28 +277,28 @@ class RuleBuilder:
             value=config_value,
         )
 
-    def _get_allowed_commit_types(self) -> List[str]:
+    def _get_allowed_commit_types(self) -> list[str]:
         """Get deduplicated list of allowed commit types."""
         types = self.commit_config.get("allow_commit_types", DEFAULT_COMMIT_TYPES)
         return list(dict.fromkeys(types))  # Preserve order, remove duplicates
 
-    def _get_allowed_branch_types(self) -> List[str]:
+    def _get_allowed_branch_types(self) -> list[str]:
         """Get deduplicated list of allowed branch types."""
         types = self.branch_config.get("allow_branch_types", DEFAULT_BRANCH_TYPES)
         return list(dict.fromkeys(types))  # Preserve order, remove duplicates
 
-    def _get_allowed_branch_names(self) -> List[str]:
+    def _get_allowed_branch_names(self) -> list[str]:
         """Get deduplicated list of allowed branch names."""
         names = self.branch_config.get("allow_branch_names", DEFAULT_BRANCH_NAMES)
         return list(dict.fromkeys(names))  # Preserve order, remove duplicates
 
-    def _build_conventional_commit_regex(self, allowed_types: List[str]) -> str:
+    def _build_conventional_commit_regex(self, allowed_types: list[str]) -> str:
         """Build regex for conventional commit messages."""
         types_pattern = "|".join(sorted(set(allowed_types)))
         return rf"^({types_pattern}){{1}}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)"
 
     def _build_conventional_branch_regex(
-        self, allowed_types: List[str], allowed_names: List[str]
+        self, allowed_types: list[str], allowed_names: list[str]
     ) -> str:
         """Build regex for conventional branch names."""
         types_pattern = "|".join(allowed_types)

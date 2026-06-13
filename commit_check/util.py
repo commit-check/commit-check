@@ -5,11 +5,12 @@
 A module containing utility functions.
 """
 
+from __future__ import annotations
 import os
 import subprocess
 import yaml
 from pathlib import Path, PurePath
-from typing import Any, Dict, Optional
+from typing import Any
 from subprocess import CalledProcessError
 from commit_check import RED, GREEN, YELLOW, RESET_COLOR
 from commit_check.rule_builder import RuleBuilder
@@ -24,7 +25,7 @@ except Exception:  # pragma: no cover
         _toml = None  # type: ignore[assignment]
 
 
-def _find_check(checks: list, check_type: str) -> Optional[dict]:
+def _find_check(checks: list, check_type: str) -> dict | None:
     """Return the first check dict matching check_type, else None."""
     for check in checks:
         if check.get("check") == check_type:
@@ -275,7 +276,7 @@ def cmd_output(commands: list) -> str:
         return ""
 
 
-def _load_toml(path: PurePath) -> Dict[str, Any]:
+def _load_toml(path: PurePath) -> dict[str, Any]:
     """Load TOML from file, tolerant if toml support missing."""
     if _toml is None:
         return {}
@@ -288,7 +289,7 @@ def _load_toml(path: PurePath) -> Dict[str, Any]:
         return {}
 
 
-def _find_config_file(path_hint: str) -> Optional[PurePath]:
+def _find_config_file(path_hint: str) -> PurePath | None:
     """Resolve config file.
 
     - If a directory is passed, search in priority: cchk.toml, commit-check.toml, .github/cchk.toml, .github/commit-check.toml
@@ -313,7 +314,7 @@ def _find_config_file(path_hint: str) -> Optional[PurePath]:
     return None
 
 
-def validate_config(path_hint: str) -> dict:
+def validate_config(path_hint: str) -> dict[str, Any]:
     """Validate and load configuration from TOML.
 
     Returns a dict containing a 'checks' list or empty dict if not found/invalid.
@@ -385,7 +386,7 @@ def print_error_message(check_type: str, error: str, reason: str):
         print(error)
 
 
-def print_suggestion(suggest: Optional[str]) -> None:
+def print_suggestion(suggest: str | None) -> None:
     """Print suggestion to user
     :param suggest: what message to print out
     """

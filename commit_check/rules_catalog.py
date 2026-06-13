@@ -1,15 +1,15 @@
 """Centralized catalog of all commit-check rules, regexes, and error messages."""
 
+from __future__ import annotations
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass(frozen=True)
 class RuleCatalogEntry:
     check: str
-    regex: Optional[str] = None
-    error: Optional[str] = None
-    suggest: Optional[str] = None
+    regex: str | None = None
+    error: str | None = None
+    suggest: str | None = None
 
 
 # Commit message rules

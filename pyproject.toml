@@ -11,7 +11,7 @@ license = "MIT"
 authors = [
     { name = "Xianpeng Shen", email = "xianpeng.shen@gmail.com" },
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "pyyaml",
     "tomli>=1.1.0; python_version < '3.11'",
@@ -22,7 +22,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Natural Language :: English",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -54,6 +53,9 @@ docs = ['sphinx<9', 'sphinx-immaterial', 'sphinx-autobuild', 'sphinx_issues']
 zip-safe = false
 packages = ["commit_check"]
 
+[tool.setuptools.package-data]
+commit_check = ["py.typed"]
+
 [tool.setuptools_scm]
 # It would be nice to include the commit hash in the version, but that
 # can't be done in a PEP 440-compatible way.
@@ -63,6 +65,7 @@ local_scheme = "no-local-version"
 fallback_version = "0.0.0"
 
 [tool.mypy]
+python_version = "3.10"
 show_error_codes = true
 show_column_numbers = true
 
