@@ -62,6 +62,7 @@ def get_default_config() -> dict[str, Any]:
     return {
         "commit": {
             "conventional_commits": True,
+            "message_pattern": "",
             "subject_capitalized": DEFAULT_BOOLEAN_RULES["subject_capitalized"],
             "subject_imperative": DEFAULT_BOOLEAN_RULES["subject_imperative"],
             "subject_max_length": 80,
@@ -105,6 +106,7 @@ class ConfigMerger:
     ENV_VAR_MAPPING: dict[str, tuple[str, str, Callable[[Any], Any]]] = {
         # Commit section
         "CCHK_CONVENTIONAL_COMMITS": ("commit", "conventional_commits", parse_bool),
+        "CCHK_MESSAGE_PATTERN": ("commit", "message_pattern", str),
         "CCHK_SUBJECT_CAPITALIZED": ("commit", "subject_capitalized", parse_bool),
         "CCHK_SUBJECT_IMPERATIVE": ("commit", "subject_imperative", parse_bool),
         "CCHK_SUBJECT_MAX_LENGTH": ("commit", "subject_max_length", parse_int),
