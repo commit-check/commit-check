@@ -46,6 +46,14 @@ commit-check searches for configuration files in the following order (first foun
 
   Placing configuration files in the ``.github`` folder helps keep your repository root clean and follows GitHub conventions used by tools like Dependabot and Renovate.
 
+.. tip::
+  **IDE Autocompletion**
+
+  commit-check's TOML schema is published on `SchemaStore <https://www.schemastore.org/>`_,
+  so editors like VS Code (via `Even Better TOML <https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml>`_),
+  PyCharm, and IntelliJ provide autocompletion, validation, and documentation
+  tooltips for ``cchk.toml`` out of the box — no manual schema path configuration needed.
+
 Organization-Level Configuration (inherit_from)
 -------------------------------------------------
 

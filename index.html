@@ -935,6 +935,14 @@ For more information, see the <a class="reference external" href="https://commit
 <span class="n">allow_branch_types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;feature&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;bugfix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;hotfix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;release&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;chore&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;feat&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fix&quot;</span><span class="p">]</span>
 </code></pre></div>
 </div>
+<div class="tip admonition">
+<p class="admonition-title">Tip</p>
+<p><strong>IDE Autocompletion</strong></p>
+<p>commit-check’s TOML schema is published on <a class="reference external" href="https://www.schemastore.org/">SchemaStore</a>,
+so editors like VS Code (via <a class="reference external" href="https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml">Even Better TOML</a>),
+PyCharm, and IntelliJ provide autocompletion, validation, and documentation
+tooltips for <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> out of the box — no manual schema path configuration needed.</p>
+</div>
 <h3 id="organization-level-configuration-inherit-from">Organization-Level Configuration (inherit_from)<a class="headerlink" href="#organization-level-configuration-inherit-from" title="Link to this heading">¶</a></h3>
 <p>Share a base configuration across all repositories in your organization using <code class="docutils literal notranslate"><span class="pre">inherit_from</span></code>:</p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># .github/cchk.toml — inherits from org-level config, then overrides locally</span>

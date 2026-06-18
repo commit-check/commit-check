@@ -859,6 +859,14 @@
 <p><strong>GitHub Best Practice</strong></p>
 <p>Placing configuration files in the <code class="docutils literal notranslate"><span class="pre">.github</span></code> folder helps keep your repository root clean and follows GitHub conventions used by tools like Dependabot and Renovate.</p>
 </div>
+<div class="tip admonition">
+<p class="admonition-title">Tip</p>
+<p><strong>IDE Autocompletion</strong></p>
+<p>commit-check’s TOML schema is published on <a class="reference external" href="https://www.schemastore.org/">SchemaStore</a>,
+so editors like VS Code (via <a class="reference external" href="https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml">Even Better TOML</a>),
+PyCharm, and IntelliJ provide autocompletion, validation, and documentation
+tooltips for <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> out of the box — no manual schema path configuration needed.</p>
+</div>
 <h2 id="organization-level-configuration-inherit-from">Organization-Level Configuration (inherit_from)<a class="headerlink" href="#organization-level-configuration-inherit-from" title="Link to this heading">¶</a></h2>
 <p>For organizations that want to share a common base configuration across many repositories, commit-check supports an <code class="docutils literal notranslate"><span class="pre">inherit_from</span></code> directive at the top level of your TOML config file.</p>
 <p><strong>How it works:</strong></p>
