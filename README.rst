@@ -141,6 +141,14 @@ To customize the behavior, create a configuration file named ``cchk.toml`` or ``
     conventional_branch = true
     allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
 
+.. tip::
+  **IDE Autocompletion**
+
+  commit-check's TOML schema is published on `SchemaStore <https://www.schemastore.org/>`_,
+  so editors like VS Code (via `Even Better TOML <https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml>`_),
+  PyCharm, and IntelliJ provide autocompletion, validation, and documentation
+  tooltips for ``cchk.toml`` out of the box — no manual schema path configuration needed.
+
 Organization-Level Configuration (inherit_from)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
