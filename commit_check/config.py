@@ -129,6 +129,31 @@ def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
     return config
 
 
+def _validate_config_path(path: Path) -> Path:
+    """Resolve and validate a config file path to prevent path traversal.
+
+    For relative paths, the resolved path must stay within the current working
+    directory to block directory traversal attacks (e.g. ``../../etc/passwd``).
+    Absolute paths are allowed as-is since they represent an explicit user intent.
+
+    :param path: User-supplied config file path.
+    :returns: Resolved absolute path.
+    :raises PermissionError: If a relative path resolves outside the project directory.
+    """
+    if not path.is_absolute():
+        resolved = path.expanduser().resolve()
+        cwd = Path.cwd().resolve()
+        try:
+            resolved.relative_to(cwd)
+        except ValueError:
+            raise PermissionError(
+                f"Config file must be within the project directory ({cwd}). "
+                f"Got: {resolved}"
+            )
+        return resolved
+    return path.expanduser().resolve()
+
+
 def load_config(path_hint: str = "") -> dict[str, Any]:
     """Load and validate config from TOML file.
 
@@ -137,7 +162,7 @@ def load_config(path_hint: str = "") -> dict[str, Any]:
     URL before applying local overrides.
     """
     if path_hint:
-        p = Path(path_hint)
+        p = _validate_config_path(Path(path_hint))
         if not p.exists():
             raise FileNotFoundError(f"Specified config file not found: {path_hint}")
         with open(p, "rb") as f:
