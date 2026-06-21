@@ -33,7 +33,6 @@ BAD_COMMIT_MSG = "Bad commit"
 USE_CONVENTIONAL_FORMAT = "Use conventional format"
 
 
-
 class TestValidationResult:
     @pytest.mark.benchmark
     def test_validation_result_enum(self):
@@ -1367,12 +1366,8 @@ class TestForcePushValidator:
         context = ValidationContext(stdin_text=push_info)
 
         with patch("commit_check.engine.git_merge_base", return_value=128):
-            with patch(
-                FETCH_REMOTE_REF, return_value=False
-            ) as mock_fetch:
-                with patch(
-                    GET_GIT_REMOTES, return_value=["origin"]
-                ):
+            with patch(FETCH_REMOTE_REF, return_value=False) as mock_fetch:
+                with patch(GET_GIT_REMOTES, return_value=["origin"]):
                     with patch(
                         "commit_check.engine.get_upstream_branch", return_value=""
                     ):
@@ -1393,12 +1388,8 @@ class TestForcePushValidator:
             "commit_check.engine.git_merge_base", side_effect=[128, 1]
         ) as mock_merge:
             with patch("commit_check.engine.get_upstream_branch", return_value=""):
-                with patch(
-                    GET_GIT_REMOTES, return_value=["origin"]
-                ):
-                    with patch(
-                        FETCH_REMOTE_REF, return_value=True
-                    ) as mock_fetch:
+                with patch(GET_GIT_REMOTES, return_value=["origin"]):
+                    with patch(FETCH_REMOTE_REF, return_value=True) as mock_fetch:
                         with patch("commit_check.util._print_failure"):
                             result = validator.validate(context)
 
@@ -1422,9 +1413,7 @@ class TestForcePushValidator:
                     GET_GIT_REMOTES,
                     return_value=["origin", "upstream"],
                 ):
-                    with patch(
-                        FETCH_REMOTE_REF, return_value=True
-                    ) as mock_fetch:
+                    with patch(FETCH_REMOTE_REF, return_value=True) as mock_fetch:
                         result = validator.validate(context)
 
         mock_fetch.assert_called_once_with("upstream", REFS_HEADS_MAIN)
@@ -1446,9 +1435,7 @@ class TestForcePushValidator:
                     GET_GIT_REMOTES,
                     return_value=["origin", "upstream"],
                 ):
-                    with patch(
-                        FETCH_REMOTE_REF, return_value=True
-                    ) as mock_fetch:
+                    with patch(FETCH_REMOTE_REF, return_value=True) as mock_fetch:
                         with patch("commit_check.util._print_failure"):
                             result = validator.validate(context)
 

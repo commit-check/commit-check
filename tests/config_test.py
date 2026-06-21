@@ -20,7 +20,6 @@ URLOPEN_MODULE = "urllib.request.urlopen"
 EXAMPLE_CONFIG_URL = "https://example.com/cchk.toml"
 
 
-
 class TestConfig:
     @pytest.mark.benchmark
     def test_load_config_with_path_hint(self):

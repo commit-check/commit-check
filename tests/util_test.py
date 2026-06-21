@@ -31,8 +31,6 @@ REFS_HEADS_MAIN = "refs/heads/main"
 USER_NAME_CONFIG = "user.name"
 
 
-
-
 class TestUtil:
     class TestGetBranchName:
         @pytest.mark.benchmark

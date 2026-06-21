@@ -8,8 +8,6 @@ import pytest
 BAD_FORMAT_ERROR = "Bad format"
 
 
-
-
 class TestValidationRule:
     @pytest.mark.benchmark
     def test_validation_rule_to_dict_with_ignored(self):
@@ -265,7 +263,10 @@ class TestRuleBuilder:
 
         builder = RuleBuilder(config)
         catalog_entry = RuleCatalogEntry(
-            check="message", regex="", error=BAD_FORMAT_ERROR, suggest="Use correct format"
+            check="message",
+            regex="",
+            error=BAD_FORMAT_ERROR,
+            suggest="Use correct format",
         )
 
         rule = builder._build_conventional_commit_rule(catalog_entry)
