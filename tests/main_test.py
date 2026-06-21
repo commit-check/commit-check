@@ -12,6 +12,7 @@ from commit_check.main import (
 )
 
 CMD = "commit-check"
+FEATURE_TOPIC_BRANCH = "feature/topic"
 
 
 class TestMain:
@@ -849,7 +850,7 @@ class TestNoForcePushFlag:
         mocker.patch.dict(
             os.environ,
             {
-                "PRE_COMMIT_LOCAL_BRANCH": "feature/topic",
+                "PRE_COMMIT_LOCAL_BRANCH": FEATURE_TOPIC_BRANCH,
                 "PRE_COMMIT_REMOTE_BRANCH": "main",
                 "PRE_COMMIT_TO_REF": "local-sha",
                 "PRE_COMMIT_FROM_REF": "remote-sha",
@@ -873,7 +874,7 @@ class TestNoForcePushFlag:
             os.environ,
             {
                 "PRE_COMMIT_REMOTE_NAME": "upstream",
-                "PRE_COMMIT_LOCAL_BRANCH": "feature/topic",
+                "PRE_COMMIT_LOCAL_BRANCH": FEATURE_TOPIC_BRANCH,
                 "PRE_COMMIT_REMOTE_BRANCH": "main",
                 "PRE_COMMIT_TO_REF": "local-sha",
             },
@@ -907,7 +908,7 @@ class TestNoForcePushFlag:
         mocker.patch.dict(
             os.environ,
             {
-                "PRE_COMMIT_LOCAL_BRANCH": "feature/topic",
+                "PRE_COMMIT_LOCAL_BRANCH": FEATURE_TOPIC_BRANCH,
                 "PRE_COMMIT_REMOTE_BRANCH": "main",
                 "PRE_COMMIT_TO_REF": "local-sha",
                 "PRE_COMMIT_FROM_REF": "remote-sha",
@@ -927,7 +928,7 @@ class TestNoForcePushFlag:
             os.environ,
             {
                 "PRE_COMMIT_REMOTE_NAME": "upstream",
-                "PRE_COMMIT_LOCAL_BRANCH": "feature/topic",
+                "PRE_COMMIT_LOCAL_BRANCH": FEATURE_TOPIC_BRANCH,
                 "PRE_COMMIT_REMOTE_BRANCH": "main",
                 "PRE_COMMIT_TO_REF": "local-sha",
                 "PRE_COMMIT_FROM_REF": "range-base-sha",

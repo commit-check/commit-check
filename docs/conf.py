@@ -84,7 +84,7 @@ html_theme_options = {
 }
 
 object_description_options = [
-    ("py:parameter", dict(include_in_toc=False)),
+    ("py:parameter", {"include_in_toc": False}),
 ]
 
 sphinx_immaterial_custom_admonitions = [
@@ -102,7 +102,7 @@ sphinx_immaterial_custom_admonitions = [
 ]
 for name in ("hint", "tip", "important"):
     sphinx_immaterial_custom_admonitions.append(
-        dict(name=name, icon="material/school", override=True)
+        {"name": name, "icon": "material/school", "override": True}
     )
 
 

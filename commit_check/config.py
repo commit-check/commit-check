@@ -85,7 +85,7 @@ def _load_from_url(url: str) -> dict[str, Any]:
         import io
 
         return toml_load(io.BytesIO(data))
-    except (urllib.error.URLError, urllib.error.HTTPError, Exception):
+    except urllib.error.URLError:
         return {}
 
 
@@ -137,7 +137,7 @@ def load_config(path_hint: str = "") -> dict[str, Any]:
     URL before applying local overrides.
     """
     if path_hint:
-        p = Path(path_hint)
+        p = Path(path_hint).resolve()
         if not p.exists():
             raise FileNotFoundError(f"Specified config file not found: {path_hint}")
         with open(p, "rb") as f:

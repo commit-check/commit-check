@@ -98,6 +98,43 @@ class BaseValidator(ABC):
             and not has_commits()
         )
 
+    def _author_in_ignore_list(self, context: ValidationContext) -> bool:
+        """Check if the current author or any co-author is in the ignore list."""
+        import re
+
+        ignore_authors = context.config.get("commit", {}).get("ignore_authors", [])
+        if not ignore_authors:
+            return False
+
+        current_author = get_commit_info("an")
+        if current_author and current_author in ignore_authors:
+            return True
+
+        # Check co-authors from the commit message body
+        message = self._get_commit_body(context)
+        if not message:
+            return False
+
+        co_authors = re.findall(
+            r"^Co-authored-by:\s*([^<\n]+)\s*(?:<|$)",
+            message,
+            re.MULTILINE,
+        )
+        return any(co_author.strip() in ignore_authors for co_author in co_authors)
+
+    @staticmethod
+    def _get_commit_body(context: ValidationContext) -> str:
+        """Retrieve the commit message body from context or git."""
+        if context.stdin_text:
+            return context.stdin_text
+        if context.commit_file:
+            try:
+                with open(context.commit_file, "r") as f:
+                    return f.read()
+            except (OSError, IOError):
+                pass
+        return get_commit_info("b")
+
     def _should_skip_commit_validation(self, context: ValidationContext) -> bool:
         """
         Determine if commit validation should be skipped.
@@ -105,35 +142,8 @@ class BaseValidator(ABC):
         Skip if the current author or any co-author is in the ignore_authors list
         for commits, or if no stdin_text, no commit_file, and no commits exist.
         """
-        import re
-
-        ignore_authors = context.config.get("commit", {}).get("ignore_authors", [])
-        current_author = get_commit_info("an")
-        if current_author and current_author in ignore_authors:
+        if self._author_in_ignore_list(context):
             return True
-
-        # Check co-authors from the commit message body
-        if ignore_authors:
-            message = ""
-            if context.stdin_text:
-                message = context.stdin_text
-            elif context.commit_file:
-                try:
-                    with open(context.commit_file, "r") as f:
-                        message = f.read()
-                except (OSError, IOError):
-                    pass
-            else:
-                message = get_commit_info("b")
-            if message:
-                co_authors = re.findall(
-                    r"^Co-authored-by:\s*([^<\n]+?)\s*(?:<|$)",
-                    message,
-                    re.MULTILINE,
-                )
-                for co_author in co_authors:
-                    if co_author.strip() in ignore_authors:
-                        return True
 
         return (
             context.stdin_text is None
@@ -242,7 +252,7 @@ class SubjectValidator(BaseValidator):
 
         return get_commit_info("s")
 
-    def _validate_subject(self, subject: str) -> ValidationResult:
+    def _validate_subject(self, _subject: str) -> ValidationResult:
         """Override in subclasses for specific validation logic."""
         return ValidationResult.PASS
 
@@ -307,11 +317,11 @@ class SubjectLengthValidator(SubjectValidator):
         length = len(subject)
         constraint_value = self.rule.value
 
-        if self.rule.check == "subject_max_length" and length <= constraint_value:
-            return ValidationResult.PASS
-        elif self.rule.check == "subject_min_length" and length >= constraint_value:
-            return ValidationResult.PASS
-        elif self.rule.check not in ["subject_max_length", "subject_min_length"]:
+        if (
+            (self.rule.check == "subject_max_length" and length <= constraint_value)
+            or (self.rule.check == "subject_min_length" and length >= constraint_value)
+            or self.rule.check not in ["subject_max_length", "subject_min_length"]
+        ):
             return ValidationResult.PASS
 
         self._print_failure(subject, f"length={length}, constraint={constraint_value}")

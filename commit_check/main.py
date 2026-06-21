@@ -376,6 +376,89 @@ def _get_message_content(
         return None
 
 
+def _resolve_commit_message_source(
+    args: argparse.Namespace,
+    stdin_reader: StdinReader,
+) -> tuple[str | None, str | None]:
+    """Determine commit message source: file path or stdin content.
+
+    Returns a tuple of (stdin_content, commit_file_path).
+    """
+    if not args.message:
+        return None, None
+
+    if args.commit_msg_file:
+        return None, args.commit_msg_file
+
+    stdin_content = stdin_reader.read_piped_input()
+    return stdin_content or None, None
+
+
+def _resolve_stdin_for_non_message(
+    args: argparse.Namespace, stdin_reader: StdinReader
+) -> str | None:
+    """Resolve stdin content for non-message validation types."""
+    has_non_message_check = any(
+        [args.branch, args.author_name, args.author_email, args.no_force_push]
+    )
+    if not has_non_message_check:
+        return None
+
+    stdin_content = stdin_reader.read_piped_input()
+    if args.no_force_push and stdin_content is None:
+        return _build_pre_commit_push_input()
+    return stdin_content
+
+
+def _get_requested_checks(args: argparse.Namespace) -> list[str]:
+    """Build the list of requested validation checks based on CLI args."""
+    requested_checks: list[str] = []
+
+    if args.message:
+        requested_checks.extend(
+            [
+                "message",
+                "subject_imperative",
+                "subject_max_length",
+                "subject_min_length",
+                "require_signed_off_by",
+                "subject_capitalized",
+                "require_body",
+                "allow_merge_commits",
+                "allow_revert_commits",
+                "allow_empty_commits",
+                "allow_fixup_commits",
+                "allow_wip_commits",
+            ]
+        )
+    if args.branch:
+        requested_checks.extend(["branch", "merge_base"])
+    if args.author_name:
+        requested_checks.append("author_name")
+    if args.author_email:
+        requested_checks.append("author_email")
+    if args.no_force_push:
+        requested_checks.append("no_force_push")
+
+    return requested_checks
+
+
+def _run_json_output(engine: ValidationEngine, context: ValidationContext) -> int:
+    """Run validation and print JSON output."""
+    outcomes: list[CheckOutcome] = engine.validate_all_detailed(context)
+    overall = "fail" if any(o.status == "fail" for o in outcomes) else "pass"
+    print(
+        json.dumps(
+            {
+                "status": overall,
+                "checks": [o.to_dict() for o in outcomes],
+            },
+            indent=2,
+        )
+    )
+    return 0 if overall == "pass" else 1
+
+
 def main() -> int:
     """The main entrypoint of commit-check program."""
     parser = _get_parser()
@@ -387,6 +470,10 @@ def main() -> int:
     stdin_reader = StdinReader()
 
     try:
+        # Handle positional commit_msg_file argument for pre-commit compatibility
+        if args.commit_msg_file:
+            args.message = True
+
         # Load and merge configuration from all sources: CLI > Env > TOML > Defaults
         config_data = ConfigMerger.from_all_sources(args, args.config)
 
@@ -399,81 +486,24 @@ def main() -> int:
         rule_builder = RuleBuilder(config_data)
         all_rules = rule_builder.build_all_rules()
 
-        # Handle positional commit_msg_file argument for pre-commit compatibility
-        # Store the file path separately from the boolean flag
-        commit_msg_file_path = None
-        if args.commit_msg_file:
-            commit_msg_file_path = args.commit_msg_file
-            # If a file was provided positionally, always enable message checking
-            args.message = True
-
-        # Filter rules based on CLI arguments
-        requested_checks = []
-        if args.message:  # args.message is now a boolean flag
-            # Add commit message related checks
-            requested_checks.extend(
-                [
-                    "message",
-                    "subject_imperative",
-                    "subject_max_length",
-                    "subject_min_length",
-                    "require_signed_off_by",
-                    "subject_capitalized",
-                    "require_body",
-                    "allow_merge_commits",
-                    "allow_revert_commits",
-                    "allow_empty_commits",
-                    "allow_fixup_commits",
-                    "allow_wip_commits",
-                ]
-            )
-        if args.branch:
-            requested_checks.extend(["branch", "merge_base"])
-        if args.author_name:
-            requested_checks.append("author_name")
-        if args.author_email:
-            requested_checks.append("author_email")
-        if args.no_force_push:
-            requested_checks.append("no_force_push")
-
-        # If no specific checks requested, show help
+        # Determine which checks to run
+        requested_checks = _get_requested_checks(args)
         if not requested_checks:
             parser.print_help()
             return 0
 
         # Filter rules to only include requested checks
         filtered_rules = [rule for rule in all_rules if rule.check in requested_checks]
-
-        # Create validation engine with filtered rules
         engine = ValidationEngine(filtered_rules)
 
-        # Create validation context
-        stdin_content = None
-        commit_file_path = None
+        # Resolve validation context inputs
+        stdin_content, commit_file_path = _resolve_commit_message_source(
+            args, stdin_reader
+        )
+        if not args.message:
+            stdin_content = _resolve_stdin_for_non_message(args, stdin_reader)
 
-        if args.message:  # args.message is a boolean flag
-            # Check if we have a file path from positional argument
-            if commit_msg_file_path:
-                commit_file_path = commit_msg_file_path
-            else:
-                # No file path provided, try reading from stdin
-                stdin_content = stdin_reader.read_piped_input()
-                if not stdin_content:
-                    # No stdin and no file - let validators get data from git themselves
-                    stdin_content = None
-        elif not any(
-            [args.branch, args.author_name, args.author_email, args.no_force_push]
-        ):
-            # If no specific validation type is requested, don't read stdin
-            pass
-        else:
-            # For non-message validations (branch, author, push), check for stdin input
-            stdin_content = stdin_reader.read_piped_input()
-            if args.no_force_push and stdin_content is None:
-                stdin_content = _build_pre_commit_push_input()
-
-        # Reset banner state for this run so that multiple main() calls
-        # in the same process (e.g. tests) don't share banner state.
+        # Reset banner state for this run
         from commit_check.util import print_error_header as _peh
 
         _peh.has_been_called = False
@@ -490,22 +520,9 @@ def main() -> int:
         # Run validation – choose output mode based on --format
         output_format: str = getattr(args, "output_format", "text")
         if output_format == "json":
-            outcomes: list[CheckOutcome] = engine.validate_all_detailed(context)
-            overall = "fail" if any(o.status == "fail" for o in outcomes) else "pass"
-            print(
-                json.dumps(
-                    {
-                        "status": overall,
-                        "checks": [o.to_dict() for o in outcomes],
-                    },
-                    indent=2,
-                )
-            )
-            return 0 if overall == "pass" else 1
+            return _run_json_output(engine, context)
 
         result = engine.validate_all(context)
-
-        # Return appropriate exit code
         return 0 if result == ValidationResult.PASS else 1
 
     except FileNotFoundError as e:

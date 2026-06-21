@@ -26,6 +26,10 @@ from commit_check.util import (
 from subprocess import CalledProcessError, PIPE
 from unittest.mock import MagicMock, patch
 
+# String constants used across tests
+REFS_HEADS_MAIN = "refs/heads/main"
+USER_NAME_CONFIG = "user.name"
+
 
 class TestUtil:
     class TestGetBranchName:
@@ -199,7 +203,7 @@ class TestUtil:
             result = get_upstream_remote_sha("origin/main")
 
             mock_run.assert_called_once_with(
-                ["git", "ls-remote", "--exit-code", "origin", "refs/heads/main"],
+                ["git", "ls-remote", "--exit-code", "origin", REFS_HEADS_MAIN],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 encoding="utf-8",
@@ -262,7 +266,7 @@ class TestUtil:
             result = get_remote_branch_sha("origin", "main")
 
             mock_run.assert_called_once_with(
-                ["git", "ls-remote", "--exit-code", "origin", "refs/heads/main"],
+                ["git", "ls-remote", "--exit-code", "origin", REFS_HEADS_MAIN],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 encoding="utf-8",
@@ -364,9 +368,9 @@ class TestUtil:
                 )(),
             )
 
-            assert fetch_remote_ref("origin", "refs/heads/main") is True
+            assert fetch_remote_ref("origin", REFS_HEADS_MAIN) is True
             mock_run.assert_called_once_with(
-                ["git", "fetch", "--quiet", "--no-tags", "origin", "refs/heads/main"],
+                ["git", "fetch", "--quiet", "--no-tags", "origin", REFS_HEADS_MAIN],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 encoding="utf-8",
@@ -383,13 +387,13 @@ class TestUtil:
                 )(),
             )
 
-            assert fetch_remote_ref("origin", "refs/heads/main") is False
+            assert fetch_remote_ref("origin", REFS_HEADS_MAIN) is False
 
         @pytest.mark.benchmark
         @pytest.mark.parametrize(
             "remote_name,remote_ref",
             [
-                ("", "refs/heads/main"),
+                ("", REFS_HEADS_MAIN),
                 ("origin", ""),
             ],
         )
@@ -859,7 +863,7 @@ class TestGetGitConfigValue:
         from commit_check.util import get_git_config_value
 
         mocker.patch("commit_check.util.cmd_output", return_value="John Doe\n")
-        result = get_git_config_value("user.name")
+        result = get_git_config_value(USER_NAME_CONFIG)
         assert result == "John Doe"
 
     @pytest.mark.benchmark
@@ -868,7 +872,7 @@ class TestGetGitConfigValue:
         from commit_check.util import get_git_config_value
 
         mocker.patch("commit_check.util.cmd_output", return_value="")
-        result = get_git_config_value("user.name")
+        result = get_git_config_value(USER_NAME_CONFIG)
         assert result == ""
 
     @pytest.mark.benchmark
@@ -882,7 +886,7 @@ class TestGetGitConfigValue:
                 returncode=1, cmd="git config --get user.name"
             ),
         )
-        result = get_git_config_value("user.name")
+        result = get_git_config_value(USER_NAME_CONFIG)
         assert result == ""
 
     @pytest.mark.benchmark

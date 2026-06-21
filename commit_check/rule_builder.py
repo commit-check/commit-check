@@ -259,13 +259,13 @@ class RuleBuilder:
 
         # For "allow_*" rules, only create rule if they're disabled (False)
         # For "require_*" rules, only create rule if they're enabled (True)
-        if check.startswith("allow_") and config_value is True:
-            return None
-        elif check.startswith("require_") and config_value is False:
-            return None
-        elif (
-            check in ["subject_capitalized", "subject_imperative"]
-            and config_value is False
+        if (
+            (check.startswith("allow_") and config_value is True)
+            or (check.startswith("require_") and config_value is False)
+            or (
+                check in ["subject_capitalized", "subject_imperative"]
+                and config_value is False
+            )
         ):
             return None
 
@@ -295,7 +295,7 @@ class RuleBuilder:
     def _build_conventional_commit_regex(self, allowed_types: list[str]) -> str:
         """Build regex for conventional commit messages."""
         types_pattern = "|".join(sorted(set(allowed_types)))
-        return rf"^({types_pattern}){{1}}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)"
+        return rf"^({types_pattern})(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)"
 
     def _build_conventional_branch_regex(
         self, allowed_types: list[str], allowed_names: list[str]
