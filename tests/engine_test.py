@@ -23,6 +23,16 @@ from commit_check.engine import (
 )
 from commit_check.rule_builder import ValidationRule
 
+# String constants used across tests (defined once to avoid duplication)
+GIT_CONFIG_VALUE = "commit_check.engine.get_git_config_value"
+FETCH_REMOTE_REF = "commit_check.engine.fetch_remote_ref"
+GET_GIT_REMOTES = "commit_check.engine.get_git_remotes"
+REFS_HEADS_MAIN = "refs/heads/main"
+CONVENTIONAL_COMMIT_REGEX = r"^(feat|fix): .+"
+BAD_COMMIT_MSG = "Bad commit"
+USE_CONVENTIONAL_FORMAT = "Use conventional format"
+
+
 
 class TestValidationResult:
     @pytest.mark.benchmark
@@ -136,8 +146,9 @@ class TestCommitMessageValidator:
 
         result = validator.validate(context)
         assert result == ValidationResult.PASS
-        # Should call get_commit_info three times: subject, body, and author
-        assert mock_get_commit_info.call_count == 3
+        # Should call get_commit_info twice: subject and body
+        # (author lookup is skipped when ignore_authors list is empty)
+        assert mock_get_commit_info.call_count == 2
 
     @patch("commit_check.engine.has_commits")
     @patch("commit_check.engine.get_commit_info")
@@ -330,7 +341,7 @@ class TestBranchValidator:
 
 class TestAuthorValidator:
     @patch("commit_check.engine.has_commits")
-    @patch("commit_check.engine.get_git_config_value")
+    @patch(GIT_CONFIG_VALUE)
     @patch("commit_check.engine.get_commit_info")
     @pytest.mark.benchmark
     def test_author_validator_name_valid(
@@ -348,7 +359,7 @@ class TestAuthorValidator:
         assert result == ValidationResult.PASS
 
     @patch("commit_check.engine.has_commits")
-    @patch("commit_check.engine.get_git_config_value")
+    @patch(GIT_CONFIG_VALUE)
     @patch("commit_check.engine.get_commit_info")
     @pytest.mark.benchmark
     def test_author_validator_email_valid(
@@ -434,7 +445,7 @@ class TestAuthorValidator:
         context = ValidationContext()
 
         with (
-            patch("commit_check.engine.get_git_config_value", return_value=""),
+            patch(GIT_CONFIG_VALUE, return_value=""),
             patch(
                 "commit_check.engine.get_commit_info", return_value="test@example.com"
             ),
@@ -1049,9 +1060,9 @@ class TestCoAuthorSkip:
         """Test that a commit with a co-author in ignore_authors is skipped."""
         rule = ValidationRule(
             check="message",
-            regex=r"^(feat|fix): .+",
-            error="Bad commit",
-            suggest="Use conventional format",
+            regex=CONVENTIONAL_COMMIT_REGEX,
+            error=BAD_COMMIT_MSG,
+            suggest=USE_CONVENTIONAL_FORMAT,
         )
         validator = CommitMessageValidator(rule)
 
@@ -1068,9 +1079,9 @@ class TestCoAuthorSkip:
         """Test that co-author not in ignore list does not bypass validation."""
         rule = ValidationRule(
             check="message",
-            regex=r"^(feat|fix): .+",
-            error="Bad commit",
-            suggest="Use conventional format",
+            regex=CONVENTIONAL_COMMIT_REGEX,
+            error=BAD_COMMIT_MSG,
+            suggest=USE_CONVENTIONAL_FORMAT,
         )
         validator = CommitMessageValidator(rule)
 
@@ -1091,9 +1102,9 @@ class TestCoAuthorSkip:
 
         rule = ValidationRule(
             check="message",
-            regex=r"^(feat|fix): .+",
-            error="Bad commit",
-            suggest="Use conventional format",
+            regex=CONVENTIONAL_COMMIT_REGEX,
+            error=BAD_COMMIT_MSG,
+            suggest=USE_CONVENTIONAL_FORMAT,
         )
         validator = CommitMessageValidator(rule)
 
@@ -1133,7 +1144,7 @@ class TestGetGitConfigValue:
         with (
             patch("commit_check.engine.get_commit_info", return_value="some-author"),
             patch(
-                "commit_check.engine.get_git_config_value",
+                GIT_CONFIG_VALUE,
                 return_value="01 Invalid Name",
             ),
         ):
@@ -1154,7 +1165,7 @@ class TestGetGitConfigValue:
         context = ValidationContext()
 
         with (
-            patch("commit_check.engine.get_git_config_value", return_value=""),
+            patch(GIT_CONFIG_VALUE, return_value=""),
             patch("commit_check.engine.get_commit_info", return_value="Valid Name"),
         ):
             result = validator.validate(context)
@@ -1175,7 +1186,7 @@ class TestGetGitConfigValue:
         with (
             patch("commit_check.engine.get_commit_info", return_value="some-author"),
             patch(
-                "commit_check.engine.get_git_config_value",
+                GIT_CONFIG_VALUE,
                 return_value="user@example.com",
             ),
         ):
@@ -1357,17 +1368,17 @@ class TestForcePushValidator:
 
         with patch("commit_check.engine.git_merge_base", return_value=128):
             with patch(
-                "commit_check.engine.fetch_remote_ref", return_value=False
+                FETCH_REMOTE_REF, return_value=False
             ) as mock_fetch:
                 with patch(
-                    "commit_check.engine.get_git_remotes", return_value=["origin"]
+                    GET_GIT_REMOTES, return_value=["origin"]
                 ):
                     with patch(
                         "commit_check.engine.get_upstream_branch", return_value=""
                     ):
                         result = validator.validate(context)
 
-        mock_fetch.assert_called_once_with("origin", "refs/heads/main")
+        mock_fetch.assert_called_once_with("origin", REFS_HEADS_MAIN)
         assert result == ValidationResult.PASS
 
     @pytest.mark.benchmark
@@ -1383,16 +1394,16 @@ class TestForcePushValidator:
         ) as mock_merge:
             with patch("commit_check.engine.get_upstream_branch", return_value=""):
                 with patch(
-                    "commit_check.engine.get_git_remotes", return_value=["origin"]
+                    GET_GIT_REMOTES, return_value=["origin"]
                 ):
                     with patch(
-                        "commit_check.engine.fetch_remote_ref", return_value=True
+                        FETCH_REMOTE_REF, return_value=True
                     ) as mock_fetch:
                         with patch("commit_check.util._print_failure"):
                             result = validator.validate(context)
 
         assert mock_merge.call_count == 2
-        mock_fetch.assert_called_once_with("origin", "refs/heads/main")
+        mock_fetch.assert_called_once_with("origin", REFS_HEADS_MAIN)
         assert result == ValidationResult.FAIL
 
     @pytest.mark.benchmark
@@ -1408,15 +1419,15 @@ class TestForcePushValidator:
                 "commit_check.engine.get_upstream_branch", return_value="upstream/main"
             ):
                 with patch(
-                    "commit_check.engine.get_git_remotes",
+                    GET_GIT_REMOTES,
                     return_value=["origin", "upstream"],
                 ):
                     with patch(
-                        "commit_check.engine.fetch_remote_ref", return_value=True
+                        FETCH_REMOTE_REF, return_value=True
                     ) as mock_fetch:
                         result = validator.validate(context)
 
-        mock_fetch.assert_called_once_with("upstream", "refs/heads/main")
+        mock_fetch.assert_called_once_with("upstream", REFS_HEADS_MAIN)
         assert result == ValidationResult.PASS
 
     @pytest.mark.benchmark
@@ -1432,19 +1443,19 @@ class TestForcePushValidator:
         ) as mock_merge:
             with patch("commit_check.engine.get_upstream_branch", return_value=""):
                 with patch(
-                    "commit_check.engine.get_git_remotes",
+                    GET_GIT_REMOTES,
                     return_value=["origin", "upstream"],
                 ):
                     with patch(
-                        "commit_check.engine.fetch_remote_ref", return_value=True
+                        FETCH_REMOTE_REF, return_value=True
                     ) as mock_fetch:
                         with patch("commit_check.util._print_failure"):
                             result = validator.validate(context)
 
         assert mock_merge.call_count == 3
         assert [call.args for call in mock_fetch.call_args_list] == [
-            ("origin", "refs/heads/main"),
-            ("upstream", "refs/heads/main"),
+            ("origin", REFS_HEADS_MAIN),
+            ("upstream", REFS_HEADS_MAIN),
         ]
         assert result == ValidationResult.FAIL
 

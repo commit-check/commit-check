@@ -4,6 +4,11 @@ from commit_check.rule_builder import ValidationRule, RuleBuilder
 from commit_check.rules_catalog import RuleCatalogEntry
 import pytest
 
+# String constants used across tests
+BAD_FORMAT_ERROR = "Bad format"
+
+
+
 
 class TestValidationRule:
     @pytest.mark.benchmark
@@ -239,13 +244,13 @@ class TestRuleBuilder:
 
         builder = RuleBuilder(config)
         catalog_entry = RuleCatalogEntry(
-            check="message", regex="", error="Bad format", suggest="Use JIRA format"
+            check="message", regex="", error=BAD_FORMAT_ERROR, suggest="Use JIRA format"
         )
 
         rule = builder._build_conventional_commit_rule(catalog_entry)
         assert rule is not None
         assert rule.regex == r"^PROJ-\d+: .+"
-        assert rule.error == "Bad format"
+        assert rule.error == BAD_FORMAT_ERROR
         assert "required pattern" in rule.suggest
 
     @pytest.mark.benchmark
@@ -260,7 +265,7 @@ class TestRuleBuilder:
 
         builder = RuleBuilder(config)
         catalog_entry = RuleCatalogEntry(
-            check="message", regex="", error="Bad format", suggest="Use correct format"
+            check="message", regex="", error=BAD_FORMAT_ERROR, suggest="Use correct format"
         )
 
         rule = builder._build_conventional_commit_rule(catalog_entry)
@@ -280,7 +285,7 @@ class TestRuleBuilder:
 
         builder = RuleBuilder(config)
         catalog_entry = RuleCatalogEntry(
-            check="message", regex="", error="Bad format", suggest="..."
+            check="message", regex="", error=BAD_FORMAT_ERROR, suggest="..."
         )
 
         rule = builder._build_conventional_commit_rule(catalog_entry)

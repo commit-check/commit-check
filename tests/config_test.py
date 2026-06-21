@@ -15,6 +15,11 @@ from commit_check.config import (
     _github_shorthand_to_url,
 )
 
+# String constants used across tests
+URLOPEN_MODULE = "urllib.request.urlopen"
+EXAMPLE_CONFIG_URL = "https://example.com/cchk.toml"
+
+
 
 class TestConfig:
     @pytest.mark.benchmark
@@ -596,9 +601,9 @@ subject_max_length = 100
         mock_response.__enter__ = lambda s: s
         mock_response.__exit__ = MagicMock(return_value=False)
 
-        with patch("urllib.request.urlopen", return_value=mock_response):
+        with patch(URLOPEN_MODULE, return_value=mock_response):
             config = {
-                "inherit_from": "https://example.com/cchk.toml",
+                "inherit_from": EXAMPLE_CONFIG_URL,
                 "commit": {"subject_max_length": 72},
             }
             result = _resolve_inherit_from(config)
@@ -609,11 +614,11 @@ subject_max_length = 100
         import urllib.error
 
         with patch(
-            "urllib.request.urlopen",
+            URLOPEN_MODULE,
             side_effect=urllib.error.URLError("network error"),
         ):
             config = {
-                "inherit_from": "https://example.com/cchk.toml",
+                "inherit_from": EXAMPLE_CONFIG_URL,
                 "fallback": True,
             }
             result = _resolve_inherit_from(config)
@@ -627,7 +632,7 @@ subject_max_length = 100
             "fallback": True,
         }
         # urlopen should NOT be called for http:// URLs
-        with patch("urllib.request.urlopen") as mock_urlopen:
+        with patch(URLOPEN_MODULE) as mock_urlopen:
             result = _resolve_inherit_from(config)
             mock_urlopen.assert_not_called()
         assert result == {"fallback": True}
@@ -641,7 +646,7 @@ subject_max_length = 100
         mock_response.__enter__ = lambda s: s
         mock_response.__exit__ = MagicMock(return_value=False)
 
-        with patch("urllib.request.urlopen", return_value=mock_response) as mock_open:
+        with patch(URLOPEN_MODULE, return_value=mock_response) as mock_open:
             config = {
                 "inherit_from": "github:my-org/.github:cchk.toml",
                 "commit": {"subject_max_length": 72},
@@ -665,7 +670,7 @@ subject_max_length = 100
         mock_response.__enter__ = lambda s: s
         mock_response.__exit__ = MagicMock(return_value=False)
 
-        with patch("urllib.request.urlopen", return_value=mock_response) as mock_open:
+        with patch(URLOPEN_MODULE, return_value=mock_response) as mock_open:
             config = {
                 "inherit_from": "github:my-org/.github@main:cchk.toml",
             }
@@ -727,8 +732,8 @@ class TestLoadFromUrl:
         mock_response.__enter__ = lambda s: s
         mock_response.__exit__ = MagicMock(return_value=False)
 
-        with patch("urllib.request.urlopen", return_value=mock_response):
-            result = _load_from_url("https://example.com/cchk.toml")
+        with patch(URLOPEN_MODULE, return_value=mock_response):
+            result = _load_from_url(EXAMPLE_CONFIG_URL)
             assert result == {"commit": {"conventional_commits": True}}
 
     @pytest.mark.benchmark
@@ -736,10 +741,10 @@ class TestLoadFromUrl:
         import urllib.error
 
         with patch(
-            "urllib.request.urlopen",
+            URLOPEN_MODULE,
             side_effect=urllib.error.URLError("network error"),
         ):
-            result = _load_from_url("https://example.com/cchk.toml")
+            result = _load_from_url(EXAMPLE_CONFIG_URL)
             assert result == {}
 
     @pytest.mark.benchmark
@@ -747,12 +752,12 @@ class TestLoadFromUrl:
         import urllib.error
 
         with patch(
-            "urllib.request.urlopen",
+            URLOPEN_MODULE,
             side_effect=urllib.error.HTTPError(
-                "https://example.com/cchk.toml", 404, "Not Found", {}, None
+                EXAMPLE_CONFIG_URL, 404, "Not Found", {}, None
             ),
         ):
-            result = _load_from_url("https://example.com/cchk.toml")
+            result = _load_from_url(EXAMPLE_CONFIG_URL)
             assert result == {}
 
 
