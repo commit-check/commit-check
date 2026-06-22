@@ -31,7 +31,8 @@ DEFAULT_COMMIT_TYPES = [
     "build",
     "ci",
 ]
-# Follow conventional branch
+# Follow conventional branch (https://conventionalbranch.org/)
+# Includes AI agent prefixes added in spec v1.1.0
 DEFAULT_BRANCH_TYPES = [
     "feature",
     "bugfix",
@@ -40,6 +41,12 @@ DEFAULT_BRANCH_TYPES = [
     "chore",
     "feat",
     "fix",
+    # AI agent prefixes (conventional branch spec v1.1.0)
+    "ai",
+    "claude",
+    "codex",
+    "copilot",
+    "cursor",
 ]
 # Additional allowed branch names (e.g., develop, staging)
 DEFAULT_BRANCH_NAMES: list[str] = []
