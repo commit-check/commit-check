@@ -18,5 +18,7 @@ ignore_authors = ["dependabot[bot]", "copilot[bot]", "pre-commit-ci[bot]", "code
 [branch]
 # https://conventional-branch.github.io/
 conventional_branch = true
+# Explicit list needed until AI agent prefixes are in a released version of commit-check
+allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix", "ai", "claude", "codex", "copilot", "cursor"]
 require_rebase_target = "main"
 ignore_authors = ["dependabot[bot]", "copilot[bot]", "pre-commit-ci[bot]", "shenxianpeng"]
