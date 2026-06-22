@@ -216,6 +216,35 @@ class TestRuleBuilder:
         assert "(PR-.+)" in rule.regex
 
     @pytest.mark.benchmark
+    def test_ai_agent_branch_types_in_default(self):
+        """AI agent prefixes from conventional branch spec v1.1.0 are valid by default."""
+        import re
+        from commit_check import DEFAULT_BRANCH_TYPES
+
+        assert "ai" in DEFAULT_BRANCH_TYPES
+        assert "claude" in DEFAULT_BRANCH_TYPES
+        assert "codex" in DEFAULT_BRANCH_TYPES
+        assert "copilot" in DEFAULT_BRANCH_TYPES
+        assert "cursor" in DEFAULT_BRANCH_TYPES
+
+        config = {"branch": {"conventional_branch": True}}
+        builder = RuleBuilder(config)
+        catalog_entry = RuleCatalogEntry(check="branch", regex="", error="", suggest="")
+        rule = builder._build_conventional_branch_rule(catalog_entry)
+        assert rule is not None
+
+        ai_agent_branches = [
+            "ai/refactor-auth-flow",
+            "claude/stoic-hypatia-v65p1f",
+            "claude/fix-login-bug",
+            "codex/optimize-query",
+            "copilot/add-login-page",
+            "cursor/fix-header-bug",
+        ]
+        for branch in ai_agent_branches:
+            assert re.match(rule.regex, branch), f"Branch '{branch}' should be valid"
+
+    @pytest.mark.benchmark
     def test_rule_builder_allow_branch_names_with_duplicates(self):
         """Test RuleBuilder with duplicate branch names in allow_branch_names."""
         config = {
