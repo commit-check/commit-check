@@ -31,7 +31,7 @@ DEFAULT_COMMIT_TYPES = [
     "build",
     "ci",
 ]
-# Follow conventional branch (https://conventional-branch.github.io/)
+# Follow conventional branch (https://conventionalbranch.org/)
 # Includes AI agent prefixes added in spec v1.1.0
 DEFAULT_BRANCH_TYPES = [
     "feature",
