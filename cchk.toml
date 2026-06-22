@@ -18,6 +18,5 @@ ignore_authors = ["dependabot[bot]", "copilot[bot]", "pre-commit-ci[bot]", "code
 [branch]
 # https://conventional-branch.github.io/
 conventional_branch = true
-allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix", "ai", "claude", "codex", "copilot", "cursor"]
 require_rebase_target = "main"
 ignore_authors = ["dependabot[bot]", "copilot[bot]", "pre-commit-ci[bot]", "shenxianpeng"]
