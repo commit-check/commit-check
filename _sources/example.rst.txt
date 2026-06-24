@@ -288,7 +288,7 @@ Error Output Examples
 
     Type branch check failed ==> test-branch
     It doesn't match regex: ^(feature|bugfix|hotfix|release|chore|feat|fix)\/.+|(master)|(main)|(HEAD)|(PR-.+)
-    The branch should follow Conventional Branch. See https://conventional-branch.github.io/
+    The branch should follow Conventional Branch. See https://conventionalbranch.org
     Suggest: Use <type>/<description> with allowed types or ignore_authors in config branch section to bypass
 
 **Commit Signature Validation Failure:**

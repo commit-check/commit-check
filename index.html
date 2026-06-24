@@ -913,7 +913,7 @@ For more information, see the <a class="reference external" href="https://commit
 <h3 id="use-default-configuration">Use Default Configuration<a class="headerlink" href="#use-default-configuration" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Commit Check</strong> uses a <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/docs/configuration.rst">default configuration</a> if you do not provide a <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> file.</p></li>
-<li><p>The default configuration is lenient — it only checks whether commit messages follow the <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">Conventional Commits</a> specification and branch names follow the <a class="reference external" href="https://conventional-branch.github.io/#summary">Conventional Branch</a> convention.</p></li>
+<li><p>The default configuration is lenient — it only checks whether commit messages follow the <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">Conventional Commits</a> specification and branch names follow the <a class="reference external" href="https://conventionalbranch.org#summary">Conventional Branch</a> convention.</p></li>
 </ul>
 <h3 id="use-custom-configuration-file">Use Custom Configuration File<a class="headerlink" href="#use-custom-configuration-file" title="Link to this heading">¶</a></h3>
 <p>To customize the behavior, create a configuration file named <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> in your repository’s root directory or in the <code class="docutils literal notranslate"><span class="pre">.github</span></code> folder, e.g., <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/cchk.toml">cchk.toml</a> or <code class="docutils literal notranslate"><span class="pre">.github/cchk.toml</span></code>.</p>
@@ -930,7 +930,7 @@ For more information, see the <a class="reference external" href="https://commit
 <span class="n">ignore_authors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;dependabot[bot]&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;renovate[bot]&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;copilot[bot]&quot;</span><span class="p">]</span>
 
 <span class="k">[branch]</span>
-<span class="c1"># https://conventional-branch.github.io/</span>
+<span class="c1"># https://conventionalbranch.org</span>
 <span class="n">conventional_branch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="n">allow_branch_types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;feature&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;bugfix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;hotfix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;release&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;chore&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;feat&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fix&quot;</span><span class="p">]</span>
 </code></pre></div>
@@ -1160,7 +1160,7 @@ Suggest: Use &lt;type&gt;(&lt;scope&gt;): &lt;description&gt;, where &lt;type&gt
 Commit rejected.
 
 Type branch check failed ==&gt; test-branch
-The branch should follow Conventional Branch. See https://conventional-branch.github.io/
+The branch should follow Conventional Branch. See https://conventionalbranch.org
 Suggest: Use &lt;type&gt;/&lt;description&gt; with allowed types or add branch name to allow_branch_names in config, or use ignore_authors in config branch section to bypass
 </code></pre></div>
 </div>

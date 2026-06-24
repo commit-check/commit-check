@@ -132,7 +132,7 @@ Example Configuration
     allow_force_push = true  # Set to false to block force pushes
 
     [branch]
-    # https://conventional-branch.github.io/
+    # https://conventionalbranch.org
     conventional_branch = true
     allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
     # allow_branch_names = []  # Optional - additional standalone branch names (e.g., ["develop", "staging"])
