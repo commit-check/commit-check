@@ -116,7 +116,7 @@ YAML (v1.x) vs TOML (v2.0+)
     ignore_authors = ["dependabot[bot]", "copilot[bot]"]
 
     [branch]
-    # https://conventional-branch.github.io/
+    # https://conventionalbranch.org
     conventional_branch = true
     allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
     require_rebase_target = "main"

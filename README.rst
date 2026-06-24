@@ -115,7 +115,7 @@ Use Default Configuration
 
 - **Commit Check** uses a `default configuration <https://github.com/commit-check/commit-check/blob/main/docs/configuration.rst>`_ if you do not provide a ``cchk.toml`` or ``commit-check.toml`` file.
 
-- The default configuration is lenient — it only checks whether commit messages follow the `Conventional Commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_ specification and branch names follow the `Conventional Branch <https://conventional-branch.github.io/#summary>`_ convention.
+- The default configuration is lenient — it only checks whether commit messages follow the `Conventional Commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_ specification and branch names follow the `Conventional Branch <https://conventionalbranch.org#summary>`_ convention.
 
 Use Custom Configuration File
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -137,7 +137,7 @@ To customize the behavior, create a configuration file named ``cchk.toml`` or ``
     ignore_authors = ["dependabot[bot]", "renovate[bot]", "copilot[bot]"]
 
     [branch]
-    # https://conventional-branch.github.io/
+    # https://conventionalbranch.org
     conventional_branch = true
     allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
 
@@ -415,7 +415,7 @@ Check Branch Naming Failed
     Commit rejected.
 
     Type branch check failed ==> test-branch
-    The branch should follow Conventional Branch. See https://conventional-branch.github.io/
+    The branch should follow Conventional Branch. See https://conventionalbranch.org
     Suggest: Use <type>/<description> with allowed types or add branch name to allow_branch_names in config, or use ignore_authors in config branch section to bypass
 
 More examples see `example documentation <https://commit-check.github.io/commit-check/example.html>`_.
