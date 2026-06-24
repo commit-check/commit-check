@@ -121,7 +121,7 @@ BRANCH_RULES = [
     RuleCatalogEntry(
         check="branch",
         regex=None,  # Built dynamically from config
-        error="The branch should follow Conventional Branch. See https://conventional-branch.github.io/",
+        error="The branch should follow Conventional Branch. See https://conventionalbranch.org",
         suggest="Use <type>/<description> with allowed types or add branch name to allow_branch_names in config, or use ignore_authors in config branch section to bypass",
     ),
     RuleCatalogEntry(
