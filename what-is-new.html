@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#version-2-7-0-force-push-blocking" class="md-skip">
+        <a href="#version-2-9-1-bot-branch-types-as-default" class="md-skip">
           Skip to content
         </a>
       
@@ -472,6 +472,58 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#version-2-9-1-bot-branch-types-as-default" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Version 2.<wbr>9.<wbr>1 — Bot Branch Types as Default</span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Version 2.9.1 — Bot Branch Types as Default">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dependabot-and-renovate-branches-now-pass-by-default" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>dependabot/ and renovate/ branches now pass by default</span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-2-9-0-ai-agent-branch-prefixes" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Version 2.<wbr>9.<wbr>0 — AI Agent Branch Prefixes</span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Version 2.9.0 — AI Agent Branch Prefixes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#conventional-branch-v1-1-0-ai-agent-prefixes-supported-by-default" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Conventional Branch v1.<wbr>1.<wbr>0 AI agent prefixes supported by default</span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#version-2-7-0-force-push-blocking" class="md-nav__link">
@@ -925,6 +977,58 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#version-2-9-1-bot-branch-types-as-default" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Version 2.<wbr>9.<wbr>1 — Bot Branch Types as Default</span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Version 2.9.1 — Bot Branch Types as Default">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dependabot-and-renovate-branches-now-pass-by-default" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>dependabot/ and renovate/ branches now pass by default</span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-2-9-0-ai-agent-branch-prefixes" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Version 2.<wbr>9.<wbr>0 — AI Agent Branch Prefixes</span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Version 2.9.0 — AI Agent Branch Prefixes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#conventional-branch-v1-1-0-ai-agent-prefixes-supported-by-default" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Conventional Branch v1.<wbr>1.<wbr>0 AI agent prefixes supported by default</span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#version-2-7-0-force-push-blocking" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -1224,6 +1328,18 @@
 
 <h1 id="what-s-new">What’s New<a class="headerlink" href="#what-s-new" title="Link to this heading">¶</a></h1>
 <p>This document highlights the major changes and improvements in each version of commit-check.</p>
+<h2 id="version-2-9-1-bot-branch-types-as-default">Version 2.9.1 — Bot Branch Types as Default<a class="headerlink" href="#version-2-9-1-bot-branch-types-as-default" title="Link to this heading">¶</a></h2>
+<h3 id="dependabot-and-renovate-branches-now-pass-by-default"><code class="docutils literal notranslate"><span class="pre">dependabot/</span></code> and <code class="docutils literal notranslate"><span class="pre">renovate/</span></code> branches now pass by default<a class="headerlink" href="#dependabot-and-renovate-branches-now-pass-by-default" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">dependabot</span></code> and <code class="docutils literal notranslate"><span class="pre">renovate</span></code> are now included in <code class="docutils literal notranslate"><span class="pre">DEFAULT_BRANCH_TYPES</span></code>,
+so branches like <code class="docutils literal notranslate"><span class="pre">dependabot/go_modules/go-deps-c57c3fe1e0</span></code> and
+<code class="docutils literal notranslate"><span class="pre">renovate/lodash-5.x</span></code> are automatically accepted without manual
+<code class="docutils literal notranslate"><span class="pre">allow_branch_types</span></code> configuration.</p>
+<h2 id="version-2-9-0-ai-agent-branch-prefixes">Version 2.9.0 — AI Agent Branch Prefixes<a class="headerlink" href="#version-2-9-0-ai-agent-branch-prefixes" title="Link to this heading">¶</a></h2>
+<h3 id="conventional-branch-v1-1-0-ai-agent-prefixes-supported-by-default">Conventional Branch v1.1.0 AI agent prefixes supported by default<a class="headerlink" href="#conventional-branch-v1-1-0-ai-agent-prefixes-supported-by-default" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">ai/</span></code>, <code class="docutils literal notranslate"><span class="pre">claude/</span></code>, <code class="docutils literal notranslate"><span class="pre">codex/</span></code>, <code class="docutils literal notranslate"><span class="pre">copilot/</span></code>, and <code class="docutils literal notranslate"><span class="pre">cursor/</span></code> have been
+added to <code class="docutils literal notranslate"><span class="pre">DEFAULT_BRANCH_TYPES</span></code> as defined in <a class="reference external" href="https://conventional-branch.github.io/">Conventional Branch
+v1.1.0</a>.  Branches created by AI
+coding agents are now valid out of the box without extra configuration.</p>
 <h2 id="version-2-7-0-force-push-blocking">Version 2.7.0 — Force Push Blocking<a class="headerlink" href="#version-2-7-0-force-push-blocking" title="Link to this heading">¶</a></h2>
 <h3 id="force-push-detection-and-prevention">Force Push Detection and Prevention<a class="headerlink" href="#force-push-detection-and-prevention" title="Link to this heading">¶</a></h3>
 <p>commit-check now includes a <strong>force push detection</strong> feature that blocks

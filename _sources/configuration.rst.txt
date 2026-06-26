@@ -407,7 +407,7 @@ Options Table Description
      - allow_branch_types
      - list[str]
      - ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
-     - Allowed branch types when conventional_branch is true.
+     - Allowed branch types when conventional_branch is true. AI agent prefixes (``ai/``, ``claude/``, ``codex/``, ``copilot/``, ``cursor/``) and bot prefixes (``dependabot/``) are also included by default.
    * - branch
      - allow_branch_names
      - list[str]
