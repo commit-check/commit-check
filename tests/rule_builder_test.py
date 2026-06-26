@@ -216,8 +216,8 @@ class TestRuleBuilder:
         assert "(PR-.+)" in rule.regex
 
     @pytest.mark.benchmark
-    def test_ai_agent_branch_types_in_default(self):
-        """AI agent prefixes from conventional branch spec v1.1.0 are valid by default."""
+    def test_ai_agent_and_bot_branch_types_in_default(self):
+        """AI agent and bot prefixes are valid by default."""
         import re
         from commit_check import DEFAULT_BRANCH_TYPES
 
@@ -226,6 +226,8 @@ class TestRuleBuilder:
         assert "codex" in DEFAULT_BRANCH_TYPES
         assert "copilot" in DEFAULT_BRANCH_TYPES
         assert "cursor" in DEFAULT_BRANCH_TYPES
+        assert "dependabot" in DEFAULT_BRANCH_TYPES
+        assert "renovate" in DEFAULT_BRANCH_TYPES
 
         config = {"branch": {"conventional_branch": True}}
         builder = RuleBuilder(config)
@@ -233,15 +235,22 @@ class TestRuleBuilder:
         rule = builder._build_conventional_branch_rule(catalog_entry)
         assert rule is not None
 
-        ai_agent_branches = [
+        valid_branches = [
+            # AI agent branches
             "ai/refactor-auth-flow",
             "claude/stoic-hypatia-v65p1f",
             "claude/fix-login-bug",
             "codex/optimize-query",
             "copilot/add-login-page",
             "cursor/fix-header-bug",
+            # Bot/automation branches
+            "dependabot/go_modules/go-deps-c57c3fe1e0",
+            "dependabot/npm_and_yarn/lodash-4.17.21",
+            "dependabot/pip/certifi-2022.12.7",
+            "renovate/lodash-5.x",
+            "renovate/major-lodash-5.x",
         ]
-        for branch in ai_agent_branches:
+        for branch in valid_branches:
             assert re.match(rule.regex, branch), f"Branch '{branch}' should be valid"
 
     @pytest.mark.benchmark
