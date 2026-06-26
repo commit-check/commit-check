@@ -3,6 +3,28 @@ What's New
 
 This document highlights the major changes and improvements in each version of commit-check.
 
+Version 2.9.1 — Bot Branch Types as Default
+---------------------------------------------
+
+``dependabot/`` and ``renovate/`` branches now pass by default
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``dependabot`` and ``renovate`` are now included in ``DEFAULT_BRANCH_TYPES``,
+so branches like ``dependabot/go_modules/go-deps-c57c3fe1e0`` and
+``renovate/lodash-5.x`` are automatically accepted without manual
+``allow_branch_types`` configuration.
+
+Version 2.9.0 — AI Agent Branch Prefixes
+----------------------------------------
+
+Conventional Branch v1.1.0 AI agent prefixes supported by default
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``ai/``, ``claude/``, ``codex/``, ``copilot/``, and ``cursor/`` have been
+added to ``DEFAULT_BRANCH_TYPES`` as defined in `Conventional Branch
+v1.1.0 <https://conventional-branch.github.io/>`_.  Branches created by AI
+coding agents are now valid out of the box without extra configuration.
+
 Version 2.7.0 — Force Push Blocking
 -----------------------------------
 

@@ -310,6 +310,45 @@ class TestBranchValidator:
     @patch("commit_check.engine.has_commits")
     @patch("commit_check.engine.get_branch_name")
     @pytest.mark.benchmark
+    def test_branch_validator_dependabot_branch_allowed(
+        self, mock_get_branch_name, mock_has_commits
+    ):
+        """Test BranchValidator with dependabot branch (default type)."""
+        mock_has_commits.return_value = True
+        mock_get_branch_name.return_value = "dependabot/go_modules/go-deps-c57c3fe1e0"
+        # Regex pattern that includes dependabot as a type prefix
+        rule = ValidationRule(
+            check="branch",
+            regex=r"^(feature|bugfix|hotfix|dependabot)\/.+",
+        )
+        validator = BranchValidator(rule)
+        config = {"branch": {"ignore_authors": []}}
+        context = ValidationContext(config=config)
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @patch("commit_check.engine.has_commits")
+    @patch("commit_check.engine.get_branch_name")
+    @pytest.mark.benchmark
+    def test_branch_validator_renovate_branch_allowed(
+        self, mock_get_branch_name, mock_has_commits
+    ):
+        """Test BranchValidator with renovate branch (default type)."""
+        mock_has_commits.return_value = True
+        mock_get_branch_name.return_value = "renovate/lodash-5.x"
+        rule = ValidationRule(
+            check="branch",
+            regex=r"^(feature|bugfix|hotfix|dependabot|renovate)\/.+",
+        )
+        validator = BranchValidator(rule)
+        config = {"branch": {"ignore_authors": []}}
+        context = ValidationContext(config=config)
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @patch("commit_check.engine.has_commits")
+    @patch("commit_check.engine.get_branch_name")
+    @pytest.mark.benchmark
     def test_branch_validator_develop_branch_not_allowed(
         self, mock_get_branch_name, mock_has_commits
     ):
