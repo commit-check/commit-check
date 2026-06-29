@@ -27,7 +27,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
-    "Topic :: Utilities"  ,
+    "Topic :: Utilities",
     "Topic :: Software Development :: Build Tools",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
@@ -38,7 +38,8 @@ commit-check = "commit_check.main:main"
 cchk = "commit_check.main:main"  # short alias without clobbering system cc
 
 [project.urls]
-source =  "https://github.com/commit-check/commit-check"
+documentation = "https://commit-check.github.io/commit-check/"
+source = "https://github.com/commit-check/commit-check"
 tracker = "https://github.com/commit-check/commit-check/issues"
 
 # ... other project metadata fields as specified in:
