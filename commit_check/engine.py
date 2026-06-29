@@ -98,6 +98,24 @@ class BaseValidator(ABC):
             and not has_commits()
         )
 
+    @staticmethod
+    def _get_commit_message(context: ValidationContext) -> str:
+        """Get commit message from context or git."""
+        if context.stdin_text:
+            return context.stdin_text.strip()
+
+        if context.commit_file:
+            try:
+                with open(context.commit_file, "r") as f:
+                    return f.read().strip()
+            except FileNotFoundError:
+                pass
+
+        # Fallback to git log
+        subject = get_commit_info("s")
+        body = get_commit_info("b")
+        return f"{subject}\n\n{body}".strip()
+
     def _author_in_ignore_list(self, context: ValidationContext) -> bool:
         """Check if the current author or any co-author is in the ignore list."""
         import re
@@ -205,23 +223,6 @@ class CommitMessageValidator(BaseValidator):
 
         self._print_failure(message)
         return ValidationResult.FAIL
-
-    def _get_commit_message(self, context: ValidationContext) -> str:
-        """Get commit message from context or git."""
-        if context.stdin_text:
-            return context.stdin_text.strip()
-
-        if context.commit_file:
-            try:
-                with open(context.commit_file, "r") as f:
-                    return f.read().strip()
-            except FileNotFoundError:
-                pass
-
-        # Fallback to git log
-        subject = get_commit_info("s")
-        body = get_commit_info("b")
-        return f"{subject}\n\n{body}".strip()
 
 
 class SubjectValidator(BaseValidator):
@@ -479,23 +480,6 @@ class SignoffValidator(BaseValidator):
         self._print_failure(message)
         return ValidationResult.FAIL
 
-    def _get_commit_message(self, context: ValidationContext) -> str:
-        """Get commit message from context or git."""
-        if context.stdin_text:
-            return context.stdin_text.strip()
-
-        if context.commit_file:
-            try:
-                with open(context.commit_file, "r") as f:
-                    return f.read().strip()
-            except FileNotFoundError:
-                pass
-
-        # Fallback to git log
-        subject = get_commit_info("s")
-        body = get_commit_info("b")
-        return f"{subject}\n\n{body}".strip()
-
 
 class BodyValidator(BaseValidator):
     """Validates that commit messages contain a body when required."""
@@ -526,23 +510,6 @@ class BodyValidator(BaseValidator):
 
         self._print_failure(message)
         return ValidationResult.FAIL
-
-    def _get_commit_message(self, context: ValidationContext) -> str:
-        """Get commit message from context or git."""
-        if context.stdin_text:
-            return context.stdin_text.strip()
-
-        if context.commit_file:
-            try:
-                with open(context.commit_file, "r") as f:
-                    return f.read().strip()
-            except FileNotFoundError:
-                pass
-
-        # Fallback to git log
-        subject = get_commit_info("s")
-        body = get_commit_info("b")
-        return f"{subject}\n\n{body}".strip()
 
 
 class ForcePushValidator(BaseValidator):
@@ -708,23 +675,6 @@ class CommitTypeValidator(BaseValidator):
         """Check if WIP commits are allowed."""
         is_wip = message.upper().startswith("WIP:")
         return not is_wip or self.rule.value
-
-    def _get_commit_message(self, context: ValidationContext) -> str:
-        """Get commit message from context or git."""
-        if context.stdin_text:
-            return context.stdin_text.strip()
-
-        if context.commit_file:
-            try:
-                with open(context.commit_file, "r") as f:
-                    return f.read().strip()
-            except FileNotFoundError:
-                pass
-
-        # Fallback to git log
-        subject = get_commit_info("s")
-        body = get_commit_info("b")
-        return f"{subject}\n\n{body}".strip()
 
 
 class ValidationEngine:
