@@ -78,6 +78,9 @@ class BaseValidator(ABC):
         # Set by ValidationEngine.validate_all() from ValidationContext flags.
         self._no_banner: bool = False
         self._compact: bool = False
+        # Tracks whether the ASCII banner has been printed during this run.
+        # Reset by ValidationEngine before each batch of validation runs.
+        self._banner_printed: bool = False
         # Populated by _print_failure() on every failure, regardless of mode.
         self._last_failure: dict[str, str] | None = None
 
@@ -195,7 +198,12 @@ class BaseValidator(ABC):
         }
 
         if not self._suppress_output:
-            from commit_check.util import _print_failure
+            from commit_check.util import _print_failure, print_error_header
+
+            # Print the ASCII banner at most once per engine run.
+            if not self._no_banner and not self._compact and not self._banner_printed:
+                print_error_header()
+                self._banner_printed = True
 
             _print_failure(
                 rule_dict,
@@ -709,10 +717,14 @@ class ValidationEngine:
 
     def __init__(self, rules: list[ValidationRule]):
         self.rules = rules
+        # Tracks whether the ASCII banner has been printed during this run.
+        # Reset on every call to validate_all / validate_all_detailed.
+        self.banner_printed: bool = False
 
     def validate_all(self, context: ValidationContext) -> ValidationResult:
         """Run all validations and return overall result."""
         results = []
+        self.banner_printed = False
 
         for rule in self.rules:
             validator_class = self.VALIDATOR_MAP.get(rule.check)
@@ -722,7 +734,9 @@ class ValidationEngine:
             validator: BaseValidator = validator_class(rule)
             validator._no_banner = context.no_banner
             validator._compact = context.compact
+            validator._banner_printed = self.banner_printed
             result = validator.validate(context)
+            self.banner_printed = validator._banner_printed
             results.append(result)
 
         # Return FAIL if any validation failed
@@ -748,6 +762,7 @@ class ValidationEngine:
             failed = [o for o in outcomes if o.status == "fail"]
         """
         outcomes: list[CheckOutcome] = []
+        self.banner_printed = False
 
         for rule in self.rules:
             validator_class = self.VALIDATOR_MAP.get(rule.check)
@@ -756,7 +771,9 @@ class ValidationEngine:
 
             validator: BaseValidator = validator_class(rule)
             validator._suppress_output = True  # collect, don't print
+            validator._banner_printed = self.banner_printed
             result = validator.validate(context)
+            self.banner_printed = validator._banner_printed
 
             if result == ValidationResult.FAIL:
                 failure = validator._last_failure or {}

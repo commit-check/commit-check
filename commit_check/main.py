@@ -503,11 +503,6 @@ def main() -> int:
         if not args.message:
             stdin_content = _resolve_stdin_for_non_message(args, stdin_reader)
 
-        # Reset banner state for this run
-        from commit_check.util import print_error_header as _peh
-
-        _peh.has_been_called = False
-
         context = ValidationContext(
             stdin_text=stdin_content,
             commit_file=commit_file_path,

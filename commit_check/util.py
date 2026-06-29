@@ -31,7 +31,7 @@ def _print_failure(
         compact_value = actual.splitlines()[0] if actual else actual
         print(f"[FAIL] {check['check']}: {compact_value}")
         return
-    if not no_banner and not print_error_header.has_been_called:
+    if not no_banner:
         print_error_header()
     print_error_message(check["check"], check.get("error", ""), actual)
     if check.get("suggest"):
@@ -263,16 +263,6 @@ def cmd_output(commands: list) -> str:
         return ""
 
 
-def track_print_call(func):
-    def wrapper(*args, **kwargs):
-        wrapper.has_been_called = True
-        return func(*args, **kwargs)
-
-    wrapper.has_been_called = False  # Initialize as False
-    return wrapper
-
-
-@track_print_call
 def print_error_header():
     """Print error message.
     :returns: Print error head to user
