@@ -295,7 +295,7 @@ class RuleBuilder:
     def _build_conventional_commit_regex(self, allowed_types: list[str]) -> str:
         """Build regex for conventional commit messages."""
         types_pattern = "|".join(sorted(set(allowed_types)))
-        return rf"^({types_pattern})(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)"
+        return rf"^({types_pattern})(\([\w\-\.]+\))?(!)?: [^\n]+([\s\S]*)|(Merge).*|(fixup!.*)"
 
     def _build_conventional_branch_regex(
         self, allowed_types: list[str], allowed_names: list[str]
