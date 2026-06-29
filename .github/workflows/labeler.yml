@@ -5,11 +5,10 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
 
-permissions: {}
+permissions:
+  pull-requests: write
+  contents: read
 
 jobs:
   draft-release:
-    permissions:
-      pull-requests: write
-      contents: read
     uses: commit-check/.github/.github/workflows/pr-labeler.yml@main
