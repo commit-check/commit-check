@@ -73,5 +73,4 @@ DEFAULT_BOOLEAN_RULES = {
 }
 
 
-CONFIG_FILE = "."  # Search current directory for commit-check.toml or cchk.toml
 __version__ = version("commit-check")
