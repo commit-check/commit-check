@@ -1,14 +1,15 @@
-name: PR Autolabeler
-
-permissions:
-  contents: write
-  pull-requests: write
+name: PR Auto-labeler
 
 on:
-  # pull_request event is required for autolabeler
+  # pull_request event is required for auto-labeler
   pull_request:
     types: [opened, reopened, synchronize]
 
+permissions: {}
+
 jobs:
   draft-release:
+    permissions:
+      pull-requests: write
+      contents: read
     uses: commit-check/.github/.github/workflows/pr-labeler.yml@main
