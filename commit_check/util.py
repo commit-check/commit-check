@@ -8,21 +8,8 @@ A module containing utility functions.
 from __future__ import annotations
 import os
 import subprocess
-import yaml
-from pathlib import Path, PurePath
-from typing import Any
 from subprocess import CalledProcessError
 from commit_check import RED, GREEN, YELLOW, RESET_COLOR
-from commit_check.rule_builder import RuleBuilder
-
-# Prefer stdlib tomllib (3.11+); fall back to tomli if available; else disabled
-try:  # pragma: no cover - import paths differ by Python version
-    import tomllib as _toml  # type: ignore[attr-defined]
-except Exception:  # pragma: no cover
-    try:
-        import tomli as _toml  # type: ignore[no-redef]
-    except Exception:  # pragma: no cover
-        _toml = None  # type: ignore[assignment]
 
 
 def _find_check(checks: list, check_type: str) -> dict | None:
@@ -274,70 +261,6 @@ def cmd_output(commands: list) -> str:
         return result.stderr
     else:
         return ""
-
-
-def _load_toml(path: PurePath) -> dict[str, Any]:
-    """Load TOML from file, tolerant if toml support missing."""
-    if _toml is None:
-        return {}
-    try:
-        with open(path, "rb") as f:
-            return _toml.load(f)  # type: ignore[call-arg]
-    except FileNotFoundError:
-        return {}
-    except Exception:
-        return {}
-
-
-def _find_config_file(path_hint: str) -> PurePath | None:
-    """Resolve config file.
-
-    - If a directory is passed, search in priority: cchk.toml, commit-check.toml, .github/cchk.toml, .github/commit-check.toml
-    - If a file ending with .toml is passed, use it if exists.
-    - Ignore legacy .commit-check.yml entirely.
-    """
-    p = Path(path_hint)
-    if p.is_dir():
-        for name in (
-            "cchk.toml",
-            "commit-check.toml",
-            ".github/cchk.toml",
-            ".github/commit-check.toml",
-        ):
-            candidate = p / name
-            if candidate.exists():
-                return candidate
-        return None
-    # If explicit file path provided
-    if str(p).endswith((".toml",)) and p.exists():
-        return p
-    return None
-
-
-def validate_config(path_hint: str) -> dict[str, Any]:
-    """Validate and load configuration from TOML.
-
-    Returns a dict containing a 'checks' list or empty dict if not found/invalid.
-    """
-    cfg_path = _find_config_file(path_hint)
-    if cfg_path:
-        raw = _load_toml(cfg_path)
-        if not raw:
-            return {}
-        # Use new rule builder system
-        rule_builder = RuleBuilder(raw)
-        rules = rule_builder.build_all_rules()
-        return {"checks": [rule.to_dict() for rule in rules]}
-
-    # Legacy YAML fallback (maintained for test compatibility)
-    try:
-        with open(PurePath(path_hint)) as f:
-            data = yaml.safe_load(f)  # type: ignore[no-redef]
-            return data or {}
-    except FileNotFoundError:
-        return {}
-    except Exception:
-        return {}
 
 
 def track_print_call(func):
