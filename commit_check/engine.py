@@ -673,7 +673,13 @@ class CommitTypeValidator(BaseValidator):
 
     def _is_wip_commit_allowed(self, message: str) -> bool:
         """Check if WIP commits are allowed."""
-        is_wip = message.upper().startswith("WIP:")
+        upper_msg = message.upper()
+        is_wip = (
+            upper_msg.startswith("WIP:")  # wip: / WIP:
+            or upper_msg.startswith("[WIP]")  # [wip] / [WIP]
+            or upper_msg.startswith("WIP ")  # WIP at start with space
+            or upper_msg == "WIP"  # exact WIP
+        )
         return not is_wip or self.rule.value
 
 
