@@ -440,21 +440,46 @@ class MergeBaseValidator(BaseValidator):
         return ValidationResult.FAIL
 
     def _find_target_branch(self, pattern: str) -> str | None:
-        """Find target branch matching the pattern."""
+        """Find target branch by verifying refs directly.
+
+        Uses ``git rev-parse --verify`` for exact ref resolution instead of
+        scanning ``git branch -a`` output with a regex. Strips common regex
+        anchors (``^``, ``$``) from the pattern to obtain a branch name,
+        then attempts to verify it as a local ref first, falling back to
+        the remote tracking ref under ``origin/``.
+
+        :param pattern: The raw regex pattern from the rule config (e.g.
+            ``"^main$"`` or ``"main"``).
+        :returns: The resolved branch name if verified, ``None`` otherwise.
+        """
         import subprocess
-        import re
 
+        # Strip common regex anchors to obtain a clean branch name
+        branch_name = pattern.lstrip("^").rstrip("$").strip()
+        if not branch_name:
+            return None
+
+        # Try local branch first (refs/heads/ avoids ambiguity with tags)
         try:
-            all_branches = subprocess.check_output(
-                ["git", "branch", "-a"], encoding="utf-8"
-            ).splitlines()
+            subprocess.run(
+                ["git", "rev-parse", "--verify", f"refs/heads/{branch_name}"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=True,
+            )
+            return branch_name
+        except subprocess.CalledProcessError:
+            pass
 
-            for branch in all_branches:
-                clean_branch = (
-                    branch.strip().replace("* ", "").replace("remotes/origin/", "")
-                )
-                if re.match(pattern, clean_branch):
-                    return clean_branch
+        # Try remote tracking branch under origin/
+        try:
+            subprocess.run(
+                ["git", "rev-parse", "--verify", f"refs/remotes/origin/{branch_name}"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=True,
+            )
+            return branch_name
         except subprocess.CalledProcessError:
             pass
 

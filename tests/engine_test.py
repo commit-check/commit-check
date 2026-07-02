@@ -1,5 +1,6 @@
 """Tests for commit_check.engine module."""
 
+import subprocess
 import pytest
 import tempfile
 import os
@@ -841,6 +842,70 @@ class TestMergeBaseValidator:
         with patch("commit_check.engine.has_commits", return_value=False):
             result = validator.validate(context)
             assert result == ValidationResult.PASS  # Skipped
+
+    # ------------------------------------------------------------------ #
+    #  _find_target_branch —— unit tests for the new impl
+    # ------------------------------------------------------------------ #
+
+    @patch("subprocess.run")
+    def test_find_target_branch_local_found(self, mock_run):
+        """Local branch exists: returns the stripped branch name."""
+        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
+        validator = MergeBaseValidator(ValidationRule(check="merge_base"))
+        result = validator._find_target_branch("^main$")
+        assert result == "main"
+        # First call: local branch verification
+        assert mock_run.call_args_list[0][0][0][:4] == [
+            "git",
+            "rev-parse",
+            "--verify",
+            "refs/heads/main",
+        ]
+
+    @patch("subprocess.run")
+    def test_find_target_branch_local_missing_remote_found(self, mock_run):
+        """Local missing, remote tracking exists: returns the stripped branch name."""
+        mock_run.side_effect = [
+            subprocess.CalledProcessError(1, []),  # local fails
+            subprocess.CompletedProcess(args=[], returncode=0),  # remote succeeds
+        ]
+        validator = MergeBaseValidator(ValidationRule(check="merge_base"))
+        result = validator._find_target_branch("develop")
+        assert result == "develop"
+        assert mock_run.call_args_list[1][0][0][:5] == [
+            "git",
+            "rev-parse",
+            "--verify",
+            "refs/remotes/origin/develop",
+        ]
+
+    @patch("subprocess.run")
+    def test_find_target_branch_not_found(self, mock_run):
+        """Neither local nor remote exists: returns None."""
+        mock_run.side_effect = [
+            subprocess.CalledProcessError(1, []),
+            subprocess.CalledProcessError(1, []),
+        ]
+        validator = MergeBaseValidator(ValidationRule(check="merge_base"))
+        result = validator._find_target_branch("nonexistent-branch")
+        assert result is None
+
+    @patch("subprocess.run")
+    def test_find_target_branch_empty_pattern(self, mock_run):
+        """Empty or anchor-only pattern: returns None without calling subprocess."""
+        validator = MergeBaseValidator(ValidationRule(check="merge_base"))
+        result = validator._find_target_branch("")
+        assert result is None
+        mock_run.assert_not_called()
+
+    @patch("subprocess.run")
+    def test_find_target_branch_plain_name(self, mock_run):
+        """Plain branch name (no regex anchors) works correctly."""
+        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
+        validator = MergeBaseValidator(ValidationRule(check="merge_base"))
+        result = validator._find_target_branch("main")
+        assert result == "main"
+        assert mock_run.call_args_list[0][0][0][3] == "refs/heads/main"
 
 
 class TestValidationEngine:
