@@ -39,15 +39,14 @@ jobs:
 
     - name: Publish package to TestPyPI
       if: github.event_name == 'workflow_dispatch' && github.repository == 'commit-check/commit-check'
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_TOKEN }}
-      run: twine upload --repository testpypi dist/commit_check*
+      uses: pypa/gh-action-pypi-publish@6733eb7d741f0b11ec6a39b58540dab7590f9b7d # v1.14.0
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        password: ${{ secrets.TEST_PYPI_TOKEN }}
       continue-on-error: true
 
     - name: Publish package to PyPI
       if: github.event_name != 'workflow_dispatch' && github.repository == 'commit-check/commit-check'
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: twine upload dist/commit_check*
+      uses: pypa/gh-action-pypi-publish@6733eb7d741f0b11ec6a39b58540dab7590f9b7d # v1.14.0
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
