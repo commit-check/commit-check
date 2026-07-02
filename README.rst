@@ -17,6 +17,10 @@ Commit Check
     :target: https://codecov.io/gh/commit-check/commit-check
     :alt: CodeCov
 
+.. |scorecard-badge| image:: https://api.securityscorecards.dev/projects/github.com/commit-check/commit-check/badge
+    :target: https://api.securityscorecards.dev/projects/github.com/commit-check/commit-check
+    :alt: OpenSSF Scorecard
+
 .. |commit-check-badge| image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white&color=%232c9ccd
     :target: https://github.com/commit-check/commit-check
     :alt: commit-check
@@ -29,7 +33,7 @@ Commit Check
     :target: https://pypi.org/project/commit-check/
     :alt: Python Versions
 
-|ci-badge| |sonar-badge| |pypi-version| |pypi-downloads| |python-versions| |commit-check-badge| |codecov-badge|
+|ci-badge| |sonar-badge| |pypi-version| |pypi-downloads| |python-versions| |commit-check-badge| |codecov-badge| |scorecard-badge|
 
 .. contents:: Table of Contents
    :depth: 2
