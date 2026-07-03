@@ -33,7 +33,7 @@ Commit Check
     :target: https://pypi.org/project/commit-check/
     :alt: Python Versions
 
-|ci-badge| |sonar-badge| |pypi-version| |pypi-downloads| |python-versions| |commit-check-badge| |codecov-badge| |scorecard-badge|
+|ci-badge| |sonar-badge| |pypi-version| |pypi-downloads| |python-versions| |commit-check-badge| |codecov-badge|
 
 .. contents:: Table of Contents
    :depth: 2
