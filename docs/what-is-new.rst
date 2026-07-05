@@ -3,6 +3,48 @@ What's New
 
 This document highlights the major changes and improvements in each version of commit-check.
 
+Version 2.10.0 — AI Attribution Governance
+--------------------------------------------
+
+Enforce Your Project's AI Contribution Policy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+commit-check now supports **AI attribution governance** — a neutral enforcement
+layer for the industry-wide discussion on AI disclosure in open source.
+
+Configured under ``[commit]``:
+
+.. code-block:: toml
+
+    [commit]
+    # "ignore" (default) | "forbid"
+    ai_attribution = "forbid"
+
+When set to ``"forbid"``, any commit containing known AI tool signatures is
+rejected.  The built-in signature database detects trailers and markers from:
+
+* **Claude Code** — ``Co-authored-by: Claude``, ``Assisted-by: Claude:...``,
+  ``🤖 Generated with Claude``, ``Claude-Session:``, ``Claude-Workflow:``
+* **GitHub Copilot** — ``Co-authored-by: Copilot``
+* **OpenAI Codex** — ``Co-authored-by: Codex``
+* **Gemini** — ``Co-authored-by: Gemini``
+* **Cursor** — ``Co-authored-by: Cursor``
+* **Devin** — ``Co-authored-by: Devin``
+* **Aider** — ``Co-authored-by: Aider``, ``Co-authored-by: ... (aider)``
+* **Windsurf** — ``Co-authored-by: Windsurf``
+* **Tabby** — ``Co-authored-by: Tabby``
+* **Generic AI** — ``Assisted-by:`` (Linux kernel style, with tool list),
+  model names like ``claude-sonnet-4``, ``gpt-4-turbo``
+
+The signature database is designed to be extensible — adding a new tool is as
+simple as adding a ``KnownAiTool`` entry with the tool's patterns.
+
+This feature is motivated by ongoing discussions in the CPython core
+development community, the Linux kernel's ``Assisted-by:`` trailer standard,
+VS Code, Apache, Fedora, and other foundations.
+
+See `Configuration Documentation <configuration.html>`_ for details.
+
 Version 2.9.1 — Bot Branch Types as Default
 ---------------------------------------------
 
