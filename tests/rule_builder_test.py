@@ -396,11 +396,10 @@ class TestAiAttributionRuleBuilder:
         assert rule is not None
         assert rule.check == "ai_attribution"
         assert rule.value == "forbid"
-        assert rule.allowed is None  # forbid doesn't set trailer style
 
     @pytest.mark.benchmark
     def test_ai_attribution_require_returns_none(self):
-        """ai_attribution='require' returns None (style enforced by trailer validator)."""
+        """ai_attribution='require' returns None (only forbid supported)."""
         config = {"commit": {"ai_attribution": "require"}}
         builder = RuleBuilder(config)
         entry = RuleCatalogEntry(check="ai_attribution")
@@ -408,91 +407,19 @@ class TestAiAttributionRuleBuilder:
         assert rule is None
 
     @pytest.mark.benchmark
-    def test_ai_trailer_style_ignore_returns_none(self):
-        """When ai_attribution='ignore', ai_trailer_style returns None."""
-        config = {
-            "commit": {"ai_attribution": "ignore", "ai_trailer_style": "assisted-by"}
-        }
-        builder = RuleBuilder(config)
-        entry = RuleCatalogEntry(check="ai_trailer_style")
-        rule = builder._build_ai_trailer_style_rule(entry)
-        assert rule is None
-
-    @pytest.mark.benchmark
-    def test_ai_trailer_style_forbid_returns_none(self):
-        """ai_trailer_style returns None when ai_attribution='forbid'."""
-        config = {
-            "commit": {
-                "ai_attribution": "forbid",
-                "ai_trailer_style": "assisted-by",
-            }
-        }
-        builder = RuleBuilder(config)
-        entry = RuleCatalogEntry(check="ai_trailer_style")
-        rule = builder._build_ai_trailer_style_rule(entry)
-        assert rule is None
-
-    @pytest.mark.benchmark
-    def test_ai_trailer_style_creates_rule_for_require(self):
-        """ai_trailer_style creates a rule only when ai_attribution='require'."""
-        config = {
-            "commit": {
-                "ai_attribution": "require",
-                "ai_trailer_style": "assisted-by",
-            }
-        }
-        builder = RuleBuilder(config)
-        entry = RuleCatalogEntry(check="ai_trailer_style")
-        rule = builder._build_ai_trailer_style_rule(entry)
-        assert rule is not None
-        assert rule.check == "ai_trailer_style"
-        assert rule.value == "assisted-by"
-
-    @pytest.mark.benchmark
-    def test_ai_trailer_style_co_author(self):
-        """ai_trailer_style='co-authored-by' is passed through."""
-        config = {
-            "commit": {
-                "ai_attribution": "require",
-                "ai_trailer_style": "co-authored-by",
-            }
-        }
-        builder = RuleBuilder(config)
-        entry = RuleCatalogEntry(check="ai_trailer_style")
-        rule = builder._build_ai_trailer_style_rule(entry)
-        assert rule is not None
-        assert rule.value == "co-authored-by"
-
-    @pytest.mark.benchmark
-    def test_build_all_rules_forbid_includes_only_attribution(self):
-        """forbid mode includes ai_attribution but NOT ai_trailer_style."""
+    def test_build_all_rules_forbid_includes_attribution(self):
+        """forbid mode includes ai_attribution and no other AI rules."""
         config = {"commit": {"ai_attribution": "forbid"}}
         builder = RuleBuilder(config)
         rules = builder.build_all_rules()
-        ai_rules = [
-            r for r in rules if r.check in ("ai_attribution", "ai_trailer_style")
-        ]
+        ai_rules = [r for r in rules if r.check.startswith("ai_")]
         assert len(ai_rules) == 1
         assert ai_rules[0].check == "ai_attribution"
-
-    @pytest.mark.benchmark
-    def test_build_all_rules_require_includes_only_trailer(self):
-        """require mode includes ai_trailer_style but NOT ai_attribution."""
-        config = {"commit": {"ai_attribution": "require"}}
-        builder = RuleBuilder(config)
-        rules = builder.build_all_rules()
-        ai_rules = [
-            r for r in rules if r.check in ("ai_attribution", "ai_trailer_style")
-        ]
-        assert len(ai_rules) == 1
-        assert ai_rules[0].check == "ai_trailer_style"
 
     @pytest.mark.benchmark
     def test_build_all_rules_no_ai_by_default(self):
         """build_all_rules does not include AI rules by default."""
         builder = RuleBuilder({})
         rules = builder.build_all_rules()
-        ai_rules = [
-            r for r in rules if r.check in ("ai_attribution", "ai_trailer_style")
-        ]
+        ai_rules = [r for r in rules if r.check.startswith("ai_")]
         assert len(ai_rules) == 0

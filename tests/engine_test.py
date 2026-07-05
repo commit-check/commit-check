@@ -22,7 +22,6 @@ from commit_check.engine import (
     MergeBaseValidator,
     ForcePushValidator,
     AiAttributionValidator,
-    AiTrailerStyleValidator,
 )
 from commit_check.rule_builder import ValidationRule
 
@@ -1019,7 +1018,6 @@ class TestValidationEngine:
             "allow_wip_commits": CommitTypeValidator,
             "ignore_authors": CommitTypeValidator,
             "ai_attribution": AiAttributionValidator,
-            "ai_trailer_style": AiTrailerStyleValidator,
         }
 
         for check, validator_class in expected_mappings.items():
@@ -1702,95 +1700,5 @@ class TestAiAttributionValidator:
         result = validator.validate(context)
         assert result == ValidationResult.PASS
 
-
-class TestAiTrailerStyleValidator:
-    """Tests for AiTrailerStyleValidator."""
-
-    @pytest.mark.benchmark
-    def test_clean_message_passes(self):
-        """Clean message with no AI signatures passes."""
-        rule = ValidationRule(
-            check="ai_trailer_style",
-            value="assisted-by",
-        )
-        validator = AiTrailerStyleValidator(rule)
-        context = ValidationContext(stdin_text="feat: add feature")
-        result = validator.validate(context)
-        assert result == ValidationResult.PASS
-
-    @pytest.mark.benchmark
-    def test_assisted_by_style_rejects_co_author(self):
-        """assisted-by style rejects Co-authored-by AI trailers."""
-        rule = ValidationRule(
-            check="ai_trailer_style",
-            value="assisted-by",
-        )
-        validator = AiTrailerStyleValidator(rule)
-        message = "feat: add feature\n\nCo-authored-by: Claude <noreply@anthropic.com>"
-        context = ValidationContext(stdin_text=message)
-        result = validator.validate(context)
-        assert result == ValidationResult.FAIL
-
-    @pytest.mark.benchmark
-    def test_assisted_by_style_passes_correct(self):
-        """assisted-by style passes Assisted-by: trailers."""
-        rule = ValidationRule(
-            check="ai_trailer_style",
-            value="assisted-by",
-        )
-        validator = AiTrailerStyleValidator(rule)
-        message = "feat: add feature\n\nAssisted-by: Claude:claude-sonnet-4"
-        context = ValidationContext(stdin_text=message)
-        result = validator.validate(context)
-        assert result == ValidationResult.PASS
-
-    @pytest.mark.benchmark
-    def test_co_author_style_rejects_assisted_by(self):
-        """co-authored-by style rejects Assisted-by trailers."""
-        rule = ValidationRule(
-            check="ai_trailer_style",
-            value="co-authored-by",
-        )
-        validator = AiTrailerStyleValidator(rule)
-        message = "feat: add feature\n\nAssisted-by: Claude:claude-sonnet-4"
-        context = ValidationContext(stdin_text=message)
-        result = validator.validate(context)
-        assert result == ValidationResult.FAIL
-
-    @pytest.mark.benchmark
-    def test_human_co_author_passes(self):
-        """Human Co-authored-by (not AI) passes style validation."""
-        rule = ValidationRule(
-            check="ai_trailer_style",
-            value="assisted-by",
-        )
-        validator = AiTrailerStyleValidator(rule)
-        message = "feat: add feature\n\nCo-authored-by: Alice Smith <alice@example.com>"
-        context = ValidationContext(stdin_text=message)
-        result = validator.validate(context)
-        assert result == ValidationResult.PASS
-
-    @pytest.mark.benchmark
-    def test_co_author_style_passes_correct_ai_trailers(self):
-        """co-authored-by style passes Co-authored-by AI trailers."""
-        rule = ValidationRule(
-            check="ai_trailer_style",
-            value="co-authored-by",
-        )
-        validator = AiTrailerStyleValidator(rule)
-        message = "feat: add feature\n\nCo-authored-by: Claude <noreply@anthropic.com>"
-        context = ValidationContext(stdin_text=message)
-        result = validator.validate(context)
-        assert result == ValidationResult.PASS
-
-    @pytest.mark.benchmark
-    def test_empty_message_passes(self):
-        """Empty message passes."""
-        rule = ValidationRule(
-            check="ai_trailer_style",
-            value="assisted-by",
-        )
-        validator = AiTrailerStyleValidator(rule)
-        context = ValidationContext(stdin_text="")
         result = validator.validate(context)
         assert result == ValidationResult.PASS

@@ -73,8 +73,7 @@ DEFAULT_BOOLEAN_RULES = {
 }
 
 # AI attribution defaults
-DEFAULT_AI_ATTRIBUTION = "ignore"  # "ignore" | "require" | "forbid"
-DEFAULT_AI_TRAILER_STYLE = "assisted-by"  # "assisted-by" | "co-authored-by"
+DEFAULT_AI_ATTRIBUTION = "ignore"  # "ignore" | "forbid"
 
 
 __version__ = version("commit-check")

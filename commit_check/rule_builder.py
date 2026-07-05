@@ -16,7 +16,6 @@ from commit_check import (
     DEFAULT_BOOLEAN_RULES,
     DEFAULT_PUSH_RULES,
     DEFAULT_AI_ATTRIBUTION,
-    DEFAULT_AI_TRAILER_STYLE,
 )
 
 
@@ -142,8 +141,6 @@ class RuleBuilder:
             return self._build_author_list_rule(catalog_entry, "ignore_authors")
         elif check == "ai_attribution":
             return self._build_ai_attribution_rule(catalog_entry)
-        elif check == "ai_trailer_style":
-            return self._build_ai_trailer_style_rule(catalog_entry)
         elif check == "merge_base":
             return self._build_merge_base_rule(catalog_entry)
         else:
@@ -260,8 +257,7 @@ class RuleBuilder:
         """Build AI attribution validation rule.
 
         Only active when policy is ``"forbid"`` — rejects any commit with
-        known AI tool signatures.  Style enforcement is handled by
-        :meth:`_build_ai_trailer_style_rule` for ``"require"`` mode.
+        known AI tool signatures.
         """
         policy = self.commit_config.get("ai_attribution", DEFAULT_AI_ATTRIBUTION)
         if policy != "forbid":
@@ -270,30 +266,6 @@ class RuleBuilder:
         return ValidationRule(
             check=catalog_entry.check,
             value=policy,
-            error=catalog_entry.error or "",
-            suggest=catalog_entry.suggest or "",
-        )
-
-    def _build_ai_trailer_style_rule(
-        self, catalog_entry: RuleCatalogEntry
-    ) -> ValidationRule | None:
-        """Build AI trailer style validation rule.
-
-        Only active when ``ai_attribution = \"require\"``.  Checks that AI
-        tool trailers match the project-preferred format (``"assisted-by"``
-        or ``"co-authored-by"``).
-        """
-        policy = self.commit_config.get("ai_attribution", DEFAULT_AI_ATTRIBUTION)
-        if policy != "require":
-            return None
-
-        style = self.commit_config.get("ai_trailer_style", DEFAULT_AI_TRAILER_STYLE)
-        if not style or style not in ("assisted-by", "co-authored-by"):
-            return None
-
-        return ValidationRule(
-            check=catalog_entry.check,
-            value=style,
             error=catalog_entry.error or "",
             suggest=catalog_entry.suggest or "",
         )

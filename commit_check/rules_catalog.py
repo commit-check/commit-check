@@ -107,14 +107,8 @@ COMMIT_RULES = [
     RuleCatalogEntry(
         check="ai_attribution",
         regex=None,
-        error="AI attribution policy violation: {reason}",
-        suggest="{suggestion}",
-    ),
-    RuleCatalogEntry(
-        check="ai_trailer_style",
-        regex=None,
-        error="AI attribution trailer style violation",
-        suggest="{suggestion}",
+        error="AI attribution policy violation",
+        suggest="Remove AI attribution trailers from the commit message",
     ),
 ]
 

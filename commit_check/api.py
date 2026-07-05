@@ -133,7 +133,6 @@ def validate_message(
         "allow_fixup_commits",
         "allow_wip_commits",
         "ai_attribution",
-        "ai_trailer_style",
     ]
     return _run_checks(check_names, context, cfg)
 
