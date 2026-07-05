@@ -108,7 +108,7 @@ COMMIT_RULES = [
         check="ai_attribution",
         regex=None,
         error="AI attribution policy violation",
-        suggest="Remove AI attribution trailers from the commit message",
+        suggest="This project does not permit AI-assisted commits. Remove AI tool trailers from the commit message and re-commit.",
     ),
 ]
 

@@ -741,7 +741,7 @@ class AiAttributionValidator(BaseValidator):
         self._record_failure(
             value=", ".join(sorted(tools)),
             error=f"AI-assisted commit is forbidden — detected tools: {', '.join(sorted(tools))}",
-            suggest="Remove AI attribution trailers from the commit message",
+            suggest="This project does not permit AI-assisted commits. Remove AI tool trailers from the commit message and re-commit.",
         )
         return ValidationResult.FAIL
 
