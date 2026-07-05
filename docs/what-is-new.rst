@@ -3,7 +3,7 @@ What's New
 
 This document highlights the major changes and improvements in each version of commit-check.
 
-Version 2.10.0 — AI Attribution Governance
+Version 2.11.0 — AI Attribution Governance
 --------------------------------------------
 
 Enforce Your Project's AI Contribution Policy
