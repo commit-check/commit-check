@@ -259,25 +259,19 @@ class RuleBuilder:
     ) -> ValidationRule | None:
         """Build AI attribution validation rule.
 
-        Three modes:
-        * ``"forbid"`` — reject any commit with AI tool signatures
-        * ``"require"`` — if AI signatures present, must use preferred style
-        * ``"ignore"`` — no validation (default, returns None)
+        Only active when policy is ``"forbid"`` — rejects any commit with
+        known AI tool signatures.  Style enforcement is handled by
+        :meth:`_build_ai_trailer_style_rule` for ``"require"`` mode.
         """
         policy = self.commit_config.get("ai_attribution", DEFAULT_AI_ATTRIBUTION)
-        if policy == "ignore":
+        if policy != "forbid":
             return None
-
-        trailer_style = self.commit_config.get(
-            "ai_trailer_style", DEFAULT_AI_TRAILER_STYLE
-        )
 
         return ValidationRule(
             check=catalog_entry.check,
             value=policy,
             error=catalog_entry.error or "",
             suggest=catalog_entry.suggest or "",
-            allowed=[trailer_style],
         )
 
     def _build_ai_trailer_style_rule(
@@ -285,13 +279,12 @@ class RuleBuilder:
     ) -> ValidationRule | None:
         """Build AI trailer style validation rule.
 
-        Checks that AI tool trailers match the project-preferred format
-        (``"assisted-by"`` or ``"co-authored-by"``).
-
-        Only active when ``ai_attribution`` is not ``"ignore"``.
+        Only active when ``ai_attribution = \"require\"``.  Checks that AI
+        tool trailers match the project-preferred format (``"assisted-by"``
+        or ``"co-authored-by"``).
         """
         policy = self.commit_config.get("ai_attribution", DEFAULT_AI_ATTRIBUTION)
-        if policy == "ignore":
+        if policy != "require":
             return None
 
         style = self.commit_config.get("ai_trailer_style", DEFAULT_AI_TRAILER_STYLE)

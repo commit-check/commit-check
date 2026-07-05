@@ -93,15 +93,23 @@ def _body_marker(pattern: str, description: str = "") -> AiSignaturePattern:
 CLAUDE_CODE = KnownAiTool(
     name="Claude Code",
     patterns=[
-        # Standard Co-authored-by trailer added by Claude Code
+        # Standard Co-authored-by trailer added by Claude Code.
+        # When an email is present, anchor to known AI noreply addresses
+        # to avoid false positives with human co-authors named Claude.
         _trailer(
             "Co-authored-by",
-            r"Claude(?:\s+Code)?\s*(?:<[^>]*>)?",
+            r"Claude(?: Code)?"
+            r"(?:\s*<(?:"
+            r"noreply@anthropic\.com"
+            r"|\d+\+Claude@users\.noreply\.github\.com"
+            r")>)?",
             "``Co-authored-by: Claude`` trailer",
         ),
-        # Assisted-by trailer (future-proof: Claude may adopt Linux kernel style)
+        # Assisted-by trailer (Linux kernel style, with optional tool list)
         _trailer(
-            "Assisted-by", r"Claude:\S+", "``Assisted-by: Claude:<model>`` trailer"
+            "Assisted-by",
+            r"Claude:\S+(?:\s+\S+)*",
+            "``Assisted-by: Claude:<model> [tools]`` trailer",
         ),
         # Body marker: generated-with notice
         _body_marker(
@@ -121,13 +129,9 @@ COPILOT = KnownAiTool(
     patterns=[
         _trailer(
             "Co-authored-by",
-            r"Copilot\s*(?:<[^>]*>)?",
+            r"Copilot"
+            r"(?:\s*<\d+\+Copilot@users\.noreply\.github\.com>)?",
             "``Co-authored-by: Copilot`` trailer",
-        ),
-        _trailer(
-            "Co-authored-by",
-            r"github-actions\[bot\]",
-            "``Co-authored-by: github-actions[bot]`` (Copilot)",
         ),
     ],
 )
@@ -189,9 +193,11 @@ AIDER = KnownAiTool(
             r"Aider\s*(?:<[^>]*>)?",
             "``Co-authored-by: Aider`` trailer",
         ),
-        _body_marker(
-            r"^#\s+(?:Aider|aider)\s+(?:commit|chat)",
-            "``# aider commit`` body marker",
+        # aider appends "(aider)" to the author name
+        _trailer(
+            "Co-authored-by",
+            r"[^<]+\(aider\)\s*(?:<[^>]*>)?",
+            "``Co-authored-by: ... (aider)`` trailer",
         ),
     ],
 )
@@ -224,14 +230,23 @@ TABBY = KnownAiTool(
 GENERIC_AI = KnownAiTool(
     name="Generic AI",
     patterns=[
-        # Catch AI agent models in Co-authored-by (e.g. claude-sonnet, gpt-4)
+        # Catch AI agent model identifiers in Co-authored-by
+        # (e.g. claude-sonnet-4, gpt-4-turbo, gemini-1.5-pro).
+        # Only matches values that look like model names (containing
+        # word chars, dots, or hyphens — not plain human names).
         _trailer(
             "Co-authored-by",
-            r"(?:claude|gpt|gemini|llama|mistral)",
+            r"(?:claude|gpt|gemini)[\w.-]*(?:\s*<[^>]*>)?",
             "``Co-authored-by`` with AI model name",
         ),
-        # Catch Assisted-by trailer (Linux kernel style) regardless of agent
-        _trailer("Assisted-by", r"\S+:\S+", "``Assisted-by:`` trailer (kernel style)"),
+        # Catch Assisted-by trailer (Linux kernel style) regardless of agent,
+        # with optional trailing tool list, e.g.:
+        # "Assisted-by: Claude:claude-3-opus coccinelle sparse"
+        _trailer(
+            "Assisted-by",
+            r"\S+:\S+(?:\s+\S+)*",
+            "``Assisted-by: <tool>:<model> [tools]`` trailer (kernel style)",
+        ),
         # Catch common body markers
         _body_marker(
             r"^Generated\s+(?:by|with)\s+(?:AI|artificial intelligence)",
@@ -259,8 +274,9 @@ ALL_KNOWN_TOOLS: list[KnownAiTool] = [
 ]
 
 #: Flat list of all compiled patterns for bulk scanning.
-ALL_PATTERNS: list[tuple[re.Pattern[str], str, str]] = [
-    (p.regex, tool.name, p.description)
+#: Each tuple is ``(regex, tool_name, description, kind)``.
+ALL_PATTERNS: list[tuple[re.Pattern[str], str, str, str]] = [
+    (p.regex, tool.name, p.description, p.kind)
     for tool in ALL_KNOWN_TOOLS
     for p in tool.patterns
 ]
@@ -287,7 +303,7 @@ def detect_ai_signatures(message: str) -> list[dict[str, str]]:
     results: list[dict[str, str]] = []
     seen: set[str] = set()  # deduplicate by matched text
 
-    for regex, tool_name, desc in ALL_PATTERNS:
+    for regex, tool_name, desc, kind in ALL_PATTERNS:
         for match in regex.finditer(message):
             matched = match.group(0).strip()
             if matched not in seen:
@@ -295,9 +311,7 @@ def detect_ai_signatures(message: str) -> list[dict[str, str]]:
                 results.append(
                     {
                         "tool": tool_name,
-                        "kind": "trailer"
-                        if regex.pattern.startswith(r"^")
-                        else "body_marker",
+                        "kind": kind,
                         "description": desc,
                         "matched_text": matched,
                     }
@@ -308,7 +322,7 @@ def detect_ai_signatures(message: str) -> list[dict[str, str]]:
 
 def has_ai_signature(message: str) -> bool:
     """Return ``True`` if *message* contains any known AI signature."""
-    for regex, _tool_name, _desc in ALL_PATTERNS:
+    for regex, _tool_name, _desc, _kind in ALL_PATTERNS:
         if regex.search(message):
             return True
     return False
@@ -322,19 +336,19 @@ def find_co_authored_by_ai(message: str) -> list[str]:
     ``Co-authored-by: Jane Doe <jane@example.com>`` are NOT returned
     because no known AI tool pattern matches common human names.
 
-    :returns: List of matched trailer lines.
+    :returns: List of matched trailer lines (deduplicated).
     """
     results: list[str] = []
-    # Find all Co-authored-by patterns from known AI tools by checking
-    # the regex against the message line by line for Co-authored trailers.
+    seen: set[str] = set()
     co_pat = re.compile(r"^Co-authored-by:\s*", re.IGNORECASE | re.MULTILINE)
     if not co_pat.search(message):
         return results
 
-    for regex, _tool_name, _desc in ALL_PATTERNS:
+    for regex, _tool_name, _desc, _kind in ALL_PATTERNS:
         for match in regex.finditer(message):
             matched = match.group(0).strip()
-            if matched.lower().startswith("co-authored-by:"):
+            if matched.lower().startswith("co-authored-by:") and matched not in seen:
+                seen.add(matched)
                 results.append(matched)
     return results
 

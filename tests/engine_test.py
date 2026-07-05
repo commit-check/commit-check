@@ -1675,75 +1675,6 @@ class TestAiAttributionValidator:
         assert result == ValidationResult.FAIL
 
     @pytest.mark.benchmark
-    def test_require_policy_passes_clean_commit(self):
-        """require policy allows clean commits (no AI signatures)."""
-        rule = ValidationRule(
-            check="ai_attribution",
-            value="require",
-            allowed=["assisted-by"],
-        )
-        validator = AiAttributionValidator(rule)
-        context = ValidationContext(stdin_text="feat: add feature by hand")
-        result = validator.validate(context)
-        assert result == ValidationResult.PASS
-
-    @pytest.mark.benchmark
-    def test_require_assisted_by_rejects_co_author(self):
-        """require with assisted-by style rejects Co-authored-by AI trailers."""
-        rule = ValidationRule(
-            check="ai_attribution",
-            value="require",
-            allowed=["assisted-by"],
-        )
-        validator = AiAttributionValidator(rule)
-        message = "feat: add feature\n\nCo-authored-by: Claude <noreply@anthropic.com>"
-        context = ValidationContext(stdin_text=message)
-        result = validator.validate(context)
-        assert result == ValidationResult.FAIL
-
-    @pytest.mark.benchmark
-    def test_require_assisted_by_passes_correct_style(self):
-        """require with assisted-by passes Assisted-by: trailers."""
-        rule = ValidationRule(
-            check="ai_attribution",
-            value="require",
-            allowed=["assisted-by"],
-        )
-        validator = AiAttributionValidator(rule)
-        message = "feat: add feature\n\nAssisted-by: Claude:claude-sonnet-4"
-        context = ValidationContext(stdin_text=message)
-        result = validator.validate(context)
-        assert result == ValidationResult.PASS
-
-    @pytest.mark.benchmark
-    def test_require_co_author_rejects_assisted_by(self):
-        """require with co-authored-by style rejects Assisted-by trailers."""
-        rule = ValidationRule(
-            check="ai_attribution",
-            value="require",
-            allowed=["co-authored-by"],
-        )
-        validator = AiAttributionValidator(rule)
-        message = "feat: add feature\n\nAssisted-by: Claude:claude-sonnet-4"
-        context = ValidationContext(stdin_text=message)
-        result = validator.validate(context)
-        assert result == ValidationResult.FAIL
-
-    @pytest.mark.benchmark
-    def test_require_co_author_passes_correct_style(self):
-        """require with co-authored-by passes Co-authored-by AI trailers."""
-        rule = ValidationRule(
-            check="ai_attribution",
-            value="require",
-            allowed=["co-authored-by"],
-        )
-        validator = AiAttributionValidator(rule)
-        message = "feat: add feature\n\nCo-authored-by: Claude <noreply@anthropic.com>"
-        context = ValidationContext(stdin_text=message)
-        result = validator.validate(context)
-        assert result == ValidationResult.PASS
-
-    @pytest.mark.benchmark
     def test_skip_when_author_ignored(self):
         """Validation is skipped when author is in ignore list."""
         rule = ValidationRule(
@@ -1835,6 +1766,19 @@ class TestAiTrailerStyleValidator:
         )
         validator = AiTrailerStyleValidator(rule)
         message = "feat: add feature\n\nCo-authored-by: Alice Smith <alice@example.com>"
+        context = ValidationContext(stdin_text=message)
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_co_author_style_passes_correct_ai_trailers(self):
+        """co-authored-by style passes Co-authored-by AI trailers."""
+        rule = ValidationRule(
+            check="ai_trailer_style",
+            value="co-authored-by",
+        )
+        validator = AiTrailerStyleValidator(rule)
+        message = "feat: add feature\n\nCo-authored-by: Claude <noreply@anthropic.com>"
         context = ValidationContext(stdin_text=message)
         result = validator.validate(context)
         assert result == ValidationResult.PASS

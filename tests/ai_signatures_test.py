@@ -24,8 +24,8 @@ class TestDetectAiSignatures:
         assert result == []
 
     @pytest.mark.benchmark
-    def test_claude_co_author_detected(self):
-        """Co-authored-by: Claude is detected."""
+    def test_claude_co_author_with_noreply_email(self):
+        """Co-authored-by: Claude with anthropic noreply is detected."""
         message = (
             "feat: implement feature\n\nCo-authored-by: Claude <noreply@anthropic.com>"
         )
@@ -34,16 +34,54 @@ class TestDetectAiSignatures:
         assert any(s["tool"] == "Claude Code" for s in result)
 
     @pytest.mark.benchmark
-    def test_copilot_co_author_detected(self):
-        """Co-authored-by: Copilot is detected."""
-        message = "fix: resolve bug\n\nCo-authored-by: Copilot <noreply@github.com>"
+    def test_claude_code_with_github_noreply(self):
+        """Co-authored-by: Claude with GitHub noreply is detected."""
+        message = "feat: implement feature\n\nCo-authored-by: Claude <12345+Claude@users.noreply.github.com>"
+        result = detect_ai_signatures(message)
+        assert len(result) >= 1
+        assert any(s["tool"] == "Claude Code" for s in result)
+
+    @pytest.mark.benchmark
+    def test_human_claude_with_personal_email_ignored(self):
+        """A human named Claude with a personal email is NOT detected."""
+        message = "feat: add feature\n\nCo-authored-by: Claude Dubois <claude.dubois@gmail.com>"
+        result = detect_ai_signatures(message)
+        claude_hits = [s for s in result if s["tool"] == "Claude Code"]
+        assert len(claude_hits) == 0
+
+    @pytest.mark.benchmark
+    def test_copilot_with_noreply_email(self):
+        """Co-authored-by: Copilot with GitHub noreply is detected."""
+        message = (
+            "fix: resolve bug\n\n"
+            "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>"
+        )
         result = detect_ai_signatures(message)
         assert len(result) >= 1
         assert any(s["tool"] == "GitHub Copilot" for s in result)
 
     @pytest.mark.benchmark
-    def test_assisted_by_trailer_detected(self):
-        """Assisted-by: trailer (kernel style) is detected."""
+    def test_copilot_bare_name(self):
+        """Co-authored-by: Copilot (bare, no email) is detected."""
+        message = "fix: resolve bug\n\nCo-authored-by: Copilot"
+        result = detect_ai_signatures(message)
+        assert len(result) >= 1
+        assert any(s["tool"] == "GitHub Copilot" for s in result)
+
+    @pytest.mark.benchmark
+    def test_kernel_format_with_tool_list(self):
+        """Assisted-by with kernel-style tool list is detected."""
+        message = (
+            "refactor: clean up API\n\n"
+            "Assisted-by: Claude:claude-3-opus coccinelle sparse"
+        )
+        result = detect_ai_signatures(message)
+        assert len(result) >= 1
+        assert any("Assisted-by" in s["matched_text"] for s in result)
+
+    @pytest.mark.benchmark
+    def test_kernel_format_simple(self):
+        """Assisted-by with just tool:model is detected."""
         message = "refactor: clean up API\n\nAssisted-by: Claude:claude-sonnet-4"
         result = detect_ai_signatures(message)
         assert len(result) >= 1
@@ -55,7 +93,7 @@ class TestDetectAiSignatures:
         message = (
             "feat: implement feature\n\n"
             "Co-authored-by: Claude <noreply@anthropic.com>\n"
-            "Co-authored-by: Copilot <noreply@github.com>"
+            "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>"
         )
         result = detect_ai_signatures(message)
         tools = {s["tool"] for s in result}
@@ -65,7 +103,6 @@ class TestDetectAiSignatures:
     @pytest.mark.benchmark
     def test_dedup_matched_text(self):
         """Duplicate matched text is reported only once."""
-        # Two patterns could match the same line; we only report once
         message = "feat: add feature\n\nAssisted-by: Claude:claude-sonnet-4"
         result = detect_ai_signatures(message)
         matched_texts = [s["matched_text"] for s in result]
@@ -76,15 +113,13 @@ class TestDetectAiSignatures:
         """A human Co-authored-by is not flagged."""
         message = "feat: add feature\n\nCo-authored-by: Jane Doe <jane@example.com>"
         result = detect_ai_signatures(message)
-        # "Jane Doe" doesn't match any AI pattern; our patterns are specific
-        # to known AI tool names, not arbitrary human names.
-        for r in result:
-            assert "AI" not in r["tool"] or "Generic" in r["tool"]
+        # None of the known AI patterns should match a common human name
+        assert len(result) == 0
 
     @pytest.mark.benchmark
     def test_claude_session_trailer(self):
         """Claude-Session: trailer is detected."""
-        message = "feat: update config\n\nClaude-Session: abc123"
+        message = "feat: update config\n\nClaude-Session: sess_abc123"
         result = detect_ai_signatures(message)
         assert len(result) >= 1
         assert any("Claude-Session" in s["matched_text"] for s in result)
@@ -98,12 +133,32 @@ class TestDetectAiSignatures:
         assert any("Claude Code" == s["tool"] for s in result)
 
     @pytest.mark.benchmark
-    def test_aider_commit_marker(self):
-        """Aider commit marker is detected."""
-        message = "# aider commit: refactored authentication module"
+    def test_aider_suffix_pattern(self):
+        """Co-authored-by with (aider) suffix is detected."""
+        message = (
+            "feat: add feature\n\nCo-authored-by: Some Dev (aider) <dev@example.com>"
+        )
         result = detect_ai_signatures(message)
         assert len(result) >= 1
         assert any(s["tool"] == "Aider" for s in result)
+
+    @pytest.mark.benchmark
+    def test_generic_model_name_detected(self):
+        """Model names like claude-sonnet-4 in Co-authored-by are detected."""
+        message = (
+            "feat: add feature\n\nCo-authored-by: claude-sonnet-4 <bot@example.com>"
+        )
+        result = detect_ai_signatures(message)
+        assert len(result) >= 1
+        assert any(s["tool"] == "Generic AI" for s in result)
+
+    @pytest.mark.benchmark
+    def test_generic_gpt_model_detected(self):
+        """gpt-4-turbo in Co-authored-by is detected."""
+        message = "feat: add feature\n\nCo-authored-by: gpt-4-turbo <bot@example.com>"
+        result = detect_ai_signatures(message)
+        assert len(result) >= 1
+        assert any(s["tool"] == "Generic AI" for s in result)
 
     @pytest.mark.benchmark
     def test_all_known_tools_have_patterns(self):
@@ -114,9 +169,30 @@ class TestDetectAiSignatures:
     @pytest.mark.benchmark
     def test_all_patterns_compile(self):
         """All patterns in the master registry compile successfully."""
-        for regex, tool_name, desc in ALL_PATTERNS:
+        for regex, tool_name, desc, kind in ALL_PATTERNS:
             assert regex is not None, f"{tool_name}: {desc} has None regex"
-            assert regex.search("test") is not None or True  # regex is valid
+            assert kind in ("trailer", "body_marker"), (
+                f"{tool_name}: invalid kind {kind}"
+            )
+
+    @pytest.mark.benchmark
+    def test_kind_field_correct_for_body_marker(self):
+        """Body markers have kind='body_marker', not 'trailer'."""
+        message = "feat: add feature\n\nGenerated by AI"
+        result = detect_ai_signatures(message)
+        for r in result:
+            if r["description"].startswith("``Generated by AI"):
+                assert r["kind"] == "body_marker", (
+                    f"Expected body_marker, got {r['kind']}"
+                )
+
+    @pytest.mark.benchmark
+    def test_kind_field_correct_for_trailer(self):
+        """Trailers have kind='trailer'."""
+        message = "feat: add feature\n\nCo-authored-by: Claude <noreply@anthropic.com>"
+        result = detect_ai_signatures(message)
+        for r in result:
+            assert r["kind"] == "trailer", f"Expected trailer, got {r['kind']}"
 
 
 class TestHasAiSignature:
@@ -130,7 +206,12 @@ class TestHasAiSignature:
     @pytest.mark.benchmark
     def test_with_ai_signature(self):
         """Returns True when AI signature present."""
-        assert has_ai_signature("feat: add feature\n\nCo-authored-by: Claude") is True
+        assert (
+            has_ai_signature(
+                "feat: add feature\n\nCo-authored-by: Claude <noreply@anthropic.com>"
+            )
+            is True
+        )
 
     @pytest.mark.benchmark
     def test_empty_message(self):
@@ -147,12 +228,15 @@ class TestFindCoAuthoredByAi:
         message = "feat: add feature\n\nCo-authored-by: Claude <noreply@anthropic.com>"
         result = find_co_authored_by_ai(message)
         assert len(result) >= 1
-        assert "Co-authored-by: Claude" in result[0]
+        assert "Claude" in result[0]
 
     @pytest.mark.benchmark
     def test_finds_copilot_co_author(self):
         """Finds Co-authored-by: Copilot lines."""
-        message = "feat: add feature\n\nCo-authored-by: Copilot <noreply@github.com>"
+        message = (
+            "feat: add feature\n\n"
+            "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>"
+        )
         result = find_co_authored_by_ai(message)
         assert len(result) >= 1
         assert "Copilot" in result[0]
@@ -163,6 +247,13 @@ class TestFindCoAuthoredByAi:
         message = "feat: add feature\n\nCo-authored-by: Alice Smith <alice@example.com>"
         result = find_co_authored_by_ai(message)
         assert result == []
+
+    @pytest.mark.benchmark
+    def test_no_duplicates_for_overlapping_patterns(self):
+        """Gemini matching both specific and generic patterns returns once."""
+        message = "feat: add feature\n\nCo-authored-by: gemini"
+        result = find_co_authored_by_ai(message)
+        assert len(result) == 1, f"Expected 1, got {len(result)}: {result}"
 
     @pytest.mark.benchmark
     def test_empty_message(self):
@@ -179,7 +270,17 @@ class TestFindAssistedByTrailers:
         message = "feat: add feature\n\nAssisted-by: Claude:claude-sonnet-4"
         result = find_assisted_by_trailers(message)
         assert len(result) >= 1
-        assert "Assisted-by: Claude:claude-sonnet-4" in result[0]
+        assert "Claude" in result[0]
+
+    @pytest.mark.benchmark
+    def test_finds_kernel_format_with_tools(self):
+        """Finds Assisted-by with kernel-style tool list."""
+        message = (
+            "feat: add feature\n\nAssisted-by: Claude:claude-3-opus coccinelle sparse"
+        )
+        result = find_assisted_by_trailers(message)
+        assert len(result) >= 1
+        assert "coccinelle" in result[0]
 
     @pytest.mark.benchmark
     def test_no_false_positive(self):
@@ -206,7 +307,7 @@ class TestSignatureDatabase:
     @pytest.mark.benchmark
     def test_all_patterns_have_description(self):
         """All patterns have a non-empty description."""
-        for regex, tool_name, desc in ALL_PATTERNS:
+        for regex, tool_name, desc, kind in ALL_PATTERNS:
             assert desc, f"Pattern for {tool_name} is missing a description"
 
     @pytest.mark.benchmark
@@ -217,6 +318,7 @@ class TestSignatureDatabase:
             "Co-authored-by: Claude <noreply@anthropic.com>",
             "Co-authored-by: Claude Code <noreply@anthropic.com>",
             "Assisted-by: Claude:claude-sonnet-4-20250514",
+            "Assisted-by: Claude:claude-3-opus coccinelle sparse",
             "Claude-Session: sess_abc123",
             "Claude-Workflow: workflow_xyz",
         ]
@@ -231,3 +333,15 @@ class TestSignatureDatabase:
         message = "feat: update code\n\nAssisted-by: gpt-4:openai"
         result = detect_ai_signatures(message)
         assert len(result) >= 1
+
+    @pytest.mark.benchmark
+    def test_human_name_not_detected(self):
+        """Common human names that could overlap with AI tool names."""
+        # Devin is both a human name and an AI tool name
+        message = (
+            "feat: add feature\n\nCo-authored-by: Devin Booker <devin.booker@gmail.com>"
+        )
+        result = detect_ai_signatures(message)
+        devin_hits = [s for s in result if s["tool"] == "Devin"]
+        # With a personal email, Devin should NOT be detected
+        assert len(devin_hits) == 0
