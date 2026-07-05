@@ -45,7 +45,7 @@ VS Code, Apache, Fedora, and other foundations.
 
 See `Configuration Documentation <configuration.html>`_ for details.
 
-Version 2.9.1 — Bot Branch Types as Default
+Version 2.10.0 — Bot Branch Types as Default
 ---------------------------------------------
 
 ``dependabot/`` and ``renovate/`` branches now pass by default
