@@ -104,6 +104,18 @@ COMMIT_RULES = [
         error="Signed-off-by not found in latest commit",
         suggest="git commit --amend --signoff or use --signoff on commit",
     ),
+    RuleCatalogEntry(
+        check="ai_attribution",
+        regex=None,
+        error="AI attribution policy violation: {reason}",
+        suggest="{suggestion}",
+    ),
+    RuleCatalogEntry(
+        check="ai_trailer_style",
+        regex=None,
+        error="AI attribution trailer style violation",
+        suggest="{suggestion}",
+    ),
 ]
 
 # Push rules

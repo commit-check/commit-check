@@ -15,6 +15,8 @@ from commit_check import (
     DEFAULT_BRANCH_NAMES,
     DEFAULT_BOOLEAN_RULES,
     DEFAULT_PUSH_RULES,
+    DEFAULT_AI_ATTRIBUTION,
+    DEFAULT_AI_TRAILER_STYLE,
 )
 
 
@@ -138,6 +140,10 @@ class RuleBuilder:
             return self._build_length_rule(catalog_entry, "subject_min_length")
         elif check == "ignore_authors":
             return self._build_author_list_rule(catalog_entry, "ignore_authors")
+        elif check == "ai_attribution":
+            return self._build_ai_attribution_rule(catalog_entry)
+        elif check == "ai_trailer_style":
+            return self._build_ai_trailer_style_rule(catalog_entry)
         elif check == "merge_base":
             return self._build_merge_base_rule(catalog_entry)
         else:
@@ -246,6 +252,57 @@ class RuleBuilder:
             regex=target,
             error=catalog_entry.error,
             suggest=catalog_entry.suggest,
+        )
+
+    def _build_ai_attribution_rule(
+        self, catalog_entry: RuleCatalogEntry
+    ) -> ValidationRule | None:
+        """Build AI attribution validation rule.
+
+        Three modes:
+        * ``"forbid"`` — reject any commit with AI tool signatures
+        * ``"require"`` — if AI signatures present, must use preferred style
+        * ``"ignore"`` — no validation (default, returns None)
+        """
+        policy = self.commit_config.get("ai_attribution", DEFAULT_AI_ATTRIBUTION)
+        if policy == "ignore":
+            return None
+
+        trailer_style = self.commit_config.get(
+            "ai_trailer_style", DEFAULT_AI_TRAILER_STYLE
+        )
+
+        return ValidationRule(
+            check=catalog_entry.check,
+            value=policy,
+            error=catalog_entry.error or "",
+            suggest=catalog_entry.suggest or "",
+            allowed=[trailer_style],
+        )
+
+    def _build_ai_trailer_style_rule(
+        self, catalog_entry: RuleCatalogEntry
+    ) -> ValidationRule | None:
+        """Build AI trailer style validation rule.
+
+        Checks that AI tool trailers match the project-preferred format
+        (``"assisted-by"`` or ``"co-authored-by"``).
+
+        Only active when ``ai_attribution`` is not ``"ignore"``.
+        """
+        policy = self.commit_config.get("ai_attribution", DEFAULT_AI_ATTRIBUTION)
+        if policy == "ignore":
+            return None
+
+        style = self.commit_config.get("ai_trailer_style", DEFAULT_AI_TRAILER_STYLE)
+        if not style or style not in ("assisted-by", "co-authored-by"):
+            return None
+
+        return ValidationRule(
+            check=catalog_entry.check,
+            value=style,
+            error=catalog_entry.error or "",
+            suggest=catalog_entry.suggest or "",
         )
 
     def _build_boolean_rule(

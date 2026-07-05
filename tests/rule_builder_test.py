@@ -372,3 +372,120 @@ class TestPushRuleBuilder:
         unknown_entry = RuleCatalogEntry(check="unknown_push_check")
         rule = builder._build_push_rule(unknown_entry)
         assert rule is None
+
+
+class TestAiAttributionRuleBuilder:
+    """Tests for AI attribution rule building."""
+
+    @pytest.mark.benchmark
+    def test_ai_attribution_ignore_returns_none(self):
+        """ai_attribution='ignore' (default) returns None."""
+        config = {"commit": {"ai_attribution": "ignore"}}
+        builder = RuleBuilder(config)
+        entry = RuleCatalogEntry(check="ai_attribution")
+        rule = builder._build_ai_attribution_rule(entry)
+        assert rule is None
+
+    @pytest.mark.benchmark
+    def test_ai_attribution_forbid_creates_rule(self):
+        """ai_attribution='forbid' creates a validation rule."""
+        config = {"commit": {"ai_attribution": "forbid"}}
+        builder = RuleBuilder(config)
+        entry = RuleCatalogEntry(check="ai_attribution")
+        rule = builder._build_ai_attribution_rule(entry)
+        assert rule is not None
+        assert rule.check == "ai_attribution"
+        assert rule.value == "forbid"
+        assert rule.allowed == ["assisted-by"]  # default style
+
+    @pytest.mark.benchmark
+    def test_ai_attribution_require_creates_rule(self):
+        """ai_attribution='require' creates a validation rule."""
+        config = {"commit": {"ai_attribution": "require"}}
+        builder = RuleBuilder(config)
+        entry = RuleCatalogEntry(check="ai_attribution")
+        rule = builder._build_ai_attribution_rule(entry)
+        assert rule is not None
+        assert rule.check == "ai_attribution"
+        assert rule.value == "require"
+        assert rule.allowed == ["assisted-by"]  # default
+
+    @pytest.mark.benchmark
+    def test_ai_attribution_with_custom_trailer_style(self):
+        """Custom ai_trailer_style is reflected in the rule."""
+        config = {
+            "commit": {
+                "ai_attribution": "require",
+                "ai_trailer_style": "co-authored-by",
+            }
+        }
+        builder = RuleBuilder(config)
+        entry = RuleCatalogEntry(check="ai_attribution")
+        rule = builder._build_ai_attribution_rule(entry)
+        assert rule is not None
+        assert rule.value == "require"
+        assert rule.allowed == ["co-authored-by"]
+
+    @pytest.mark.benchmark
+    def test_ai_trailer_style_ignore_returns_none(self):
+        """When ai_attribution='ignore', ai_trailer_style returns None."""
+        config = {
+            "commit": {"ai_attribution": "ignore", "ai_trailer_style": "assisted-by"}
+        }
+        builder = RuleBuilder(config)
+        entry = RuleCatalogEntry(check="ai_trailer_style")
+        rule = builder._build_ai_trailer_style_rule(entry)
+        assert rule is None
+
+    @pytest.mark.benchmark
+    def test_ai_trailer_style_creates_rule(self):
+        """ai_trailer_style creates a rule when ai_attribution is not ignore."""
+        config = {
+            "commit": {
+                "ai_attribution": "forbid",
+                "ai_trailer_style": "assisted-by",
+            }
+        }
+        builder = RuleBuilder(config)
+        entry = RuleCatalogEntry(check="ai_trailer_style")
+        rule = builder._build_ai_trailer_style_rule(entry)
+        assert rule is not None
+        assert rule.check == "ai_trailer_style"
+        assert rule.value == "assisted-by"
+
+    @pytest.mark.benchmark
+    def test_ai_trailer_style_co_author(self):
+        """ai_trailer_style='co-authored-by' is passed through."""
+        config = {
+            "commit": {
+                "ai_attribution": "require",
+                "ai_trailer_style": "co-authored-by",
+            }
+        }
+        builder = RuleBuilder(config)
+        entry = RuleCatalogEntry(check="ai_trailer_style")
+        rule = builder._build_ai_trailer_style_rule(entry)
+        assert rule is not None
+        assert rule.value == "co-authored-by"
+
+    @pytest.mark.benchmark
+    def test_build_all_rules_includes_ai(self):
+        """build_all_rules includes AI attribution rules when configured."""
+        config = {"commit": {"ai_attribution": "forbid"}}
+        builder = RuleBuilder(config)
+        rules = builder.build_all_rules()
+        ai_rules = [
+            r for r in rules if r.check in ("ai_attribution", "ai_trailer_style")
+        ]
+        assert len(ai_rules) >= 1
+        assert any(r.check == "ai_attribution" for r in ai_rules)
+
+    @pytest.mark.benchmark
+    def test_build_all_rules_no_ai_by_default(self):
+        """build_all_rules does not include AI rules by default."""
+        builder = RuleBuilder({})
+        rules = builder.build_all_rules()
+        ai_rules = [
+            r for r in rules if r.check in ("ai_attribution", "ai_trailer_style")
+        ]
+        assert len(ai_rules) == 0

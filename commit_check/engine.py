@@ -7,6 +7,11 @@ from enum import IntEnum
 from dataclasses import field
 
 from commit_check.rule_builder import ValidationRule
+from commit_check.ai_signatures import (
+    detect_ai_signatures,
+    find_co_authored_by_ai,
+    find_assisted_by_trailers,
+)
 from commit_check.util import (
     fetch_remote_ref,
     fetch_upstream_ref,
@@ -708,6 +713,165 @@ class CommitTypeValidator(BaseValidator):
         return not is_wip or self.rule.value
 
 
+class AiAttributionValidator(BaseValidator):
+    """Validates commit messages against AI attribution policy.
+
+    Three modes (configured via ``[commit] ai_attribution``):
+
+    * ``forbid`` — Reject any commit that contains known AI tool signatures.
+    * ``require`` — If AI signatures are present, they MUST use the configured
+      trailer style (``ai_trailer_style``).  Pure pass-through commits (no
+      signatures) are allowed.
+    * ``ignore`` — No validation (default).
+    """
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        if self._should_skip_commit_validation(context):
+            return ValidationResult.PASS
+
+        message = self._get_commit_body(context)
+        if not message:
+            return ValidationResult.PASS
+
+        policy = self.rule.value  # "ignore" | "require" | "forbid"
+        if policy == "ignore":
+            return ValidationResult.PASS
+
+        signatures = detect_ai_signatures(message)
+
+        if policy == "forbid":
+            if signatures:
+                tools = {s["tool"] for s in signatures}
+                self._record_failure(
+                    value=", ".join(sorted(tools)),
+                    error=f"AI-assisted commit is forbidden — detected tools: {', '.join(sorted(tools))}",
+                    suggest="Remove AI-generated trailers from the commit message",
+                )
+                return ValidationResult.FAIL
+            return ValidationResult.PASS
+
+        if policy == "require":
+            if not signatures:
+                # Cannot detect undisclosed AI usage; pass through.
+                return ValidationResult.PASS
+
+            # AI signatures found — check that they use the required style.
+            trailer_style = self.rule.allowed or ["assisted-by"]
+            preferred = trailer_style[0] if trailer_style else "assisted-by"
+
+            if preferred == "assisted-by":
+                co_ai = find_co_authored_by_ai(message)
+                if co_ai:
+                    self._record_failure(
+                        value="; ".join(co_ai),
+                        error="AI attribution style violation: project requires 'Assisted-by:' trailer (Linux kernel style)",
+                        suggest="Replace 'Co-authored-by: <AI>' with 'Assisted-by: <tool>:<model>'",
+                    )
+                    return ValidationResult.FAIL
+            elif preferred == "co-authored-by":
+                assisted = find_assisted_by_trailers(message)
+                if assisted:
+                    self._record_failure(
+                        value="; ".join(assisted),
+                        error="AI attribution style violation: project requires 'Co-authored-by:' trailer",
+                        suggest="Replace 'Assisted-by: <tool>:<model>' with 'Co-authored-by: <AI> <email>'",
+                    )
+                    return ValidationResult.FAIL
+
+            return ValidationResult.PASS
+
+        return ValidationResult.PASS
+
+    def _record_failure(self, value: str, error: str, suggest: str) -> None:
+        """Record a failure with dynamic error/suggest messages."""
+        self._last_failure = {
+            "check": self.rule.check,
+            "value": value,
+            "error": error,
+            "suggest": suggest,
+        }
+        if not self._suppress_output:
+            rule_dict = self.rule.to_dict()
+            from commit_check.util import _print_failure
+
+            _print_failure(
+                rule_dict,
+                value,
+                no_banner=self._no_banner,
+                compact=self._compact,
+            )
+
+
+class AiTrailerStyleValidator(BaseValidator):
+    """Validates that AI-related trailers use the project-preferred style.
+
+    This validator is a companion to ``ai_attribution = "require"``.  It checks
+    that any known AI trailers use the format specified by ``ai_trailer_style``
+    in the config (``"assisted-by"`` or ``"co-authored-by"``).
+
+    When the preferred style is ``"assisted-by"``:
+    * ``Co-authored-by: Claude`` → FAIL (should be ``Assisted-by: Claude:...``)
+
+    When the preferred style is ``"co-authored-by"``:
+    * ``Assisted-by: Claude:claude-sonnet`` → FAIL
+    """
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        if self._should_skip_commit_validation(context):
+            return ValidationResult.PASS
+
+        message = self._get_commit_body(context)
+        if not message:
+            return ValidationResult.PASS
+
+        preferred = self.rule.value  # "assisted-by" or "co-authored-by"
+        signatures = detect_ai_signatures(message)
+
+        if not signatures:
+            return ValidationResult.PASS
+
+        if preferred == "assisted-by":
+            co_ai = find_co_authored_by_ai(message)
+            if co_ai:
+                self._record_failure(
+                    value="; ".join(co_ai),
+                    error="AI trailer style violation: project requires 'Assisted-by:' trailer",
+                    suggest="Replace 'Co-authored-by: <AI>' with 'Assisted-by: <tool>:<model>'",
+                )
+                return ValidationResult.FAIL
+
+        elif preferred == "co-authored-by":
+            assisted = find_assisted_by_trailers(message)
+            if assisted:
+                self._record_failure(
+                    value="; ".join(assisted),
+                    error="AI trailer style violation: project requires 'Co-authored-by:' trailer",
+                    suggest="Replace 'Assisted-by: <tool>:<model>' with 'Co-authored-by: <AI> <email>'",
+                )
+                return ValidationResult.FAIL
+
+        return ValidationResult.PASS
+
+    def _record_failure(self, value: str, error: str, suggest: str) -> None:
+        """Record a failure with dynamic error/suggest messages."""
+        self._last_failure = {
+            "check": self.rule.check,
+            "value": value,
+            "error": error,
+            "suggest": suggest,
+        }
+        if not self._suppress_output:
+            rule_dict = self.rule.to_dict()
+            from commit_check.util import _print_failure
+
+            _print_failure(
+                rule_dict,
+                value,
+                no_banner=self._no_banner,
+                compact=self._compact,
+            )
+
+
 class ValidationEngine:
     """Main validation engine that orchestrates all validations."""
 
@@ -730,6 +894,8 @@ class ValidationEngine:
         "allow_wip_commits": CommitTypeValidator,
         "ignore_authors": CommitTypeValidator,
         "no_force_push": ForcePushValidator,
+        "ai_attribution": AiAttributionValidator,
+        "ai_trailer_style": AiTrailerStyleValidator,
     }
 
     def __init__(self, rules: list[ValidationRule]):

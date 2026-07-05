@@ -293,6 +293,27 @@ def _get_parser() -> argparse.ArgumentParser:
         help="comma-separated list of authors to ignore for commit checks",
     )
 
+    commit_group.add_argument(
+        "--ai-attribution",
+        type=str,
+        default=None,
+        choices=["ignore", "require", "forbid"],
+        metavar="POLICY",
+        help="AI attribution policy: ignore (default), require, or forbid. "
+        "'forbid' rejects commits with known AI tool signatures; "
+        "'require' enforces proper trailer style when AI signatures are present.",
+    )
+
+    commit_group.add_argument(
+        "--ai-trailer-style",
+        type=str,
+        default=None,
+        choices=["assisted-by", "co-authored-by"],
+        metavar="STYLE",
+        help="Preferred AI attribution trailer style: 'assisted-by' (Linux kernel style, default) "
+        "or 'co-authored-by' (GitHub style). Used when ai_attribution is not 'ignore'.",
+    )
+
     # Branch configuration options
     branch_group = parser.add_argument_group(
         "branch options", "Configuration options for --branch validation"
@@ -429,6 +450,8 @@ def _get_requested_checks(args: argparse.Namespace) -> list[str]:
                 "allow_empty_commits",
                 "allow_fixup_commits",
                 "allow_wip_commits",
+                "ai_attribution",
+                "ai_trailer_style",
             ]
         )
     if args.branch:
