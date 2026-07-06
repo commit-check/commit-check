@@ -7,6 +7,9 @@ from enum import IntEnum
 from dataclasses import field
 
 from commit_check.rule_builder import ValidationRule
+from commit_check.ai_signatures import (
+    detect_ai_signatures,
+)
 from commit_check.util import (
     fetch_remote_ref,
     fetch_upstream_ref,
@@ -708,6 +711,62 @@ class CommitTypeValidator(BaseValidator):
         return not is_wip or self.rule.value
 
 
+class AiAttributionValidator(BaseValidator):
+    """Validates commit messages against AI attribution policy.
+
+    Single responsibility: when configured to ``forbid``, rejects any commit
+    that contains known AI tool signatures.  When set to ``ignore`` (the
+    default), the check is a no-op.
+    """
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        if self._should_skip_commit_validation(context):
+            return ValidationResult.PASS
+
+        message = self._get_commit_body(context)
+        if not message:
+            return ValidationResult.PASS
+
+        policy = self.rule.value  # "ignore" | "forbid"
+        if policy != "forbid":
+            return ValidationResult.PASS
+
+        signatures = detect_ai_signatures(message)
+        if not signatures:
+            return ValidationResult.PASS
+
+        tools = {s["tool"] for s in signatures}
+        self._record_failure(
+            value=", ".join(sorted(tools)),
+            error=f"AI-assisted commit is forbidden — detected tools: {', '.join(sorted(tools))}",
+            suggest="This project forbids AI-assisted commits. Remove AI trailers and re-commit.",
+        )
+        return ValidationResult.FAIL
+
+    def _record_failure(self, value: str, error: str, suggest: str) -> None:
+        """Record a failure with dynamic error/suggest messages."""
+        self._last_failure = {
+            "check": self.rule.check,
+            "value": value,
+            "error": error,
+            "suggest": suggest,
+        }
+        if not self._suppress_output:
+            # Pass dynamic messages to the printer by creating a dict with
+            # the live error/suggest instead of the catalog templates.
+            rule_dict = self.rule.to_dict()
+            rule_dict["error"] = error
+            rule_dict["suggest"] = suggest
+            from commit_check.util import _print_failure
+
+            _print_failure(
+                rule_dict,
+                value,
+                no_banner=self._no_banner,
+                compact=self._compact,
+            )
+
+
 class ValidationEngine:
     """Main validation engine that orchestrates all validations."""
 
@@ -730,6 +789,7 @@ class ValidationEngine:
         "allow_wip_commits": CommitTypeValidator,
         "ignore_authors": CommitTypeValidator,
         "no_force_push": ForcePushValidator,
+        "ai_attribution": AiAttributionValidator,
     }
 
     def __init__(self, rules: list[ValidationRule]):

@@ -72,5 +72,8 @@ DEFAULT_BOOLEAN_RULES = {
     "require_signed_off_by": False,
 }
 
+# AI attribution defaults
+DEFAULT_AI_ATTRIBUTION = "ignore"  # "ignore" | "forbid"
+
 
 __version__ = version("commit-check")

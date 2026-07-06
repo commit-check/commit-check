@@ -132,6 +132,7 @@ def validate_message(
         "allow_empty_commits",
         "allow_fixup_commits",
         "allow_wip_commits",
+        "ai_attribution",
     ]
     return _run_checks(check_names, context, cfg)
 

@@ -21,6 +21,7 @@ from commit_check.engine import (
     BodyValidator,
     MergeBaseValidator,
     ForcePushValidator,
+    AiAttributionValidator,
 )
 from commit_check.rule_builder import ValidationRule
 
@@ -1016,6 +1017,7 @@ class TestValidationEngine:
             "allow_fixup_commits": CommitTypeValidator,
             "allow_wip_commits": CommitTypeValidator,
             "ignore_authors": CommitTypeValidator,
+            "ai_attribution": AiAttributionValidator,
         }
 
         for check, validator_class in expected_mappings.items():
@@ -1610,3 +1612,93 @@ class TestForcePushValidator:
         assert ctx.push_upstream_fallback is True
         ctx2 = ValidationContext()
         assert ctx2.push_upstream_fallback is False
+
+
+class TestAiAttributionValidator:
+    """Tests for AiAttributionValidator."""
+
+    @pytest.mark.benchmark
+    def test_ignore_policy_always_passes(self):
+        """ignore policy skips all validation."""
+        rule = ValidationRule(
+            check="ai_attribution",
+            value="ignore",
+        )
+        validator = AiAttributionValidator(rule)
+        message = "feat: add feature\n\nCo-authored-by: Claude <noreply@anthropic.com>"
+        context = ValidationContext(stdin_text=message)
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_forbid_policy_rejects_ai_commit(self):
+        """forbid policy rejects commits with AI signatures."""
+        rule = ValidationRule(
+            check="ai_attribution",
+            value="forbid",
+        )
+        validator = AiAttributionValidator(rule)
+        message = "feat: add feature\n\nCo-authored-by: Claude <noreply@anthropic.com>"
+        context = ValidationContext(stdin_text=message)
+        result = validator.validate(context)
+        assert result == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_forbid_policy_allows_clean_commit(self):
+        """forbid policy allows commits without AI signatures."""
+        rule = ValidationRule(
+            check="ai_attribution",
+            value="forbid",
+        )
+        validator = AiAttributionValidator(rule)
+        context = ValidationContext(stdin_text="feat: add feature by hand")
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_forbid_policy_multiple_tools(self):
+        """forbid rejects commits with multiple AI tools."""
+        rule = ValidationRule(
+            check="ai_attribution",
+            value="forbid",
+        )
+        validator = AiAttributionValidator(rule)
+        message = (
+            "feat: implement feature\n\n"
+            "Co-authored-by: Claude <noreply@anthropic.com>\n"
+            "Co-authored-by: Copilot <noreply@github.com>"
+        )
+        context = ValidationContext(stdin_text=message)
+        result = validator.validate(context)
+        assert result == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_skip_when_author_ignored(self):
+        """Validation is skipped when author is in ignore list."""
+        rule = ValidationRule(
+            check="ai_attribution",
+            value="forbid",
+        )
+        validator = AiAttributionValidator(rule)
+        message = "feat: add feature\n\nCo-authored-by: Claude"
+        config = {"commit": {"ignore_authors": ["bot-user"]}}
+        context = ValidationContext(stdin_text=message, config=config)
+
+        with patch("commit_check.engine.get_commit_info", return_value="bot-user"):
+            result = validator.validate(context)
+        assert result == ValidationResult.PASS  # Skipped due to ignored author
+
+    @pytest.mark.benchmark
+    def test_empty_message_passes(self):
+        """Empty message passes validation."""
+        rule = ValidationRule(
+            check="ai_attribution",
+            value="forbid",
+        )
+        validator = AiAttributionValidator(rule)
+        context = ValidationContext(stdin_text="")
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS

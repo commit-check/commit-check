@@ -15,6 +15,7 @@ from commit_check import (
     DEFAULT_BRANCH_NAMES,
     DEFAULT_BOOLEAN_RULES,
     DEFAULT_PUSH_RULES,
+    DEFAULT_AI_ATTRIBUTION,
 )
 
 
@@ -138,6 +139,8 @@ class RuleBuilder:
             return self._build_length_rule(catalog_entry, "subject_min_length")
         elif check == "ignore_authors":
             return self._build_author_list_rule(catalog_entry, "ignore_authors")
+        elif check == "ai_attribution":
+            return self._build_ai_attribution_rule(catalog_entry)
         elif check == "merge_base":
             return self._build_merge_base_rule(catalog_entry)
         else:
@@ -246,6 +249,25 @@ class RuleBuilder:
             regex=target,
             error=catalog_entry.error,
             suggest=catalog_entry.suggest,
+        )
+
+    def _build_ai_attribution_rule(
+        self, catalog_entry: RuleCatalogEntry
+    ) -> ValidationRule | None:
+        """Build AI attribution validation rule.
+
+        Only active when policy is ``"forbid"`` — rejects any commit with
+        known AI tool signatures.
+        """
+        policy = self.commit_config.get("ai_attribution", DEFAULT_AI_ATTRIBUTION)
+        if policy != "forbid":
+            return None
+
+        return ValidationRule(
+            check=catalog_entry.check,
+            value=policy,
+            error=catalog_entry.error or "",
+            suggest=catalog_entry.suggest or "",
         )
 
     def _build_boolean_rule(

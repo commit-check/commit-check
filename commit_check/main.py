@@ -293,6 +293,16 @@ def _get_parser() -> argparse.ArgumentParser:
         help="comma-separated list of authors to ignore for commit checks",
     )
 
+    commit_group.add_argument(
+        "--ai-attribution",
+        type=str,
+        default=None,
+        choices=["ignore", "forbid"],
+        metavar="POLICY",
+        help="AI attribution policy: ignore (default) or forbid. "
+        "'forbid' rejects commits with known AI tool signatures.",
+    )
+
     # Branch configuration options
     branch_group = parser.add_argument_group(
         "branch options", "Configuration options for --branch validation"
@@ -429,6 +439,7 @@ def _get_requested_checks(args: argparse.Namespace) -> list[str]:
                 "allow_empty_commits",
                 "allow_fixup_commits",
                 "allow_wip_commits",
+                "ai_attribution",
             ]
         )
     if args.branch:

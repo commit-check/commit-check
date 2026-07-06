@@ -46,8 +46,8 @@ Overview
 **Commit Check** is a lightweight policy engine for Git commit metadata.
 
 It validates commit messages, branch names, author identity, signoff trailers,
-and push safety — using one versioned TOML policy across local hooks, CI,
-GitHub Actions, and AI automation.
+AI attribution policy, and push safety — using one versioned TOML policy across
+local hooks, CI, GitHub Actions, and AI automation.
 
 - **One policy file:** ``cchk.toml``
 - **Multiple enforcement points:** CLI, pre-commit, CI / GitHub Actions
@@ -139,6 +139,9 @@ To customize the behavior, create a configuration file named ``cchk.toml`` or ``
     require_signed_off_by = false
     # Bypass checks for bot/automation authors and co-authors:
     ignore_authors = ["dependabot[bot]", "renovate[bot]", "copilot[bot]"]
+    # AI attribution policy: "ignore" (default) or "forbid"
+    # "forbid" rejects commits with known AI tool signatures
+    ai_attribution = "forbid"
 
     [branch]
     # https://conventionalbranch.org

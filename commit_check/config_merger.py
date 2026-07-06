@@ -13,6 +13,7 @@ from commit_check import (
     DEFAULT_BRANCH_NAMES,
     DEFAULT_BOOLEAN_RULES,
     DEFAULT_PUSH_RULES,
+    DEFAULT_AI_ATTRIBUTION,
 )
 
 
@@ -76,6 +77,7 @@ def get_default_config() -> dict[str, Any]:
             "require_body": DEFAULT_BOOLEAN_RULES["require_body"],
             "require_signed_off_by": DEFAULT_BOOLEAN_RULES["require_signed_off_by"],
             "ignore_authors": [],
+            "ai_attribution": DEFAULT_AI_ATTRIBUTION,
         },
         "branch": {
             "conventional_branch": True,
@@ -120,6 +122,7 @@ class ConfigMerger:
         "CCHK_REQUIRE_BODY": ("commit", "require_body", parse_bool),
         "CCHK_REQUIRE_SIGNED_OFF_BY": ("commit", "require_signed_off_by", parse_bool),
         "CCHK_IGNORE_AUTHORS": ("commit", "ignore_authors", parse_list),
+        "CCHK_AI_ATTRIBUTION": ("commit", "ai_attribution", str),
         # Branch section
         "CCHK_CONVENTIONAL_BRANCH": ("branch", "conventional_branch", parse_bool),
         "CCHK_ALLOW_BRANCH_TYPES": ("branch", "allow_branch_types", parse_list),
@@ -147,6 +150,7 @@ class ConfigMerger:
         "require_body": ("commit", "require_body"),
         "require_signed_off_by": ("commit", "require_signed_off_by"),
         "ignore_authors": ("commit", "ignore_authors"),
+        "ai_attribution": ("commit", "ai_attribution"),
         # Branch section
         "conventional_branch": ("branch", "conventional_branch"),
         "allow_branch_types": ("branch", "allow_branch_types"),

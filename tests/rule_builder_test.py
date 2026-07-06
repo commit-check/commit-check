@@ -372,3 +372,54 @@ class TestPushRuleBuilder:
         unknown_entry = RuleCatalogEntry(check="unknown_push_check")
         rule = builder._build_push_rule(unknown_entry)
         assert rule is None
+
+
+class TestAiAttributionRuleBuilder:
+    """Tests for AI attribution rule building."""
+
+    @pytest.mark.benchmark
+    def test_ai_attribution_ignore_returns_none(self):
+        """ai_attribution='ignore' (default) returns None."""
+        config = {"commit": {"ai_attribution": "ignore"}}
+        builder = RuleBuilder(config)
+        entry = RuleCatalogEntry(check="ai_attribution")
+        rule = builder._build_ai_attribution_rule(entry)
+        assert rule is None
+
+    @pytest.mark.benchmark
+    def test_ai_attribution_forbid_creates_rule(self):
+        """ai_attribution='forbid' creates a validation rule."""
+        config = {"commit": {"ai_attribution": "forbid"}}
+        builder = RuleBuilder(config)
+        entry = RuleCatalogEntry(check="ai_attribution")
+        rule = builder._build_ai_attribution_rule(entry)
+        assert rule is not None
+        assert rule.check == "ai_attribution"
+        assert rule.value == "forbid"
+
+    @pytest.mark.benchmark
+    def test_ai_attribution_require_returns_none(self):
+        """ai_attribution='require' returns None (only forbid supported)."""
+        config = {"commit": {"ai_attribution": "require"}}
+        builder = RuleBuilder(config)
+        entry = RuleCatalogEntry(check="ai_attribution")
+        rule = builder._build_ai_attribution_rule(entry)
+        assert rule is None
+
+    @pytest.mark.benchmark
+    def test_build_all_rules_forbid_includes_attribution(self):
+        """forbid mode includes ai_attribution and no other AI rules."""
+        config = {"commit": {"ai_attribution": "forbid"}}
+        builder = RuleBuilder(config)
+        rules = builder.build_all_rules()
+        ai_rules = [r for r in rules if r.check.startswith("ai_")]
+        assert len(ai_rules) == 1
+        assert ai_rules[0].check == "ai_attribution"
+
+    @pytest.mark.benchmark
+    def test_build_all_rules_no_ai_by_default(self):
+        """build_all_rules does not include AI rules by default."""
+        builder = RuleBuilder({})
+        rules = builder.build_all_rules()
+        ai_rules = [r for r in rules if r.check.startswith("ai_")]
+        assert len(ai_rules) == 0
