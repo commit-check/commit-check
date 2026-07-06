@@ -4,8 +4,6 @@ import pytest
 from commit_check.ai_signatures import (
     detect_ai_signatures,
     has_ai_signature,
-    find_co_authored_by_ai,
-    find_assisted_by_trailers,
     ALL_KNOWN_TOOLS,
     ALL_PATTERNS,
 )
@@ -219,80 +217,43 @@ class TestHasAiSignature:
         assert has_ai_signature("") is False
 
 
-class TestFindCoAuthoredByAi:
-    """Tests for find_co_authored_by_ai()."""
+class TestHumanNameFalsePositives:
+    """Human co-authors whose names overlap with AI tool/model tokens.
+
+    The generic model-name pattern requires a hyphenated model suffix
+    (e.g. ``claude-sonnet-4``), so a bare human first name — even with a
+    personal email — must never be flagged.
+    """
 
     @pytest.mark.benchmark
-    def test_finds_claude_co_author(self):
-        """Finds Co-authored-by: Claude lines."""
-        message = "feat: add feature\n\nCo-authored-by: Claude <noreply@anthropic.com>"
-        result = find_co_authored_by_ai(message)
-        assert len(result) >= 1
-        assert "Claude" in result[0]
+    @pytest.mark.parametrize(
+        "trailer",
+        [
+            "Co-authored-by: Claude <claude.dubois@gmail.com>",
+            "Co-authored-by: Gemini Rossi <gemini@rossi.it>",
+            "Co-authored-by: gpt <someone@example.com>",
+            "Co-authored-by: Claude Monet <claude@monet.fr>",
+        ],
+    )
+    def test_bare_human_name_not_detected(self, trailer):
+        """A human co-author is not treated as an AI signature."""
+        message = f"feat: add feature\n\n{trailer}"
+        assert detect_ai_signatures(message) == []
+        assert has_ai_signature(message) is False
 
     @pytest.mark.benchmark
-    def test_finds_copilot_co_author(self):
-        """Finds Co-authored-by: Copilot lines."""
-        message = (
-            "feat: add feature\n\n"
-            "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>"
-        )
-        result = find_co_authored_by_ai(message)
-        assert len(result) >= 1
-        assert "Copilot" in result[0]
-
-    @pytest.mark.benchmark
-    def test_no_false_positive_for_human(self):
-        """Human co-authors are not returned."""
-        message = "feat: add feature\n\nCo-authored-by: Alice Smith <alice@example.com>"
-        result = find_co_authored_by_ai(message)
-        assert result == []
-
-    @pytest.mark.benchmark
-    def test_no_duplicates_for_overlapping_patterns(self):
-        """Gemini matching both specific and generic patterns returns once."""
-        message = "feat: add feature\n\nCo-authored-by: gemini"
-        result = find_co_authored_by_ai(message)
-        assert len(result) == 1, f"Expected 1, got {len(result)}: {result}"
-
-    @pytest.mark.benchmark
-    def test_empty_message(self):
-        """Empty message returns empty list."""
-        assert find_co_authored_by_ai("") == []
-
-
-class TestFindAssistedByTrailers:
-    """Tests for find_assisted_by_trailers()."""
-
-    @pytest.mark.benchmark
-    def test_finds_assisted_by_trailer(self):
-        """Finds Assisted-by: trailer."""
-        message = "feat: add feature\n\nAssisted-by: Claude:claude-sonnet-4"
-        result = find_assisted_by_trailers(message)
-        assert len(result) >= 1
-        assert "Claude" in result[0]
-
-    @pytest.mark.benchmark
-    def test_finds_kernel_format_with_tools(self):
-        """Finds Assisted-by with kernel-style tool list."""
-        message = (
-            "feat: add feature\n\nAssisted-by: Claude:claude-3-opus coccinelle sparse"
-        )
-        result = find_assisted_by_trailers(message)
-        assert len(result) >= 1
-        assert "coccinelle" in result[0]
-
-    @pytest.mark.benchmark
-    def test_no_false_positive(self):
-        """Returns empty list when no Assisted-by trailer."""
-        message = "feat: add feature\n\nSigned-off-by: Alice <alice@example.com>"
-        result = find_assisted_by_trailers(message)
-        assert result == []
-
-    @pytest.mark.benchmark
-    def test_empty_message(self):
-        """Empty message returns empty list."""
-        assert find_assisted_by_trailers("") == []
+    @pytest.mark.parametrize(
+        "trailer",
+        [
+            "Co-authored-by: claude-sonnet-4 <bot@example.com>",
+            "Co-authored-by: gpt-4-turbo <bot@example.com>",
+            "Co-authored-by: gemini-1.5-pro",
+        ],
+    )
+    def test_model_identifier_still_detected(self, trailer):
+        """A hyphenated AI model identifier is still caught by Generic AI."""
+        message = f"feat: add feature\n\n{trailer}"
+        assert has_ai_signature(message) is True
 
 
 class TestSignatureDatabase:

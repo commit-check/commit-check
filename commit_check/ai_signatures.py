@@ -74,36 +74,3 @@ def has_ai_signature(message: str) -> bool:
         if regex.search(message):
             return True
     return False
-
-
-def find_co_authored_by_ai(message: str) -> list[str]:
-    """Find ``Co-authored-by`` trailer lines that reference known AI tools.
-
-    Human co-authors like ``Co-authored-by: Jane Doe <jane@example.com>``
-    are NOT returned because no known AI tool pattern matches common
-    human names.
-
-    :returns: List of matched trailer lines (deduplicated).
-    """
-    results: list[str] = []
-    seen: set[str] = set()
-    co_pat = re.compile(r"^Co-authored-by:\s*", re.IGNORECASE | re.MULTILINE)
-    if not co_pat.search(message):
-        return results
-
-    for regex, _tool_name, _desc, _kind in ALL_PATTERNS:
-        for match in regex.finditer(message):
-            matched = match.group(0).strip()
-            if matched.lower().startswith("co-authored-by:") and matched not in seen:
-                seen.add(matched)
-                results.append(matched)
-    return results
-
-
-def find_assisted_by_trailers(message: str) -> list[str]:
-    """Find ``Assisted-by`` trailer lines in *message*.
-
-    :returns: List of matched ``Assisted-by`` lines.
-    """
-    pat = re.compile(r"^Assisted-by:\s*\S+.*$", re.MULTILINE | re.IGNORECASE)
-    return [m.group(0).strip() for m in pat.finditer(message)]

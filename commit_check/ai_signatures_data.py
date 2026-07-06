@@ -216,9 +216,11 @@ GENERIC_AI = KnownAiTool(
     patterns=[
         # Catch AI agent model identifiers in Co-authored-by
         # (e.g. claude-sonnet-4, gpt-4-turbo, gemini-1.5-pro).
+        # A hyphenated model suffix is required so bare human first names
+        # ("Claude", "Gemini") are NOT flagged, regardless of the email.
         _trailer(
             "Co-authored-by",
-            r"(?:claude|gpt|gemini)[\w.-]*(?:\s*<[^>]*>)?",
+            r"(?:claude|gpt|gemini)[\w.]*-[\w.-]+(?:\s*<[^>]*>)?",
             "``Co-authored-by`` with AI model name",
         ),
         # Catch Assisted-by trailer (Linux kernel style) regardless of agent,

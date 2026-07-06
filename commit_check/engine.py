@@ -715,10 +715,8 @@ class AiAttributionValidator(BaseValidator):
     """Validates commit messages against AI attribution policy.
 
     Single responsibility: when configured to ``forbid``, rejects any commit
-    that contains known AI tool signatures.
-
-    Style enforcement (for ``require`` mode) is delegated to
-    :class:`AiTrailerStyleValidator`.
+    that contains known AI tool signatures.  When set to ``ignore`` (the
+    default), the check is a no-op.
     """
 
     def validate(self, context: ValidationContext) -> ValidationResult:
