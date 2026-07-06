@@ -245,14 +245,16 @@ class TestBranchValidator:
         assert result == ValidationResult.FAIL
 
     @patch("commit_check.engine.get_branch_name")
+    @patch("commit_check.engine.get_git_config_value")
     @patch("commit_check.engine.get_commit_info")
     @pytest.mark.benchmark
     def test_branch_validator_ignored_author(
-        self, mock_get_commit_info, mock_get_branch_name
+        self, mock_get_commit_info, mock_get_git_config_value, mock_get_branch_name
     ):
         """Test BranchValidator skips validation for ignored author."""
         mock_get_branch_name.return_value = "invalid-branch-name"
         mock_get_commit_info.return_value = "ignored"
+        mock_get_git_config_value.return_value = ""
         rule = ValidationRule(check="branch", regex=r"^(feature|bugfix|hotfix)/.+")
         validator = BranchValidator(rule)
         config = {"branch": {"ignore_authors": ["ignored"]}}
@@ -428,11 +430,15 @@ class TestAuthorValidator:
         assert mock_get_commit_info.call_args_list[0][0][0] == "an"
         assert mock_get_commit_info.call_args_list[2][0][0] == "ae"
 
+    @patch("commit_check.engine.get_git_config_value")
     @patch("commit_check.engine.get_commit_info")
     @pytest.mark.benchmark
-    def test_author_validator_ignored_author(self, mock_get_commit_info):
+    def test_author_validator_ignored_author(
+        self, mock_get_commit_info, mock_get_git_config_value
+    ):
         """Test AuthorValidator skips validation for ignored author."""
         mock_get_commit_info.return_value = "ignored"
+        mock_get_git_config_value.return_value = ""
         rule = ValidationRule(check="author_name", regex=r"^[A-Z][a-z]+ [A-Z][a-z]+$")
         validator = AuthorValidator(rule)
         config = {"commit": {"ignore_authors": ["ignored"]}}
@@ -1747,7 +1753,10 @@ class TestAiAttributionValidator:
         config = {"commit": {"ignore_authors": ["bot-user"]}}
         context = ValidationContext(stdin_text=message, config=config)
 
-        with patch("commit_check.engine.get_commit_info", return_value="bot-user"):
+        with (
+            patch("commit_check.engine.get_commit_info", return_value="bot-user"),
+            patch("commit_check.engine.get_git_config_value", return_value=""),
+        ):
             result = validator.validate(context)
         assert result == ValidationResult.PASS  # Skipped due to ignored author
 

@@ -127,7 +127,11 @@ class BaseValidator(ABC):
         if not ignore_authors:
             return False
 
-        current_author = get_commit_info("an")
+        # Use git config user.name (the committer's identity) first — for
+        # piped stdin or pre-commit scenarios there is no new commit yet,
+        # so the last commit's author may be unrelated (e.g. a bot) and
+        # would incorrectly suppress all validation.
+        current_author = get_git_config_value("user.name") or get_commit_info("an")
         if current_author and current_author in ignore_authors:
             return True
 
@@ -180,7 +184,8 @@ class BaseValidator(ABC):
         or if no stdin_text and no commits exist.
         """
         ignore_authors = context.config.get("branch", {}).get("ignore_authors", [])
-        current_author = get_commit_info("an")
+        # Prefer git config user.name — same rationale as commit checks.
+        current_author = get_git_config_value("user.name") or get_commit_info("an")
         if current_author and current_author in ignore_authors:
             return True
         return context.stdin_text is None and not has_commits()
