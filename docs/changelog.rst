@@ -5,7 +5,123 @@ All **notable changes** to this project will be documented in this file.
 
 Full changelog available at `GitHub releases <https://github.com/commit-check/commit-check/releases>`_.
 
-v2.7.0 (unreleased)
+v2.11.0 (2026-07-06)
+-------------------
+
+New Features
+~~~~~~~~~~~~
+
+* **AI attribution governance** — Added support for forbidding known AI tool
+  signatures (e.g., ``Co-authored-by: Copilot``) in commit messages. New
+  ``[commit]`` config option ``forbid_ai_attribution`` (boolean, default
+  ``false``) rejects commits co-authored by AI coding agents. See PR :pr:`456`.
+
+Bug Fixes
+~~~~~~~~~
+
+* Fixed ``MergeBaseValidator`` branch detection — replaced ``git branch -a``
+  regex matching with ``git rev-parse --verify`` to avoid false positives
+  (e.g., pattern ``main`` matching ``main-staging``). See PR :pr:`451`.
+
+Chores
+~~~~~~
+
+* Added OpenSSF Scorecard workflow, badge, and pinned dependency SHAs for CI
+* Migrated PyPI publishing to ``pypa/gh-action-pypi-publish``
+* Removed OpenSSF Scorecard badge after evaluation (moved to Scorecard dashboard)
+
+
+v2.10.1 (2026-06-30)
+-------------------
+
+Bug Fixes
+~~~~~~~~~
+
+* **WIP detection case-insensitivity** — ``WIP`` (``[WIP]``, ``WIP:``, ``wip:``,
+  etc.) is now recognized regardless of case across all common patterns.
+  See PR :pr:`448`.
+* **Conventional commit special characters** — Allowed special characters
+  (parentheses, brackets, etc.) in the description part of conventional commit
+  messages. See PR :pr:`447`.
+
+Refactors
+~~~~~~~~~
+
+* Extracted ``_get_commit_message`` to ``BaseValidator`` to remove code
+  duplication across validators. See PR :pr:`445`.
+* Removed legacy YAML config parsing code from ``util.py``.
+  See PR :pr:`444`.
+
+
+v2.10.0 (2026-06-26)
+-------------------
+
+New Features
+~~~~~~~~~~~~
+
+* **Dependabot / Renovate as default branch type** — ``dependabot/`` and
+  ``renovate/`` branch prefixes are now included in ``DEFAULT_BRANCH_TYPES``,
+  so dependency update branches are automatically recognized.
+  See PR :pr:`442`.
+
+
+v2.9.0 (2026-06-22)
+-------------------
+
+New Features
+~~~~~~~~~~~~
+
+* **AI agent branch prefixes (Conventional Branch v1.1.0)** — Added
+  ``ai/``, ``claude/``, ``codex/``, ``copilot/``, and ``cursor/`` to
+  ``DEFAULT_BRANCH_TYPES`` so branches created by AI coding agents are
+  recognized as valid. See PR :pr:`438`.
+
+
+v2.8.1 (2026-06-22)
+-------------------
+
+Chores
+~~~~~~
+
+* Fixed 27 SonarQube code-quality issues across source and test files,
+  including path traversal vulnerability fix, cognitive complexity
+  reduction, and duplicate branch consolidation. See PR :pr:`436`.
+* Added SchemaStore IDE autocompletion support for ``cchk.toml``.
+  See PR :pr:`433`.
+
+
+v2.8.0 (2026-06-13)
+-------------------
+
+New Features
+~~~~~~~~~~~~
+
+* **Custom commit message pattern** — New ``message_pattern`` option in the
+  ``[commit]`` config section allows replacing the built-in Conventional Commits
+  regex with a user-defined regex pattern. Also supported via the
+  ``CCHK_MESSAGE_PATTERN`` environment variable. See PR :pr:`427`.
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+* **Dropped Python 3.9 support** — Minimum required Python version is now
+  3.10. Type annotations have been modernized (PEP 604/585) and the
+  ``py.typed`` marker added for downstream type checkers.
+  See PR :pr:`424`.
+
+
+v2.7.1 (2026-06-08)
+-------------------
+
+Chores
+~~~~~~
+
+* Added ``auto`` to the list of imperative verbs. See PR :pr:`417`.
+* Added commit-check vs GitHub Rulesets comparison table to the README.
+  See PR :pr:`419`.
+
+
+v2.7.0 (2026-05-16)
 -------------------
 
 New Features
@@ -26,6 +142,11 @@ New Features
   (no stdin), it checks whether pushing ``HEAD`` to its configured upstream
   would require force, using ``git ls-remote`` and optional ``git fetch`` to
   resolve the remote commit.
+
+* **Expanded imperative verbs** — Added 156 new imperative verbs across 10
+  categories (auth/security, data ops, lifecycle, I/O, debugging, UI/UX,
+  engineering, general), growing the total from 234 to 390.
+  See PR :pr:`414`.
 
 
 v2.6.0 (2026-04-20)
