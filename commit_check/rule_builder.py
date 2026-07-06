@@ -246,7 +246,9 @@ class RuleBuilder:
         self, catalog_entry: RuleCatalogEntry, config_key: str
     ) -> ValidationRule | None:
         """Build author name or email validation rule."""
-        regex = self.commit_config.get(config_key, "").strip()
+        regex = catalog_entry.regex
+        if self.commit_config.get(config_key, ""):
+            regex = self.commit_config.get(config_key, "").strip()
 
         return ValidationRule(
             check=catalog_entry.check,
