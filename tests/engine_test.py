@@ -380,6 +380,62 @@ class TestBranchValidator:
         result = validator.validate(context)
         assert result == ValidationResult.PASS
 
+    @pytest.mark.benchmark
+    def test_branch_ignored_author_uses_git_config_when_stdin(self):
+        """
+        Bug-fix guard (branch side): when stdin is piped, the last commit's
+        author must NOT suppress branch-author skip logic.
+        """
+        rule = ValidationRule(check="branch", regex=r"^feature/")
+        validator = BranchValidator(rule)
+
+        config = {"branch": {"ignore_authors": ["pre-commit-ci[bot]"]}}
+        context = ValidationContext(stdin_text="feature/valid-branch", config=config)
+
+        with (
+            patch(
+                "commit_check.engine.get_commit_info", return_value="pre-commit-ci[bot]"
+            ),
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="Alice Developer",
+            ),
+        ):
+            result = validator.validate(context)
+        # Not skipped — Alice is not in ignore_authors for branches
+        assert result == ValidationResult.PASS  # branch name is valid
+
+    @pytest.mark.benchmark
+    def test_branch_ignored_author_uses_commit_author_when_no_stdin(self):
+        """
+        Regression guard (branch side): when validating the current branch
+        (no stdin), the check must use the last commit's author for
+        ignore_authors, not the local git config.
+        """
+        rule = ValidationRule(check="branch", regex=r"^feature/")
+        validator = BranchValidator(rule)
+
+        config = {"branch": {"ignore_authors": ["dependabot[bot]"]}}
+        context = ValidationContext(config=config)
+
+        with (
+            patch("commit_check.engine.has_commits", return_value=True),
+            patch(
+                "commit_check.engine.get_branch_name",
+                return_value="dependabot/go-mod-upgrade",
+            ),
+            patch(
+                "commit_check.engine.get_commit_info", return_value="dependabot[bot]"
+            ),
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="Alice Developer",
+            ),
+        ):
+            result = validator.validate(context)
+        # Skipped — the commit's author (dependabot[bot]) is in ignore_authors
+        assert result == ValidationResult.PASS
+
 
 class TestAuthorValidator:
     @patch("commit_check.engine.has_commits")
@@ -1298,6 +1354,77 @@ class TestCoAuthorSkip:
             assert result == ValidationResult.PASS
         finally:
             os.unlink(commit_file)
+
+    @pytest.mark.benchmark
+    def test_author_in_ignore_list_uses_git_config_when_stdin(self):
+        """
+        Bug-fix guard: when stdin is piped, the last commit's author
+        (e.g. a bot in the ignore list) must NOT suppress validation.
+        The check should use the local git config user.name instead.
+        """
+        rule = ValidationRule(
+            check="message",
+            regex=CONVENTIONAL_COMMIT_REGEX,
+            error=BAD_COMMIT_MSG,
+            suggest=USE_CONVENTIONAL_FORMAT,
+        )
+        validator = CommitMessageValidator(rule)
+
+        # HEAD author is "pre-commit-ci[bot]" (in ignore list)
+        # but local git config user.name is a human (not ignored)
+        # stdin is a proper conventional commit — validation should run.
+        message = "fix: resolve edge case in parser"
+        config = {"commit": {"ignore_authors": ["pre-commit-ci[bot]"]}}
+        context = ValidationContext(stdin_text=message, config=config)
+
+        with (
+            patch(
+                "commit_check.engine.get_commit_info", return_value="pre-commit-ci[bot]"
+            ),
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="Alice Developer",
+            ),
+        ):
+            result = validator.validate(context)
+        # Not skipped — Alice is not in ignore_authors, so validation runs
+        assert result == ValidationResult.PASS  # message is valid
+
+    @pytest.mark.benchmark
+    def test_author_in_ignore_list_uses_commit_author_when_no_stdin(self):
+        """
+        Regression guard: when validating an existing commit (no stdin),
+        the check must use the commit's own author, not the local git config.
+        A bot commit should still be skipped when its author is ignore_authors,
+        even if user.name is a human.
+        """
+        rule = ValidationRule(
+            check="message",
+            regex=CONVENTIONAL_COMMIT_REGEX,
+            error=BAD_COMMIT_MSG,
+            suggest=USE_CONVENTIONAL_FORMAT,
+        )
+        validator = CommitMessageValidator(rule)
+
+        # HEAD author is "dependabot[bot]" (in ignore list)
+        # local git config user.name is a human (not ignored)
+        # no stdin — validating the last commit as-is.
+        config = {"commit": {"ignore_authors": ["dependabot[bot]"]}}
+        context = ValidationContext(config=config)
+
+        with (
+            patch("commit_check.engine.has_commits", return_value=True),
+            patch(
+                "commit_check.engine.get_commit_info", return_value="dependabot[bot]"
+            ),
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="Alice Developer",
+            ),
+        ):
+            result = validator.validate(context)
+        # Skipped — the commit's author (dependabot[bot]) is in ignore_authors
+        assert result == ValidationResult.PASS
 
 
 class TestGetGitConfigValue:

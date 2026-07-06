@@ -102,6 +102,26 @@ class BaseValidator(ABC):
         )
 
     @staticmethod
+    def _resolve_current_author(context: ValidationContext) -> str:
+        """Resolve the relevant author identity based on validation mode.
+
+        Two distinct modes:
+
+        *Prospective message* (``stdin_text`` or ``commit_file`` is set):
+        the user is about to create a new commit.  The last commit's author
+        is unrelated — the relevant identity is the local git config
+        (``user.name``), i.e. the person who will author the pending commit.
+
+        *Existing commit* (no ``stdin_text``, no ``commit_file``):
+        the last commit is the one being validated.  Use its own author
+        (``get_commit_info("an")``), not the local git config which may
+        belong to a different person.
+        """
+        if context.stdin_text is not None or context.commit_file is not None:
+            return get_git_config_value("user.name") or get_commit_info("an")
+        return get_commit_info("an") or get_git_config_value("user.name")
+
+    @staticmethod
     def _get_commit_message(context: ValidationContext) -> str:
         """Get commit message from context or git."""
         if context.stdin_text:
@@ -127,11 +147,7 @@ class BaseValidator(ABC):
         if not ignore_authors:
             return False
 
-        # Use git config user.name (the committer's identity) first — for
-        # piped stdin or pre-commit scenarios there is no new commit yet,
-        # so the last commit's author may be unrelated (e.g. a bot) and
-        # would incorrectly suppress all validation.
-        current_author = get_git_config_value("user.name") or get_commit_info("an")
+        current_author = self._resolve_current_author(context)
         if current_author and current_author in ignore_authors:
             return True
 
@@ -184,8 +200,7 @@ class BaseValidator(ABC):
         or if no stdin_text and no commits exist.
         """
         ignore_authors = context.config.get("branch", {}).get("ignore_authors", [])
-        # Prefer git config user.name — same rationale as commit checks.
-        current_author = get_git_config_value("user.name") or get_commit_info("an")
+        current_author = self._resolve_current_author(context)
         if current_author and current_author in ignore_authors:
             return True
         return context.stdin_text is None and not has_commits()
