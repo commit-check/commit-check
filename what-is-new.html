@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#version-2-9-1-bot-branch-types-as-default" class="md-skip">
+        <a href="#version-2-11-0-ai-attribution-governance" class="md-skip">
           Skip to content
         </a>
       
@@ -474,14 +474,40 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#version-2-9-1-bot-branch-types-as-default" class="md-nav__link">
+  <a href="#version-2-11-0-ai-attribution-governance" class="md-nav__link">
     
     <span class="md-ellipsis">
-      <span>Version 2.<wbr>9.<wbr>1 — Bot Branch Types as Default</span>
+      <span>Version 2.<wbr>11.<wbr>0 — AI Attribution Governance</span>
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Version 2.9.1 — Bot Branch Types as Default">
+    <nav class="md-nav" aria-label="Version 2.11.0 — AI Attribution Governance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enforce-your-project-s-ai-contribution-policy" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Enforce Your Project’s AI Contribution Policy</span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-2-10-0-bot-branch-types-as-default" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Version 2.<wbr>10.<wbr>0 — Bot Branch Types as Default</span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Version 2.10.0 — Bot Branch Types as Default">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -977,14 +1003,40 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#version-2-9-1-bot-branch-types-as-default" class="md-nav__link">
+  <a href="#version-2-11-0-ai-attribution-governance" class="md-nav__link">
     
     <span class="md-ellipsis">
-      <span>Version 2.<wbr>9.<wbr>1 — Bot Branch Types as Default</span>
+      <span>Version 2.<wbr>11.<wbr>0 — AI Attribution Governance</span>
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Version 2.9.1 — Bot Branch Types as Default">
+    <nav class="md-nav" aria-label="Version 2.11.0 — AI Attribution Governance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enforce-your-project-s-ai-contribution-policy" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Enforce Your Project’s AI Contribution Policy</span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-2-10-0-bot-branch-types-as-default" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Version 2.<wbr>10.<wbr>0 — Bot Branch Types as Default</span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Version 2.10.0 — Bot Branch Types as Default">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1328,7 +1380,39 @@
 
 <h1 id="what-s-new">What’s New<a class="headerlink" href="#what-s-new" title="Link to this heading">¶</a></h1>
 <p>This document highlights the major changes and improvements in each version of commit-check.</p>
-<h2 id="version-2-9-1-bot-branch-types-as-default">Version 2.9.1 — Bot Branch Types as Default<a class="headerlink" href="#version-2-9-1-bot-branch-types-as-default" title="Link to this heading">¶</a></h2>
+<h2 id="version-2-11-0-ai-attribution-governance">Version 2.11.0 — AI Attribution Governance<a class="headerlink" href="#version-2-11-0-ai-attribution-governance" title="Link to this heading">¶</a></h2>
+<h3 id="enforce-your-project-s-ai-contribution-policy">Enforce Your Project’s AI Contribution Policy<a class="headerlink" href="#enforce-your-project-s-ai-contribution-policy" title="Link to this heading">¶</a></h3>
+<p>commit-check now supports <strong>AI attribution governance</strong> — a neutral enforcement
+layer for the industry-wide discussion on AI disclosure in open source.</p>
+<p>Configured under <code class="docutils literal notranslate"><span class="pre">[commit]</span></code>:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="k">[commit]</span>
+<span class="c1"># &quot;ignore&quot; (default) | &quot;forbid&quot;</span>
+<span class="n">ai_attribution</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;forbid&quot;</span>
+</code></pre></div>
+</div>
+<p>When set to <code class="docutils literal notranslate"><span class="pre">&quot;forbid&quot;</span></code>, any commit containing known AI tool signatures is
+rejected.  The built-in signature database detects trailers and markers from:</p>
+<ul class="simple">
+<li><p><strong>Claude Code</strong> — <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span> <span class="pre">Claude</span></code>, <code class="docutils literal notranslate"><span class="pre">Assisted-by:</span> <span class="pre">Claude:...</span></code>,
+<code class="docutils literal notranslate"><span class="pre">🤖</span> <span class="pre">Generated</span> <span class="pre">with</span> <span class="pre">Claude</span></code>, <code class="docutils literal notranslate"><span class="pre">Claude-Session:</span></code>, <code class="docutils literal notranslate"><span class="pre">Claude-Workflow:</span></code></p></li>
+<li><p><strong>GitHub Copilot</strong> — <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span> <span class="pre">Copilot</span></code></p></li>
+<li><p><strong>OpenAI Codex</strong> — <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span> <span class="pre">Codex</span></code></p></li>
+<li><p><strong>Gemini</strong> — <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span> <span class="pre">Gemini</span></code></p></li>
+<li><p><strong>Cursor</strong> — <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span> <span class="pre">Cursor</span></code></p></li>
+<li><p><strong>Devin</strong> — <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span> <span class="pre">Devin</span></code></p></li>
+<li><p><strong>Aider</strong> — <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span> <span class="pre">Aider</span></code>, <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span> <span class="pre">...</span> <span class="pre">(aider)</span></code></p></li>
+<li><p><strong>Windsurf</strong> — <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span> <span class="pre">Windsurf</span></code></p></li>
+<li><p><strong>Tabby</strong> — <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span> <span class="pre">Tabby</span></code></p></li>
+<li><p><strong>Generic AI</strong> — <code class="docutils literal notranslate"><span class="pre">Assisted-by:</span></code> (Linux kernel style, with tool list),
+model names like <code class="docutils literal notranslate"><span class="pre">claude-sonnet-4</span></code>, <code class="docutils literal notranslate"><span class="pre">gpt-4-turbo</span></code></p></li>
+</ul>
+<p>The signature database is designed to be extensible — adding a new tool is as
+simple as adding a <code class="docutils literal notranslate"><span class="pre">KnownAiTool</span></code> entry with the tool’s patterns.</p>
+<p>This feature is motivated by ongoing discussions in the CPython core
+development community, the Linux kernel’s <code class="docutils literal notranslate"><span class="pre">Assisted-by:</span></code> trailer standard,
+VS Code, Apache, Fedora, and other foundations.</p>
+<p>See <a class="reference external" href="configuration.html">Configuration Documentation</a> for details.</p>
+<h2 id="version-2-10-0-bot-branch-types-as-default">Version 2.10.0 — Bot Branch Types as Default<a class="headerlink" href="#version-2-10-0-bot-branch-types-as-default" title="Link to this heading">¶</a></h2>
 <h3 id="dependabot-and-renovate-branches-now-pass-by-default"><code class="docutils literal notranslate"><span class="pre">dependabot/</span></code> and <code class="docutils literal notranslate"><span class="pre">renovate/</span></code> branches now pass by default<a class="headerlink" href="#dependabot-and-renovate-branches-now-pass-by-default" title="Link to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">dependabot</span></code> and <code class="docutils literal notranslate"><span class="pre">renovate</span></code> are now included in <code class="docutils literal notranslate"><span class="pre">DEFAULT_BRANCH_TYPES</span></code>,
 so branches like <code class="docutils literal notranslate"><span class="pre">dependabot/go_modules/go-deps-c57c3fe1e0</span></code> and

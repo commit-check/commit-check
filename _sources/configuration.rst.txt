@@ -126,6 +126,7 @@ Example Configuration
     require_signed_off_by = false
     # required_signoff_name = "Your Name"      # Optional
     # required_signoff_email = "your.email@example.com"  # Optional
+    ai_attribution = "forbid"  # "ignore" (default) or "forbid" — rejects AI tool trailers
 
     [push]
     # Block force pushes when used as a pre-push hook or with --no-force-push
@@ -288,6 +289,9 @@ Configuration can also be set via environment variables with the ``CCHK_`` prefi
    * - ``allow_force_push = true``
      - ``CCHK_ALLOW_FORCE_PUSH=false``
      - ``--no-force-push`` (enable via ``--no-force-push`` flag)
+   * - ``ai_attribution = "forbid"``
+     - ``CCHK_AI_ATTRIBUTION=forbid``
+     - ``--ai-attribution=forbid``
    * - ``ignore_authors = ["bot"]`` (in branch section)
      - ``CCHK_BRANCH_IGNORE_AUTHORS=bot,user``
      - ``--branch-ignore-authors=bot,user``
@@ -398,6 +402,11 @@ Options Table Description
      - bool
      - false
      - Require "Signed-off-by" line in the commit message footer.
+   * - commit
+     - ai_attribution
+     - str
+     - "ignore"
+     - AI attribution policy. ``"forbid"`` rejects any commit containing known AI tool signatures (Claude Code, Copilot, Codex, Gemini, Cursor, Devin, Aider, Windsurf, Tabby, and generic AI model patterns). ``"ignore"`` disables the check. This feature is a response to the industry-wide discussion on AI disclosure in open source (Linux kernel ``Assisted-by:`` trailer, CPython, VS Code, Apache, Fedora policies).
    * - branch
      - conventional_branch
      - bool

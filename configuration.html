@@ -926,6 +926,7 @@ tooltips for <code class="docutils literal notranslate"><span class="pre">cchk.t
 <span class="n">require_signed_off_by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 <span class="c1"># required_signoff_name = &quot;Your Name&quot;      # Optional</span>
 <span class="c1"># required_signoff_email = &quot;your.email@example.com&quot;  # Optional</span>
+<span class="n">ai_attribution</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;forbid&quot;</span><span class="w">  </span><span class="c1"># &quot;ignore&quot; (default) or &quot;forbid&quot; — rejects AI tool trailers</span>
 
 <span class="k">[push]</span>
 <span class="c1"># Block force pushes when used as a pre-push hook or with --no-force-push</span>
@@ -1096,7 +1097,11 @@ commit-check<span class="w"> </span>--branch<span class="w"> </span>--allow-bran
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_ALLOW_FORCE_PUSH=false</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--no-force-push</span></code> (enable via <code class="docutils literal notranslate"><span class="pre">--no-force-push</span></code> flag)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ignore_authors</span> <span class="pre">=</span> <span class="pre">[&quot;bot&quot;]</span></code> (in branch section)</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ai_attribution</span> <span class="pre">=</span> <span class="pre">&quot;forbid&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_AI_ATTRIBUTION=forbid</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--ai-attribution=forbid</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ignore_authors</span> <span class="pre">=</span> <span class="pre">[&quot;bot&quot;]</span></code> (in branch section)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_BRANCH_IGNORE_AUTHORS=bot,user</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--branch-ignore-authors=bot,user</span></code></p></td>
 </tr>
@@ -1217,37 +1222,43 @@ commit-check<span class="w"> </span>--message<span class="w"> </span>--subject-m
 <td><p>false</p></td>
 <td><p>Require “Signed-off-by” line in the commit message footer.</p></td>
 </tr>
-<tr class="row-odd"><td><p>branch</p></td>
+<tr class="row-odd"><td><p>commit</p></td>
+<td><p>ai_attribution</p></td>
+<td><p>str</p></td>
+<td><p>“ignore”</p></td>
+<td><p>AI attribution policy. <code class="docutils literal notranslate"><span class="pre">&quot;forbid&quot;</span></code> rejects any commit containing known AI tool signatures (Claude Code, Copilot, Codex, Gemini, Cursor, Devin, Aider, Windsurf, Tabby, and generic AI model patterns). <code class="docutils literal notranslate"><span class="pre">&quot;ignore&quot;</span></code> disables the check. This feature is a response to the industry-wide discussion on AI disclosure in open source (Linux kernel <code class="docutils literal notranslate"><span class="pre">Assisted-by:</span></code> trailer, CPython, VS Code, Apache, Fedora policies).</p></td>
+</tr>
+<tr class="row-even"><td><p>branch</p></td>
 <td><p>conventional_branch</p></td>
 <td><p>bool</p></td>
 <td><p>true</p></td>
 <td><p>Enforce Conventional Branch specification.</p></td>
 </tr>
-<tr class="row-even"><td><p>branch</p></td>
+<tr class="row-odd"><td><p>branch</p></td>
 <td><p>allow_branch_types</p></td>
 <td><p>list[str]</p></td>
 <td><p>[“feature”, “bugfix”, “hotfix”, “release”, “chore”, “feat”, “fix”]</p></td>
 <td><p>Allowed branch types when conventional_branch is true. AI agent prefixes (<code class="docutils literal notranslate"><span class="pre">ai/</span></code>, <code class="docutils literal notranslate"><span class="pre">claude/</span></code>, <code class="docutils literal notranslate"><span class="pre">codex/</span></code>, <code class="docutils literal notranslate"><span class="pre">copilot/</span></code>, <code class="docutils literal notranslate"><span class="pre">cursor/</span></code>) and bot prefixes (<code class="docutils literal notranslate"><span class="pre">dependabot/</span></code>) are also included by default.</p></td>
 </tr>
-<tr class="row-odd"><td><p>branch</p></td>
+<tr class="row-even"><td><p>branch</p></td>
 <td><p>allow_branch_names</p></td>
 <td><p>list[str]</p></td>
 <td><p>[] (empty list)</p></td>
 <td><p>Additional standalone branch names allowed when conventional_branch is true (e.g., [“develop”, “staging”]). By default, master, main, HEAD, and PR-* are always allowed.</p></td>
 </tr>
-<tr class="row-even"><td><p>branch</p></td>
+<tr class="row-odd"><td><p>branch</p></td>
 <td><p>require_rebase_target</p></td>
 <td><p>str</p></td>
 <td><p>None (no requirement)</p></td>
 <td><p>Target branch for rebase requirement. If not set, no rebase validation is performed.</p></td>
 </tr>
-<tr class="row-odd"><td><p>push</p></td>
+<tr class="row-even"><td><p>push</p></td>
 <td><p>allow_force_push</p></td>
 <td><p>bool</p></td>
 <td><p>true</p></td>
 <td><p>Allow force pushes. Set to <code class="docutils literal notranslate"><span class="pre">false</span></code> to block force pushes when used as a pre-push hook or with <code class="docutils literal notranslate"><span class="pre">--no-force-push</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p>branch</p></td>
+<tr class="row-odd"><td><p>branch</p></td>
 <td><p>ignore_authors</p></td>
 <td><p>list[str]</p></td>
 <td><p>[] (none ignored)</p></td>

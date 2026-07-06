@@ -826,8 +826,9 @@
 [–allow-revert-commits BOOL] [–allow-empty-commits BOOL]
 [–allow-fixup-commits BOOL] [–allow-wip-commits BOOL]
 [–require-body BOOL] [–require-signed-off-by BOOL]
-[–ignore-authors LIST] [–conventional-branch BOOL]
-[–allow-branch-types LIST] [–allow-branch-names LIST]
+[–ignore-authors LIST] [–ai-attribution POLICY]
+[–conventional-branch BOOL] [–allow-branch-types LIST]
+[–allow-branch-names LIST]
 [–require-rebase-target BRANCH]
 [–branch-ignore-authors LIST]
 [commit_msg_file]</p>
@@ -994,6 +995,11 @@ feat,fix,docs)</p>
 <dt><kbd><span class="option">--ignore-authors <var>LIST</var></span></kbd></dt>
 <dd><p>comma-separated list of authors to ignore for commit
 checks</p>
+</dd>
+<dt><kbd><span class="option">--ai-attribution <var>POLICY</var></span></kbd></dt>
+<dd><p>AI attribution policy: ignore (default) or forbid.
+‘forbid’ rejects commits with known AI tool
+signatures.</p>
 </dd>
 </dl>
 </dd>

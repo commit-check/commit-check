@@ -862,8 +862,8 @@
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
 <p><strong>Commit Check</strong> is a lightweight policy engine for Git commit metadata.</p>
 <p>It validates commit messages, branch names, author identity, signoff trailers,
-and push safety — using one versioned TOML policy across local hooks, CI,
-GitHub Actions, and AI automation.</p>
+AI attribution policy, and push safety — using one versioned TOML policy across
+local hooks, CI, GitHub Actions, and AI automation.</p>
 <ul class="simple">
 <li><p><strong>One policy file:</strong> <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code></p></li>
 <li><p><strong>Multiple enforcement points:</strong> CLI, pre-commit, CI / GitHub Actions</p></li>
@@ -928,6 +928,9 @@ For more information, see the <a class="reference external" href="https://commit
 <span class="n">require_signed_off_by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 <span class="c1"># Bypass checks for bot/automation authors and co-authors:</span>
 <span class="n">ignore_authors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;dependabot[bot]&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;renovate[bot]&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;copilot[bot]&quot;</span><span class="p">]</span>
+<span class="c1"># AI attribution policy: &quot;ignore&quot; (default) or &quot;forbid&quot;</span>
+<span class="c1"># &quot;forbid&quot; rejects commits with known AI tool signatures</span>
+<span class="n">ai_attribution</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;forbid&quot;</span>
 
 <span class="k">[branch]</span>
 <span class="c1"># https://conventionalbranch.org</span>
