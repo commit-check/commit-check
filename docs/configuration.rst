@@ -276,7 +276,7 @@ Configuration can also be set via environment variables with the ``CCHK_`` prefi
      - ``--ignore-authors=bot,user``
    * - ``author_email_pattern=^[-a-zA-Z0-9]*\.[-a-zA-Z0-9]*@.*$``
      - ``CCHK_AUTHOR_EMAIL_PATTERN=^[-a-zA-Z0-9]*\.[-a-zA-Z0-9]*@.*$``
-     - ```--author-email-pattern=^[-a-zA-Z0-9]*\.[-a-zA-Z0-9]*@.*$``
+     - ``--author-email-pattern=^[-a-zA-Z0-9]*\.[-a-zA-Z0-9]*@.*$``
    * - ``author_name_pattern=^[A-Z]+[-a-zA-Z0-9]+ [A-Z]+[-a-zA-Z0-9]+$``
      - ``CCHK_AUTHOR_NAME_PATTERN=^[A-Z]+[-a-zA-Z0-9]+ [A-Z]+[-a-zA-Z0-9]+$``
      - ``--author-name-pattern=^[A-Z]+[-a-zA-Z0-9]+ [A-Z]+[-a-zA-Z0-9]+$``
