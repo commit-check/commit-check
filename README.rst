@@ -75,7 +75,7 @@ Quick Start
 
     repos:
       - repo: https://github.com/commit-check/commit-check
-        rev: v2.6.0
+        rev: v2.10.2
         hooks:
           - id: check-message
           - id: check-branch
@@ -198,12 +198,17 @@ For one-off checks or CI/CD pipelines, you can configure via CLI arguments or en
     # In pre-commit hooks (.pre-commit-config.yaml)
     repos:
       - repo: https://github.com/commit-check/commit-check
-        rev: v2.6.0
+        rev: v2.10.2
         hooks:
           - id: check-message
             args:
               - --subject-imperative=false
               - --subject-max-length=100
+          - id: check-author-name
+            args:
+              - --no-banner
+              - --author-name
+              - --author-name-pattern=^[A-Z]+[-a-zA-Z0-9]+ [A-Z]+[-a-zA-Z0-9]+$
 
 See the `Configuration documentation <https://commit-check.github.io/commit-check/configuration.html>`_ for all available options.
 
@@ -224,7 +229,7 @@ branch's configured upstream:
     # In pre-commit hooks (.pre-commit-config.yaml)
     repos:
       - repo: https://github.com/commit-check/commit-check
-        rev: v2.6.0
+        rev: v2.10.2
         hooks:
           - id: check-no-force-push
             stages: [pre-push]
