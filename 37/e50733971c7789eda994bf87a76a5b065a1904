@@ -1,0 +1,23 @@
+README.rst
+  s_bb965166e482f4::t_8f825a1bc3e36b 236-264
+examples/README.md
+  s_bb965166e482f4::t_1b638e6b3130c4 1-8
+examples/gitlab-ci.yml
+  s_bb965166e482f4::t_f5300ef158b079 1-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "37e50733971c7789eda994bf87a76a5b065a1904",
+  "prompts": {},
+  "sessions": {
+    "s_bb965166e482f4": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019f47fd-e39f-74d2-bcc7-6d6aa4468864",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
