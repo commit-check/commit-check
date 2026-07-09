@@ -708,6 +708,23 @@ class TestSignoffValidator:
             result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
+    @patch("commit_check.engine.get_commit_info")
+    @pytest.mark.benchmark
+    def test_default_signoff_skips_ignored_author(self, mock_get_commit_info):
+        """Signoff check is skipped when the author is in ignore_authors.
+
+        A commit with no signoff would normally fail, but an ignored author
+        (e.g. a bot) should bypass the signoff check just like every other
+        commit check.
+        """
+        mock_get_commit_info.return_value = "dependabot[bot]"
+        validator = SignoffValidator(self._default_signoff_rule())
+        config = {"commit": {"ignore_authors": ["dependabot[bot]"]}}
+        context = ValidationContext(stdin_text="chore: bump dep", config=config)
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
     @pytest.mark.benchmark
     def test_signoff_validator_missing_signoff(self):
         """Test SignoffValidator with missing signoff."""
