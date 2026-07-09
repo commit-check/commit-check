@@ -1,0 +1,72 @@
+# GitLab CI template for commit-check
+#
+# Copy this file to your repository as .gitlab-ci.yml, or include it as a
+# template if you have a multi-project setup:
+#
+#   include:
+#     - local: examples/gitlab-ci.yml
+#
+# Requirements:
+#   - Python 3.10+ (available on most GitLab runners)
+#   - A Git checkout with full fetch depth (required for merge-base checks)
+#
+# Configuration priority:
+#   CLI args (in this file) > environment variables > cchk.toml > defaults
+# See https://commit-check.github.io/commit-check/configuration.html
+
+variables:
+  # --- Check toggles ---
+  CCHK_MESSAGE: "true"
+  CCHK_BRANCH: "true"
+  CCHK_AUTHOR_NAME: "false"
+  CCHK_AUTHOR_EMAIL: "false"
+
+  # --- Optional environment variable overrides ---
+  # CCHK_SUBJECT_CAPITALIZED: "true"
+  # CCHK_REQUIRE_SIGNED_OFF_BY: "true"
+  # CCHK_AI_ATTRIBUTION: "forbid"
+  # CCHK_ALLOW_COMMIT_TYPES: "feat,fix,docs,chore"
+  # CCHK_SUBJECT_MAX_LENGTH: "72"
+
+commit-check:
+  stage: verify
+  image: python:3.12-slim
+  script:
+    # Install commit-check
+    - pip install --quiet commit-check
+
+    # Run checks on the latest commit (CI_COMMIT_SHA)
+    - >
+      commit-check
+      --message
+      $([ "$CCHK_BRANCH" = "true" ] && echo "--branch" || true)
+      $([ "$CCHK_AUTHOR_NAME" = "true" ] && echo "--author-name" || true)
+      $([ "$CCHK_AUTHOR_EMAIL" = "true" ] && echo "--author-email" || true)
+      --no-banner
+  only:
+    - merge_requests
+    - main
+  except:
+    variables:
+      - $CI_MERGE_REQUEST_TITLE =~ /^WIP:/  # Skip for draft MRs
+
+# --- Merge request (PR) variant: check all commits in the MR ---
+commit-check-all-commits:
+  stage: verify
+  image: python:3.12-slim
+  variables:
+    GIT_DEPTH: 0  # Fetch all history for merge-base checks
+  script:
+    - pip install --quiet commit-check
+
+    # Iterate over all commits in the merge request
+    - >
+      for sha in $(git rev-list origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME..HEAD);
+      do
+        echo "Checking commit $sha..."
+        commit-check --message --no-banner <<< "$(git log --format=%B -n 1 $sha)" ||
+          FAILED=1
+      done
+      exit ${FAILED:-0}
+  only:
+    - merge_requests

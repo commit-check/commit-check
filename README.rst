@@ -233,6 +233,35 @@ Piping ``git push`` into ``commit-check`` is not a prevention mechanism. The
 push has already been started, and standard ``git push`` output does not carry
 the pre-push ref metadata that ``commit-check`` uses.
 
+CI/CD Platforms
+---------------
+
+Commit Check can be used with any CI/CD platform that can run Python.
+
+GitLab CI
+~~~~~~~~~
+
+A ready-to-use GitLab CI template is available:
+
+.. code-block:: bash
+
+    # .gitlab-ci.yml
+    include:
+      - local: examples/gitlab-ci.yml
+
+Copy `examples/gitlab-ci.yml <examples/gitlab-ci.yml>`_ to your repository
+or reference it directly. The template supports merge request pipelines,
+per-commit validation, and environment-variable-based configuration.
+
+See the `example file <examples/gitlab-ci.yml>`_ for the full template.
+
+GitHub Actions
+~~~~~~~~~~~~~~
+
+For GitHub Actions, use the dedicated
+`commit-check-action <https://github.com/commit-check/commit-check-action>`_
+which provides PR comments, job summaries, and PR title validation out of the box.
+
 AI-Native Usage
 ---------------
 
