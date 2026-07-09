@@ -1,0 +1,24 @@
+README.md
+  s_f4a88c5541888c::t_71ecf67ab9f292 1-79,81-479
+  s_f4a88c5541888c::t_7cbee8eb2a4f12 80
+docs/index.rst
+  s_f4a88c5541888c::t_e40567928dde8b 1-8,11,20,23
+pyproject.toml
+  s_f4a88c5541888c::t_fb94123cf89c42 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "de7571043464bcfd43a09118939deca0305cd414",
+  "prompts": {},
+  "sessions": {
+    "s_f4a88c5541888c": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019f493f-a1ca-7c7c-ad96-bb9112c53ec3",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
