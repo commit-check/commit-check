@@ -680,8 +680,7 @@ class TestSignoffValidator:
         validator = SignoffValidator(self._default_signoff_rule())
         context = ValidationContext(
             stdin_text=(
-                "chore: bump dep\n\n"
-                "Signed-off-by: dependabot[bot] <support@github.com>"
+                "chore: bump dep\n\nSigned-off-by: dependabot[bot] <support@github.com>"
             )
         )
 
