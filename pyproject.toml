@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "commit-check"
 description = "Check commit message formatting, branch naming, commit author, email, and more."
-readme = "README.rst"
+readme = "README.md"
 keywords = ["commit conventions", "conventional commits", "conventional branch", "branch naming", "commit-check", "message", "lint message", "devops"]
 license = "MIT"
 authors = [

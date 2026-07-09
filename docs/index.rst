@@ -1,29 +1,23 @@
-.. include:: ../README.rst
+commit-check documentation
+=========================
+
+**Commit Check** is a lightweight policy engine for Git commit metadata.
+
+It validates commit messages, branch names, author identity, signoff trailers,
+AI attribution policy, and push safety — using one versioned TOML policy across
+local hooks, CI, GitHub Actions, and AI automation.
 
 .. toctree::
-   :hidden:
+   :caption: Guide
 
-   self
    what-is-new
    configuration
    example
    migration
    troubleshoot
-   changelog
 
 .. toctree::
-   :hidden:
+   :caption: Reference
 
    cli_args
-
-.. .. automodule:: commit_check.main
-..     :members:
-
-.. .. automodule:: commit_check.branch
-..     :members:
-
-.. .. automodule:: commit_check.commit
-..     :members:
-
-.. .. automodule:: commit_check.config
-..     :members:
+   changelog
