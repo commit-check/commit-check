@@ -1,0 +1,19 @@
+ROADMAP.md
+  s_bb965166e482f4::t_a26c26a9777bb4 1-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "778b74af5d6b48d3963764bbb04ccfe50812aa7f",
+  "prompts": {},
+  "sessions": {
+    "s_bb965166e482f4": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019f47fd-e39f-74d2-bcc7-6d6aa4468864",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
