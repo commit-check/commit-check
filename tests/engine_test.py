@@ -23,7 +23,7 @@ from commit_check.engine import (
     ForcePushValidator,
     AiAttributionValidator,
 )
-from commit_check.rule_builder import ValidationRule
+from commit_check.rule_builder import ValidationRule, RuleBuilder
 
 # String constants used across tests (defined once to avoid duplication)
 GIT_CONFIG_VALUE = "commit_check.engine.get_git_config_value"
@@ -648,6 +648,18 @@ class TestSubjectLengthValidator:
 
 
 class TestSignoffValidator:
+    @staticmethod
+    def _default_signoff_rule():
+        """Build the require_signed_off_by rule from the default catalog regex.
+
+        Unlike the tests that pass an inline regex, this exercises the actual
+        default pattern shipped in rules_catalog, so a regression in that
+        pattern is caught here.
+        """
+        builder = RuleBuilder({"commit": {"require_signed_off_by": True}})
+        rules = builder.build_all_rules()
+        return next(r for r in rules if r.check == "require_signed_off_by")
+
     @pytest.mark.benchmark
     def test_signoff_validator_valid(self):
         """Test SignoffValidator with valid signoff."""
@@ -661,6 +673,40 @@ class TestSignoffValidator:
 
         result = validator.validate(context)
         assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_default_signoff_accepts_bot_name(self):
+        """Default regex accepts a bracketed bot name such as dependabot[bot]."""
+        validator = SignoffValidator(self._default_signoff_rule())
+        context = ValidationContext(
+            stdin_text=(
+                "chore: bump dep\n\nSigned-off-by: dependabot[bot] <support@github.com>"
+            )
+        )
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_default_signoff_accepts_regular_name(self):
+        """Default regex accepts a regular name and email signoff."""
+        validator = SignoffValidator(self._default_signoff_rule())
+        context = ValidationContext(
+            stdin_text="feat: add feature\n\nSigned-off-by: John Doe <john@example.com>"
+        )
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_default_signoff_rejects_missing_signoff(self):
+        """Default regex rejects a message without any signoff trailer."""
+        validator = SignoffValidator(self._default_signoff_rule())
+        context = ValidationContext(stdin_text="feat: add feature")
+
+        with patch("commit_check.util._print_failure"):
+            result = validator.validate(context)
+        assert result == ValidationResult.FAIL
 
     @pytest.mark.benchmark
     def test_signoff_validator_missing_signoff(self):
