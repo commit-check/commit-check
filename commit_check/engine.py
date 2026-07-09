@@ -493,7 +493,7 @@ class SignoffValidator(BaseValidator):
     """Validates that commit messages contain required signoff trailer."""
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        if self._should_skip_validation(context):
+        if self._should_skip_commit_validation(context):
             return ValidationResult.PASS
 
         message = self._get_commit_message(context)
