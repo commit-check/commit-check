@@ -406,21 +406,21 @@ are platform-native server-side enforcement.  Custom Git hooks and the
 `pre-commit` framework are integration mechanisms, so the last column
 reflects a DIY approach rather than built-in product features.
 
-| Feature | Commit Check | commitlint | YACC\[^2\] | GitHub Rulesets | Custom hooks |
+| Feature | Commit Check | commitlint | YACC[^2] | GitHub Rulesets | Custom hooks |
 |---|---|---|---|---|---|
-| Conventional Commits enforcement | ✅ | ✅ | Partial | Partial\[^4\] | DIY |
-| Branch naming validation | ✅ | ❌ | ✅ | ✅\[^4\] | DIY |
+| Conventional Commits enforcement | ✅ | ✅ | Partial | Partial[^4] | DIY |
+| Branch naming validation | ✅ | ❌ | ✅ | ✅[^4] | DIY |
 | Force push blocking | ✅ | ❌ | ❌ | ✅ | DIY |
-| Author name / email validation | ✅ | ❌ | ✅ | ✅\[^4\] | DIY |
-| Signed-off-by trailer enforcement | ✅ | Partial\[^1\] | ❌ | ❌ | DIY |
-| Co-author ignore list | ✅ | ❌ | Partial\[^3\] | ❌ | DIY |
+| Author name / email validation | ✅ | ❌ | ✅ | ✅[^4] | DIY |
+| Signed-off-by trailer enforcement | ✅ | Partial[^1] | ❌ | ❌ | DIY |
+| Co-author ignore list | ✅ | ❌ | Partial[^3] | ❌ | DIY |
 | Organization-level shared config | ✅ | ✅ | ✅ | ✅ | DIY |
 | Zero-config defaults | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Works without Node.js | ✅ | ❌ | ✅ | ✅ | Depends |
 | Native TOML configuration | ✅ | ❌ | ❌ | ❌ | Depends |
 | Git hook / pre-commit integration | ✅ | Partial | ❌ | ❌ | ✅ |
 | CI/CD-friendly configuration | ✅ | Partial | ❌ | ❌ | DIY |
-| Open source & free | ✅ | ✅ | ❌ | ❌\[^5\] | ✅ |
+| Open source & free | ✅ | ✅ | ❌ | ❌[^5] | ✅ |
 | Client-side (pre-commit) enforcement | ✅ | ✅ | ❌ | ❌ | ✅ |
 | AI-native (JSON API + Python SDK) | ✅ | ❌ | ❌ | ❌ | ❌ |
 
@@ -447,24 +447,24 @@ feedback.
 capability with custom Git hooks or `pre-commit` scripts, but it is not
 provided as a turnkey policy layer.
 
-\[^1\]: `commitlint` provides a community `signed-off-by` rule
-(`@commitlint/rule-signed-off-by`) that must be installed and configured
-separately; it is not part of the default
-`@commitlint/config-conventional` preset.
+[^1]: `commitlint` provides a community `signed-off-by` rule
+    (`@commitlint/rule-signed-off-by`) that must be installed and configured
+    separately; it is not part of the default
+    `@commitlint/config-conventional` preset.
 
-\[^2\]: [Yet Another Commit Checker](https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker)
-is a paid Bitbucket Server / Data Center plugin (server-side pre-receive hook and merge check).
+[^2]: [Yet Another Commit Checker](https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker)
+    is a paid Bitbucket Server / Data Center plugin (server-side pre-receive hook and merge check).
 
-\[^3\]: YACC can exclude commits from specific Bitbucket users, user groups,
-or service users (bots), but does not parse `Co-authored-by:` trailers in commit messages.
+[^3]: YACC can exclude commits from specific Bitbucket users, user groups,
+    or service users (bots), but does not parse `Co-authored-by:` trailers in commit messages.
 
-\[^4\]: GitHub Rulesets enforce these via regex patterns in push rulesets
-(metadata restrictions).  They are regex-based and do not understand
-Conventional Commits or Conventional Branch semantics.
+[^4]: GitHub Rulesets enforce these via regex patterns in push rulesets
+    (metadata restrictions).  They are regex-based and do not understand
+    Conventional Commits or Conventional Branch semantics.
 
-\[^5\]: GitHub Rulesets require a GitHub plan.  Push rulesets (metadata
-restrictions) require Team or Enterprise plans for private/internal repos;
-branch/tag rulesets are available on Free plans for public repos.
+[^5]: GitHub Rulesets require a GitHub plan.  Push rulesets (metadata
+    restrictions) require Team or Enterprise plans for private/internal repos;
+    branch/tag rulesets are available on Free plans for public repos.
 
 ## Versioning
 
