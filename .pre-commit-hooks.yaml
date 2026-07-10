@@ -2,7 +2,6 @@
   name: check commit message
   description: ensures commit message to match regex
   entry: commit-check
-  args: [--message]
   stages: [commit-msg]
   pass_filenames: true
   language: python
