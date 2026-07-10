@@ -351,41 +351,6 @@ def _get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _get_message_content(
-    message_arg: str | None, stdin_reader: StdinReader
-) -> str | None:
-    """Get commit message content from argument, file, or stdin."""
-    if message_arg is None:
-        return None
-
-    # If message_arg is empty string (from nargs="?", const=""), try stdin first, then git
-    if message_arg == "":
-        # Try reading from stdin if available
-        stdin_content = stdin_reader.read_piped_input()
-        if stdin_content:
-            return stdin_content
-
-        # Fallback to latest git commit message
-        try:
-            from commit_check.util import get_commit_info
-
-            return get_commit_info("B")  # Full commit message
-        except Exception:
-            print(
-                "Error: No commit message provided and unable to read from git",
-                file=sys.stderr,
-            )
-            return None
-
-    # If message_arg is a file path, read from file
-    try:
-        with open(message_arg, "r", encoding="utf-8") as f:
-            return f.read().strip()
-    except (OSError, IOError) as e:
-        print(f"Error reading message file '{message_arg}': {e}", file=sys.stderr)
-        return None
-
-
 def _resolve_commit_message_source(
     args: argparse.Namespace,
     stdin_reader: StdinReader,

@@ -7,7 +7,6 @@ import os
 from commit_check.main import (
     StdinReader,
     _build_pre_commit_push_input,
-    _get_message_content,
     main,
 )
 
@@ -148,69 +147,6 @@ class TestStdinReader:
         mocker.patch("sys.stdin.read", side_effect=IOError("Input error"))
         result = reader.read_piped_input()
         assert result is None
-
-
-class TestGetMessageContent:
-    """Test _get_message_content function edge cases."""
-
-    @pytest.mark.benchmark
-    def test_get_message_content_empty_string_with_stdin(self, mocker):
-        """Test _get_message_content with empty string and stdin available."""
-        reader = StdinReader()
-
-        mocker.patch.object(reader, "read_piped_input", return_value="piped message")
-        result = _get_message_content("", reader)
-        assert result == "piped message"
-
-    @pytest.mark.benchmark
-    def test_get_message_content_empty_string_no_stdin_with_git(self, mocker):
-        """Test _get_message_content with empty string, no stdin, fallback to git."""
-        reader = StdinReader()
-
-        mocker.patch.object(reader, "read_piped_input", return_value=None)
-        mocker.patch(
-            "commit_check.util.get_commit_info", return_value="git commit message"
-        )
-        result = _get_message_content("", reader)
-        assert result == "git commit message"
-
-    @pytest.mark.benchmark
-    def test_get_message_content_empty_string_no_stdin_git_fails(self, capsys, mocker):
-        """Test _get_message_content with empty string, no stdin, git fails."""
-        reader = StdinReader()
-
-        mocker.patch.object(reader, "read_piped_input", return_value=None)
-        mocker.patch(
-            "commit_check.util.get_commit_info", side_effect=Exception("Git error")
-        )
-        result = _get_message_content("", reader)
-        assert result is None
-
-        captured = capsys.readouterr()
-        assert "Error: No commit message provided" in captured.err
-
-    @pytest.mark.benchmark
-    def test_get_message_content_file_read_error(self, capsys):
-        """Test _get_message_content with file read error."""
-        reader = StdinReader()
-
-        result = _get_message_content("/nonexistent/file.txt", reader)
-        assert result is None
-
-        captured = capsys.readouterr()
-        assert "Error reading message file" in captured.err
-
-    @pytest.mark.benchmark
-    def test_get_message_content_file_permission_error(self, capsys, mocker):
-        """Test _get_message_content with file permission error."""
-        reader = StdinReader()
-
-        mocker.patch("builtins.open", side_effect=PermissionError("Permission denied"))
-        result = _get_message_content("protected_file.txt", reader)
-        assert result is None
-
-        captured = capsys.readouterr()
-        assert "Error reading message file" in captured.err
 
 
 class TestMainFunctionEdgeCases:
