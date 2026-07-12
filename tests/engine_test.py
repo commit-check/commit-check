@@ -1426,6 +1426,38 @@ class TestCoAuthorSkip:
         # Skipped — the commit's author (dependabot[bot]) is in ignore_authors
         assert result == ValidationResult.PASS
 
+    @pytest.mark.benchmark
+    def test_author_in_ignore_list_falls_back_to_git_config_when_commit_info_empty(
+        self,
+    ):
+        """
+        Coverage guard: when no stdin/commit_file and get_commit_info("an")
+        returns empty, _resolve_current_author must fall back to
+        get_git_config_value("user.name").
+        """
+        rule = ValidationRule(
+            check="message",
+            regex=CONVENTIONAL_COMMIT_REGEX,
+            error=BAD_COMMIT_MSG,
+            suggest=USE_CONVENTIONAL_FORMAT,
+        )
+        validator = CommitMessageValidator(rule)
+
+        config = {"commit": {"ignore_authors": ["Developer Bot"]}}
+        context = ValidationContext(config=config)
+
+        with (
+            patch("commit_check.engine.has_commits", return_value=True),
+            patch("commit_check.engine.get_commit_info", return_value=""),
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="Developer Bot",
+            ),
+        ):
+            result = validator.validate(context)
+        # Skipped — fallback author (Developer Bot) is in ignore_authors
+        assert result == ValidationResult.PASS
+
 
 class TestGetGitConfigValue:
     """Tests for the AuthorValidator using git config (Issue #298)."""

@@ -200,9 +200,10 @@ class BaseValidator(ABC):
         or if no stdin_text and no commits exist.
         """
         ignore_authors = context.config.get("branch", {}).get("ignore_authors", [])
-        current_author = self._resolve_current_author(context)
-        if current_author and current_author in ignore_authors:
-            return True
+        if ignore_authors:
+            current_author = self._resolve_current_author(context)
+            if current_author and current_author in ignore_authors:
+                return True
         return context.stdin_text is None and not has_commits()
 
     def _print_failure(self, actual_value: str, regex_or_constraint: str = "") -> None:
