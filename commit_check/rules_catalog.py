@@ -100,7 +100,7 @@ COMMIT_RULES = [
     ),
     RuleCatalogEntry(
         check="require_signed_off_by",
-        regex=r"Signed-off-by:.*[A-Za-z0-9]\s+<.+@.+>",
+        regex=r"Signed-off-by: .+ <.+@.+>",
         error="Signed-off-by not found in latest commit",
         suggest="git commit --amend --signoff or use --signoff on commit",
     ),

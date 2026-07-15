@@ -23,7 +23,7 @@ from commit_check.engine import (
     ForcePushValidator,
     AiAttributionValidator,
 )
-from commit_check.rule_builder import ValidationRule
+from commit_check.rule_builder import ValidationRule, RuleBuilder
 
 # String constants used across tests (defined once to avoid duplication)
 GIT_CONFIG_VALUE = "commit_check.engine.get_git_config_value"
@@ -245,14 +245,16 @@ class TestBranchValidator:
         assert result == ValidationResult.FAIL
 
     @patch("commit_check.engine.get_branch_name")
+    @patch("commit_check.engine.get_git_config_value")
     @patch("commit_check.engine.get_commit_info")
     @pytest.mark.benchmark
     def test_branch_validator_ignored_author(
-        self, mock_get_commit_info, mock_get_branch_name
+        self, mock_get_commit_info, mock_get_git_config_value, mock_get_branch_name
     ):
         """Test BranchValidator skips validation for ignored author."""
         mock_get_branch_name.return_value = "invalid-branch-name"
         mock_get_commit_info.return_value = "ignored"
+        mock_get_git_config_value.return_value = ""
         rule = ValidationRule(check="branch", regex=r"^(feature|bugfix|hotfix)/.+")
         validator = BranchValidator(rule)
         config = {"branch": {"ignore_authors": ["ignored"]}}
@@ -378,6 +380,62 @@ class TestBranchValidator:
         result = validator.validate(context)
         assert result == ValidationResult.PASS
 
+    @pytest.mark.benchmark
+    def test_branch_ignored_author_uses_git_config_when_stdin(self):
+        """
+        Bug-fix guard (branch side): when stdin is piped, the last commit's
+        author must NOT suppress branch-author skip logic.
+        """
+        rule = ValidationRule(check="branch", regex=r"^feature/")
+        validator = BranchValidator(rule)
+
+        config = {"branch": {"ignore_authors": ["pre-commit-ci[bot]"]}}
+        context = ValidationContext(stdin_text="feature/valid-branch", config=config)
+
+        with (
+            patch(
+                "commit_check.engine.get_commit_info", return_value="pre-commit-ci[bot]"
+            ),
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="Alice Developer",
+            ),
+        ):
+            result = validator.validate(context)
+        # Not skipped — Alice is not in ignore_authors for branches
+        assert result == ValidationResult.PASS  # branch name is valid
+
+    @pytest.mark.benchmark
+    def test_branch_ignored_author_uses_commit_author_when_no_stdin(self):
+        """
+        Regression guard (branch side): when validating the current branch
+        (no stdin), the check must use the last commit's author for
+        ignore_authors, not the local git config.
+        """
+        rule = ValidationRule(check="branch", regex=r"^feature/")
+        validator = BranchValidator(rule)
+
+        config = {"branch": {"ignore_authors": ["dependabot[bot]"]}}
+        context = ValidationContext(config=config)
+
+        with (
+            patch("commit_check.engine.has_commits", return_value=True),
+            patch(
+                "commit_check.engine.get_branch_name",
+                return_value="dependabot/go-mod-upgrade",
+            ),
+            patch(
+                "commit_check.engine.get_commit_info", return_value="dependabot[bot]"
+            ),
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="Alice Developer",
+            ),
+        ):
+            result = validator.validate(context)
+        # Skipped — the commit's author (dependabot[bot]) is in ignore_authors
+        assert result == ValidationResult.PASS
+
 
 class TestAuthorValidator:
     @patch("commit_check.engine.has_commits")
@@ -428,11 +486,15 @@ class TestAuthorValidator:
         assert mock_get_commit_info.call_args_list[0][0][0] == "an"
         assert mock_get_commit_info.call_args_list[2][0][0] == "ae"
 
+    @patch("commit_check.engine.get_git_config_value")
     @patch("commit_check.engine.get_commit_info")
     @pytest.mark.benchmark
-    def test_author_validator_ignored_author(self, mock_get_commit_info):
+    def test_author_validator_ignored_author(
+        self, mock_get_commit_info, mock_get_git_config_value
+    ):
         """Test AuthorValidator skips validation for ignored author."""
         mock_get_commit_info.return_value = "ignored"
+        mock_get_git_config_value.return_value = ""
         rule = ValidationRule(check="author_name", regex=r"^[A-Z][a-z]+ [A-Z][a-z]+$")
         validator = AuthorValidator(rule)
         config = {"commit": {"ignore_authors": ["ignored"]}}
@@ -648,6 +710,18 @@ class TestSubjectLengthValidator:
 
 
 class TestSignoffValidator:
+    @staticmethod
+    def _default_signoff_rule():
+        """Build the require_signed_off_by rule from the default catalog regex.
+
+        Unlike the tests that pass an inline regex, this exercises the actual
+        default pattern shipped in rules_catalog, so a regression in that
+        pattern is caught here.
+        """
+        builder = RuleBuilder({"commit": {"require_signed_off_by": True}})
+        rules = builder.build_all_rules()
+        return next(r for r in rules if r.check == "require_signed_off_by")
+
     @pytest.mark.benchmark
     def test_signoff_validator_valid(self):
         """Test SignoffValidator with valid signoff."""
@@ -658,6 +732,57 @@ class TestSignoffValidator:
         context = ValidationContext(
             stdin_text="feat: add feature\n\nSigned-off-by: John Doe <john@example.com>"
         )
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_default_signoff_accepts_bot_name(self):
+        """Default regex accepts a bracketed bot name such as dependabot[bot]."""
+        validator = SignoffValidator(self._default_signoff_rule())
+        context = ValidationContext(
+            stdin_text=(
+                "chore: bump dep\n\nSigned-off-by: dependabot[bot] <support@github.com>"
+            )
+        )
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_default_signoff_accepts_regular_name(self):
+        """Default regex accepts a regular name and email signoff."""
+        validator = SignoffValidator(self._default_signoff_rule())
+        context = ValidationContext(
+            stdin_text="feat: add feature\n\nSigned-off-by: John Doe <john@example.com>"
+        )
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_default_signoff_rejects_missing_signoff(self):
+        """Default regex rejects a message without any signoff trailer."""
+        validator = SignoffValidator(self._default_signoff_rule())
+        context = ValidationContext(stdin_text="feat: add feature")
+
+        with patch("commit_check.util._print_failure"):
+            result = validator.validate(context)
+        assert result == ValidationResult.FAIL
+
+    @patch("commit_check.engine.get_commit_info")
+    @pytest.mark.benchmark
+    def test_default_signoff_skips_ignored_author(self, mock_get_commit_info):
+        """Signoff check is skipped when the author is in ignore_authors.
+
+        A commit with no signoff would normally fail, but an ignored author
+        (e.g. a bot) should bypass the signoff check just like every other
+        commit check.
+        """
+        mock_get_commit_info.return_value = "dependabot[bot]"
+        validator = SignoffValidator(self._default_signoff_rule())
+        config = {"commit": {"ignore_authors": ["dependabot[bot]"]}}
+        context = ValidationContext(stdin_text="chore: bump dep", config=config)
 
         result = validator.validate(context)
         assert result == ValidationResult.PASS
@@ -1230,6 +1355,109 @@ class TestCoAuthorSkip:
         finally:
             os.unlink(commit_file)
 
+    @pytest.mark.benchmark
+    def test_author_in_ignore_list_uses_git_config_when_stdin(self):
+        """
+        Bug-fix guard: when stdin is piped, the last commit's author
+        (e.g. a bot in the ignore list) must NOT suppress validation.
+        The check should use the local git config user.name instead.
+        """
+        rule = ValidationRule(
+            check="message",
+            regex=CONVENTIONAL_COMMIT_REGEX,
+            error=BAD_COMMIT_MSG,
+            suggest=USE_CONVENTIONAL_FORMAT,
+        )
+        validator = CommitMessageValidator(rule)
+
+        # HEAD author is "pre-commit-ci[bot]" (in ignore list)
+        # but local git config user.name is a human (not ignored)
+        # stdin is a proper conventional commit — validation should run.
+        message = "fix: resolve edge case in parser"
+        config = {"commit": {"ignore_authors": ["pre-commit-ci[bot]"]}}
+        context = ValidationContext(stdin_text=message, config=config)
+
+        with (
+            patch(
+                "commit_check.engine.get_commit_info", return_value="pre-commit-ci[bot]"
+            ),
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="Alice Developer",
+            ),
+        ):
+            result = validator.validate(context)
+        # Not skipped — Alice is not in ignore_authors, so validation runs
+        assert result == ValidationResult.PASS  # message is valid
+
+    @pytest.mark.benchmark
+    def test_author_in_ignore_list_uses_commit_author_when_no_stdin(self):
+        """
+        Regression guard: when validating an existing commit (no stdin),
+        the check must use the commit's own author, not the local git config.
+        A bot commit should still be skipped when its author is ignore_authors,
+        even if user.name is a human.
+        """
+        rule = ValidationRule(
+            check="message",
+            regex=CONVENTIONAL_COMMIT_REGEX,
+            error=BAD_COMMIT_MSG,
+            suggest=USE_CONVENTIONAL_FORMAT,
+        )
+        validator = CommitMessageValidator(rule)
+
+        # HEAD author is "dependabot[bot]" (in ignore list)
+        # local git config user.name is a human (not ignored)
+        # no stdin — validating the last commit as-is.
+        config = {"commit": {"ignore_authors": ["dependabot[bot]"]}}
+        context = ValidationContext(config=config)
+
+        with (
+            patch("commit_check.engine.has_commits", return_value=True),
+            patch(
+                "commit_check.engine.get_commit_info", return_value="dependabot[bot]"
+            ),
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="Alice Developer",
+            ),
+        ):
+            result = validator.validate(context)
+        # Skipped — the commit's author (dependabot[bot]) is in ignore_authors
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_author_in_ignore_list_falls_back_to_git_config_when_commit_info_empty(
+        self,
+    ):
+        """
+        Coverage guard: when no stdin/commit_file and get_commit_info("an")
+        returns empty, _resolve_current_author must fall back to
+        get_git_config_value("user.name").
+        """
+        rule = ValidationRule(
+            check="message",
+            regex=CONVENTIONAL_COMMIT_REGEX,
+            error=BAD_COMMIT_MSG,
+            suggest=USE_CONVENTIONAL_FORMAT,
+        )
+        validator = CommitMessageValidator(rule)
+
+        config = {"commit": {"ignore_authors": ["Developer Bot"]}}
+        context = ValidationContext(config=config)
+
+        with (
+            patch("commit_check.engine.has_commits", return_value=True),
+            patch("commit_check.engine.get_commit_info", return_value=""),
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="Developer Bot",
+            ),
+        ):
+            result = validator.validate(context)
+        # Skipped — fallback author (Developer Bot) is in ignore_authors
+        assert result == ValidationResult.PASS
+
 
 class TestGetGitConfigValue:
     """Tests for the AuthorValidator using git config (Issue #298)."""
@@ -1684,7 +1912,10 @@ class TestAiAttributionValidator:
         config = {"commit": {"ignore_authors": ["bot-user"]}}
         context = ValidationContext(stdin_text=message, config=config)
 
-        with patch("commit_check.engine.get_commit_info", return_value="bot-user"):
+        with (
+            patch("commit_check.engine.get_commit_info", return_value="bot-user"),
+            patch("commit_check.engine.get_git_config_value", return_value=""),
+        ):
             result = validator.validate(context)
         assert result == ValidationResult.PASS  # Skipped due to ignored author
 
