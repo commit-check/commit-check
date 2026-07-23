@@ -129,7 +129,7 @@ class BaseValidator(ABC):
 
         if context.commit_file:
             try:
-                with open(context.commit_file, "r") as f:
+                with open(context.commit_file, "r", encoding="utf-8") as f:
                     return f.read().strip()
             except FileNotFoundError:
                 pass
@@ -170,7 +170,7 @@ class BaseValidator(ABC):
             return context.stdin_text
         if context.commit_file:
             try:
-                with open(context.commit_file, "r") as f:
+                with open(context.commit_file, "r", encoding="utf-8") as f:
                     return f.read()
             except (OSError, IOError):
                 pass
@@ -269,7 +269,7 @@ class SubjectValidator(BaseValidator):
 
         if context.commit_file:
             try:
-                with open(context.commit_file, "r") as f:
+                with open(context.commit_file, "r", encoding="utf-8") as f:
                     message = f.read().strip()
                     return message.split("\n")[0]
             except FileNotFoundError:
