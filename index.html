@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#overview" class="md-skip">
+        <a href="#table-of-contents" class="md-skip">
           Skip to content
         </a>
       
@@ -610,6 +610,16 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Table of Contents</span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#overview" class="md-nav__link">
     
     <span class="md-ellipsis">
@@ -759,6 +769,32 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#check-commit-message-failed" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Check Commit Message Failed</span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-branch-naming-failed" class="md-nav__link">
+    
+    <span class="md-ellipsis">
+      <span>Check Branch Naming Failed</span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -828,37 +864,42 @@
 
 
 <h1 id="commit-check">Commit Check<a class="headerlink" href="#commit-check" title="Link to this heading">¶</a></h1>
-<p><a class="reference external" href="https://github.com/commit-check/commit-check/actions/workflows/main.yml"><img alt="CI" src="https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg" /></a> <a class="reference external" href="https://sonarcloud.io/summary/new_code?id=commit-check_commit-check"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&amp;metric=alert_status" /></a> <a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="PyPI" src="https://img.shields.io/pypi/v/commit-check?logo=python&amp;logoColor=white&amp;color=%232c9ccd" /></a> <a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="PyPI Downloads" src="https://img.shields.io/pypi/dm/commit-check?color=%232c9ccd" /></a> <a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/commit-check?logo=python&amp;logoColor=white" /></a> <a class="reference external" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white&amp;color=%232c9ccd" /></a> <a class="reference external" href="https://codecov.io/gh/commit-check/commit-check"><img alt="CodeCov" src="https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT" /></a></p>
-<nav class="contents local" id="table-of-contents">
-<p class="topic-title">Table of Contents</p>
+<p><a class="reference external" href="https://github.com/commit-check/commit-check/actions/workflows/main.yml"><img alt="CI" src="https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg" /></a>
+<a class="reference external" href="https://sonarcloud.io/summary/new_code?id=commit-check_commit-check"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&amp;metric=alert_status" /></a>
+<a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="PyPI" src="https://img.shields.io/pypi/v/commit-check?logo=python&amp;logoColor=white&amp;color=%232c9ccd" /></a>
+<a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="PyPI Downloads" src="https://img.shields.io/pypi/dm/commit-check?color=%232c9ccd" /></a>
+<a class="reference external" href="https://pypi.org/project/commit-check/"><img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/commit-check?logo=python&amp;logoColor=white" /></a>
+<a class="reference external" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white&amp;color=%232c9ccd" /></a>
+<a class="reference external" href="https://codecov.io/gh/commit-check/commit-check"><img alt="CodeCov" src="https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT" /></a>
+<a class="reference external" href="https://api.securityscorecards.dev/projects/github.com/commit-check/commit-check"><img alt="OpenSSF Scorecard" src="https://api.securityscorecards.dev/projects/github.com/commit-check/commit-check/badge" /></a></p>
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference internal" href="#overview" id="id8">Overview</a></p></li>
-<li><p><a class="reference internal" href="#quick-start" id="id9">Quick Start</a></p></li>
-<li><p><a class="reference internal" href="#installation" id="id10">Installation</a></p></li>
-<li><p><a class="reference internal" href="#configuration" id="id11">Configuration</a></p>
+<li><p><a class="reference external" href="#overview">Overview</a></p></li>
+<li><p><a class="reference external" href="#quick-start">Quick Start</a></p></li>
+<li><p><a class="reference external" href="#installation">Installation</a></p></li>
+<li><p><a class="reference external" href="#configuration">Configuration</a></p>
 <ul>
-<li><p><a class="reference internal" href="#use-default-configuration" id="id12">Use Default Configuration</a></p></li>
-<li><p><a class="reference internal" href="#use-custom-configuration-file" id="id13">Use Custom Configuration File</a></p></li>
-<li><p><a class="reference internal" href="#organization-level-configuration-inherit-from" id="id14">Organization-Level Configuration (inherit_from)</a></p></li>
-<li><p><a class="reference internal" href="#use-cli-arguments-or-environment-variables" id="id15">Use CLI Arguments or Environment Variables</a></p></li>
-<li><p><a class="reference internal" href="#check-push-safety" id="id16">Check Push Safety</a></p></li>
+<li><p><a class="reference external" href="#use-default-configuration">Use Default Configuration</a></p></li>
+<li><p><a class="reference external" href="#use-custom-configuration-file">Use Custom Configuration File</a></p></li>
+<li><p><a class="reference external" href="#organization-level-configuration-inherit_from">Organization-Level Configuration (inherit_from)</a></p></li>
+<li><p><a class="reference external" href="#use-cli-arguments-or-environment-variables">Use CLI Arguments or Environment Variables</a></p></li>
+<li><p><a class="reference external" href="#check-push-safety">Check Push Safety</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#ai-native-usage" id="id17">AI-Native Usage</a></p>
+<li><p><a class="reference external" href="#ai-native-usage">AI-Native Usage</a></p>
 <ul>
-<li><p><a class="reference internal" href="#machine-readable-json-output-format-json" id="id18">Machine-Readable JSON Output (<code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">json</span></code>)</a></p></li>
-<li><p><a class="reference internal" href="#quieter-human-readable-output" id="id19">Quieter Human-Readable Output</a></p></li>
-<li><p><a class="reference internal" href="#python-api-no-subprocess-required" id="id20">Python API (no subprocess required)</a></p></li>
+<li><p><a class="reference external" href="#machine-readable-json-output---format-json">Machine-Readable JSON Output (–format json)</a></p></li>
+<li><p><a class="reference external" href="#quieter-human-readable-output">Quieter Human-Readable Output</a></p></li>
+<li><p><a class="reference external" href="#python-api-no-subprocess-required">Python API (no subprocess required)</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#examples" id="id21">Examples</a></p></li>
-<li><p><a class="reference internal" href="#badging-your-repository" id="id22">Badging your repository</a></p></li>
-<li><p><a class="reference internal" href="#why-commit-check" id="id23">Why Commit Check?</a></p></li>
-<li><p><a class="reference internal" href="#versioning" id="id24">Versioning</a></p></li>
-<li><p><a class="reference internal" href="#have-question-or-feedback" id="id25">Have question or feedback?</a></p></li>
-<li><p><a class="reference internal" href="#license" id="id26">License</a></p></li>
+<li><p><a class="reference external" href="#examples">Examples</a></p></li>
+<li><p><a class="reference external" href="#badging-your-repository">Badging your repository</a></p></li>
+<li><p><a class="reference external" href="#why-commit-check">Why Commit Check?</a></p></li>
+<li><p><a class="reference external" href="#versioning">Versioning</a></p></li>
+<li><p><a class="reference external" href="#have-question-or-feedback">Have question or feedback?</a></p></li>
+<li><p><a class="reference external" href="#license">License</a></p></li>
 </ul>
-</nav>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
 <p><strong>Commit Check</strong> is a lightweight policy engine for Git commit metadata.</p>
 <p>It validates commit messages, branch names, author identity, signoff trailers,
@@ -869,10 +910,8 @@ local hooks, CI, GitHub Actions, and AI automation.</p>
 <li><p><strong>Multiple enforcement points:</strong> CLI, pre-commit, CI / GitHub Actions</p></li>
 <li><p><strong>Machine-readable output:</strong> JSON + Python API for automation and AI agents</p></li>
 </ul>
-<img alt="commit-check demo" class="align-center" src="https://github.com/commit-check/commit-check/raw/main/docs/demo.gif" />
-<div class="line-block">
-<div class="line"><br /></div>
-</div>
+<p><img alt="commit-check demo" src="https://github.com/commit-check/commit-check/raw/main/docs/demo.gif" /></p>
+<br>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading">¶</a></h2>
 <p><strong>1. Install and run with zero configuration:</strong></p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>commit-check
@@ -916,7 +955,7 @@ For more information, see the <a class="reference external" href="https://commit
 <li><p>The default configuration is lenient — it only checks whether commit messages follow the <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">Conventional Commits</a> specification and branch names follow the <a class="reference external" href="https://conventionalbranch.org#summary">Conventional Branch</a> convention.</p></li>
 </ul>
 <h3 id="use-custom-configuration-file">Use Custom Configuration File<a class="headerlink" href="#use-custom-configuration-file" title="Link to this heading">¶</a></h3>
-<p>To customize the behavior, create a configuration file named <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> in your repository’s root directory or in the <code class="docutils literal notranslate"><span class="pre">.github</span></code> folder, e.g., <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/cchk.toml">cchk.toml</a> or <code class="docutils literal notranslate"><span class="pre">.github/cchk.toml</span></code>.</p>
+<p>To customize the behavior, create a configuration file named <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">commit-check.toml</span></code> in your repository’s root directory or in the <code class="docutils literal notranslate"><span class="pre">.github</span></code> folder, e.g., <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/cchk.toml"><code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code></a> or <code class="docutils literal notranslate"><span class="pre">.github/cchk.toml</span></code>.</p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="k">[commit]</span>
 <span class="c1"># https://www.conventionalcommits.org</span>
 <span class="n">conventional_commits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
@@ -938,14 +977,14 @@ For more information, see the <a class="reference external" href="https://commit
 <span class="n">allow_branch_types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;feature&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;bugfix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;hotfix&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;release&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;chore&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;feat&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fix&quot;</span><span class="p">]</span>
 </code></pre></div>
 </div>
-<div class="tip admonition">
-<p class="admonition-title">Tip</p>
-<p><strong>IDE Autocompletion</strong></p>
+<blockquote>
+<div><p>[!TIP]
+<strong>IDE Autocompletion</strong></p>
 <p>commit-check’s TOML schema is published on <a class="reference external" href="https://www.schemastore.org/">SchemaStore</a>,
 so editors like VS Code (via <a class="reference external" href="https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml">Even Better TOML</a>),
 PyCharm, and IntelliJ provide autocompletion, validation, and documentation
 tooltips for <code class="docutils literal notranslate"><span class="pre">cchk.toml</span></code> out of the box — no manual schema path configuration needed.</p>
-</div>
+</div></blockquote>
 <h3 id="organization-level-configuration-inherit-from">Organization-Level Configuration (inherit_from)<a class="headerlink" href="#organization-level-configuration-inherit-from" title="Link to this heading">¶</a></h3>
 <p>Share a base configuration across all repositories in your organization using <code class="docutils literal notranslate"><span class="pre">inherit_from</span></code>:</p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># .github/cchk.toml — inherits from org-level config, then overrides locally</span>
@@ -1003,9 +1042,12 @@ commit-check<span class="w"> </span>--no-force-push
 <span class="w">        </span><span class="nt">stages</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pre-push</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 </div>
-<p>Piping <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span></code> into <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> is not a prevention mechanism. The
+<blockquote>
+<div><p>[!NOTE]
+Piping <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span></code> into <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> is not a prevention mechanism. The
 push has already been started, and standard <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span></code> output does not carry
 the pre-push ref metadata that <code class="docutils literal notranslate"><span class="pre">commit-check</span></code> uses.</p>
+</div></blockquote>
 <h2 id="ai-native-usage">AI-Native Usage<a class="headerlink" href="#ai-native-usage" title="Link to this heading">¶</a></h2>
 <p>Commit Check is designed to be consumed by AI agents, LLM toolchains, and
 automation scripts — not just by humans reading terminal output.</p>
@@ -1129,7 +1171,7 @@ forward to an LLM, or chain into larger workflows:</p>
 </ul>
 <p>For detailed usage instructions including pre-commit hooks, CLI commands, and STDIN examples, see the <a class="reference external" href="https://commit-check.github.io/commit-check/example.html">Usage Examples documentation</a>.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Link to this heading">¶</a></h2>
-<p>Check Commit Message Failed</p>
+<h3 id="check-commit-message-failed">Check Commit Message Failed<a class="headerlink" href="#check-commit-message-failed" title="Link to this heading">¶</a></h3>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
   (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
@@ -1148,7 +1190,7 @@ The commit message should follow Conventional Commits. See https://www.conventio
 Suggest: Use &lt;type&gt;(&lt;scope&gt;): &lt;description&gt;, where &lt;type&gt; is one of: feat, fix, docs, style, refactor, test, chore, ci
 </code></pre></div>
 </div>
-<p>Check Branch Naming Failed</p>
+<h3 id="check-branch-naming-failed">Check Branch Naming Failed<a class="headerlink" href="#check-branch-naming-failed" title="Link to this heading">¶</a></h3>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>Commit rejected by Commit-Check.
 
   (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
@@ -1170,13 +1212,12 @@ Suggest: Use &lt;type&gt;/&lt;description&gt; with allowed types or add branch n
 <p>More examples see <a class="reference external" href="https://commit-check.github.io/commit-check/example.html">example documentation</a>.</p>
 <h2 id="badging-your-repository">Badging your repository<a class="headerlink" href="#badging-your-repository" title="Link to this heading">¶</a></h2>
 <p>You can add a badge to your repository to show that you use commit-check!</p>
-<a class="reference external image-reference" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white&amp;color=%232c9ccd" />
-</a>
-<p>Markdown</p>
+<p><a class="reference external" href="https://github.com/commit-check/commit-check"><img alt="commit-check" src="https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white&amp;color=%232c9ccd" /></a></p>
+<p><strong>Markdown</strong></p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>[![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white&amp;color=%232c9ccd)](https://github.com/commit-check/commit-check)
 </code></pre></div>
 </div>
-<p>reStructuredText</p>
+<p><strong>reStructuredText</strong></p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code>.. image:: https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&amp;logoColor=white&amp;color=%232c9ccd
     :target: https://github.com/commit-check/commit-check
     :alt: commit-check
@@ -1189,19 +1230,11 @@ are platform-native server-side enforcement.  Custom Git hooks and the
 <code class="docutils literal notranslate"><span class="pre">pre-commit</span></code> framework are integration mechanisms, so the last column
 reflects a DIY approach rather than built-in product features.</p>
 <table class="docutils data align-default">
-<colgroup>
-<col style="width: 20.0%" />
-<col style="width: 14.0%" />
-<col style="width: 14.0%" />
-<col style="width: 14.0%" />
-<col style="width: 14.0%" />
-<col style="width: 24.0%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Feature</p></th>
 <th class="head"><p>Commit Check</p></th>
 <th class="head"><p>commitlint</p></th>
-<th class="head"><p>YACC <a class="footnote-reference brackets" href="#f2" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></th>
+<th class="head"><p>YACC<a class="footnote-reference brackets" href="#id9" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></th>
 <th class="head"><p>GitHub Rulesets</p></th>
 <th class="head"><p>Custom hooks</p></th>
 </tr>
@@ -1211,14 +1244,14 @@ reflects a DIY approach rather than built-in product features.</p>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>Partial</p></td>
-<td><p>Partial <a class="footnote-reference brackets" href="#f4" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a></p></td>
+<td><p>Partial<a class="footnote-reference brackets" href="#id11" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a></p></td>
 <td><p>DIY</p></td>
 </tr>
 <tr class="row-odd"><td><p>Branch naming validation</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
 <td><p>✅</p></td>
-<td><p>✅ <a class="footnote-reference brackets" href="#f4" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a></p></td>
+<td><p>✅<a class="footnote-reference brackets" href="#id11" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a></p></td>
 <td><p>DIY</p></td>
 </tr>
 <tr class="row-even"><td><p>Force push blocking</p></td>
@@ -1232,12 +1265,12 @@ reflects a DIY approach rather than built-in product features.</p>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
 <td><p>✅</p></td>
-<td><p>✅ <a class="footnote-reference brackets" href="#f4" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a></p></td>
+<td><p>✅<a class="footnote-reference brackets" href="#id11" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a></p></td>
 <td><p>DIY</p></td>
 </tr>
 <tr class="row-even"><td><p>Signed-off-by trailer enforcement</p></td>
 <td><p>✅</p></td>
-<td><p>Partial <a class="footnote-reference brackets" href="#f1" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a></p></td>
+<td><p>Partial<a class="footnote-reference brackets" href="#id8" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a></p></td>
 <td><p>❌</p></td>
 <td><p>❌</p></td>
 <td><p>DIY</p></td>
@@ -1245,7 +1278,7 @@ reflects a DIY approach rather than built-in product features.</p>
 <tr class="row-odd"><td><p>Co-author ignore list</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
-<td><p>Partial <a class="footnote-reference brackets" href="#f3" id="id6" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+<td><p>Partial<a class="footnote-reference brackets" href="#id10" id="id6" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
 <td><p>❌</p></td>
 <td><p>DIY</p></td>
 </tr>
@@ -1295,7 +1328,7 @@ reflects a DIY approach rather than built-in product features.</p>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>❌</p></td>
-<td><p>❌ <a class="footnote-reference brackets" href="#f5" id="id7" role="doc-noteref"><span class="fn-bracket">[</span>5<span class="fn-bracket">]</span></a></p></td>
+<td><p>❌<a class="footnote-reference brackets" href="#id12" id="id7" role="doc-noteref"><span class="fn-bracket">[</span>5<span class="fn-bracket">]</span></a></p></td>
 <td><p>✅</p></td>
 </tr>
 <tr class="row-odd"><td><p>Client-side (pre-commit) enforcement</p></td>
@@ -1314,15 +1347,15 @@ reflects a DIY approach rather than built-in product features.</p>
 </tr>
 </tbody>
 </table>
-<p><em>For</em> <code class="docutils literal notranslate"><span class="pre">commitlint</span></code>, organization-level shared config is typically delivered via
+<p>For <code class="docutils literal notranslate"><span class="pre">commitlint</span></code>, organization-level shared config is typically delivered via
 shareable config packages or local files.</p>
-<p><em>For</em> <code class="docutils literal notranslate"><span class="pre">YACC</span></code> (Yet Another Commit Checker), conventional commit enforcement
+<p>For <code class="docutils literal notranslate"><span class="pre">YACC</span></code> (Yet Another Commit Checker), conventional commit enforcement
 is regex-based rather than Conventional Commits-aware; author validation
 verifies committer name/email against Bitbucket user accounts or custom regex;
 the plugin supports global → project → repository config inheritance;
 it is a server-side pre-receive hook and merge check (no client-side
 pre-commit), is paid (per-user licensing), and runs on Java (no Node.js needed).</p>
-<p><em>For</em> <a class="reference external" href="https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets">GitHub Rulesets</a>, push rulesets enforce metadata via regex patterns —
+<p>For <a class="reference external" href="https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets">GitHub Rulesets</a>, push rulesets enforce metadata via regex patterns —
 they can match branch/tag names, commit messages, and author email, but have
 no awareness of Conventional Commits semantics (types, scopes, breaking-change
 markers).  They apply server-side and require a GitHub plan (Free for public
@@ -1332,50 +1365,38 @@ feedback.</p>
 <p><code class="docutils literal notranslate"><span class="pre">DIY</span></code> means you can implement a
 capability with custom Git hooks or <code class="docutils literal notranslate"><span class="pre">pre-commit</span></code> scripts, but it is not
 provided as a turnkey policy layer.</p>
-<aside class="footnote-list brackets">
-<aside class="footnote brackets" id="f1" role="doc-footnote">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">1</a><span class="fn-bracket">]</span></span>
-<p><code class="docutils literal notranslate"><span class="pre">commitlint</span></code> provides a community <code class="docutils literal notranslate"><span class="pre">signed-off-by</span></code> rule
-(<code class="docutils literal notranslate"><span class="pre">&#64;commitlint/rule-signed-off-by</span></code>) that must be installed and configured
-separately; it is not part of the default
-<code class="docutils literal notranslate"><span class="pre">&#64;commitlint/config-conventional</span></code> preset.</p>
-</aside>
-<aside class="footnote brackets" id="f2" role="doc-footnote">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">2</a><span class="fn-bracket">]</span></span>
-<p><a class="reference external" href="https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker">Yet Another Commit Checker</a>
-is a paid Bitbucket Server / Data Center plugin (server-side pre-receive hook
-and merge check).</p>
-</aside>
-<aside class="footnote brackets" id="f3" role="doc-footnote">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">3</a><span class="fn-bracket">]</span></span>
-<p>YACC can exclude commits from specific Bitbucket users, user groups,
-or service users (bots), but does not parse <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span></code> trailers
-in commit messages.</p>
-</aside>
-<aside class="footnote brackets" id="f4" role="doc-footnote">
-<span class="label"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></span>
-<span class="backrefs">(<a role="doc-backlink" href="#id2">1</a>,<a role="doc-backlink" href="#id3">2</a>,<a role="doc-backlink" href="#id4">3</a>)</span>
-<p>GitHub Rulesets enforce these via regex patterns in push rulesets
-(metadata restrictions).  They are regex-based and do not understand
-Conventional Commits or Conventional Branch semantics.</p>
-</aside>
-<aside class="footnote brackets" id="f5" role="doc-footnote">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id7">5</a><span class="fn-bracket">]</span></span>
-<p>GitHub Rulesets require a GitHub plan.  Push rulesets (metadata
-restrictions) require Team or Enterprise plans for private/internal repos;
-branch/tag rulesets are available on Free plans for public repos.</p>
-</aside>
-</aside>
 <h2 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Link to this heading">¶</a></h2>
 <p>Versioning follows <a class="reference external" href="https://semver.org/">Semantic Versioning</a>.</p>
 <h2 id="have-question-or-feedback">Have question or feedback?<a class="headerlink" href="#have-question-or-feedback" title="Link to this heading">¶</a></h2>
 <p>Please post to <a class="reference external" href="https://github.com/commit-check/commit-check/issues">issues</a> or start a <a class="reference external" href="https://github.com/commit-check/commit-check/discussions">discussion</a> for feedback, feature requests, or bug reports.</p>
 <h2 id="license">License<a class="headerlink" href="#license" title="Link to this heading">¶</a></h2>
-<p>This project is released under the <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/LICENSE">MIT License</a></p>
+<p>This project is released under the <a class="reference external" href="https://github.com/commit-check/commit-check/blob/main/LICENSE">MIT License</a>.</p>
 <div class="toctree-wrapper compound">
 </div>
-<div class="toctree-wrapper compound">
-</div>
+<hr class="footnotes docutils" />
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id8" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">1</a><span class="fn-bracket">]</span></span>
+<p><code class="docutils literal notranslate"><span class="pre">commitlint</span></code> provides a community <code class="docutils literal notranslate"><span class="pre">signed-off-by</span></code> rule (<code class="docutils literal notranslate"><span class="pre">&#64;commitlint/rule-signed-off-by</span></code>) that must be installed and configured separately; it is not part of the default <code class="docutils literal notranslate"><span class="pre">&#64;commitlint/config-conventional</span></code> preset.</p>
+</aside>
+<aside class="footnote brackets" id="id9" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">2</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker">Yet Another Commit Checker</a> is a paid Bitbucket Server / Data Center plugin (server-side pre-receive hook and merge check).</p>
+</aside>
+<aside class="footnote brackets" id="id10" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">3</a><span class="fn-bracket">]</span></span>
+<p>YACC can exclude commits from specific Bitbucket users, user groups, or service users (bots), but does not parse <code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span></code> trailers in commit messages.</p>
+</aside>
+<aside class="footnote brackets" id="id11" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id2">1</a>,<a role="doc-backlink" href="#id3">2</a>,<a role="doc-backlink" href="#id4">3</a>)</span>
+<p>GitHub Rulesets enforce these via regex patterns in push rulesets (metadata restrictions). They are regex-based and do not understand Conventional Commits or Conventional Branch semantics.</p>
+</aside>
+<aside class="footnote brackets" id="id12" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id7">5</a><span class="fn-bracket">]</span></span>
+<p>GitHub Rulesets require a GitHub plan. Push rulesets (metadata restrictions) require Team or Enterprise plans for private/internal repos; branch/tag rulesets are available on Free plans for public repos.</p>
+</aside>
+</aside>
 
 
 
