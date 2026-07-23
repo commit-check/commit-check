@@ -616,7 +616,7 @@ Versioning follows `Semantic Versioning <https://semver.org/>`_.
 Have question or feedback?
 --------------------------
 
-Please post to `issues <https://github.com/commit-check/commit-check/issues>`_ for feedback, feature requests, or bug reports.
+Please post to `issues <https://github.com/commit-check/commit-check/issues>`_ or start a `discussion <https://github.com/commit-check/commit-check/discussions>`_ for feedback, feature requests, or bug reports.
 
 License
 -------
