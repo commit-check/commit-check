@@ -63,118 +63,148 @@ class TestIntegration:
     # ── message validation ──────────────────────────────────────────────
 
     @pytest.mark.benchmark
-    def test_message_valid_conventional_commit(self, repo: Path):
+    def test_message_valid_conventional_commit(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
         """A valid conventional commit message passes --message."""
         _git("commit", "--allow-empty", "-m", "feat: add new endpoint", cwd=repo)
-
-        sys.argv = ["commit-check", "--message"]
+        monkeypatch.setattr(sys, "argv", ["commit-check", "--message"])
         assert main() == 0
 
     @pytest.mark.benchmark
-    def test_message_invalid_commit_fails(self, repo: Path):
+    def test_message_invalid_commit_fails(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
         """A commit that does not follow Conventional Commits fails."""
         _git("config", "user.name", "Dev User", cwd=repo)
         _git("commit", "--allow-empty", "-m", "bad commit message", cwd=repo)
-
-        sys.argv = ["commit-check", "--message"]
+        monkeypatch.setattr(sys, "argv", ["commit-check", "--message"])
         assert main() == 1
 
     @pytest.mark.benchmark
-    def test_message_with_custom_config(self, repo: Path):
+    def test_message_with_custom_config(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
         """cchk.toml in the repo root is picked up automatically."""
         (repo / "cchk.toml").write_text("[commit]\nsubject_imperative = false\n")
         _git("config", "user.name", "Dev User", cwd=repo)
-        _git(
-            "commit",
-            "--allow-empty",
-            "-m",
-            "feat: added the feature",
-            cwd=repo,
-        )
+        _git("commit", "--allow-empty", "-m", "feat: added the feature", cwd=repo)
         # 'added' is not imperative, but cchk.toml disabled that check
-        sys.argv = ["commit-check", "--message"]
+        monkeypatch.setattr(sys, "argv", ["commit-check", "--message"])
         assert main() == 0
 
     # ── branch validation ───────────────────────────────────────────────
 
     @pytest.mark.benchmark
-    def test_branch_valid_conventional_branch(self, repo: Path):
+    def test_branch_valid_conventional_branch(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
         """A branch named feature/xxx passes --branch."""
         _git("checkout", "-b", "feature/add-streaming", cwd=repo)
-
-        sys.argv = ["commit-check", "--branch"]
+        monkeypatch.setattr(sys, "argv", ["commit-check", "--branch"])
         assert main() == 0
 
     @pytest.mark.benchmark
-    def test_branch_invalid_branch_fails(self, repo: Path):
+    def test_branch_invalid_branch_fails(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
         """An unconventionally-named branch fails --branch."""
         _git("checkout", "-b", "wrong-branch-name", cwd=repo)
-
-        sys.argv = ["commit-check", "--branch"]
+        monkeypatch.setattr(sys, "argv", ["commit-check", "--branch"])
         assert main() == 1
 
     # ── author validation ───────────────────────────────────────────────
 
     @pytest.mark.benchmark
-    def test_author_name_configured(self, repo: Path):
+    def test_author_name_configured(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
         """--author-name passes when user.name is set."""
         _git("config", "user.name", "Alice Smith", cwd=repo)
-        sys.argv = ["commit-check", "--author-name"]
+        monkeypatch.setattr(sys, "argv", ["commit-check", "--author-name"])
         assert main() == 0
 
     @pytest.mark.benchmark
-    def test_author_email_configured(self, repo: Path):
+    def test_author_email_configured(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
         """--author-email passes when user.email is set."""
         _git("config", "user.email", "alice@example.com", cwd=repo)
-        sys.argv = ["commit-check", "--author-email"]
+        monkeypatch.setattr(sys, "argv", ["commit-check", "--author-email"])
         assert main() == 0
 
     # ── combined checks ─────────────────────────────────────────────────
 
     @pytest.mark.benchmark
-    def test_full_validation_all_pass(self, repo: Path):
+    def test_full_validation_all_pass(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
         """message + branch + author all pass on a well-configured repo."""
         _git("checkout", "-b", "feature/add-streaming", cwd=repo)
         _git("config", "user.name", "Alice Smith", cwd=repo)
         _git("config", "user.email", "alice@example.com", cwd=repo)
-        _git(
-            "commit",
-            "--allow-empty",
-            "-m",
-            "feat: add streaming support",
-            cwd=repo,
+        _git("commit", "--allow-empty", "-m", "feat: add streaming support", cwd=repo)
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "commit-check",
+                "--message",
+                "--branch",
+                "--author-name",
+                "--author-email",
+            ],
         )
-
-        sys.argv = [
-            "commit-check",
-            "--message",
-            "--branch",
-            "--author-name",
-            "--author-email",
-        ]
         assert main() == 0
 
     @pytest.mark.benchmark
-    def test_full_validation_message_fails(self, repo: Path):
+    def test_full_validation_message_fails(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
         """Only the message fails; other checks still report individually."""
         _git("checkout", "-b", "feature/add-streaming", cwd=repo)
         _git("config", "user.name", "Alice Smith", cwd=repo)
         _git("config", "user.email", "alice@example.com", cwd=repo)
         _git("commit", "--allow-empty", "-m", "bad message", cwd=repo)
-
-        sys.argv = [
-            "commit-check",
-            "--message",
-            "--branch",
-            "--author-name",
-            "--author-email",
-        ]
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "commit-check",
+                "--message",
+                "--branch",
+                "--author-name",
+                "--author-email",
+            ],
+        )
         assert main() == 1
 
     # ── signoff validation ──────────────────────────────────────────────
 
     @pytest.mark.benchmark
-    def test_signoff_required_passes(self, repo: Path):
+    def test_signoff_required_passes(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
         """A commit with Signed-off-by trailer passes."""
         (repo / "cchk.toml").write_text("[commit]\nrequire_signed_off_by = true\n")
         _git(
@@ -184,34 +214,51 @@ class TestIntegration:
             "feat: add feature\n\nSigned-off-by: Test User <test@example.com>",
             cwd=repo,
         )
-
-        sys.argv = ["commit-check", "--message"]
+        monkeypatch.setattr(sys, "argv", ["commit-check", "--message"])
         assert main() == 0
 
     @pytest.mark.benchmark
-    def test_signoff_required_fails(self, repo: Path):
+    def test_signoff_required_fails(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
         """A commit without Signed-off-by trailer fails."""
         (repo / "cchk.toml").write_text("[commit]\nrequire_signed_off_by = true\n")
         _git("commit", "--allow-empty", "-m", "feat: add feature", cwd=repo)
-
-        sys.argv = ["commit-check", "--message"]
+        monkeypatch.setattr(sys, "argv", ["commit-check", "--message"])
         assert main() == 1
 
     # ── dry-run ─────────────────────────────────────────────────────────
 
     @pytest.mark.benchmark
-    def test_dry_run_always_passes(self, repo: Path):
+    def test_dry_run_always_passes(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
         """--dry-run forces exit code 0 even for invalid input."""
         _git("commit", "--allow-empty", "-m", "bad message", cwd=repo)
-        sys.argv = ["commit-check", "--message", "--dry-run"]
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            ["commit-check", "--message", "--dry-run"],
+        )
         assert main() == 0
 
     # ── json format ─────────────────────────────────────────────────────
 
     @pytest.mark.benchmark
-    def test_json_format_valid(self, repo: Path):
+    def test_json_format_valid(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
         """--format json produces parsable output on a valid commit."""
         _git("commit", "--allow-empty", "-m", "feat: add json support", cwd=repo)
-
-        sys.argv = ["commit-check", "--message", "--format", "json"]
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            ["commit-check", "--message", "--format", "json"],
+        )
         assert main() == 0
