@@ -130,7 +130,8 @@ conventional_branch = true
 allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
 ```
 
-> **Tip: IDE Autocompletion**
+> [!TIP]
+> **IDE Autocompletion**
 >
 > commit-check's TOML schema is published on [SchemaStore](https://www.schemastore.org/),
 > so editors like VS Code (via [Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml)),
@@ -207,9 +208,10 @@ repos:
         stages: [pre-push]
 ```
 
-Piping `git push` into `commit-check` is not a prevention mechanism. The
-push has already been started, and standard `git push` output does not carry
-the pre-push ref metadata that `commit-check` uses.
+> [!NOTE]
+> Piping `git push` into `commit-check` is not a prevention mechanism. The
+> push has already been started, and standard `git push` output does not carry
+> the pre-push ref metadata that `commit-check` uses.
 
 ## AI-Native Usage
 
@@ -429,21 +431,21 @@ reflects a DIY approach rather than built-in product features.
 
 [github-rulesets]: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets
 
-| Feature | Commit Check | commitlint | YACC <sup id="f2">[\[2\]](#fn2)</sup> | GitHub Rulesets | Custom hooks |
+| Feature | Commit Check | commitlint | YACC[^2] | GitHub Rulesets | Custom hooks |
 |---------|-------------|------------|------|-----------------|-------------|
-| Conventional Commits enforcement | ✅ | ✅ | Partial | Partial <sup id="f4">[\[4\]](#fn4)</sup> | DIY |
-| Branch naming validation | ✅ | ❌ | ✅ | ✅ <sup id="f4">[\[4\]](#fn4)</sup> | DIY |
+| Conventional Commits enforcement | ✅ | ✅ | Partial | Partial[^4] | DIY |
+| Branch naming validation | ✅ | ❌ | ✅ | ✅[^4] | DIY |
 | Force push blocking | ✅ | ❌ | ❌ | ✅ | DIY |
-| Author name / email validation | ✅ | ❌ | ✅ | ✅ <sup id="f4">[\[4\]](#fn4)</sup> | DIY |
-| Signed-off-by trailer enforcement | ✅ | Partial <sup id="f1">[\[1\]](#fn1)</sup> | ❌ | ❌ | DIY |
-| Co-author ignore list | ✅ | ❌ | Partial <sup id="f3">[\[3\]](#fn3)</sup> | ❌ | DIY |
+| Author name / email validation | ✅ | ❌ | ✅ | ✅[^4] | DIY |
+| Signed-off-by trailer enforcement | ✅ | Partial[^1] | ❌ | ❌ | DIY |
+| Co-author ignore list | ✅ | ❌ | Partial[^3] | ❌ | DIY |
 | Organization-level shared config | ✅ | ✅ | ✅ | ✅ | DIY |
 | Zero-config defaults | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Works without Node.js | ✅ | ❌ | ✅ | ✅ | Depends |
 | Native TOML configuration | ✅ | ❌ | ❌ | ❌ | Depends |
 | Git hook / pre-commit integration | ✅ | Partial | ❌ | ❌ | ✅ |
 | CI/CD-friendly configuration | ✅ | Partial | ❌ | ❌ | DIY |
-| Open source & free | ✅ | ✅ | ❌ | ❌ <sup id="f5">[\[5\]](#fn5)</sup> | ✅ |
+| Open source & free | ✅ | ✅ | ❌ | ❌[^5] | ✅ |
 | Client-side (pre-commit) enforcement | ✅ | ✅ | ❌ | ❌ | ✅ |
 | AI-native (JSON API + Python SDK) | ✅ | ❌ | ❌ | ❌ | ❌ |
 
@@ -469,31 +471,15 @@ feedback.
 capability with custom Git hooks or `pre-commit` scripts, but it is not
 provided as a turnkey policy layer.
 
-<b id="fn1">[1]</b> `commitlint` provides a community `signed-off-by` rule
-(`@commitlint/rule-signed-off-by`) that must be installed and configured
-separately; it is not part of the default
-`@commitlint/config-conventional` preset.
-[↩](#f1)
+[^1]: `commitlint` provides a community `signed-off-by` rule (`@commitlint/rule-signed-off-by`) that must be installed and configured separately; it is not part of the default `@commitlint/config-conventional` preset.
 
-<b id="fn2">[2]</b> [Yet Another Commit Checker](https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker)
-is a paid Bitbucket Server / Data Center plugin (server-side pre-receive hook
-and merge check).
-[↩](#f2)
+[^2]: [Yet Another Commit Checker](https://marketplace.atlassian.com/apps/1211854/yet-another-commit-checker) is a paid Bitbucket Server / Data Center plugin (server-side pre-receive hook and merge check).
 
-<b id="fn3">[3]</b> YACC can exclude commits from specific Bitbucket users, user groups,
-or service users (bots), but does not parse `Co-authored-by:` trailers
-in commit messages.
-[↩](#f3)
+[^3]: YACC can exclude commits from specific Bitbucket users, user groups, or service users (bots), but does not parse `Co-authored-by:` trailers in commit messages.
 
-<b id="fn4">[4]</b> GitHub Rulesets enforce these via regex patterns in push rulesets
-(metadata restrictions).  They are regex-based and do not understand
-Conventional Commits or Conventional Branch semantics.
-[↩](#f4)
+[^4]: GitHub Rulesets enforce these via regex patterns in push rulesets (metadata restrictions). They are regex-based and do not understand Conventional Commits or Conventional Branch semantics.
 
-<b id="fn5">[5]</b> GitHub Rulesets require a GitHub plan.  Push rulesets (metadata
-restrictions) require Team or Enterprise plans for private/internal repos;
-branch/tag rulesets are available on Free plans for public repos.
-[↩](#f5)
+[^5]: GitHub Rulesets require a GitHub plan. Push rulesets (metadata restrictions) require Team or Enterprise plans for private/internal repos; branch/tag rulesets are available on Free plans for public repos.
 
 ## Versioning
 
