@@ -18,12 +18,22 @@ author = "shenxianpeng"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 extensions = [
+    "myst_parser",
     "sphinx_immaterial",
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
     "sphinx_issues",
 ]
+
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
+
+# Treat bare URLs as external links so MyST does not warn about TOC
+# anchor references (e.g. `(#overview)`) being unresolved cross-references.
+myst_all_links_external = True
 
 autodoc_member_order = "bysource"
 
