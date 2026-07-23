@@ -175,6 +175,13 @@ class TestConfigMergerParseEnvVars:
         assert config["branch"]["conventional_branch"] is False
         assert config["branch"]["allow_branch_types"] == ["feature", "bugfix"]
 
+    def test_parse_author_pattern_env_vars(self, monkeypatch):
+        monkeypatch.setenv("CCHK_AUTHOR_NAME_PATTERN", r"^[A-Z][a-z]+ [A-Z][a-z]+$")
+        monkeypatch.setenv("CCHK_AUTHOR_EMAIL_PATTERN", r"^.+@company\.com$")
+        config = ConfigMerger.parse_env_vars()
+        assert config["commit"]["author_name_pattern"] == r"^[A-Z][a-z]+ [A-Z][a-z]+$"
+        assert config["commit"]["author_email_pattern"] == r"^.+@company\.com$"
+
     def test_invalid_env_var_is_skipped(self, monkeypatch, capsys):
         monkeypatch.setenv("CCHK_SUBJECT_MAX_LENGTH", "invalid")
         config = ConfigMerger.parse_env_vars()

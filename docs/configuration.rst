@@ -274,12 +274,12 @@ Configuration can also be set via environment variables with the ``CCHK_`` prefi
    * - ``ignore_authors = ["bot"]``
      - ``CCHK_IGNORE_AUTHORS=bot,user``
      - ``--ignore-authors=bot,user``
-   * - ``author_email_pattern=^[-a-zA-Z0-9]*\.[-a-zA-Z0-9]*@.*$``
-     - ``CCHK_AUTHOR_EMAIL_PATTERN=^[-a-zA-Z0-9]*\.[-a-zA-Z0-9]*@.*$``
-     - ``--author-email-pattern=^[-a-zA-Z0-9]*\.[-a-zA-Z0-9]*@.*$``
-   * - ``author_name_pattern=^[A-Z]+[-a-zA-Z0-9]+ [A-Z]+[-a-zA-Z0-9]+$``
-     - ``CCHK_AUTHOR_NAME_PATTERN=^[A-Z]+[-a-zA-Z0-9]+ [A-Z]+[-a-zA-Z0-9]+$``
-     - ``--author-name-pattern=^[A-Z]+[-a-zA-Z0-9]+ [A-Z]+[-a-zA-Z0-9]+$``
+   * - ``author_email_pattern=^.+@example\.com$``
+     - ``CCHK_AUTHOR_EMAIL_PATTERN=^.+@example\.com$``
+     - ``--author-email-pattern=^.+@example\.com$``
+   * - ``author_name_pattern=^.+ .+$``
+     - ``CCHK_AUTHOR_NAME_PATTERN=^.+ .+$``
+     - ``--author-name-pattern=^.+ .+$``
    * - ``conventional_branch = true``
      - ``CCHK_CONVENTIONAL_BRANCH=true``
      - ``--conventional-branch=true``
@@ -407,12 +407,12 @@ Options Table Description
      - author_email_pattern
      - str
      - ^.+@.+$
-     - Custom regex pattern for author email check
+     - Custom regex for the author email check. When empty, the built-in default pattern is used.
    * - commit
      - author_name_pattern
      - str
-     - "" (disabled)
-     - Custom regex pattern for author name check
+     - "" (built-in default)
+     - Custom regex for the author name check. When empty, the built-in default pattern is used (it is not disabled).
    * - commit
      - require_signed_off_by
      - bool
