@@ -311,6 +311,20 @@ def _get_parser() -> argparse.ArgumentParser:
         "'forbid' rejects commits with known AI tool signatures.",
     )
 
+    commit_group.add_argument(
+        "--author-email-pattern",
+        type=str,
+        default=None,
+        help="regex to check author email",
+    )
+
+    commit_group.add_argument(
+        "--author-name-pattern",
+        type=str,
+        default=None,
+        help="regex to check author name",
+    )
+
     # Branch configuration options
     branch_group = parser.add_argument_group(
         "branch options", "Configuration options for --branch validation"
