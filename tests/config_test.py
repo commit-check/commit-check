@@ -308,7 +308,9 @@ missing closing bracket
             f.flush()
 
             try:
-                with pytest.raises(Exception):  # Should raise a TOML parsing error
+                with pytest.raises(
+                    Exception, match="[Ee]xpected"
+                ):  # Should raise a TOML parsing error
                     load_config(f.name)
             finally:
                 os.unlink(f.name)
