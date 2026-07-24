@@ -11,8 +11,9 @@ usage: commit-check [-h] [-v] [-c CONFIG] [-m] [-b] [-n] [-e] [-d]
                     [--allow-fixup-commits BOOL] [--allow-wip-commits BOOL]
                     [--require-body BOOL] [--require-signed-off-by BOOL]
                     [--ignore-authors LIST] [--ai-attribution POLICY]
-                    [--conventional-branch BOOL] [--allow-branch-types LIST]
-                    [--allow-branch-names LIST]
+                    [--author-email-pattern REGEX]
+                    [--author-name-pattern REGEX] [--conventional-branch BOOL]
+                    [--allow-branch-types LIST] [--allow-branch-names LIST]
                     [--require-rebase-target BRANCH]
                     [--branch-ignore-authors LIST]
                     [commit_msg_file]
@@ -112,6 +113,10 @@ commit message options:
                         AI attribution policy: ignore (default) or forbid.
                         'forbid' rejects commits with known AI tool
                         signatures.
+  --author-email-pattern REGEX
+                        regex to check author email (requires --author-email)
+  --author-name-pattern REGEX
+                        regex to check author name (requires --author-name)
 
 branch options:
   Configuration options for --branch validation

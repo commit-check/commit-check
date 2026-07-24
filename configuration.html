@@ -1077,6 +1077,14 @@ commit-check<span class="w"> </span>--branch<span class="w"> </span>--allow-bran
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_IGNORE_AUTHORS=bot,user</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--ignore-authors=bot,user</span></code></p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">author_email_pattern=^.+&#64;example\.com$</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_AUTHOR_EMAIL_PATTERN=^.+&#64;example\.com$</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--author-email-pattern=^.+&#64;example\.com$</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">author_name_pattern=^.+</span> <span class="pre">.+$</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCHK_AUTHOR_NAME_PATTERN=^.+</span> <span class="pre">.+$</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--author-name-pattern=^.+</span> <span class="pre">.+$</span></code></p></td>
+</tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">conventional_branch</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CCHK_CONVENTIONAL_BRANCH=true</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">--conventional-branch=true</span></code></p></td>
@@ -1215,6 +1223,20 @@ commit-check<span class="w"> </span>--message<span class="w"> </span>--subject-m
 <td><p>list[str]</p></td>
 <td><p>[] (none ignored)</p></td>
 <td><p>List of commit authors <strong>or co-authors</strong> (<code class="docutils literal notranslate"><span class="pre">Co-authored-by:</span></code> lines) to bypass all commit checks. Useful for bots (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;dependabot[bot]&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;coderabbitai[bot]&quot;</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p>commit</p></td>
+<td><p>author_email_pattern</p></td>
+<td><p>str</p></td>
+<td><p>^.+&#64;.+$</p></td>
+<td><p>Custom regex for the author email check. When empty, the built-in default pattern is used.
+This option only takes effect when the author_email check is enabled (<code class="docutils literal notranslate"><span class="pre">-e</span></code> / <code class="docutils literal notranslate"><span class="pre">--author-email</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p>commit</p></td>
+<td><p>author_name_pattern</p></td>
+<td><p>str</p></td>
+<td><p>“” (built-in default)</p></td>
+<td><p>Custom regex for the author name check. When empty, the built-in default pattern is used (it is not disabled).
+This option only takes effect when the author_name check is enabled (<code class="docutils literal notranslate"><span class="pre">-n</span></code> / <code class="docutils literal notranslate"><span class="pre">--author-name</span></code>).</p></td>
 </tr>
 <tr class="row-even"><td><p>commit</p></td>
 <td><p>require_signed_off_by</p></td>
