@@ -1,0 +1,14 @@
+README.md
+  h_95e33fbd4ab2d9 186-190
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "8113c6c045886427f13d07636d8c3aa9ba9a842e",
+  "prompts": {},
+  "humans": {
+    "h_95e33fbd4ab2d9": {
+      "author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
