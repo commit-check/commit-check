@@ -408,11 +408,13 @@ Options Table Description
      - str
      - ^.+@.+$
      - Custom regex for the author email check. When empty, the built-in default pattern is used.
+       This option only takes effect when the author_email check is enabled (``-e`` / ``--author-email``).
    * - commit
      - author_name_pattern
      - str
      - "" (built-in default)
      - Custom regex for the author name check. When empty, the built-in default pattern is used (it is not disabled).
+       This option only takes effect when the author_name check is enabled (``-n`` / ``--author-name``).
    * - commit
      - require_signed_off_by
      - bool

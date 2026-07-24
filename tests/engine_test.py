@@ -502,57 +502,6 @@ class TestAuthorValidator:
         result = validator.validate(context)
         assert result == ValidationResult.PASS
 
-
-class TestAuthorPatternConfig:
-    """Tests for configurable author_name_pattern / author_email_pattern.
-
-    Rules are built through RuleBuilder so the actual config resolution
-    (custom pattern override + fallback to the built-in catalog regex) is
-    exercised, not just an inline regex.
-    """
-
-    @staticmethod
-    def _author_rule(commit_config, check):
-        builder = RuleBuilder({"commit": commit_config})
-        rules = builder.build_all_rules()
-        return next(r for r in rules if r.check == check)
-
-    @staticmethod
-    def _validate(rule, author_value):
-        validator = AuthorValidator(rule)
-        with patch("commit_check.util._print_failure"):
-            return validator.validate(ValidationContext(stdin_text=author_value))
-
-    @pytest.mark.benchmark
-    def test_custom_name_pattern_pass_and_fail(self):
-        """A custom author_name_pattern accepts matches and rejects non-matches."""
-        rule = self._author_rule(
-            {"author_name_pattern": r"^[A-Z][a-z]+ [A-Z][a-z]+$"}, "author_name"
-        )
-        assert self._validate(rule, "Jane Doe") == ValidationResult.PASS
-        assert self._validate(rule, "jane") == ValidationResult.FAIL
-
-    @pytest.mark.benchmark
-    def test_custom_email_pattern_enforces_domain(self):
-        """A custom author_email_pattern can enforce a company domain."""
-        rule = self._author_rule(
-            {"author_email_pattern": r"^.+@company\.com$"}, "author_email"
-        )
-        assert self._validate(rule, "bob@company.com") == ValidationResult.PASS
-        assert self._validate(rule, "bob@gmail.com") == ValidationResult.FAIL
-
-    @pytest.mark.benchmark
-    def test_default_name_pattern_uses_builtin_regex(self):
-        """With no custom pattern, the built-in catalog regex still applies.
-
-        Regression guard: an empty/omitted author_name_pattern must not disable
-        the check — it should fall back to the shipped default so an invalid
-        name is still rejected.
-        """
-        rule = self._author_rule({}, "author_name")
-        assert self._validate(rule, "Jane Doe") == ValidationResult.PASS
-        assert self._validate(rule, "12345 !!!") == ValidationResult.FAIL
-
     @pytest.mark.benchmark
     def test_validate_author_with_allowed_list(self):
         """Test author validation with allowed list."""
@@ -605,6 +554,57 @@ class TestAuthorPatternConfig:
         ):
             author_value = validator._get_author_value(context)
             assert author_value == "test@example.com"
+
+
+class TestAuthorPatternConfig:
+    """Tests for configurable author_name_pattern / author_email_pattern.
+
+    Rules are built through RuleBuilder so the actual config resolution
+    (custom pattern override + fallback to the built-in catalog regex) is
+    exercised, not just an inline regex.
+    """
+
+    @staticmethod
+    def _author_rule(commit_config, check):
+        builder = RuleBuilder({"commit": commit_config})
+        rules = builder.build_all_rules()
+        return next(r for r in rules if r.check == check)
+
+    @staticmethod
+    def _validate(rule, author_value):
+        validator = AuthorValidator(rule)
+        with patch("commit_check.util._print_failure"):
+            return validator.validate(ValidationContext(stdin_text=author_value))
+
+    @pytest.mark.benchmark
+    def test_custom_name_pattern_pass_and_fail(self):
+        """A custom author_name_pattern accepts matches and rejects non-matches."""
+        rule = self._author_rule(
+            {"author_name_pattern": r"^[A-Z][a-z]+ [A-Z][a-z]+$"}, "author_name"
+        )
+        assert self._validate(rule, "Jane Doe") == ValidationResult.PASS
+        assert self._validate(rule, "jane") == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_custom_email_pattern_enforces_domain(self):
+        """A custom author_email_pattern can enforce a company domain."""
+        rule = self._author_rule(
+            {"author_email_pattern": r"^.+@company\.com$"}, "author_email"
+        )
+        assert self._validate(rule, "bob@company.com") == ValidationResult.PASS
+        assert self._validate(rule, "bob@gmail.com") == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_default_name_pattern_uses_builtin_regex(self):
+        """With no custom pattern, the built-in catalog regex still applies.
+
+        Regression guard: an empty/omitted author_name_pattern must not disable
+        the check — it should fall back to the shipped default so an invalid
+        name is still rejected.
+        """
+        rule = self._author_rule({}, "author_name")
+        assert self._validate(rule, "Jane Doe") == ValidationResult.PASS
+        assert self._validate(rule, "12345 !!!") == ValidationResult.FAIL
 
 
 class TestCommitTypeValidator:

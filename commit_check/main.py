@@ -315,14 +315,16 @@ def _get_parser() -> argparse.ArgumentParser:
         "--author-email-pattern",
         type=str,
         default=None,
-        help="regex to check author email",
+        metavar="REGEX",
+        help="regex to check author email (requires --author-email)",
     )
 
     commit_group.add_argument(
         "--author-name-pattern",
         type=str,
         default=None,
-        help="regex to check author name",
+        metavar="REGEX",
+        help="regex to check author name (requires --author-name)",
     )
 
     # Branch configuration options
