@@ -32,6 +32,14 @@ class StdinReader:
         return None
 
 
+def _reconfigure_io() -> None:
+    """Reconfigure stdout/stderr to UTF-8 so output never crashes on
+    terminals with legacy encodings (e.g. GBK on Chinese Windows)."""
+    for stream in (sys.stdout, sys.stderr, sys.stdin):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
+
 def _normalize_pre_commit_branch_ref(branch: str | None) -> str:
     """Return a full branch ref from a pre-commit branch environment value."""
     if not branch:
@@ -451,6 +459,7 @@ def _run_json_output(engine: ValidationEngine, context: ValidationContext) -> in
 
 def main() -> int:
     """The main entrypoint of commit-check program."""
+    _reconfigure_io()
     parser = _get_parser()
     args = parser.parse_args()
 

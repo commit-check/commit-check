@@ -895,3 +895,24 @@ class TestNoForcePushFlag:
         out, _ = capfd.readouterr()
         assert "--no-force-push" in out
         assert "current branch against its upstream" in out
+
+
+class TestReconfigureIO:
+    """Tests for _reconfigure_io()."""
+
+    @pytest.mark.benchmark
+    def test_reconfigure_io_does_not_crash(self):
+        """Calling _reconfigure_io() should never raise."""
+        from commit_check.main import _reconfigure_io
+
+        _reconfigure_io()  # no assert needed — just must not raise
+
+    @pytest.mark.benchmark
+    def test_reconfigure_io_sets_utf8_encoding(self):
+        """After _reconfigure_io(), stdout/stderr/stdin use UTF-8."""
+        from commit_check.main import _reconfigure_io
+
+        _reconfigure_io()
+        assert sys.stdout.encoding.upper() == "UTF-8"
+        assert sys.stderr.encoding.upper() == "UTF-8"
+        assert sys.stdin.encoding.upper() == "UTF-8"
