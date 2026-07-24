@@ -1,0 +1,25 @@
+.github/workflows/publish-package.yml
+  s_561323201e44fe::t_ddf432e7a30756 30
+  s_561323201e44fe::t_82360b89bbfac0 29
+.github/workflows/main.yml
+  s_561323201e44fe::t_c224e71a395a47 30,74-75,100
+  s_561323201e44fe::t_e711b40cc60c9f 31,101
+pyproject.toml
+  s_561323201e44fe::t_ad4f57601549dc 49,52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "7d915f7171bbf1578ddfdd1a69b83b545893fe2a",
+  "prompts": {},
+  "sessions": {
+    "s_561323201e44fe": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019f91f9-0332-77cb-a723-9f5d594851b9",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
