@@ -16,38 +16,38 @@ FEATURE_TOPIC_BRANCH = "feature/topic"
 
 class TestMain:
     @pytest.mark.benchmark
-    def test_help(self, capfd):
-        sys.argv = [CMD, "--help"]
+    def test_help(self, capfd, monkeypatch):
+        monkeypatch.setattr("sys.argv", [CMD, "--help"])
         with pytest.raises(SystemExit):
             main()
         out, _ = capfd.readouterr()
         assert "usage:" in out
 
     @pytest.mark.benchmark
-    def test_version(self):
+    def test_version(self, monkeypatch):
         # argparse defines --version
-        sys.argv = [CMD, "--version"]
+        monkeypatch.setattr("sys.argv", [CMD, "--version"])
         with pytest.raises(SystemExit):
             main()
 
     @pytest.mark.benchmark
-    def test_no_args_shows_help(self, capfd):
+    def test_no_args_shows_help(self, capfd, monkeypatch):
         """When no arguments are provided, should show help and exit 0."""
-        sys.argv = [CMD]
+        monkeypatch.setattr("sys.argv", [CMD])
         assert main() == 0
 
     @pytest.mark.benchmark
-    def test_message_validation_with_valid_commit(self, mocker):
+    def test_message_validation_with_valid_commit(self, mocker, monkeypatch):
         """Test that a valid commit message passes validation."""
         # Mock stdin to provide a valid commit message
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
 
-        sys.argv = [CMD, "-m"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m"])
         assert main() == 0
 
     @pytest.mark.benchmark
-    def test_message_validation_with_invalid_commit(self, mocker):
+    def test_message_validation_with_invalid_commit(self, mocker, monkeypatch):
         """Test that an invalid commit message fails validation."""
         # Mock stdin to provide an invalid commit message
         mocker.patch("sys.stdin.isatty", return_value=False)
@@ -56,24 +56,24 @@ class TestMain:
         # Mock git author to ensure it's not in any ignore list
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
 
-        sys.argv = [CMD, "-m"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m"])
         assert main() == 1
 
     @pytest.mark.benchmark
-    def test_message_validation_from_file(self):
+    def test_message_validation_from_file(self, monkeypatch):
         """Test validation of commit message from a file."""
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("fix: resolve bug")
             f.flush()
 
             try:
-                sys.argv = [CMD, "-m", f.name]
+                monkeypatch.setattr("sys.argv", [CMD, "-m", f.name])
                 assert main() == 0
             finally:
                 os.unlink(f.name)
 
     @pytest.mark.benchmark
-    def test_branch_validation(self, mocker):
+    def test_branch_validation(self, mocker, monkeypatch):
         """Test branch name validation."""
         # Mock git command to return a valid branch name
         mocker.patch(
@@ -83,11 +83,11 @@ class TestMain:
             )(),
         )
 
-        sys.argv = [CMD, "-b"]
+        monkeypatch.setattr("sys.argv", [CMD, "-b"])
         assert main() == 0
 
     @pytest.mark.benchmark
-    def test_author_name_validation(self, mocker):
+    def test_author_name_validation(self, mocker, monkeypatch):
         """Test author name validation."""
         # Mock git command to return a valid author name
         mocker.patch(
@@ -97,11 +97,11 @@ class TestMain:
             )(),
         )
 
-        sys.argv = [CMD, "-n"]
+        monkeypatch.setattr("sys.argv", [CMD, "-n"])
         assert main() == 0
 
     @pytest.mark.benchmark
-    def test_author_email_validation(self, mocker):
+    def test_author_email_validation(self, mocker, monkeypatch):
         """Test author email validation."""
         # Mock git command to return a valid author email
         mocker.patch(
@@ -111,17 +111,17 @@ class TestMain:
             )(),
         )
 
-        sys.argv = [CMD, "-e"]
+        monkeypatch.setattr("sys.argv", [CMD, "-e"])
         assert main() == 0
 
     @pytest.mark.benchmark
-    def test_dry_run_always_passes(self, mocker):
+    def test_dry_run_always_passes(self, mocker, monkeypatch):
         """Test that dry run mode always returns 0."""
         # Mock stdin to provide an invalid commit message
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
 
-        sys.argv = [CMD, "-m", "--dry-run"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--dry-run"])
         assert main() == 0
 
 
@@ -153,54 +153,59 @@ class TestMainFunctionEdgeCases:
     """Test main function edge cases for better coverage."""
 
     @pytest.mark.benchmark
-    def test_main_with_message_file_argument(self):
+    def test_main_with_message_file_argument(self, monkeypatch):
         """Test main function with --message pointing to a file."""
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("feat: add new feature")
             f.flush()
 
             try:
-                sys.argv = ["commit-check", "--message", f.name]
+                monkeypatch.setattr("sys.argv", ["commit-check", "--message", f.name])
                 result = main()
                 assert result == 0
             finally:
                 os.unlink(f.name)
 
     @pytest.mark.benchmark
-    def test_main_with_message_empty_string_and_stdin(self, mocker):
+    def test_main_with_message_empty_string_and_stdin(self, mocker, monkeypatch):
         """Test main function with --message (empty) and stdin input."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="feat: Add new feature\n")
 
-        sys.argv = ["commit-check", "--message"]
+        monkeypatch.setattr("sys.argv", ["commit-check", "--message"])
         result = main()
         assert result == 0
 
     @pytest.mark.benchmark
-    def test_main_with_message_empty_string_no_stdin_with_git(self, mocker):
+    def test_main_with_message_empty_string_no_stdin_with_git(
+        self, mocker, monkeypatch
+    ):
         """Test main function with --message (empty), no stdin, git fallback."""
         mocker.patch("sys.stdin.isatty", return_value=True)
         mocker.patch(
             "commit_check.engine.get_commit_info", return_value="feat: add feature"
         )
 
-        sys.argv = ["commit-check", "--message"]
+        monkeypatch.setattr("sys.argv", ["commit-check", "--message"])
         result = main()
         assert result == 0
 
     # Removed problematic config and multi-check tests due to complex validation dependencies
 
     @pytest.mark.benchmark
-    def test_main_with_invalid_config_file(self, mocker):
+    def test_main_with_invalid_config_file(self, mocker, monkeypatch):
         """Test main function with invalid config file."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="feat: Test feature\n")
-        sys.argv = [
-            "commit-check",
-            "--config",
-            "/nonexistent/config.toml",
-            "--message",  # empty -> read from stdin
-        ]
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "commit-check",
+                "--config",
+                "/nonexistent/config.toml",
+                "--message",  # empty -> read from stdin
+            ],
+        )
 
         # This should fail with proper error message when config file doesn't exist
         result = main()
@@ -209,7 +214,7 @@ class TestMainFunctionEdgeCases:
     # Removed problematic tests that had configuration dependency issues
 
     @pytest.mark.benchmark
-    def test_main_with_dry_run_all_checks(self, mocker):
+    def test_main_with_dry_run_all_checks(self, mocker, monkeypatch):
         """Test main function with dry run and all checks."""
         # Mock git operations
         mocker.patch(
@@ -219,25 +224,28 @@ class TestMainFunctionEdgeCases:
         mocker.patch("commit_check.util.has_commits", return_value=True)
         mocker.patch("commit_check.util.get_commit_info", return_value="Invalid Name")
 
-        sys.argv = [
-            "commit-check",
-            "--message",
-            "invalid commit message",
-            "--branch",
-            "--author-name",
-            "--author-email",
-            "--dry-run",
-        ]
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "commit-check",
+                "--message",
+                "invalid commit message",
+                "--branch",
+                "--author-name",
+                "--author-email",
+                "--dry-run",
+            ],
+        )
         result = main()
         assert result == 0  # Dry run always returns 0
 
     @pytest.mark.benchmark
-    def test_main_error_handling_subprocess_failure(self, mocker, capsys):
+    def test_main_error_handling_subprocess_failure(self, mocker, capsys, monkeypatch):
         """Test main function when subprocess operations fail."""
         # Mock subprocess to fail
         mocker.patch("subprocess.run", side_effect=Exception("Git command failed"))
 
-        sys.argv = ["commit-check", "--branch"]
+        monkeypatch.setattr("sys.argv", ["commit-check", "--branch"])
 
         # Should handle the error gracefully
         result = main()
@@ -245,15 +253,18 @@ class TestMainFunctionEdgeCases:
         assert result in [0, 1]  # Either passes or fails gracefully
 
     @pytest.mark.benchmark
-    def test_nonexistent_config_file_error(self, capsys):
+    def test_nonexistent_config_file_error(self, capsys, monkeypatch):
         """Test that specifying a non-existent config file returns error."""
-        sys.argv = [
-            "commit-check",
-            "--config",
-            "/nonexistent/config.toml",
-            "--message",
-            "feat: test",
-        ]
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "commit-check",
+                "--config",
+                "/nonexistent/config.toml",
+                "--message",
+                "feat: test",
+            ],
+        )
 
         result = main()
         assert result == 1
@@ -269,28 +280,32 @@ class TestCLIArgumentIntegration:
     """Test CLI argument integration with the new config merger."""
 
     @pytest.mark.benchmark
-    def test_cli_subject_imperative_true(self, mocker):
+    def test_cli_subject_imperative_true(self, mocker, monkeypatch):
         """Test --subject-imperative=true rejects non-imperative commit."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="feat: Added feature\n")
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
 
-        sys.argv = ["commit-check", "--message", "--subject-imperative=true"]
+        monkeypatch.setattr(
+            "sys.argv", ["commit-check", "--message", "--subject-imperative=true"]
+        )
         result = main()
         assert result == 1  # Should fail due to non-imperative mood
 
     @pytest.mark.benchmark
-    def test_cli_subject_imperative_false(self, mocker):
+    def test_cli_subject_imperative_false(self, mocker, monkeypatch):
         """Test --subject-imperative=false allows non-imperative commit."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="feat: Added feature\n")
 
-        sys.argv = ["commit-check", "--message", "--subject-imperative=false"]
+        monkeypatch.setattr(
+            "sys.argv", ["commit-check", "--message", "--subject-imperative=false"]
+        )
         result = main()
         assert result == 0  # Should pass
 
     @pytest.mark.benchmark
-    def test_cli_subject_max_length(self, mocker):
+    def test_cli_subject_max_length(self, mocker, monkeypatch):
         """Test --subject-max-length limits commit subject."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch(
@@ -299,23 +314,27 @@ class TestCLIArgumentIntegration:
         )
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
 
-        sys.argv = ["commit-check", "--message", "--subject-max-length=30"]
+        monkeypatch.setattr(
+            "sys.argv", ["commit-check", "--message", "--subject-max-length=30"]
+        )
         result = main()
         assert result == 1  # Should fail due to length
 
     @pytest.mark.benchmark
-    def test_cli_allow_commit_types(self, mocker):
+    def test_cli_allow_commit_types(self, mocker, monkeypatch):
         """Test --allow-commit-types restricts commit types."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="chore: do something\n")
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
 
-        sys.argv = ["commit-check", "--message", "--allow-commit-types=feat,fix"]
+        monkeypatch.setattr(
+            "sys.argv", ["commit-check", "--message", "--allow-commit-types=feat,fix"]
+        )
         result = main()
         assert result == 1  # Should fail because 'chore' is not in allowed types
 
     @pytest.mark.benchmark
-    def test_cli_allow_merge_commits_false(self, mocker):
+    def test_cli_allow_merge_commits_false(self, mocker, monkeypatch):
         """Test --allow-merge-commits=false rejects merge commits."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch(
@@ -323,23 +342,28 @@ class TestCLIArgumentIntegration:
         )
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
 
-        sys.argv = ["commit-check", "--message", "--allow-merge-commits=false"]
+        monkeypatch.setattr(
+            "sys.argv", ["commit-check", "--message", "--allow-merge-commits=false"]
+        )
         result = main()
         assert result == 1  # Should fail
 
     @pytest.mark.benchmark
-    def test_cli_multiple_args_combined(self, mocker):
+    def test_cli_multiple_args_combined(self, mocker, monkeypatch):
         """Test multiple CLI arguments work together."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="feat: Add feature\n")
 
-        sys.argv = [
-            "commit-check",
-            "--message",
-            "--subject-imperative=true",
-            "--subject-max-length=100",
-            "--allow-commit-types=feat,fix,docs",
-        ]
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "commit-check",
+                "--message",
+                "--subject-imperative=true",
+                "--subject-max-length=100",
+                "--allow-commit-types=feat,fix,docs",
+            ],
+        )
         result = main()
         assert result == 0  # Should pass all checks
 
@@ -355,7 +379,7 @@ class TestEnvironmentVariableIntegration:
         mocker.patch("sys.stdin.read", return_value="feat: Added feature\n")
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
 
-        sys.argv = ["commit-check", "--message"]
+        monkeypatch.setattr("sys.argv", ["commit-check", "--message"])
         result = main()
         assert result == 1  # Should fail due to non-imperative
 
@@ -370,7 +394,7 @@ class TestEnvironmentVariableIntegration:
         )
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
 
-        sys.argv = ["commit-check", "--message"]
+        monkeypatch.setattr("sys.argv", ["commit-check", "--message"])
         result = main()
         assert result == 1  # Should fail due to length
 
@@ -382,7 +406,7 @@ class TestEnvironmentVariableIntegration:
         mocker.patch("sys.stdin.read", return_value="chore: do something\n")
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
 
-        sys.argv = ["commit-check", "--message"]
+        monkeypatch.setattr("sys.argv", ["commit-check", "--message"])
         result = main()
         assert result == 1  # Should fail
 
@@ -399,7 +423,9 @@ class TestConfigPriority:
         mocker.patch("sys.stdin.read", return_value="feat: Added feature\n")
 
         # Override with CLI to false
-        sys.argv = ["commit-check", "--message", "--subject-imperative=false"]
+        monkeypatch.setattr(
+            "sys.argv", ["commit-check", "--message", "--subject-imperative=false"]
+        )
         result = main()
         assert result == 0  # CLI wins, should pass
 
@@ -415,7 +441,7 @@ class TestConfigPriority:
         )
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
 
-        sys.argv = ["commit-check", "--message"]
+        monkeypatch.setattr("sys.argv", ["commit-check", "--message"])
         result = main()
         assert result == 1  # Env var wins, should fail
 
@@ -424,7 +450,7 @@ class TestPositionalArgumentFeature:
     """Test positional commit_msg_file argument for pre-commit compatibility."""
 
     @pytest.mark.benchmark
-    def test_positional_arg_without_message_flag(self):
+    def test_positional_arg_without_message_flag(self, monkeypatch):
         """Test using just the positional argument without --message flag."""
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("feat: add positional argument support")
@@ -432,14 +458,14 @@ class TestPositionalArgumentFeature:
 
             try:
                 # Use positional argument only (no --message flag)
-                sys.argv = ["commit-check", f.name]
+                monkeypatch.setattr("sys.argv", ["commit-check", f.name])
                 result = main()
                 assert result == 0  # Should pass validation
             finally:
                 os.unlink(f.name)
 
     @pytest.mark.benchmark
-    def test_positional_arg_with_message_flag(self):
+    def test_positional_arg_with_message_flag(self, monkeypatch):
         """Test using positional argument with --message flag."""
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("fix: resolve bug in validation")
@@ -447,14 +473,14 @@ class TestPositionalArgumentFeature:
 
             try:
                 # Use both positional argument and --message flag
-                sys.argv = ["commit-check", "--message", f.name]
+                monkeypatch.setattr("sys.argv", ["commit-check", "--message", f.name])
                 result = main()
                 assert result == 0  # Should pass validation
             finally:
                 os.unlink(f.name)
 
     @pytest.mark.benchmark
-    def test_positional_arg_with_branch_flag(self, mocker):
+    def test_positional_arg_with_branch_flag(self, mocker, monkeypatch):
         """Test positional argument with other check flags (edge case)."""
         # Mock git command to return a valid branch name
         mocker.patch(
@@ -470,7 +496,7 @@ class TestPositionalArgumentFeature:
 
             try:
                 # Use positional argument with --branch flag
-                sys.argv = ["commit-check", "--branch", f.name]
+                monkeypatch.setattr("sys.argv", ["commit-check", "--branch", f.name])
                 result = main()
                 # Should validate both commit message and branch name
                 assert result == 0  # Should pass both validations
@@ -478,7 +504,7 @@ class TestPositionalArgumentFeature:
                 os.unlink(f.name)
 
     @pytest.mark.benchmark
-    def test_positional_arg_invalid_commit(self, mocker):
+    def test_positional_arg_invalid_commit(self, mocker, monkeypatch):
         """Test that positional argument correctly rejects invalid commits."""
         # Mock git author to ensure it's not in any ignore list
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
@@ -489,14 +515,14 @@ class TestPositionalArgumentFeature:
 
             try:
                 # Use positional argument with invalid message
-                sys.argv = ["commit-check", f.name]
+                monkeypatch.setattr("sys.argv", ["commit-check", f.name])
                 result = main()
                 assert result == 1  # Should fail validation
             finally:
                 os.unlink(f.name)
 
     @pytest.mark.benchmark
-    def test_positional_arg_nonexistent_file(self, mocker):
+    def test_positional_arg_nonexistent_file(self, mocker, monkeypatch):
         """Test that positional argument with non-existent file falls back to git."""
         # Mock git to return a valid commit message
         mocker.patch(
@@ -504,7 +530,7 @@ class TestPositionalArgumentFeature:
             return_value="feat: add fallback commit from git",
         )
 
-        sys.argv = ["commit-check", "/nonexistent/commit_msg.txt"]
+        monkeypatch.setattr("sys.argv", ["commit-check", "/nonexistent/commit_msg.txt"])
         result = main()
         # Should fall back to git and pass
         assert result == 0
@@ -514,12 +540,12 @@ class TestJsonFormat:
     """Tests for --format json machine-readable output."""
 
     @pytest.mark.benchmark
-    def test_json_format_valid_message_returns_pass(self, mocker, capsys):
+    def test_json_format_valid_message_returns_pass(self, mocker, capsys, monkeypatch):
         """JSON output for a valid commit message has status=pass."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
 
-        sys.argv = [CMD, "-m", "--format", "json"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--format", "json"])
         rc = main()
 
         out, _ = capsys.readouterr()
@@ -530,13 +556,15 @@ class TestJsonFormat:
         assert all("check" in c and "status" in c for c in data["checks"])
 
     @pytest.mark.benchmark
-    def test_json_format_invalid_message_returns_fail(self, mocker, capsys):
+    def test_json_format_invalid_message_returns_fail(
+        self, mocker, capsys, monkeypatch
+    ):
         """JSON output for an invalid commit message has status=fail."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
 
-        sys.argv = [CMD, "-m", "--format", "json"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--format", "json"])
         rc = main()
 
         out, _ = capsys.readouterr()
@@ -550,13 +578,13 @@ class TestJsonFormat:
         assert "suggest" in failed[0] and failed[0]["suggest"]
 
     @pytest.mark.benchmark
-    def test_json_format_no_ascii_art_in_stdout(self, mocker, capsys):
+    def test_json_format_no_ascii_art_in_stdout(self, mocker, capsys, monkeypatch):
         """JSON mode must not include ASCII art / colour codes in stdout."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="bad commit\n")
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
 
-        sys.argv = [CMD, "-m", "--format", "json"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--format", "json"])
         main()
 
         out, _ = capsys.readouterr()
@@ -567,14 +595,14 @@ class TestJsonFormat:
         assert "\033[" not in out
 
     @pytest.mark.benchmark
-    def test_json_format_from_file(self, capsys):
+    def test_json_format_from_file(self, capsys, monkeypatch):
         """JSON mode works when reading commit message from a file."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("fix: resolve null pointer in auth module")
             tmp_path = f.name
 
         try:
-            sys.argv = [CMD, "-m", tmp_path, "--format", "json"]
+            monkeypatch.setattr("sys.argv", [CMD, "-m", tmp_path, "--format", "json"])
             rc = main()
             out, _ = capsys.readouterr()
             data = json.loads(out)
@@ -584,12 +612,12 @@ class TestJsonFormat:
             os.unlink(tmp_path)
 
     @pytest.mark.benchmark
-    def test_json_format_exit_code_matches_status(self, mocker, capsys):
+    def test_json_format_exit_code_matches_status(self, mocker, capsys, monkeypatch):
         """Exit code 1 when JSON status is fail, exit code 0 when pass."""
         # --- pass case ---
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="chore: update dependencies\n")
-        sys.argv = [CMD, "-m", "--format", "json"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--format", "json"])
         rc_pass = main()
         out, _ = capsys.readouterr()
         assert rc_pass == 0
@@ -599,7 +627,7 @@ class TestJsonFormat:
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="not a conventional commit\n")
         mocker.patch("commit_check.engine.get_commit_info", return_value="author")
-        sys.argv = [CMD, "-m", "--format", "json"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--format", "json"])
         rc_fail = main()
         out, _ = capsys.readouterr()
         assert rc_fail == 1
@@ -610,13 +638,13 @@ class TestNoBanner:
     """Tests for --no-banner flag."""
 
     @pytest.mark.benchmark
-    def test_no_banner_suppresses_ascii_art(self, mocker, capsys):
+    def test_no_banner_suppresses_ascii_art(self, mocker, capsys, monkeypatch):
         """--no-banner must suppress the ASCII art / teddy bear header."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
 
-        sys.argv = [CMD, "-m", "--no-banner"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--no-banner"])
         rc = main()
 
         out, _ = capsys.readouterr()
@@ -627,13 +655,13 @@ class TestNoBanner:
         assert "check failed ==>" in out
 
     @pytest.mark.benchmark
-    def test_no_banner_still_shows_error_details(self, mocker, capsys):
+    def test_no_banner_still_shows_error_details(self, mocker, capsys, monkeypatch):
         """--no-banner keeps error messages and suggestions."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
 
-        sys.argv = [CMD, "-m", "--no-banner"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--no-banner"])
         main()
 
         out, _ = capsys.readouterr()
@@ -641,12 +669,12 @@ class TestNoBanner:
         assert "Suggest:" in out
 
     @pytest.mark.benchmark
-    def test_no_banner_passes_valid_commit(self, mocker):
+    def test_no_banner_passes_valid_commit(self, mocker, monkeypatch):
         """--no-banner with a valid commit should still return 0."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
 
-        sys.argv = [CMD, "-m", "--no-banner"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--no-banner"])
         assert main() == 0
 
 
@@ -654,13 +682,13 @@ class TestCompact:
     """Tests for --compact flag."""
 
     @pytest.mark.benchmark
-    def test_compact_suppresses_ascii_art(self, mocker, capsys):
+    def test_compact_suppresses_ascii_art(self, mocker, capsys, monkeypatch):
         """--compact must not include ASCII art in output."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
 
-        sys.argv = [CMD, "-m", "--compact"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--compact"])
         rc = main()
 
         out, _ = capsys.readouterr()
@@ -669,13 +697,13 @@ class TestCompact:
         assert "(c).-.(c)" not in out
 
     @pytest.mark.benchmark
-    def test_compact_shows_one_line_per_failure(self, mocker, capsys):
+    def test_compact_shows_one_line_per_failure(self, mocker, capsys, monkeypatch):
         """--compact outputs one [FAIL] line per failing check."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
 
-        sys.argv = [CMD, "-m", "--compact"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--compact"])
         main()
 
         out, _ = capsys.readouterr()
@@ -684,25 +712,25 @@ class TestCompact:
         assert len(lines) >= 1
 
     @pytest.mark.benchmark
-    def test_compact_no_suggestions(self, mocker, capsys):
+    def test_compact_no_suggestions(self, mocker, capsys, monkeypatch):
         """--compact output must not include 'Suggest:' lines."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
         mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
 
-        sys.argv = [CMD, "-m", "--compact"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--compact"])
         main()
 
         out, _ = capsys.readouterr()
         assert "Suggest:" not in out
 
     @pytest.mark.benchmark
-    def test_compact_passes_valid_commit(self, mocker):
+    def test_compact_passes_valid_commit(self, mocker, monkeypatch):
         """--compact with a valid commit should still return 0."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
 
-        sys.argv = [CMD, "-m", "--compact"]
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--compact"])
         assert main() == 0
 
 
@@ -712,7 +740,7 @@ class TestNoForcePushFlag:
     ZERO_SHA = "0000000000000000000000000000000000000000"
 
     @pytest.mark.benchmark
-    def test_no_force_push_new_branch_passes(self, mocker):
+    def test_no_force_push_new_branch_passes(self, mocker, monkeypatch):
         """Push to a new remote branch (zero SHA) always passes."""
         push_info = (
             f"refs/heads/feature/new abc123 refs/heads/feature/new {self.ZERO_SHA}"
@@ -720,42 +748,42 @@ class TestNoForcePushFlag:
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value=push_info)
 
-        sys.argv = [CMD, "--no-force-push"]
+        monkeypatch.setattr("sys.argv", [CMD, "--no-force-push"])
         assert main() == 0
 
     @pytest.mark.benchmark
-    def test_no_force_push_fast_forward_passes(self, mocker):
+    def test_no_force_push_fast_forward_passes(self, mocker, monkeypatch):
         """Fast-forward push (remote is ancestor of local) passes."""
         push_info = "refs/heads/main abc123 refs/heads/main def456"
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value=push_info)
         mocker.patch("commit_check.engine.git_merge_base", return_value=0)
 
-        sys.argv = [CMD, "--no-force-push"]
+        monkeypatch.setattr("sys.argv", [CMD, "--no-force-push"])
         assert main() == 0
 
     @pytest.mark.benchmark
-    def test_no_force_push_force_push_fails(self, mocker):
+    def test_no_force_push_force_push_fails(self, mocker, monkeypatch):
         """Force push (remote is not ancestor of local) fails."""
         push_info = "refs/heads/main abc123 refs/heads/main def456"
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value=push_info)
         mocker.patch("commit_check.engine.git_merge_base", return_value=1)
 
-        sys.argv = [CMD, "--no-force-push"]
+        monkeypatch.setattr("sys.argv", [CMD, "--no-force-push"])
         assert main() == 1
 
     @pytest.mark.benchmark
-    def test_no_force_push_no_stdin_passes(self, mocker):
+    def test_no_force_push_no_stdin_passes(self, mocker, monkeypatch):
         """When no stdin and no upstream are available, the check is skipped."""
         mocker.patch("sys.stdin.isatty", return_value=True)
         mocker.patch("commit_check.engine.get_upstream_branch", return_value="")
 
-        sys.argv = [CMD, "--no-force-push"]
+        monkeypatch.setattr("sys.argv", [CMD, "--no-force-push"])
         assert main() == 0
 
     @pytest.mark.benchmark
-    def test_no_force_push_no_stdin_uses_upstream_fallback(self, mocker):
+    def test_no_force_push_no_stdin_uses_upstream_fallback(self, mocker, monkeypatch):
         """Without stdin, the CLI falls back to checking the current upstream."""
         mocker.patch("sys.stdin.isatty", return_value=True)
         mocker.patch(
@@ -763,11 +791,13 @@ class TestNoForcePushFlag:
         )
         mocker.patch("commit_check.engine.git_merge_base", return_value=0)
 
-        sys.argv = [CMD, "--no-force-push"]
+        monkeypatch.setattr("sys.argv", [CMD, "--no-force-push"])
         assert main() == 0
 
     @pytest.mark.benchmark
-    def test_no_force_push_no_stdin_blocks_non_fast_forward_upstream(self, mocker):
+    def test_no_force_push_no_stdin_blocks_non_fast_forward_upstream(
+        self, mocker, monkeypatch
+    ):
         """Without stdin, a non-fast-forward upstream relationship fails."""
         mocker.patch("sys.stdin.isatty", return_value=True)
         mocker.patch(
@@ -776,11 +806,13 @@ class TestNoForcePushFlag:
         mocker.patch("commit_check.engine.get_branch_name", return_value="main")
         mocker.patch("commit_check.engine.git_merge_base", return_value=1)
 
-        sys.argv = [CMD, "--no-force-push"]
+        monkeypatch.setattr("sys.argv", [CMD, "--no-force-push"])
         assert main() == 1
 
     @pytest.mark.benchmark
-    def test_no_force_push_uses_pre_commit_env_before_upstream(self, mocker):
+    def test_no_force_push_uses_pre_commit_env_before_upstream(
+        self, mocker, monkeypatch
+    ):
         """pre-commit pre-push metadata drives the check when stdin is unavailable."""
         mocker.patch("sys.stdin.isatty", return_value=True)
         mocker.patch.dict(
@@ -796,14 +828,14 @@ class TestNoForcePushFlag:
         mock_merge = mocker.patch("commit_check.engine.git_merge_base", return_value=1)
         mock_upstream = mocker.patch("commit_check.engine.get_upstream_branch")
 
-        sys.argv = [CMD, "--no-force-push"]
+        monkeypatch.setattr("sys.argv", [CMD, "--no-force-push"])
         assert main() == 1
 
         mock_merge.assert_called_once_with("remote-sha", "local-sha")
         mock_upstream.assert_not_called()
 
     @pytest.mark.benchmark
-    def test_no_force_push_pre_commit_env_fetches_remote_sha(self, mocker):
+    def test_no_force_push_pre_commit_env_fetches_remote_sha(self, mocker, monkeypatch):
         """pre-commit metadata can resolve the remote tip when FROM_REF is absent."""
         mocker.patch("sys.stdin.isatty", return_value=True)
         mocker.patch.dict(
@@ -827,7 +859,7 @@ class TestNoForcePushFlag:
         )
         mock_merge = mocker.patch("commit_check.engine.git_merge_base", return_value=0)
 
-        sys.argv = [CMD, "--no-force-push"]
+        monkeypatch.setattr("sys.argv", [CMD, "--no-force-push"])
         assert main() == 0
 
         mock_run.assert_called_once_with(
@@ -887,9 +919,9 @@ class TestNoForcePushFlag:
         )
 
     @pytest.mark.benchmark
-    def test_no_force_push_flag_in_help(self, capfd):
+    def test_no_force_push_flag_in_help(self, capfd, monkeypatch):
         """The --no-force-push flag appears in help output."""
-        sys.argv = [CMD, "--help"]
+        monkeypatch.setattr("sys.argv", [CMD, "--help"])
         with pytest.raises(SystemExit):
             main()
         out, _ = capfd.readouterr()
