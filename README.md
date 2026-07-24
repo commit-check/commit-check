@@ -183,6 +183,11 @@ repos:
         args:
           - --subject-imperative=false
           - --subject-max-length=100
+      - id: check-author-email
+        args:
+          - --no-banner
+          - --author-email
+          - --author-email-pattern=^.+@example\.com$
 ```
 
 See the [Configuration documentation](https://commit-check.github.io/commit-check/configuration.html) for all available options.

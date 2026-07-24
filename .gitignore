@@ -3,6 +3,7 @@ commit_check.egg-info
 __pycache__
 .mypy_cache
 .vscode
+*.swp
 venv
 .venv
 UNKNOWN.egg-info

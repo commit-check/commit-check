@@ -274,6 +274,12 @@ Configuration can also be set via environment variables with the ``CCHK_`` prefi
    * - ``ignore_authors = ["bot"]``
      - ``CCHK_IGNORE_AUTHORS=bot,user``
      - ``--ignore-authors=bot,user``
+   * - ``author_email_pattern=^.+@example\.com$``
+     - ``CCHK_AUTHOR_EMAIL_PATTERN=^.+@example\.com$``
+     - ``--author-email-pattern=^.+@example\.com$``
+   * - ``author_name_pattern=^.+ .+$``
+     - ``CCHK_AUTHOR_NAME_PATTERN=^.+ .+$``
+     - ``--author-name-pattern=^.+ .+$``
    * - ``conventional_branch = true``
      - ``CCHK_CONVENTIONAL_BRANCH=true``
      - ``--conventional-branch=true``
@@ -397,6 +403,18 @@ Options Table Description
      - list[str]
      - [] (none ignored)
      - List of commit authors **or co-authors** (``Co-authored-by:`` lines) to bypass all commit checks. Useful for bots (e.g., ``"dependabot[bot]"``, ``"coderabbitai[bot]"``).
+   * - commit
+     - author_email_pattern
+     - str
+     - ^.+@.+$
+     - Custom regex for the author email check. When empty, the built-in default pattern is used.
+       This option only takes effect when the author_email check is enabled (``-e`` / ``--author-email``).
+   * - commit
+     - author_name_pattern
+     - str
+     - "" (built-in default)
+     - Custom regex for the author name check. When empty, the built-in default pattern is used (it is not disabled).
+       This option only takes effect when the author_name check is enabled (``-n`` / ``--author-name``).
    * - commit
      - require_signed_off_by
      - bool
