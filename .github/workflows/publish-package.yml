@@ -26,7 +26,8 @@ jobs:
     - name: Build wheel
       run: |
         # Install dependencies
-        python -m pip install --upgrade pip twine
+        python -m pip install --only-binary :all: --upgrade pip
+        python -m pip install --only-binary :all: ".[ci]"
         # Build wheel
         python -m pip wheel -w dist .
         # Check distribution
