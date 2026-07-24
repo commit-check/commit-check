@@ -293,7 +293,7 @@ class SubjectCapitalizationValidator(SubjectValidator):
         # For conventional commits, check the description part after the colon
         import re
 
-        match = re.match(r"^\w+(?:\([^)]*\))?[!:]?\s*(.*)", subject)
+        match = re.match(r"^(?:\w+(?:\([^)]*\))?[!:]?\s*)(.*)", subject)
         if match:
             description = match.group(1).strip()
             if description and description[0].isupper():
