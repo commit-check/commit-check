@@ -821,9 +821,12 @@ class TestSignoffValidator:
             result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
+    @patch(GIT_CONFIG_VALUE)
     @patch("commit_check.engine.get_commit_info")
     @pytest.mark.benchmark
-    def test_default_signoff_skips_ignored_author(self, mock_get_commit_info):
+    def test_default_signoff_skips_ignored_author(
+        self, mock_get_commit_info, mock_get_git_config_value
+    ):
         """Signoff check is skipped when the author is in ignore_authors.
 
         A commit with no signoff would normally fail, but an ignored author
@@ -831,6 +834,9 @@ class TestSignoffValidator:
         commit check.
         """
         mock_get_commit_info.return_value = "dependabot[bot]"
+        # Mock git config so author resolution falls back to the commit author
+        # instead of the developer's real local user.name.
+        mock_get_git_config_value.return_value = ""
         validator = SignoffValidator(self._default_signoff_rule())
         config = {"commit": {"ignore_authors": ["dependabot[bot]"]}}
         context = ValidationContext(stdin_text="chore: bump dep", config=config)
