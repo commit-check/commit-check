@@ -15,7 +15,6 @@ from commit_check.util import (
     print_error_header,
     print_error_message,
     print_suggestion,
-    _find_check,
 )
 from subprocess import CalledProcessError, PIPE
 from unittest.mock import MagicMock
@@ -614,32 +613,6 @@ class TestUtil:
             assert e.value.code == 1
             stdout, _ = capfd.readouterr()
             assert "commit-check does not support" in stdout
-
-    class TestHelperFunctions:
-        """Tests for utility helper functions to improve coverage."""
-
-        def test_find_check_found(self):
-            """Test _find_check when check is found."""
-            checks = [
-                {"check": "commit-message", "regex": ".*"},
-                {"check": "branch-name", "regex": ".*"},
-            ]
-            result = _find_check(checks, "commit-message")
-            assert result == {"check": "commit-message", "regex": ".*"}
-
-        def test_find_check_not_found(self):
-            """Test _find_check when check is not found."""
-            checks = [
-                {"check": "commit-message", "regex": ".*"},
-            ]
-            result = _find_check(checks, "author-name")
-            assert result is None
-
-        def test_find_check_empty_list(self):
-            """Test _find_check with empty list."""
-            checks = []
-            result = _find_check(checks, "commit-message")
-            assert result is None
 
 
 class TestGetGitConfigValue:
