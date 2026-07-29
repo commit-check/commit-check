@@ -1,0 +1,19 @@
+commit_check/__init__.py
+  s_242699324a30e5::t_54ea8a02abb322 9,79-82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "e12ced7425d6afbda42d675f18ba872ade1aa595",
+  "prompts": {},
+  "sessions": {
+    "s_242699324a30e5": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019faf83-da50-71e9-91d4-5def1797fab0",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
