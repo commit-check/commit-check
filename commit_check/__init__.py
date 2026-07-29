@@ -6,7 +6,7 @@ Exports:
         __version__ (package version)
 """
 
-from importlib.metadata import version
+from importlib.metadata import version, PackageNotFoundError
 
 # Exit codes used across the package
 PASS = 0
@@ -76,4 +76,7 @@ DEFAULT_BOOLEAN_RULES = {
 DEFAULT_AI_ATTRIBUTION = "ignore"  # "ignore" | "forbid"
 
 
-__version__ = version("commit-check")
+try:
+    __version__ = version("commit-check")
+except PackageNotFoundError:
+    __version__ = "0.0.0.dev"
