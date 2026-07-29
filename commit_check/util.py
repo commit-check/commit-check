@@ -301,7 +301,7 @@ def print_error_message(check_type: str, error: str, reason: str):
         print(error)
 
 
-def print_suggestion(suggest: str | None) -> None:
+def print_suggestion(suggest: str) -> None:
     """Print suggestion to user
     :param suggest: what message to print out
     """
@@ -310,7 +310,4 @@ def print_suggestion(suggest: str | None) -> None:
             f"Suggest: {GREEN}{suggest}{RESET_COLOR} ",
             end="",
         )
-    else:
-        print(f"commit-check does not support {suggest} yet.")
-        raise SystemExit(1)
     print("\n")
