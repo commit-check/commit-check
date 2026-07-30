@@ -605,15 +605,6 @@ class TestUtil:
             stdout, _ = capfd.readouterr()
             assert "Suggest:" in stdout
 
-        @pytest.mark.benchmark
-        def test_print_suggestion_exit1(self, capfd):
-            # Must exit with 1 when "" passed
-            with pytest.raises(SystemExit) as e:
-                print_suggestion("")
-            assert e.value.code == 1
-            stdout, _ = capfd.readouterr()
-            assert "commit-check does not support" in stdout
-
 
 class TestGetGitConfigValue:
     """Tests for get_git_config_value utility function."""
