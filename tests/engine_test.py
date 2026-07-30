@@ -967,6 +967,50 @@ class TestBodyValidator:
         with patch("commit_check.util._print_failure"):
             result = validator.validate(context)
             assert result == ValidationResult.FAIL
+    
+    @pytest.mark.benchmark
+    def test_validate_with_leading_blank_lines_and_body(self):
+        """Test body validation with leading blank lines before body content.
+
+        _get_commit_message() strips input before BodyValidator sees it, so
+        leading blank lines are removed and this collapses to a single line
+        with no separate subject/body it should FAIL.
+        """
+        rule = ValidationRule(check="require_body")
+        validator = BodyValidator(rule)
+        context = ValidationContext(stdin_text="\n\nbody content")
+
+        with patch("commit_check.util._print_failure"):
+            result = validator.validate(context)
+            assert result == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_validate_with_leading_blank_lines_no_body(self):
+        """Test body validation with only leading blank lines and no content.
+
+        After stripping, this becomes an empty message, which is treated as
+        having no commit message at all — it should PASS.
+        """
+        rule = ValidationRule(check="require_body")
+        validator = BodyValidator(rule)
+        context = ValidationContext(stdin_text="\n\n")
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_validate_with_whitespace_only_message(self):
+        """Test body validation with a whitespace-only message.
+
+        After stripping, this becomes an empty message, same as the
+        leading-blank-lines-only case — it should PASS.
+        """
+        rule = ValidationRule(check="require_body")
+        validator = BodyValidator(rule)
+        context = ValidationContext(stdin_text=" \n ")
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
 
 
 class TestMergeBaseValidator:
