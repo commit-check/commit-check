@@ -27,7 +27,7 @@ def _print_failure(
         print_error_header()
     print_error_message(check["check"], check.get("error", ""), actual)
     if check.get("suggest"):
-        print_suggestion(check.get("suggest"))
+        print_suggestion(check["suggest"])
 
 
 def get_branch_name() -> str:
