@@ -967,7 +967,7 @@ class TestBodyValidator:
         with patch("commit_check.util._print_failure"):
             result = validator.validate(context)
             assert result == ValidationResult.FAIL
-    
+
     @pytest.mark.benchmark
     def test_validate_with_leading_blank_lines_and_body(self):
         """Test body validation with leading blank lines before body content.
