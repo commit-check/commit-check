@@ -1,8 +1,8 @@
 name: PR Auto-labeler
 
 on:
-  # pull_request event is required for auto-labeler
-  pull_request:
+  # pull_request_target event is required for auto-labeler on fork PRs
+  pull_request_target:
     types: [opened, reopened, synchronize]
 
 permissions: {}
