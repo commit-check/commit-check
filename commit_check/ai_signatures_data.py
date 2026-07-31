@@ -89,6 +89,14 @@ CLAUDE_CODE = KnownAiTool(
             r"|\d+\+Claude@users\.noreply\.github\.com)>)?",
             "``Co-authored-by: Claude`` trailer",
         ),
+        # Any co-author name with the Anthropic noreply email — catches
+        # model-name variants such as "Claude Opus 4.5 (1M context)" that
+        # the pattern above misses.
+        _trailer(
+            "Co-authored-by",
+            r"[^<\n]*<noreply@anthropic\.com>",
+            "``Co-authored-by`` with Anthropic noreply email",
+        ),
         # Assisted-by trailer (Linux kernel style, with optional tool list)
         _trailer(
             "Assisted-by",
@@ -222,6 +230,16 @@ GENERIC_AI = KnownAiTool(
             "Co-authored-by",
             r"(?:claude|gpt|gemini)[\w.]*-[\w.-]+(?:\s*<[^>]*>)?",
             "``Co-authored-by`` with AI model name",
+        ),
+        # Catch space-separated AI model identifiers in Co-authored-by
+        # (e.g. "Claude Opus 4.5", "Gemini 2.5 Pro", "GPT 4 Turbo").
+        # A purely numeric version token is required so human names with
+        # ordinals ("Claude Dubois 3rd") are NOT flagged.
+        _trailer(
+            "Co-authored-by",
+            r"(?:claude|gpt|gemini)(?:\s+[a-z]+)*\s+\d+(?:\.\d+)*(?!\w)"
+            r"(?:\s+[a-z]+)*(?:\s*\([^)]*\))?(?:\s*<[^>]*>)?",
+            "``Co-authored-by`` with space-separated AI model name",
         ),
         # Catch Assisted-by trailer (Linux kernel style) regardless of agent,
         # with optional trailing tool list.
