@@ -48,6 +48,35 @@ class TestDetectAiSignatures:
         assert len(claude_hits) == 0
 
     @pytest.mark.benchmark
+    def test_claude_model_name_with_noreply_email(self):
+        """Model-name co-author with anthropic noreply is detected."""
+        message = (
+            "feat: add feature\n\n"
+            "Co-authored-by: Claude Opus 4.5 (1M context) <noreply@anthropic.com>"
+        )
+        result = detect_ai_signatures(message)
+        assert any(s["tool"] == "Claude Code" for s in result)
+
+    @pytest.mark.benchmark
+    def test_space_separated_model_name_detected(self):
+        """Space-separated model names with a version are detected."""
+        for trailer in (
+            "Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>",
+            "Co-authored-by: Gemini 2.5 Pro <gemini@example.com>",
+            "Co-authored-by: GPT 4 Turbo",
+        ):
+            message = f"feat: add feature\n\n{trailer}"
+            assert has_ai_signature(message), trailer
+
+    @pytest.mark.benchmark
+    def test_human_name_with_ordinal_ignored(self):
+        """A human name with an ordinal suffix is NOT detected."""
+        message = (
+            "feat: add feature\n\nCo-authored-by: Claude Dubois 3rd <claude@gmail.com>"
+        )
+        assert not has_ai_signature(message)
+
+    @pytest.mark.benchmark
     def test_copilot_with_noreply_email(self):
         """Co-authored-by: Copilot with GitHub noreply is detected."""
         message = (
