@@ -67,6 +67,25 @@ class TestDetectAiSignatures:
         assert any(s["tool"] == "GitHub Copilot" for s in result)
 
     @pytest.mark.benchmark
+    def test_amazon_q_developer_bare_name(self):
+        """Amazon Q Developer co-author is detected."""
+        message = (
+            "feat: implement helper\n\n"
+            "Co-authored-by: Amazon Q Developer <208079219+amazon-q-developer[bot]@users.noreply.github.com>"
+        )
+        result = detect_ai_signatures(message)
+        assert len(result) >= 1
+        assert any(s["tool"] == "Amazon Q Developer" for s in result)
+
+    @pytest.mark.benchmark
+    def test_amazon_q_developer_assisted_marker(self):
+        """Body marker from Amazon Q Developer is detected."""
+        message = "feat: add feature\n\n🤖 Assisted by Amazon Q Developer"
+        result = detect_ai_signatures(message)
+        assert len(result) >= 1
+        assert any(s["tool"] == "Amazon Q Developer" for s in result)
+
+    @pytest.mark.benchmark
     def test_kernel_format_with_tool_list(self):
         """Assisted-by with kernel-style tool list is detected."""
         message = (
@@ -233,6 +252,7 @@ class TestHumanNameFalsePositives:
             "Co-authored-by: Gemini Rossi <gemini@rossi.it>",
             "Co-authored-by: gpt <someone@example.com>",
             "Co-authored-by: Claude Monet <claude@monet.fr>",
+            "Co-authored-by: Amazon Qian <aq@example.com>",
         ],
     )
     def test_bare_human_name_not_detected(self, trailer):

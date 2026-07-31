@@ -120,6 +120,23 @@ COPILOT = KnownAiTool(
     ],
 )
 
+
+# --- Amazon Q Developer ---
+AMAZON_Q_DEVELOPER = KnownAiTool(
+    name="Amazon Q Developer",
+    patterns=[
+        _trailer(
+            "Co-authored-by",
+            r"Amazon Q(?: Developer)?\b\s*<[^>]*>",
+            "``Co-authored-by: Amazon Q`` trailer",
+        ),
+        _body_marker(
+            r"^🤖 Assisted by Amazon Q Developer",
+            "``🤖 Assisted by Amazon Q Developer`` body marker",
+        ),
+    ],
+)
+
 # --- OpenAI Codex ---
 CODEX = KnownAiTool(
     name="OpenAI Codex",
@@ -253,5 +270,6 @@ ALL_KNOWN_TOOLS: list[KnownAiTool] = [
     AIDER,
     WINDSURF,
     TABBY,
+    AMAZON_Q_DEVELOPER,
     GENERIC_AI,
 ]
