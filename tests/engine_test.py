@@ -1328,6 +1328,28 @@ class TestSubjectImperativeValidator:
     """Test SubjectImperativeValidator edge cases."""
 
     @pytest.mark.benchmark
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "fix: backport the patch",
+            "chore: comment out the entry",
+            "docs: embed the example",
+            "build: polyfill the API",
+            "docs: revamp the profile",
+            "chore: vendor the dependency",
+        ],
+    )
+    def test_validate_with_common_imperative_subjects(self, subject):
+        """Common imperative verbs pass subject validation."""
+        rule = ValidationRule(check="subject_imperative")
+        validator = SubjectImperativeValidator(rule)
+        context = ValidationContext(stdin_text=subject)
+
+        result = validator.validate(context)
+
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
     def test_validate_with_imperative_subject(self):
         """Test validation with proper imperative subject."""
         rule = ValidationRule(check="subject_imperative")
