@@ -1338,6 +1338,26 @@ class TestSubjectImperativeValidator:
         assert result == ValidationResult.PASS
 
     @pytest.mark.benchmark
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "docs: revamp contribution guide",
+            "chore: comment out deprecated checks",
+            "feat: backport legacy fix",
+            "feat: vendor dependency update",
+            "docs: polyfill translation layer",
+        ],
+    )
+    def test_validate_with_common_imperatives(self, subject):
+        """Test common imperatives from open issues are accepted."""
+        rule = ValidationRule(check="subject_imperative")
+        validator = SubjectImperativeValidator(rule)
+        context = ValidationContext(stdin_text=subject)
+
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
     def test_validate_with_non_imperative_subject(self):
         """Test validation with non-imperative subject."""
         rule = ValidationRule(check="subject_imperative")
