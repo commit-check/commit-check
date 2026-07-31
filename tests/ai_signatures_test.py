@@ -72,8 +72,7 @@ class TestDetectAiSignatures:
     def test_human_name_with_ordinal_ignored(self):
         """A human name with an ordinal suffix is NOT detected."""
         message = (
-            "feat: add feature\n\n"
-            "Co-authored-by: Claude Dubois 3rd <claude@gmail.com>"
+            "feat: add feature\n\nCo-authored-by: Claude Dubois 3rd <claude@gmail.com>"
         )
         assert not has_ai_signature(message)
 
