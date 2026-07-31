@@ -344,7 +344,9 @@ class TestRuleBuilder:
         }
 
         builder = RuleBuilder(config)
-        catalog_entry = RuleCatalogEntry(check="message", regex="", error=BAD_FORMAT_ERROR)
+        catalog_entry = RuleCatalogEntry(
+            check="message", regex="", error=BAD_FORMAT_ERROR
+        )
 
         with pytest.raises(ValueError, match=r"Invalid regex for 'message_pattern'"):
             builder._build_conventional_commit_rule(catalog_entry)
@@ -381,9 +383,13 @@ class TestRuleBuilder:
         }
 
         builder = RuleBuilder(config)
-        catalog_entry = RuleCatalogEntry(check="author_name", regex="", error=BAD_FORMAT_ERROR)
+        catalog_entry = RuleCatalogEntry(
+            check="author_name", regex="", error=BAD_FORMAT_ERROR
+        )
 
-        with pytest.raises(ValueError, match=r"Invalid regex for 'author_name_pattern'"):
+        with pytest.raises(
+            ValueError, match=r"Invalid regex for 'author_name_pattern'"
+        ):
             builder._build_author_pattern_rule(catalog_entry, "author_name_pattern")
 
 
