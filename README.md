@@ -127,8 +127,22 @@ ai_attribution = "forbid"
 [branch]
 # https://conventionalbranch.org
 conventional_branch = true
-allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
-```
+allow_branch_types = [
+    "feature",
+    "bugfix",
+    "hotfix",
+    "release",
+    "chore",
+    "feat",
+    "fix",
+    "build",
+    "ci",
+    "docs",
+    "perf",
+    "refactor",
+    "style",
+    "test",
+]```
 
 > [!TIP]
 > **IDE Autocompletion**
