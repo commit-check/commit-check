@@ -216,6 +216,28 @@ class TestRuleBuilder:
         assert "(PR-.+)" in rule.regex
 
     @pytest.mark.benchmark
+    def test_rule_builder_default_branch_types_include_commit_aliases(self):
+        """Default branch types should mirror commit aliases commonly used in repos."""
+        import re
+
+        config = {"branch": {"conventional_branch": True}}
+        builder = RuleBuilder(config)
+        catalog_entry = RuleCatalogEntry(check="branch", regex="", error="", suggest="")
+        rule = builder._build_conventional_branch_rule(catalog_entry)
+
+        assert rule is not None
+        for branch in (
+            "docs/update-readme",
+            "ci/fix-workflow",
+            "perf/add-benchmark",
+            "test/add-suite",
+            "refactor/cleanup",
+            "build/reduce-lint-time",
+            "style/format-config",
+        ):
+            assert re.match(rule.regex, branch), f"{branch} should pass by default"
+
+    @pytest.mark.benchmark
     def test_ai_agent_and_bot_branch_types_in_default(self):
         """AI agent and bot prefixes are valid by default."""
         import re
@@ -312,6 +334,22 @@ class TestRuleBuilder:
         assert rule.regex == r"^\[ISSUE-\d+\] .+"
 
     @pytest.mark.benchmark
+    def test_message_pattern_invalid_raises(self):
+        """Invalid message_pattern should raise a clear ValueError."""
+        config = {
+            "commit": {
+                "conventional_commits": True,
+                "message_pattern": r"^(unclosed[",
+            }
+        }
+
+        builder = RuleBuilder(config)
+        catalog_entry = RuleCatalogEntry(check="message", regex="", error=BAD_FORMAT_ERROR)
+
+        with pytest.raises(ValueError, match=r"Invalid regex for 'message_pattern'"):
+            builder._build_conventional_commit_rule(catalog_entry)
+
+    @pytest.mark.benchmark
     def test_message_pattern_empty_falls_back(self):
         """When message_pattern is empty string, fall back to conventional commits."""
         config = {
@@ -332,6 +370,21 @@ class TestRuleBuilder:
         # Should use auto-generated regex, not empty string
         assert "feat" in rule.regex
         assert "fix" in rule.regex
+
+    @pytest.mark.benchmark
+    def test_author_name_pattern_invalid_raises(self):
+        """Invalid author_name_pattern should raise a clear ValueError."""
+        config = {
+            "commit": {
+                "author_name_pattern": r"^(unclosed[",
+            }
+        }
+
+        builder = RuleBuilder(config)
+        catalog_entry = RuleCatalogEntry(check="author_name", regex="", error=BAD_FORMAT_ERROR)
+
+        with pytest.raises(ValueError, match=r"Invalid regex for 'author_name_pattern'"):
+            builder._build_author_pattern_rule(catalog_entry, "author_name_pattern")
 
 
 class TestPushRuleBuilder:

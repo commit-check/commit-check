@@ -1,6 +1,8 @@
 """Rule builder that creates validation rules from config and catalog."""
 
 from __future__ import annotations
+
+import re
 from typing import Any
 from dataclasses import dataclass
 from commit_check.rules_catalog import (
@@ -164,6 +166,7 @@ class RuleBuilder:
         """
         custom_pattern = self.commit_config.get("message_pattern", "").strip()
         if custom_pattern:
+            self._validate_regex_pattern(custom_pattern, "message_pattern")
             return ValidationRule(
                 check=catalog_entry.check,
                 regex=custom_pattern,
@@ -249,6 +252,7 @@ class RuleBuilder:
         regex = catalog_entry.regex
         if self.commit_config.get(config_key, ""):
             regex = self.commit_config.get(config_key, "").strip()
+            self._validate_regex_pattern(regex, config_key)
 
         return ValidationRule(
             check=catalog_entry.check,
@@ -256,6 +260,13 @@ class RuleBuilder:
             error=catalog_entry.error,
             suggest=catalog_entry.suggest,
         )
+
+    def _validate_regex_pattern(self, pattern: str, option_name: str) -> None:
+        """Validate custom regex from config and fail with a clear error."""
+        try:
+            re.compile(pattern)
+        except re.error as exc:
+            raise ValueError(f"Invalid regex for '{option_name}': {exc}") from exc
 
     def _build_merge_base_rule(
         self, catalog_entry: RuleCatalogEntry
