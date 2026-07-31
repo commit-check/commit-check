@@ -41,6 +41,13 @@ DEFAULT_BRANCH_TYPES = [
     "chore",
     "feat",
     "fix",
+    "build",
+    "ci",
+    "docs",
+    "perf",
+    "refactor",
+    "style",
+    "test",
     # AI agent prefixes (conventional branch spec v1.1.0)
     "ai",
     "claude",

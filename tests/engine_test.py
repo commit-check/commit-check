@@ -1382,6 +1382,23 @@ class TestSubjectImperativeValidator:
         result = validator.validate(context)
         assert result == ValidationResult.PASS
 
+    @pytest.mark.benchmark
+    def test_validate_with_newly_added_imperative_verbs(self):
+        """Test validation for verbs added to the imperative allow-list."""
+        rule = ValidationRule(check="subject_imperative")
+        validator = SubjectImperativeValidator(rule)
+
+        for subject in (
+            "docs: revamp the profile page",
+            "chore: comment out legacy code",
+            "fix: vendor third-party assets",
+            "feat: polyfill fallback behavior",
+            "chore: backport patch from upstream",
+        ):
+            context = ValidationContext(stdin_text=subject)
+            result = validator.validate(context)
+            assert result == ValidationResult.PASS
+
 
 class TestCoAuthorSkip:
     """Tests for co-author bypass logic in _should_skip_commit_validation."""
