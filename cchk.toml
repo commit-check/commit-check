@@ -17,6 +17,6 @@ ignore_authors = ["dependabot[bot]", "copilot[bot]", "pre-commit-ci[bot]", "code
 
 [branch]
 # https://conventionalbranch.org
-conventional_branch = true
+conventional_branch = false
 require_rebase_target = "main"
 ignore_authors = ["dependabot[bot]", "copilot[bot]", "pre-commit-ci[bot]", "shenxianpeng"]
