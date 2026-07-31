@@ -135,7 +135,7 @@ Example Configuration
     [branch]
     # https://conventionalbranch.org
     conventional_branch = true
-    allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
+    allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix", "build", "ci", "docs", "perf", "refactor", "style", "test"]
     # allow_branch_names = []  # Optional - additional standalone branch names (e.g., ["develop", "staging"])
     # require_rebase_target = "main"  # Optional - no rebase requirement by default
     # ignore_authors = []      # Optional - no authors ignored by default
@@ -433,7 +433,7 @@ Options Table Description
    * - branch
      - allow_branch_types
      - list[str]
-     - ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix"]
+     - ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix", "build", "ci", "docs", "perf", "refactor", "style", "test"]
      - Allowed branch types when conventional_branch is true. AI agent prefixes (``ai/``, ``claude/``, ``codex/``, ``copilot/``, ``cursor/``) and bot prefixes (``dependabot/``) are also included by default.
    * - branch
      - allow_branch_names

@@ -228,6 +228,13 @@ class TestRuleBuilder:
         assert "cursor" in DEFAULT_BRANCH_TYPES
         assert "dependabot" in DEFAULT_BRANCH_TYPES
         assert "renovate" in DEFAULT_BRANCH_TYPES
+        assert "build" in DEFAULT_BRANCH_TYPES
+        assert "ci" in DEFAULT_BRANCH_TYPES
+        assert "docs" in DEFAULT_BRANCH_TYPES
+        assert "perf" in DEFAULT_BRANCH_TYPES
+        assert "refactor" in DEFAULT_BRANCH_TYPES
+        assert "style" in DEFAULT_BRANCH_TYPES
+        assert "test" in DEFAULT_BRANCH_TYPES
 
         config = {"branch": {"conventional_branch": True}}
         builder = RuleBuilder(config)
@@ -249,6 +256,14 @@ class TestRuleBuilder:
             "dependabot/pip/certifi-2022.12.7",
             "renovate/lodash-5.x",
             "renovate/major-lodash-5.x",
+            # Default conventional branch types
+            "build/fix-linting",
+            "ci/fix-workflow",
+            "docs/update-readme",
+            "test/increase-coverage",
+            "refactor/rework-parser",
+            "perf/optimize-cache",
+            "style/fix-formatting",
         ]
         for branch in valid_branches:
             assert re.match(rule.regex, branch), f"Branch '{branch}' should be valid"
