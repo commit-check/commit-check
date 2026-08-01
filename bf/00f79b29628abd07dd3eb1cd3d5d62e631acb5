@@ -1,0 +1,21 @@
+docs/configuration.rst
+  s_0cf101ade936b3::t_68ab0c44f8cb7d 138-157,455-456
+README.md
+  s_0cf101ade936b3::t_7fdca232c6f210 130-133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.19",
+  "base_commit_sha": "bf00f79b29628abd07dd3eb1cd3d5d62e631acb5",
+  "prompts": {},
+  "sessions": {
+    "s_0cf101ade936b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019fbec1-f685-7154-9aa2-23ec7cd7d7ed",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
