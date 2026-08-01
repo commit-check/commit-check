@@ -228,6 +228,13 @@ class TestRuleBuilder:
         assert "cursor" in DEFAULT_BRANCH_TYPES
         assert "dependabot" in DEFAULT_BRANCH_TYPES
         assert "renovate" in DEFAULT_BRANCH_TYPES
+        assert "build" in DEFAULT_BRANCH_TYPES
+        assert "ci" in DEFAULT_BRANCH_TYPES
+        assert "docs" in DEFAULT_BRANCH_TYPES
+        assert "perf" in DEFAULT_BRANCH_TYPES
+        assert "refactor" in DEFAULT_BRANCH_TYPES
+        assert "style" in DEFAULT_BRANCH_TYPES
+        assert "test" in DEFAULT_BRANCH_TYPES
 
         config = {"branch": {"conventional_branch": True}}
         builder = RuleBuilder(config)
@@ -236,6 +243,14 @@ class TestRuleBuilder:
         assert rule is not None
 
         valid_branches = [
+            # Conventional branch types matching default commit types
+            "build/update-ci-image",
+            "ci/github-actions",
+            "docs/update-readme",
+            "perf/optimize-parser",
+            "refactor/simplify-engine",
+            "style/format-code",
+            "test/add-api-tests",
             # AI agent branches
             "ai/refactor-auth-flow",
             "claude/stoic-hypatia-v65p1f",
