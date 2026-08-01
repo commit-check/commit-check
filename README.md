@@ -127,6 +127,10 @@ ai_attribution = "forbid"
 [branch]
 # https://conventionalbranch.org
 conventional_branch = true
+# Optional: the defaults are a superset of the Conventional Branch spec — spec
+# types plus Conventional Commit types (build, ci, docs, perf, refactor, style,
+# test) and AI/bot prefixes (ai, claude, codex, copilot, cursor, dependabot,
+# renovate), see docs/configuration.rst. Omit this option to use the defaults.
 allow_branch_types = [
     "feature",
     "bugfix",

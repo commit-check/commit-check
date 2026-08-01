@@ -135,7 +135,26 @@ Example Configuration
     [branch]
     # https://conventionalbranch.org
     conventional_branch = true
-    allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix", "build", "ci", "docs", "perf", "refactor", "test", "style"]
+    # Optional: defaults are a superset of the Conventional Branch spec — the
+    # spec types plus Conventional Commit types, AI agent prefixes and bot
+    # prefixes (see the Options table below for the full list). Omit this
+    # option to use the defaults, or set your own list for a strict subset.
+    allow_branch_types = [
+        "feature",
+        "bugfix",
+        "hotfix",
+        "release",
+        "chore",
+        "feat",
+        "fix",
+        "build",
+        "ci",
+        "docs",
+        "perf",
+        "refactor",
+        "style",
+        "test",
+    ]
     # allow_branch_names = []  # Optional - additional standalone branch names (e.g., ["develop", "staging"])
     # require_rebase_target = "main"  # Optional - no rebase requirement by default
     # ignore_authors = []      # Optional - no authors ignored by default
@@ -433,8 +452,8 @@ Options Table Description
    * - branch
      - allow_branch_types
      - list[str]
-     - ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix", "build", "ci", "docs", "perf", "refactor", "test", "style"]
-     - Allowed branch types when conventional_branch is true. AI agent prefixes (``ai/``, ``claude/``, ``codex/``, ``copilot/``, ``cursor/``) and bot prefixes (``dependabot/``) are also included by default.
+     - ["feature", "bugfix", "hotfix", "release", "chore", "feat", "fix", "build", "ci", "docs", "perf", "refactor", "style", "test", "ai", "claude", "codex", "copilot", "cursor", "dependabot", "renovate"]
+     - Allowed branch types when ``conventional_branch`` is true. The default is a superset of the `Conventional Branch spec <https://conventionalbranch.org/>`_: the spec types (``feature``, ``bugfix``, ``hotfix``, ``release``, ``chore``) plus the Conventional Commit types (``build``, ``ci``, ``docs``, ``perf``, ``refactor``, ``style``, ``test``), AI agent prefixes (``ai``, ``claude``, ``codex``, ``copilot``, ``cursor``) and bot prefixes (``dependabot``, ``renovate``). For strict spec-only validation, set this option explicitly (e.g. ``["feature", "bugfix", "hotfix", "release", "chore"]``).
    * - branch
      - allow_branch_names
      - list[str]
