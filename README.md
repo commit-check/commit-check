@@ -142,7 +142,8 @@ allow_branch_types = [
     "refactor",
     "style",
     "test",
-]```
+]
+```
 
 > [!TIP]
 > **IDE Autocompletion**
