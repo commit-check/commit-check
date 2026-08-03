@@ -58,15 +58,19 @@ class CheckOutcome:
     value: str = ""
     error: str = ""
     suggest: str = ""
+    rule_id: str = ""
+    docs_url: str = ""
 
     def to_dict(self) -> dict[str, str]:
         """Serialise to a plain dict (suitable for JSON encoding)."""
         return {
+            "rule_id": self.rule_id,
             "check": self.check,
             "status": self.status,
             "value": self.value,
             "error": self.error,
             "suggest": self.suggest,
+            "docs_url": self.docs_url,
         }
 
 
@@ -873,9 +877,18 @@ class ValidationEngine:
                         value=failure.get("value", ""),
                         error=failure.get("error", ""),
                         suggest=failure.get("suggest", ""),
+                        rule_id=rule.rule_id or "",
+                        docs_url=rule.docs_url or "",
                     )
                 )
             else:
-                outcomes.append(CheckOutcome(check=rule.check, status="pass"))
+                outcomes.append(
+                    CheckOutcome(
+                        check=rule.check,
+                        status="pass",
+                        rule_id=rule.rule_id or "",
+                        docs_url=rule.docs_url or "",
+                    )
+                )
 
         return outcomes

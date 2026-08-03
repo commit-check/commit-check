@@ -7,6 +7,7 @@ from commit_check.rules_catalog import (
     COMMIT_RULES,
     BRANCH_RULES,
     PUSH_RULES,
+    RULES_BY_CHECK,
     RuleCatalogEntry,
 )
 from commit_check import (
@@ -31,6 +32,18 @@ class ValidationRule:
     allowed: list[str] | None = None
     ignored: list[str] | None = None
 
+    @property
+    def rule_id(self) -> str | None:
+        """Stable rule ID from the catalog, e.g. ``CC003``."""
+        entry = RULES_BY_CHECK.get(self.check)
+        return entry.rule_id if entry else None
+
+    @property
+    def docs_url(self) -> str | None:
+        """Link to this rule's section in the rules reference."""
+        entry = RULES_BY_CHECK.get(self.check)
+        return entry.docs_url if entry else None
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for backward compatibility."""
         result: dict[str, Any] = {
@@ -39,6 +52,10 @@ class ValidationRule:
             "error": self.error or "",
             "suggest": self.suggest or "",
         }
+        if self.rule_id:
+            result["rule_id"] = self.rule_id
+        if self.docs_url:
+            result["docs_url"] = self.docs_url
         if self.value is not None:
             result["value"] = self.value
         if self.allowed:
