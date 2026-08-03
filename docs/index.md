@@ -6,6 +6,7 @@
 self
 what-is-new
 configuration
+rules
 example
 migration
 troubleshoot

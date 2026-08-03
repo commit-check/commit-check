@@ -19,15 +19,25 @@ def _print_failure(
     compact: bool = False,
 ) -> None:
     """Print a standardized failure message."""
+    rule_id = check.get("rule_id", "")
     if compact:
         compact_value = actual.splitlines()[0] if actual else actual
-        print(f"[FAIL] {check['check']}: {compact_value}")
+        label = f"{rule_id} {check['check']}" if rule_id else check["check"]
+        print(f"[FAIL] {label}: {compact_value}")
         return
     if not no_banner and not print_error_header.has_been_called:
         print_error_header()
-    print_error_message(check["check"], check.get("error", ""), actual)
+    print_error_message(
+        check["check"],
+        check.get("error", ""),
+        actual,
+        rule_id=rule_id,
+    )
     if check.get("suggest"):
         print_suggestion(check["suggest"])
+    docs_url = check.get("docs_url", "")
+    if docs_url:
+        print(f"Docs: {docs_url}")
 
 
 def get_branch_name() -> str:
@@ -284,16 +294,21 @@ def print_error_header():
     print("                                                                  ")
 
 
-def print_error_message(check_type: str, error: str, reason: str):
+def print_error_message(
+    check_type: str, error: str, reason: str, rule_id: str = ""
+):
     """Print error message.
-    :param check_type:
-    :param error:
-    :param reason:
+
+    :param check_type: the check that failed, e.g. ``subject_imperative``
+    :param error: the human-readable explanation of the failure
+    :param reason: the offending value
+    :param rule_id: stable rule ID, e.g. ``CC003`` (omitted when empty)
 
     :returns: Give error messages to user
     """
+    prefix = f"{YELLOW}{rule_id}{RESET_COLOR} " if rule_id else ""
     print(
-        f"Type {YELLOW}{check_type}{RESET_COLOR} check failed ==> {RED}{reason}{RESET_COLOR} ",
+        f"{prefix}{YELLOW}{check_type}{RESET_COLOR} check failed ==> {RED}{reason}{RESET_COLOR} ",
         end="",
     )
     print("")
