@@ -1,5 +1,7 @@
 site_name: Commit Check
-site_url: https://docs.commit-check.com/
+# Deploy previews override this so the preview is self-consistent; see
+# netlify.toml.
+site_url: !ENV [SITE_URL, 'https://docs.commit-check.com/']
 site_description: >-
   Enforce commit message, branch naming, author and signoff standards —
   one policy, across your CLI, pre-commit hooks, CI, and AI agents.
