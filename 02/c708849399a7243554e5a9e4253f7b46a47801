@@ -1,0 +1,19 @@
+docs/assets/logo.svg
+  s_c9670a090cc066::t_c7830f905577cc 1-3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "02c708849399a7243554e5a9e4253f7b46a47801",
+  "prompts": {},
+  "sessions": {
+    "s_c9670a090cc066": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019fc8e0-fe8e-73d2-b7b8-75bf490ea471",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
