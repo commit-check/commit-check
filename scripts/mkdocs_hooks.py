@@ -4,12 +4,16 @@ Two jobs:
 
 * generate ``docs/cli.md`` from the CLI's own ``--help`` output, so the
   documented interface cannot drift from the shipped one;
-* emit redirects for the ``.html`` URLs the previous Sphinx site served, so
-  links already published elsewhere keep working.
+* emit redirect stubs for the ``.html`` URLs the previous Sphinx site served,
+  so links already published elsewhere keep working on hosts that have no
+  other redirect mechanism (GitHub Pages). Netlify skips the stubs: it
+  declares the same URLs as ``[[redirects]]`` in ``netlify.toml``, which
+  resolve before file lookup and cannot collide with the pages they target.
 """
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -97,6 +101,13 @@ def on_pre_build(config, **kwargs) -> None:
 def on_post_build(config, **kwargs) -> None:
     """Write a redirect stub for each URL the Sphinx site used to serve."""
     site = Path(config["site_dir"])
+    # On Netlify the stubs would be served in place of the real pages: Netlify
+    # resolves ``/rules/`` to the file ``rules.html``, so the stub that
+    # redirects to ``/rules/`` would shadow ``rules/index.html`` and loop. The
+    # ``[[redirects]]`` table in netlify.toml covers the same URLs with real
+    # 301s, so the stubs are only written for hosts without redirects.
+    if os.environ.get("NETLIFY") == "true":
+        return
     # Deploy previews pass their own URL in, and it may arrive without the
     # trailing slash the targets below are joined onto.
     base = (config["site_url"] or "/").rstrip("/") + "/"

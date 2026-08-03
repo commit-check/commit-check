@@ -27,18 +27,12 @@
 [context.branch-deploy]
   command = "pip install '.[docs]' && SITE_URL=\"$DEPLOY_PRIME_URL/\" mkdocs build --strict"
 
-# Netlify normalises "/rules" and "/rules/" to the same resource by default.
-# The build emits a redirect stub at rules.html for the old Sphinx URL, and
-# with normalisation on, that stub is what gets served for the real page too —
-# so /rules/ redirects to itself and never renders. Turn normalisation off so
-# each path resolves to exactly the file it names.
-[build.processing.html]
-  pretty_urls = false
-
-# Redirect the URLs the Sphinx site served. These are declared here rather
-# than left to the emitted stubs so they take effect before file lookup,
-# which keeps them clear of the page they point at. `splat` carries any
-# fragment through.
+# The URLs the Sphinx site served. The build does not emit redirect stubs on
+# Netlify (see scripts/mkdocs_hooks.py): a stub at rules.html would be served
+# for /rules/ requests too, shadowing the real page and redirecting to itself.
+# Declaring the URLs here resolves them before file lookup, so they cannot
+# collide with the pages they point at. Browsers carry the fragment of the
+# requested URL across the redirect, so /rules.html#cc003 lands on /rules/#cc003.
 [[redirects]]
   from = "/configuration.html"
   to = "/configuration/"
