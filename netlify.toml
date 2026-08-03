@@ -1,0 +1,30 @@
+# Netlify builds the documentation for deploy previews on pull requests.
+#
+# This file exists so the build is defined in version control rather than in
+# Netlify's web UI: when the docs toolchain changes, the preview build changes
+# with it in the same commit, and a mismatch shows up in review instead of
+# silently producing an empty preview.
+
+[build]
+  command = "pip install '.[docs]' && mkdocs build --strict"
+  publish = "site"
+
+[build.environment]
+  # MkDocs Material needs a modern Python; the package itself supports 3.10+.
+  PYTHON_VERSION = "3.12"
+
+# On a deploy preview, point the site at the preview itself. Without this the
+# canonical links and the generated redirect stubs would send reviewers from
+# the preview back to the production site, which defeats the purpose.
+[context.deploy-preview.environment]
+  SITE_URL = "${DEPLOY_PRIME_URL}"
+
+[context.branch-deploy.environment]
+  SITE_URL = "${DEPLOY_PRIME_URL}"
+
+# Serve the legacy Sphinx URLs from the redirect stubs the build emits, and
+# give anything genuinely missing the themed 404 page.
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404
