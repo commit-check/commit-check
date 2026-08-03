@@ -7,6 +7,7 @@ import pytest
 
 from commit_check.rules_catalog import (
     ALL_RULES,
+    RULES_BY_CHECK,
     BRANCH_RULES,
     COMMIT_RULES,
     PUSH_RULES,
@@ -26,6 +27,17 @@ class TestRuleIds:
         """No two rules may share an ID."""
         ids = [e.rule_id for e in ALL_ENTRIES if e.rule_id]
         assert len(ids) == len(set(ids)), "duplicate rule IDs found"
+
+    @pytest.mark.benchmark
+    def test_identified_checks_are_unique(self):
+        """Check names of identified rules must be unique.
+
+        Rule identity is looked up by check name, so a duplicate would
+        silently shadow one of the rules.
+        """
+        checks = [e.check for e in ALL_RULES]
+        assert len(checks) == len(set(checks))
+        assert len(RULES_BY_CHECK) == len(ALL_RULES)
 
     @pytest.mark.benchmark
     def test_rule_ids_are_well_formed(self):

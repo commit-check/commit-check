@@ -203,3 +203,7 @@ ALL_RULES = [
     for entry in (*COMMIT_RULES, *BRANCH_RULES, *PUSH_RULES)
     if entry.rule_id is not None
 ]
+
+#: Lookup from check name to its catalog entry, for rules that have an ID.
+#: Rule identity lives only here, so built rules can never carry a stale copy.
+RULES_BY_CHECK = {entry.check: entry for entry in ALL_RULES}

@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 from typing import Any
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from commit_check.rules_catalog import (
     COMMIT_RULES,
     BRANCH_RULES,
     PUSH_RULES,
+    RULES_BY_CHECK,
     RuleCatalogEntry,
 )
 from commit_check import (
@@ -30,8 +31,18 @@ class ValidationRule:
     value: Any = None
     allowed: list[str] | None = None
     ignored: list[str] | None = None
-    rule_id: str | None = None
-    docs_url: str | None = None
+
+    @property
+    def rule_id(self) -> str | None:
+        """Stable rule ID from the catalog, e.g. ``CC003``."""
+        entry = RULES_BY_CHECK.get(self.check)
+        return entry.rule_id if entry else None
+
+    @property
+    def docs_url(self) -> str | None:
+        """Link to this rule's section in the rules reference."""
+        entry = RULES_BY_CHECK.get(self.check)
+        return entry.docs_url if entry else None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for backward compatibility."""
@@ -72,23 +83,6 @@ class RuleBuilder:
         rules.extend(self._build_push_rules())
         return rules
 
-    @staticmethod
-    def _attach_rule_metadata(
-        rule: ValidationRule, catalog_entry: RuleCatalogEntry
-    ) -> ValidationRule:
-        """Attach the catalog's stable rule ID and docs link to a built rule.
-
-        Applied centrally so every rule inherits its identity from the catalog,
-        regardless of which ``_build_*`` method constructed it.
-        """
-        if not catalog_entry.rule_id:
-            return rule
-        return replace(
-            rule,
-            rule_id=catalog_entry.rule_id,
-            docs_url=catalog_entry.docs_url,
-        )
-
     def _build_commit_rules(self) -> list[ValidationRule]:
         """Build commit-related validation rules."""
         rules = []
@@ -96,7 +90,7 @@ class RuleBuilder:
         for catalog_entry in COMMIT_RULES:
             rule = self._build_single_rule(catalog_entry, self.commit_config)
             if rule:
-                rules.append(self._attach_rule_metadata(rule, catalog_entry))
+                rules.append(rule)
 
         return rules
 
@@ -107,7 +101,7 @@ class RuleBuilder:
         for catalog_entry in BRANCH_RULES:
             rule = self._build_single_rule(catalog_entry, self.branch_config)
             if rule:
-                rules.append(self._attach_rule_metadata(rule, catalog_entry))
+                rules.append(rule)
 
         return rules
 
@@ -118,7 +112,7 @@ class RuleBuilder:
         for catalog_entry in PUSH_RULES:
             rule = self._build_push_rule(catalog_entry)
             if rule:
-                rules.append(self._attach_rule_metadata(rule, catalog_entry))
+                rules.append(rule)
 
         return rules
 
