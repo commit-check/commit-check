@@ -122,11 +122,11 @@ class TestRulesDocumentation:
 
         This prevents shipping a new rule without documenting it.
         """
-        content = _read_doc("rules.rst")
+        content = _read_doc("rules.md")
         for entry in ALL_RULES:
-            anchor = f".. _{entry.rule_id.lower()}:"
+            anchor = f"{{ #{entry.rule_id.lower()} }}"
             assert anchor in content, (
-                f"{entry.rule_id} ({entry.check}) is missing from docs/rules.rst"
+                f"{entry.rule_id} ({entry.check}) is missing from docs/rules.md"
             )
 
     def test_every_rule_has_a_section_heading(self):
@@ -135,16 +135,18 @@ class TestRulesDocumentation:
         Checked inside the rule's own section: an anchor alone, or a heading
         that survives elsewhere on the page, would otherwise pass.
         """
-        content = _read_doc("rules.rst")
+        content = _read_doc("rules.md")
         for entry in ALL_RULES:
-            heading = f"{entry.name} ({entry.rule_id})"
-            assert heading in _rule_section(content, entry.rule_id), (
-                f"docs/rules.rst has no section titled '{heading}'"
+            heading = (
+                f"### {entry.name} ({entry.rule_id}) {{ #{entry.rule_id.lower()} }}"
+            )
+            assert heading in content, (
+                f"docs/rules.md has no section titled '{heading}'"
             )
 
     def test_every_rule_explains_itself(self):
         """Each rule section must answer what it does and why it matters."""
-        content = _read_doc("rules.rst")
+        content = _read_doc("rules.md")
         for entry in ALL_RULES:
             section = _rule_section(content, entry.rule_id)
             for required in ("**What it does**", "**Why is this bad?**", "**Options**"):
@@ -161,20 +163,20 @@ class TestDocumentedDefaults:
 
     def test_every_runtime_option_is_documented(self):
         """Every option the runtime defines has a row in the options table."""
-        documented = _parse_options_table(_read_doc("configuration.rst"))
+        documented = _parse_options_table(_read_doc("configuration.md"))
         for section, options in get_default_config().items():
             for option in options:
                 assert (section, option) in documented, (
                     f"[{section}] {option} exists in get_default_config() but "
-                    f"has no row in the options table of docs/configuration.rst"
+                    f"has no row in the options table of docs/configuration.md"
                 )
 
     def test_no_invented_options_are_documented(self):
         """The options table does not document options that do not exist."""
         runtime = get_default_config()
-        for section, option in _parse_options_table(_read_doc("configuration.rst")):
+        for section, option in _parse_options_table(_read_doc("configuration.md")):
             assert option in runtime.get(section, {}), (
-                f"docs/configuration.rst documents [{section}] {option}, which "
+                f"docs/configuration.md documents [{section}] {option}, which "
                 f"does not exist in get_default_config()"
             )
 
@@ -186,7 +188,7 @@ class TestDocumentedDefaults:
         no config file". The options table is maintained by hand and silently
         drifts away from it without this guard.
         """
-        documented = _parse_options_table(_read_doc("configuration.rst"))
+        documented = _parse_options_table(_read_doc("configuration.md"))
         runtime = get_default_config()
 
         for (section, option), (type_, cell) in sorted(documented.items()):
@@ -197,14 +199,14 @@ class TestDocumentedDefaults:
             if isinstance(expected, list):
                 # Allow-lists: order carries no meaning, membership does.
                 assert set(actual or []) == set(expected), (
-                    f"docs/configuration.rst documents [{section}] {option} "
+                    f"docs/configuration.md documents [{section}] {option} "
                     f"with {sorted(set(actual or []) - set(expected))} that are "
                     f"not defaults, and is missing "
                     f"{sorted(set(expected) - set(actual or []))}"
                 )
             else:
                 assert actual == expected, (
-                    f"docs/configuration.rst documents [{section}] {option} as "
+                    f"docs/configuration.md documents [{section}] {option} as "
                     f"{cell.strip()!r}, but the runtime default is {expected!r}"
                 )
 
@@ -216,15 +218,16 @@ def _read_doc(name: str) -> str:
 
 def _rule_section(content: str, rule_id: str) -> str:
     """Return just the part of the rules page belonging to one rule."""
-    _, _, after = content.partition(f".. _{rule_id.lower()}:")
-    return re.split(r"\n\.\. _cc\d{3}:", after)[0]
+    _, _, after = content.partition(f"{{ #{rule_id.lower()} }}")
+    return re.split(r"\{ #cc\d{3} \}", after)[0]
 
 
 _OPTIONS_ROW = re.compile(
-    r"\*\s+-\s+(commit|branch|push)\s*\n"  # section
-    r"\s+-\s+(\w+)\s*\n"  # option name
-    r"\s+-\s+(bool|int|str|list\[str\])\s*\n"  # type
-    r"\s+-\s+(.+)\n"  # documented default
+    r"^\|\s*(commit|branch|push)\s*"  # section
+    r"\|\s*(\w+)\s*"  # option name
+    r"\|\s*(bool|int|str|list\[str\])\s*"  # type
+    r"\|\s*(.+?)\s*\|",  # documented default
+    re.M,
 )
 
 
@@ -245,7 +248,8 @@ def _parse_options_table(content: str) -> dict[tuple[str, str], tuple[str, str]]
     }
 
 
-_QUOTED = re.compile(r'^(?:``(.*?)``|"(.*?)")')
+# Markdown code spans use single backticks; RST used double.
+_QUOTED = re.compile(r'^(?:`+(.*?)`+|"(.*?)")')
 
 
 def _documented_default(type_: str, cell: str) -> Any:

@@ -19,3 +19,7 @@ _build/
 docs/_build
 docs/cli_args.rst
 docs/__pycache__
+
+# MkDocs
+site/
+docs/cli.md
