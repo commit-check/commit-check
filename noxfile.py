@@ -59,6 +59,4 @@ def docs(session):
 @nox.session(name="docs-live")
 def docs_live(session):
     session.install(".[docs]")
-    session.run(
-        "mkdocs", "serve"
-    )
+    session.run("mkdocs", "serve")
