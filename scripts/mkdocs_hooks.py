@@ -27,12 +27,27 @@ LEGACY_URLS = {
     "genindex": "",
 }
 
+# Redirect stubs for the URLs the Sphinx site served.
+# The script carries the fragment across, because the links most worth keeping
+# alive are the per-rule ones (``rules.html#cc003``) and a plain redirect drops
+# the ``#cc003``. It also refuses to redirect a page to itself: a host that
+# normalises ``/rules`` and ``/rules/`` to the same resource would otherwise
+# serve this stub in place of the real page and loop forever.
 REDIRECT = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <title>Redirecting…</title>
 <link rel="canonical" href="{url}">
+<script>
+(function () {{
+  var target = "{url}";
+  var here = location.protocol + "//" + location.host + location.pathname;
+  if (here !== target && here + "/" !== target) {{
+    location.replace(target + location.hash);
+  }}
+}})();
+</script>
 <meta http-equiv="refresh" content="0; url={url}">
 </head>
 <body>Redirecting to <a href="{url}">{url}</a>…</body>

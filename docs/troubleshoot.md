@@ -19,7 +19,7 @@ Suggest: run command `git config user.name "Your Name"`
 
 To fix it, you can either update your Git config or temporarily skip the check using one of the following methods.
 
-### Bypass Specific Hook
+### Bypass All Hooks
 
 Use the `--no-verify` flag to skip the pre-commit hook:
 
@@ -28,7 +28,7 @@ Use the `--no-verify` flag to skip the pre-commit hook:
 git commit --amend --author="Xianpeng Shen <xianpeng.shen@gmail.com>" --no-edit --no-verify
 ```
 
-### Bypass All Hooks
+### Bypass A Specific Hook
 
 Alternatively, use the `SKIP=your-hook-name` environment variable, like below:
 

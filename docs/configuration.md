@@ -254,7 +254,7 @@ CCHK_SUBJECT_MAX_LENGTH=100 commit-check --message
 | `allow_branch_types = ["feature"]` | `CCHK_ALLOW_BRANCH_TYPES=feature,bugfix` | `--allow-branch-types=feature,bugfix` |
 | `allow_branch_names = ["develop"]` | `CCHK_ALLOW_BRANCH_NAMES=develop,staging` | `--allow-branch-names=develop,staging` |
 | `require_rebase_target = "main"` | `CCHK_REQUIRE_REBASE_TARGET=main` | `--require-rebase-target=main` |
-| `allow_force_push = true` | `CCHK_ALLOW_FORCE_PUSH=false` | `--no-force-push` (enable via `--no-force-push` flag) |
+| `allow_force_push = true` | `CCHK_ALLOW_FORCE_PUSH=true` | `--no-force-push` (sets `allow_force_push` to `false`) |
 | `ai_attribution = "forbid"` | `CCHK_AI_ATTRIBUTION=forbid` | `--ai-attribution=forbid` |
 | `ignore_authors = ["bot"]` (in branch section) | `CCHK_BRANCH_IGNORE_AUTHORS=bot,user` | `--branch-ignore-authors=bot,user` |
 

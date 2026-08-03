@@ -136,7 +136,8 @@ whatever your AI agent is committing on your behalf.
 
     ---
 
-    Build provenance with artifact attestation verified at install time.
+    Build provenance with artifact attestation you can verify before
+    installing.
 
 -   :material-tag-outline:{ .lg .middle } __Stable rule IDs__
 

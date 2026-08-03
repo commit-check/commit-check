@@ -91,8 +91,10 @@ Suggest: Use <type>(<scope>): <description> with allowed types
 
 Commit-check provides several command-line options for different validation scenarios. via options or STDIN
 
-.. tip ::
-    Validate commit messages by piping them through STDIN. This is useful for testing or scripting.
+!!! tip
+
+    Validate commit messages by piping them through STDIN. This is useful for
+    testing or scripting.
 
 Available Commands see [commit-check --help](cli.md)
 

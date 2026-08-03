@@ -56,8 +56,7 @@ so branches like `dependabot/go_modules/go-deps-c57c3fe1e0` and
 ### Conventional Branch v1.1.0 AI agent prefixes supported by default
 
 `ai/`, `claude/`, `codex/`, `copilot/`, and `cursor/` have been
-added to `DEFAULT_BRANCH_TYPES` as defined in `Conventional Branch
-v1.1.0 <https://conventional-branch.github.io/>`_.  Branches created by AI
+added to `DEFAULT_BRANCH_TYPES` as defined in [Conventional Branch v1.1.0](https://conventional-branch.github.io/).  Branches created by AI
 coding agents are now valid out of the box without extra configuration.
 
 ## Version 2.7.0 — Force Push Blocking

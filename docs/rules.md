@@ -445,8 +445,9 @@ Requires a `Signed-off-by:` trailer in the commit message.
 
 **Why is this bad?**
 
-Projects that use the `Developer Certificate of Origin
-<https://developercertificate.org/>`_ — the Linux kernel, and much of the
+Projects that use the
+[Developer Certificate of Origin](https://developercertificate.org/) — the
+Linux kernel, and much of the
 CNCF — treat that trailer as the contributor's statement that they have the
 right to submit the code. A commit without it cannot be merged, so catching it
 locally saves a round trip through CI.

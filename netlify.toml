@@ -27,9 +27,80 @@
 [context.branch-deploy]
   command = "pip install '.[docs]' && SITE_URL=\"$DEPLOY_PRIME_URL/\" mkdocs build --strict"
 
-# Serve the legacy Sphinx URLs from the redirect stubs the build emits, and
-# give anything genuinely missing the themed 404 page.
+# Netlify normalises "/rules" and "/rules/" to the same resource by default.
+# The build emits a redirect stub at rules.html for the old Sphinx URL, and
+# with normalisation on, that stub is what gets served for the real page too —
+# so /rules/ redirects to itself and never renders. Turn normalisation off so
+# each path resolves to exactly the file it names.
+[build.processing.html]
+  pretty_urls = false
+
+# Redirect the URLs the Sphinx site served. These are declared here rather
+# than left to the emitted stubs so they take effect before file lookup,
+# which keeps them clear of the page they point at. `splat` carries any
+# fragment through.
 [[redirects]]
-  from = "/*"
-  to = "/404.html"
-  status = 404
+  from = "/configuration.html"
+  to = "/configuration/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/rules.html"
+  to = "/rules/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/example.html"
+  to = "/example/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/migration.html"
+  to = "/migration/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/troubleshoot.html"
+  to = "/troubleshoot/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/changelog.html"
+  to = "/changelog/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/what-is-new.html"
+  to = "/what-is-new/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/cli_args.html"
+  to = "/cli/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/README.html"
+  to = "/getting-started/installation/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/index.html"
+  to = "/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/genindex.html"
+  to = "/"
+  status = 301
+  force = true

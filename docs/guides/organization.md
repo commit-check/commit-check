@@ -23,7 +23,7 @@ allow_branch_types = ["feature", "bugfix", "hotfix", "release", "chore"]
 
 ## Inheriting it
 
-Each repository then needs three lines:
+Each repository then needs one line:
 
 ```toml title="any-repo → .github/cchk.toml"
 inherit_from = "github:my-org/.github:cchk.toml"

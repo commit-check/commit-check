@@ -79,3 +79,24 @@ cannot drift between what a developer sees locally and what CI enforces.
 
 See [Configuration](../configuration.md) for where the file may live, and
 [Organization-wide policy](organization.md) for sharing one across repositories.
+
+## Pull requests from forks
+
+A `pull_request` workflow triggered by a fork receives a **read-only**
+`GITHUB_TOKEN`, and `permissions: pull-requests: write` does not override that.
+`pr-comments` will therefore fail to post on fork pull requests unless the
+repository has *Send write tokens to workflows from pull requests* enabled under
+**Settings → Actions → General**.
+
+!!! warning "Do not reach for `pull_request_target` casually"
+
+    `pull_request_target` does get a write token, but it runs in the context of
+    the base repository with access to its secrets. Checking out and executing
+    the fork's code under that trigger is the "pwn request" pattern and hands
+    repository access to anyone who can open a pull request.
+
+    If you use it, check out the base branch only and never run code from the
+    pull request.
+
+The checks themselves still run on fork pull requests and still fail the build;
+only the commenting is affected.

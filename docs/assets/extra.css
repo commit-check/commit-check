@@ -4,6 +4,8 @@
   --cc-brand: #2c9ccd;
   --cc-brand-dark: #1e85a8;
   --cc-brand-light: #5bb3d9;
+  /* The brand blue only reaches 4.2:1 on white; links need 4.5:1. */
+  --cc-link: #176b89;
 
   --md-primary-fg-color: var(--cc-brand);
   --md-primary-fg-color--light: var(--cc-brand-light);
@@ -18,7 +20,7 @@
 }
 
 [data-md-color-scheme="default"] {
-  --md-typeset-a-color: var(--cc-brand-dark);
+  --md-typeset-a-color: var(--cc-link);
 }
 
 /* Landing page -------------------------------------------------------------

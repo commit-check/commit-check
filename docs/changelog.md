@@ -10,8 +10,8 @@ Full changelog available at [GitHub releases](https://github.com/commit-check/co
 
 * **AI attribution governance** — Added support for forbidding known AI tool
   signatures (e.g., `Co-authored-by: Copilot`) in commit messages. New
-  `[commit]` config option `forbid_ai_attribution` (boolean, default
-  `false`) rejects commits co-authored by AI coding agents. See PR [#456](https://github.com/commit-check/commit-check/pull/456).
+  `[commit]` config option `ai_attribution` (default `"ignore"`) rejects
+  commits carrying known AI tool signatures when set to `"forbid"`. See PR [#456](https://github.com/commit-check/commit-check/pull/456).
 
 ### Bug Fixes
 
@@ -145,7 +145,8 @@ Full changelog available at [GitHub releases](https://github.com/commit-check/co
 
 ## v2.0.0 (2025-10-01)
 
-.. Attention::
+!!! warning
+
     This major release introduces significant architectural changes and breaking updates to commit-check. Please review carefully before upgrading.
 
 ### What's New
