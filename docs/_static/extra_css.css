@@ -57,13 +57,15 @@ thead {
   border-color: #2c9ccd;
 }
 
-/* Rule index tables: keep rule codes, names, and CLI flags on one line so the
-   tables stay scannable, and align cells to the top when a message wraps. */
+/* Align table cells to the top so short cells line up with a wrapped message. */
 .md-typeset table td,
 .md-typeset table th {
   vertical-align: top;
 }
 
-.md-typeset table td code {
+/* In the rule index tables only, keep rule codes, names, and CLI flags on one
+   line so the tables stay scannable. Other tables (such as the configuration
+   options table) hold long regexes and lists that must stay wrappable. */
+.md-typeset table.rules-index td code {
   white-space: nowrap;
 }

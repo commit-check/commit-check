@@ -90,6 +90,7 @@ Run with ``-m`` / ``--message``.
 .. list-table::
    :header-rows: 1
    :widths: 10 26 44 10 10
+   :class: rules-index
 
    * - Code
      - Name
@@ -115,12 +116,12 @@ Run with ``-m`` / ``--message``.
      - ``subject-max-length``
      - Subject must be at most ``{max_len}`` characters
      - ``-m``
-     - ⚪ Off
+     - ✅ On
    * - :ref:`CC005 <cc005>`
      - ``subject-min-length``
      - Subject must be at least ``{min_len}`` characters
      - ``-m``
-     - ⚪ Off
+     - ✅ On
    * - :ref:`CC006 <cc006>`
      - ``allow-merge-commits``
      - Merge commits are not allowed
@@ -170,6 +171,7 @@ Author rules (``CC1xx``)
 .. list-table::
    :header-rows: 1
    :widths: 10 26 44 10 10
+   :class: rules-index
 
    * - Code
      - Name
@@ -197,6 +199,7 @@ Run with ``-b`` / ``--branch``.
 .. list-table::
    :header-rows: 1
    :widths: 10 26 44 10 10
+   :class: rules-index
 
    * - Code
      - Name
@@ -222,6 +225,7 @@ Push rules (``CC3xx``)
 .. list-table::
    :header-rows: 1
    :widths: 10 26 44 10 10
+   :class: rules-index
 
    * - Code
      - Name
@@ -382,8 +386,8 @@ Use instead:
 
 **Options**
 
-* ``commit.subject_max_length`` — the limit, in characters. Unset by default,
-  meaning no limit. ``50`` and ``72`` are the conventional choices.
+* ``commit.subject_max_length`` — the limit, in characters. Defaults to ``80``.
+  ``50`` and ``72`` are the other conventional choices.
 
 .. _cc005:
 
@@ -414,8 +418,7 @@ Use instead:
 
 **Options**
 
-* ``commit.subject_min_length`` — the minimum, in characters. Unset by default,
-  meaning no minimum.
+* ``commit.subject_min_length`` — the minimum, in characters. Defaults to ``5``.
 
 .. _cc006:
 
@@ -641,8 +644,6 @@ Use instead:
 **Options**
 
 * ``commit.require_signed_off_by`` — set to ``true`` to enable this rule.
-* ``commit.required_signoff_name`` — require the trailer to carry a specific name.
-* ``commit.required_signoff_email`` — require the trailer to carry a specific email.
 
 .. _cc013:
 
@@ -689,14 +690,14 @@ accepts letters (including accented Latin characters), spaces, and
 
 When ``user.name`` is unset, Git falls back to the machine's account name.
 Histories built in CI containers and on fresh VMs fill up with commits by
-``root``, ``ubuntu``, and ``ec2-user`` — authorship that cannot be traced back
-to a person, which matters for both code archaeology and compliance.
+machine accounts — authorship that cannot be traced back to a person, which
+matters for both code archaeology and compliance.
 
 **Example**
 
 .. code-block:: bash
 
-    git config user.name root
+    git config user.name ec2-user
 
 Use instead:
 
@@ -709,6 +710,13 @@ Use instead:
 * ``commit.author_name_pattern`` — a custom regex replacing the built-in
   pattern. For example, ``"^.+ .+$"`` to require a full name.
 
+.. note::
+
+    The built-in pattern accepts any name made of letters, spaces, and
+    ``, . ' -``, so plain account names such as ``root`` or ``ubuntu`` still
+    pass it — only names containing digits or other symbols are rejected. Set
+    ``author_name_pattern`` if you need something stricter.
+
 .. _cc102:
 
 author-email (CC102)
@@ -717,20 +725,25 @@ author-email (CC102)
 **What it does**
 
 Checks the committer's configured email against a pattern. The built-in pattern
-(``^.+@.+$``) only requires something that looks like an address.
+is ``^.+@.+$``, which only requires an ``@`` with something on either side.
 
 **Why is this bad?**
 
-An unset or placeholder email breaks the link between a commit and its author:
-forges cannot attribute the commit to an account, and mailmap-based tooling
-cannot merge identities. Organisations that require contributions from a
-corporate address can tighten the pattern to enforce it.
+An address with no ``@`` is not routable, so it breaks the link between a commit
+and its author: forges cannot attribute the commit to an account, and
+mailmap-based tooling cannot merge identities.
+
+The built-in pattern is deliberately permissive — it is a sanity check, not a
+policy. Its real value comes from replacing it, which is how organisations
+require contributions to come from a corporate address.
 
 **Example**
 
+With ``author_email_pattern = "^.+@example\\.com$"`` configured:
+
 .. code-block:: bash
 
-    git config user.email root@localhost
+    git config user.email you@gmail.com
 
 Use instead:
 
@@ -740,8 +753,15 @@ Use instead:
 
 **Options**
 
-* ``commit.author_email_pattern`` — a custom regex replacing the built-in
-  pattern. For example, ``"^.+@example\\.com$"`` to require a company domain.
+* ``commit.author_email_pattern`` — the regex to match against. Defaults to
+  ``^.+@.+$``; set something like ``"^.+@example\\.com$"`` to require a company
+  domain.
+
+.. note::
+
+    Because the built-in pattern only looks for an ``@``, local and placeholder
+    addresses such as ``root@localhost`` pass it. Set ``author_email_pattern``
+    if you need to reject those.
 
 Branch rules
 ------------
@@ -782,7 +802,7 @@ Use instead:
 
 **Options**
 
-* ``commit.conventional_branch`` — set to ``false`` to disable this rule.
+* ``branch.conventional_branch`` — set to ``false`` to disable this rule.
 * ``branch.allow_branch_types`` — the accepted ``<type>`` values. The default is
   a superset of the specification: the spec types plus the Conventional Commit
   types, AI agent prefixes (``ai``, ``claude``, ``codex``, ``copilot``,

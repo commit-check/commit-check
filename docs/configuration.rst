@@ -24,8 +24,8 @@ Configuration Files
   **Default Behavior**
 
   * When no configuration file exists, commit-check uses sensible defaults with minimal restrictions.
-  * Only the Conventional Commits format (:ref:`CC001 <cc001>`), the Conventional Branch format (:ref:`CC201 <cc201>`), and the author name and email patterns (:ref:`CC101 <cc101>`, :ref:`CC102 <cc102>`) are enforced by default.
-  * Subject capitalization and imperative mood are **off** by default, as are all length limits, body and signoff requirements, and rebase requirements.
+  * Enforced by default: the Conventional Commits format (:ref:`CC001 <cc001>`), the Conventional Branch format (:ref:`CC201 <cc201>`), the subject length limits of 5–80 characters (:ref:`CC004 <cc004>`, :ref:`CC005 <cc005>`), and the author name and email patterns (:ref:`CC101 <cc101>`, :ref:`CC102 <cc102>`).
+  * **Off** by default: subject capitalization, imperative mood, body and signoff requirements, rebase requirements, and every ``allow_*`` restriction.
 
   See :doc:`rules` for the default state of every rule.
 
@@ -115,8 +115,8 @@ Example Configuration
     # message_pattern = ""     # Optional - custom regex (overrides conventional_commits)
     subject_capitalized = false
     subject_imperative = false
-    # subject_max_length = 50  # Optional - no limit by default
-    # subject_min_length = 5   # Optional - no limit by default
+    subject_max_length = 80    # Default - set to your own limit
+    subject_min_length = 5     # Default - set to your own minimum
     allow_commit_types = ["feat", "fix", "docs", "style", "refactor", "test", "chore"]
     allow_merge_commits = true
     allow_revert_commits = true
@@ -126,8 +126,6 @@ Example Configuration
     require_body = false
     # ignore_authors = []      # Optional - bypass checks for these commit/co-authors
     require_signed_off_by = false
-    # required_signoff_name = "Your Name"      # Optional
-    # required_signoff_email = "your.email@example.com"  # Optional
     ai_attribution = "forbid"  # "ignore" (default) or "forbid" — rejects AI tool trailers
 
     [push]
@@ -377,12 +375,12 @@ Options Table Description
    * - commit
      - subject_max_length
      - int
-     - None (no limit)
+     - 80
      - Maximum length of the subject line.
    * - commit
      - subject_min_length
      - int
-     - None (no limit)
+     - 5
      - Minimum length of the subject line.
    * - commit
      - allow_commit_types
@@ -427,7 +425,7 @@ Options Table Description
    * - commit
      - author_email_pattern
      - str
-     - "" (built-in default ``^.+@.+$``)
+     - ``^.+@.+$``
      - Custom regex for the author email check. When empty, the built-in default pattern is used.
        This option only takes effect when the author_email check is enabled (``-e`` / ``--author-email``).
    * - commit
@@ -464,7 +462,7 @@ Options Table Description
    * - branch
      - require_rebase_target
      - str
-     - None (no requirement)
+     - "" (no requirement)
      - Target branch for rebase requirement. If not set, no rebase validation is performed.
    * - push
      - allow_force_push

@@ -2,6 +2,7 @@
 
 import re
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -15,12 +16,7 @@ from commit_check.rules_catalog import (
     RuleCatalogEntry,
 )
 from commit_check.rule_builder import RuleBuilder
-from commit_check import (
-    DEFAULT_BOOLEAN_RULES,
-    DEFAULT_BRANCH_TYPES,
-    DEFAULT_COMMIT_TYPES,
-    DEFAULT_PUSH_RULES,
-)
+from commit_check.config_merger import get_default_config
 
 ALL_ENTRIES = [*COMMIT_RULES, *BRANCH_RULES, *PUSH_RULES]
 
@@ -132,13 +128,13 @@ class TestRulesDocumentation:
     def test_every_rule_has_a_section_heading(self):
         """Each rule needs a ``name (CCxxx)`` heading, not just an anchor.
 
-        An anchor alone would satisfy the test above while linking readers to
-        an empty part of the page.
+        Checked inside the rule's own section: an anchor alone, or a heading
+        that survives elsewhere on the page, would otherwise pass.
         """
         content = _read_doc("rules.rst")
         for entry in ALL_RULES:
             heading = f"{entry.name} ({entry.rule_id})"
-            assert heading in content, (
+            assert heading in _rule_section(content, entry.rule_id), (
                 f"docs/rules.rst has no section titled '{heading}'"
             )
 
@@ -146,10 +142,8 @@ class TestRulesDocumentation:
     def test_every_rule_explains_itself(self):
         """Each rule section must answer what it does and why it matters."""
         content = _read_doc("rules.rst")
-        # Split on the anchors so each rule's prose is checked in isolation.
         for entry in ALL_RULES:
-            _, _, after = content.partition(f".. _{entry.rule_id.lower()}:")
-            section = re.split(r"\n\.\. _cc\d{3}:", after)[0]
+            section = _rule_section(content, entry.rule_id)
             for required in ("**What it does**", "**Why is this bad?**", "**Options**"):
                 assert required in section, (
                     f"{entry.rule_id} ({entry.check}) section is missing {required}"
@@ -160,51 +154,56 @@ class TestDocumentedDefaults:
     """The documented defaults must match the ones the code actually uses."""
 
     @pytest.mark.benchmark
-    def test_boolean_defaults_match_configuration_docs(self):
-        """Every boolean option's documented default matches the source.
+    def test_every_runtime_option_is_documented(self):
+        """Every option the runtime defines has a row in the options table."""
+        documented = _parse_options_table(_read_doc("configuration.rst"))
+        for section, options in get_default_config().items():
+            for option in options:
+                assert (section, option) in documented, (
+                    f"[{section}] {option} exists in get_default_config() but "
+                    f"has no row in the options table of docs/configuration.rst"
+                )
 
-        The options table in ``docs/configuration.rst`` is maintained by hand.
-        Without this guard it silently drifts away from
-        ``DEFAULT_BOOLEAN_RULES`` whenever a default changes.
+    @pytest.mark.benchmark
+    def test_no_invented_options_are_documented(self):
+        """The options table does not document options that do not exist."""
+        runtime = get_default_config()
+        for section, option in _parse_options_table(_read_doc("configuration.rst")):
+            assert option in runtime.get(section, {}), (
+                f"docs/configuration.rst documents [{section}] {option}, which "
+                f"does not exist in get_default_config()"
+            )
+
+    @pytest.mark.benchmark
+    def test_documented_defaults_match_the_runtime(self):
+        """Every documented default equals the value the runtime actually uses.
+
+        ``get_default_config()`` is what ``ConfigMerger.from_all_sources()``
+        starts from, so it is the single source of truth for "what happens with
+        no config file". The options table is maintained by hand and silently
+        drifts away from it without this guard.
         """
         documented = _parse_options_table(_read_doc("configuration.rst"))
-        expected = {**DEFAULT_BOOLEAN_RULES, **DEFAULT_PUSH_RULES}
+        runtime = get_default_config()
 
-        for option, default in expected.items():
-            assert option in documented, (
-                f"'{option}' has a default in the source but no row in the "
-                f"options table of docs/configuration.rst"
-            )
-            assert documented[option] == default, (
-                f"docs/configuration.rst documents {option} as "
-                f"{str(documented[option]).lower()}, but the default is "
-                f"{str(default).lower()}"
-            )
-
-    @pytest.mark.parametrize(
-        ("option", "expected"),
-        [
-            ("allow_commit_types", DEFAULT_COMMIT_TYPES),
-            ("allow_branch_types", DEFAULT_BRANCH_TYPES),
-        ],
-    )
-    @pytest.mark.benchmark
-    def test_list_defaults_match_configuration_docs(self, option, expected):
-        """The documented list defaults contain exactly the real values.
-
-        Compared as sets: these are allow-lists, so the order they are listed
-        in carries no meaning and should not fail the build.
-        """
-        documented = _parse_list_default(_read_doc("configuration.rst"), option)
-        assert documented is not None, (
-            f"'{option}' has no list[str] row in the options table of "
-            f"docs/configuration.rst"
-        )
-        assert set(documented) == set(expected), (
-            f"docs/configuration.rst documents {option} with "
-            f"{sorted(set(documented) - set(expected))} that are not defaults, "
-            f"and is missing {sorted(set(expected) - set(documented))}"
-        )
+        for (section, option), (type_, cell) in sorted(documented.items()):
+            if option not in runtime.get(section, {}):
+                continue  # reported by test_no_invented_options_are_documented
+            expected = runtime[section][option]
+            actual = _documented_default(type_, cell)
+            if isinstance(expected, list):
+                # Allow-lists: order carries no meaning, membership does.
+                assert set(actual or []) == set(expected), (
+                    f"docs/configuration.rst documents [{section}] {option} "
+                    f"with {sorted(set(actual or []) - set(expected))} that are "
+                    f"not defaults, and is missing "
+                    f"{sorted(set(expected) - set(actual or []))}"
+                )
+            else:
+                assert actual == expected, (
+                    f"docs/configuration.rst documents [{section}] {option} as "
+                    f"{cell.strip()!r}, but the runtime default is {expected!r}"
+                )
 
 
 def _read_doc(name: str) -> str:
@@ -212,40 +211,59 @@ def _read_doc(name: str) -> str:
     return (Path(__file__).parent.parent / "docs" / name).read_text(encoding="utf-8")
 
 
-def _parse_options_table(content: str) -> dict[str, bool]:
-    """Extract ``option -> documented default`` for boolean rows.
+def _rule_section(content: str, rule_id: str) -> str:
+    """Return just the part of the rules page belonging to one rule."""
+    _, _, after = content.partition(f".. _{rule_id.lower()}:")
+    return re.split(r"\n\.\. _cc\d{3}:", after)[0]
 
-    Matches the five-cell ``list-table`` rows in the options table, e.g.::
+
+_OPTIONS_ROW = re.compile(
+    r"\*\s+-\s+(commit|branch|push)\s*\n"  # section
+    r"\s+-\s+(\w+)\s*\n"  # option name
+    r"\s+-\s+(bool|int|str|list\[str\])\s*\n"  # type
+    r"\s+-\s+(.+)\n"  # documented default
+)
+
+
+def _parse_options_table(content: str) -> dict[tuple[str, str], tuple[str, str]]:
+    """Map ``(section, option) -> (type, raw default cell)``.
+
+    Parses the five-cell ``list-table`` rows of the options table, e.g.::
 
         * - commit
-          - allow_wip_commits
-          - bool
-          - true
-          - Allow work-in-progress commits.
+          - subject_max_length
+          - int
+          - 80
+          - Maximum length of the subject line.
     """
-    row = re.compile(
-        r"\*\s+-\s+(?:commit|branch|push)\s*\n"
-        r"\s+-\s+(\w+)\s*\n"
-        r"\s+-\s+bool\s*\n"
-        r"\s+-\s+(true|false)\s*\n"
-    )
-    return {name: value == "true" for name, value in row.findall(content)}
+    return {
+        (section, option): (type_, cell)
+        for section, option, type_, cell in _OPTIONS_ROW.findall(content)
+    }
 
 
-def _parse_list_default(content: str, option: str) -> list[str] | None:
-    """Extract the documented default for a ``list[str]`` option.
+_QUOTED = re.compile(r'^(?:``(.*?)``|"(.*?)")')
 
-    Returns ``None`` when the option has no ``list[str]`` row, so the caller
-    can tell "undocumented" apart from "documented as empty".
+
+def _documented_default(type_: str, cell: str) -> Any:
+    """Turn a documented default cell into a comparable Python value.
+
+    Cells carry a human annotation after the value itself (``"" (disabled)``),
+    so the value is read from the front of the cell and the rest ignored.
     """
-    row = re.search(
-        rf"\*\s+-\s+(?:commit|branch|push)\s*\n"
-        rf"\s+-\s+{re.escape(option)}\s*\n"
-        rf"\s+-\s+list\[str\]\s*\n"
-        rf"\s+-\s+(\[.*?\])\s*\n",
-        content,
-        re.S,
+    cell = cell.strip()
+    if type_ == "bool":
+        return cell.startswith("true")
+    if type_ == "int":
+        match = re.match(r"-?\d+", cell)
+        return int(match.group()) if match else None
+    if type_ == "list[str]":
+        return re.findall(r'"(.*?)"', cell)
+    quoted = _QUOTED.match(cell)
+    return (
+        quoted.group(1)
+        if quoted.group(1) is not None
+        else quoted.group(2)
+        if quoted
+        else cell
     )
-    if row is None:
-        return None
-    return re.findall(r'"([^"]+)"', row.group(1))
