@@ -3,13 +3,29 @@
 
 ```{toctree}
 :hidden:
+:caption: Getting started
 self
 what-is-new
-configuration
-rules
 example
+```
+
+```{toctree}
+:hidden:
+:caption: Configuring
+configuration
 migration
+```
+
+```{toctree}
+:hidden:
+:caption: Reference
+rules
+cli_args
+```
+
+```{toctree}
+:hidden:
+:caption: About
 troubleshoot
 changelog
-cli_args
 ```

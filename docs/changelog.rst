@@ -6,7 +6,7 @@ All **notable changes** to this project will be documented in this file.
 Full changelog available at `GitHub releases <https://github.com/commit-check/commit-check/releases>`_.
 
 v2.11.0 (2026-07-06)
--------------------
+--------------------
 
 New Features
 ~~~~~~~~~~~~
@@ -32,7 +32,7 @@ Chores
 
 
 v2.10.1 (2026-06-30)
--------------------
+--------------------
 
 Bug Fixes
 ~~~~~~~~~
@@ -54,7 +54,7 @@ Refactors
 
 
 v2.10.0 (2026-06-26)
--------------------
+--------------------
 
 New Features
 ~~~~~~~~~~~~
@@ -222,6 +222,6 @@ v0.10.2 (2025-08-26)
 Last release before the big v2.0 changes.
 
 v0.1.0 (2022-11-02)
---------------------
+-------------------
 
 Initial release of commit-check.

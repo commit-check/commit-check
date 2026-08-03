@@ -24,8 +24,10 @@ Configuration Files
   **Default Behavior**
 
   * When no configuration file exists, commit-check uses sensible defaults with minimal restrictions.
-  * Only conventional commits format, subject capitalization, and imperative mood are enforced by default.
-  * No length limits, author restrictions, or rebase requirements are applied.
+  * Only the Conventional Commits format (:ref:`CC001 <cc001>`), the Conventional Branch format (:ref:`CC201 <cc201>`), and the author name and email patterns (:ref:`CC101 <cc101>`, :ref:`CC102 <cc102>`) are enforced by default.
+  * Subject capitalization and imperative mood are **off** by default, as are all length limits, body and signoff requirements, and rebase requirements.
+
+  See :doc:`rules` for the default state of every rule.
 
 commit-check can be configured via a ``cchk.toml`` or ``commit-check.toml`` file.
 
@@ -365,12 +367,12 @@ Options Table Description
    * - commit
      - subject_capitalized
      - bool
-     - true
+     - false
      - Subject must start with a capital letter.
    * - commit
      - subject_imperative
      - bool
-     - true
+     - false
      - Subject must be in imperative mood. Forms of verbs can be found at `imperatives.py <https://github.com/commit-check/commit-check/blob/main/commit_check/imperatives.py>`_
    * - commit
      - subject_max_length
@@ -385,7 +387,7 @@ Options Table Description
    * - commit
      - allow_commit_types
      - list[str]
-     - ["feat", "fix", "docs", "style", "refactor", "test", "chore"]
+     - ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "build", "ci"]
      - Allowed commit types when conventional_commits is true.
    * - commit
      - allow_merge_commits
@@ -400,7 +402,7 @@ Options Table Description
    * - commit
      - allow_empty_commits
      - bool
-     - false
+     - true
      - Allow empty commits.
    * - commit
      - allow_fixup_commits
@@ -410,7 +412,7 @@ Options Table Description
    * - commit
      - allow_wip_commits
      - bool
-     - false
+     - true
      - Allow work-in-progress commits (e.g., "WIP: <commit message>").
    * - commit
      - require_body
@@ -425,7 +427,7 @@ Options Table Description
    * - commit
      - author_email_pattern
      - str
-     - ^.+@.+$
+     - "" (built-in default ``^.+@.+$``)
      - Custom regex for the author email check. When empty, the built-in default pattern is used.
        This option only takes effect when the author_email check is enabled (``-e`` / ``--author-email``).
    * - commit

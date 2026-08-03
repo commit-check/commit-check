@@ -5,9 +5,14 @@ thead {
 }
 
 .md-header,
-.md-tabs,
 .md-nav--primary .md-nav__title[for="__drawer"] {
   background-color: #2c9ccd;
+}
+
+/* Sidebar section headings ("Getting started", "Reference", ...) */
+.md-nav__item--section > .md-nav__link {
+  font-weight: 700;
+  color: var(--md-default-fg-color);
 }
 
 /* Fix table header visibility for both light and dark modes */
@@ -50,4 +55,15 @@ thead {
 .md-typeset .admonition.tip > .admonition-title {
   background-color: rgba(44, 156, 205, 0.1);
   border-color: #2c9ccd;
+}
+
+/* Rule index tables: keep rule codes, names, and CLI flags on one line so the
+   tables stay scannable, and align cells to the top when a message wraps. */
+.md-typeset table td,
+.md-typeset table th {
+  vertical-align: top;
+}
+
+.md-typeset table td code {
+  white-space: nowrap;
 }

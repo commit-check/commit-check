@@ -83,14 +83,22 @@ html_theme_options = {
             },
         },
     ],
+    # The global navigation lives in the left sidebar (no top tab bar), with
+    # each toctree caption rendered as a section heading.  This keeps every
+    # page one click away and leaves the right-hand column for the page's own
+    # table of contents.
     "features": [
+        "navigation.sections",
         "navigation.top",
-        "navigation.tabs",
-        "navigation.tabs.sticky",
+        "navigation.tracking",
         "toc.sticky",
         "toc.follow",
+        "search.highlight",
         "search.share",
     ],
+    # Keep the sidebar sections expanded rather than collapsing everything but
+    # the current page, so the whole documentation set is visible at a glance.
+    "globaltoc_collapse": False,
 }
 
 object_description_options = [

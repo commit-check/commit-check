@@ -144,7 +144,7 @@ The command-line interface has been simplified:
 
 
 Custom Regex (``message_pattern``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you relied on the custom ``regex`` field in v1.x to enforce a non-Conventional-Commits
 format (e.g. JIRA smart commits ``PROJ-123: description``), use the ``message_pattern``
