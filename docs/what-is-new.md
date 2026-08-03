@@ -35,6 +35,21 @@ types, following
 
 [:octicons-arrow-right-24: CC201](rules.md#cc201)
 
+## 2.8.0 — Custom message patterns
+
+`message_pattern` replaces the generated Conventional Commits regex with one of
+your own, for teams that already enforce a different format.
+
+```toml title="cchk.toml"
+[commit]
+message_pattern = "^PROJ-\\d+: .+"
+```
+
+This release also dropped Python 3.9. The minimum is now 3.10.
+
+[:octicons-arrow-right-24: CC001](rules.md#cc001) ·
+[Configuration](configuration.md)
+
 ## 2.7.0 — Force push blocking
 
 A `pre-push` hook that refuses a force push to a shared branch, plus a

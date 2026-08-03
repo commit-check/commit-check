@@ -169,8 +169,14 @@ Nothing built in, but the exit code makes it a one-liner:
 ```bash title="check-recent.sh"
 #!/usr/bin/env bash
 # Check the last N commit messages; exits non-zero if any fail.
+
+# Resolved before the loop rather than inside it: an unreadable range or a
+# directory that is not a repository would otherwise expand to nothing, and
+# a loop that never runs would report success.
+shas=$(git rev-list -n "${1:-10}" HEAD) || exit 1
+
 status=0
-for sha in $(git rev-list -n "${1:-10}" HEAD); do
+for sha in $shas; do
   if ! git log -1 --format=%B "$sha" | commit-check -m --compact; then
     echo "  ↑ $sha"
     status=1
