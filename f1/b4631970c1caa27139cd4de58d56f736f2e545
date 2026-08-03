@@ -1,0 +1,23 @@
+netlify.toml
+  s_c9670a090cc066::t_0c82c263551727 30-35
+scripts/mkdocs_hooks.py
+  s_c9670a090cc066::t_f16eac964c32f1 7-11,16,104-110
+docs/assets/logo.svg
+  s_c9670a090cc066::t_412201782d1715 1-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "f1b4631970c1caa27139cd4de58d56f736f2e545",
+  "prompts": {},
+  "sessions": {
+    "s_c9670a090cc066": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019fc8e0-fe8e-73d2-b7b8-75bf490ea471",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": null
+    }
+  }
+}
