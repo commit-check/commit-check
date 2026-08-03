@@ -260,10 +260,9 @@ def _documented_default(type_: str, cell: str) -> Any:
     if type_ == "list[str]":
         return re.findall(r'"(.*?)"', cell)
     quoted = _QUOTED.match(cell)
-    return (
-        quoted.group(1)
-        if quoted.group(1) is not None
-        else quoted.group(2)
-        if quoted
-        else cell
-    )
+    if quoted is None:
+        return cell
+    # Group 1 is the ``literal`` form, group 2 the "literal" form; exactly one
+    # of them matched.
+    backticked, double_quoted = quoted.groups()
+    return backticked if backticked is not None else double_quoted
