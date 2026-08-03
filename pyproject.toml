@@ -49,7 +49,7 @@ tracker = "https://github.com/commit-check/commit-check/issues"
 dev = ['nox==2026.7.11']
 test = ['coverage', 'pytest', 'pytest-mock', 'pytest-codspeed']
 docs = ['sphinx<9', 'sphinx-immaterial', 'sphinx-autobuild', 'sphinx_issues', 'myst-parser']
-ci = ['twine==6.2.0']
+ci = ['twine==7.0.0']
 
 [tool.setuptools]
 zip-safe = false
