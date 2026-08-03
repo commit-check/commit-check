@@ -47,15 +47,18 @@ class TestRuleIds:
 
     @pytest.mark.benchmark
     def test_docs_url_derives_from_id(self):
+        """The docs URL is derived from the rule ID, not stored separately."""
         entry = RuleCatalogEntry(check="subject_imperative", rule_id="CC003")
         assert entry.docs_url == f"{RULES_DOCS_URL}#cc003"
 
     @pytest.mark.benchmark
     def test_no_docs_url_without_id(self):
+        """An entry without a rule ID has no docs URL to link to."""
         assert RuleCatalogEntry(check="ignore_authors").docs_url is None
 
     @pytest.mark.benchmark
     def test_name_is_kebab_case(self):
+        """The display name is the kebab-case form of the config key."""
         assert RuleCatalogEntry(check="subject_imperative").name == "subject-imperative"
 
 
@@ -64,6 +67,7 @@ class TestRuleIdPropagation:
 
     @pytest.mark.benchmark
     def test_built_rule_has_id_and_docs_url(self):
+        """A rule built from the catalog carries its ID and docs URL."""
         rules = RuleBuilder({"commit": {"subject_imperative": True}}).build_all_rules()
         rule = next(r for r in rules if r.check == "subject_imperative")
         assert rule.rule_id == "CC003"
@@ -71,6 +75,7 @@ class TestRuleIdPropagation:
 
     @pytest.mark.benchmark
     def test_to_dict_includes_id_and_docs_url(self):
+        """Serialised rules expose the ID and docs URL to consumers."""
         rules = RuleBuilder({"commit": {"subject_imperative": True}}).build_all_rules()
         rule = next(r for r in rules if r.check == "subject_imperative")
         as_dict = rule.to_dict()
@@ -80,10 +85,13 @@ class TestRuleIdPropagation:
     @pytest.mark.benchmark
     def test_internal_entries_have_no_id(self):
         """ignore_authors is bookkeeping - it must not leak a rule ID."""
+        entry = next(e for e in ALL_ENTRIES if e.check == "ignore_authors")
+        assert entry.rule_id is None
+
         rules = RuleBuilder({"commit": {"ignore_authors": ["bot"]}}).build_all_rules()
-        rule = next((r for r in rules if r.check == "ignore_authors"), None)
-        if rule is not None:
-            assert rule.rule_id is None
+        rule = next(r for r in rules if r.check == "ignore_authors")
+        assert rule.rule_id is None
+        assert rule.docs_url is None
 
 
 class TestRulesDocumentation:

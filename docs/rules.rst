@@ -5,11 +5,24 @@ Every check that can report a failure has a **stable rule ID**. Rule IDs never
 change once released, so they are safe to reference in documentation, code
 review comments, and tooling.
 
-Rule IDs appear in commit-check output and in ``--format json`` results:
+Rule IDs appear in commit-check output and in ``--format json`` results.
+
+Default output leads with the rule ID and ends with a link to that rule's
+section on this page:
 
 .. code-block:: text
 
     CC003 subject_imperative check failed ==> docs: revamped the profile
+    Commit message should use imperative mood (e.g., 'fix bug' not 'fixed bug')
+    Suggest: Change the first verb to imperative form, e.g., 'fix' instead of 'fixed'
+    Docs: https://commit-check.github.io/commit-check/rules.html#cc003
+
+``--compact`` prints one line per failure, keeping the rule ID and omitting the
+explanation, suggestion, and documentation link:
+
+.. code-block:: text
+
+    [FAIL] CC003 subject_imperative: docs: revamped the profile
 
 ID ranges
 ---------
