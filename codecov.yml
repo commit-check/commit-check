@@ -1,0 +1,16 @@
+# Codecov configuration
+# https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  status:
+    # Overall project coverage.
+    #
+    # Passing means "the project is well covered", not "coverage never dips".
+    # Adding well-tested code still shifts the overall percentage slightly, and
+    # a fraction of a percent should not fail CI.
+    project:
+      default:
+        target: 95%
+
+    # New and changed lines in a pull request keep Codecov's default behaviour,
+    # so a pull request is still expected to cover the code it adds.
