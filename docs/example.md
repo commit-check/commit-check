@@ -1,376 +1,191 @@
-# Usage Examples
+# Command-line recipes
 
-This guide demonstrates how to use commit-check to validate commit messages, branch names, and author information.
+Ways to invoke the checks directly. For wiring them into a workflow, see the
+[pre-commit](guides/pre-commit.md) and [GitHub Actions](guides/github-actions.md)
+guides instead — those cover the setup this page assumes you already have.
 
-There are several ways to use commit-check: as a pre-commit hook, via STDIN, or directly with files.
+Every option is listed in the [CLI reference](cli.md).
 
-## Running as GitHub Action
+## Checking a commit message
 
-Please see [commit-check/commit-check-action](https://github.com/commit-check/commit-check-action)
+The message can come from the repository, a file, or standard input.
 
-## Running as pre-commit hook
+=== "From the repository"
 
-1. **Install pre-commit:**
+    Validates `HEAD`'s message. This is what the `commit-msg` hook runs.
 
-!!! tip
+    ```console
+    $ commit-check -m
+    ```
 
-    Make sure `pre-commit` is [installed](https://pre-commit.com/#install).
+=== "From a file"
 
-```bash
-pip install pre-commit
+    ```console
+    $ commit-check -m commit_message.txt
+    ```
+
+=== "From stdin"
+
+    Useful in scripts and for trying a message before committing it.
+
+    ```console
+    $ echo "feat(auth): add OAuth2 login" | commit-check -m
+    ```
+
+### Trying a message before you write it
+
+```console
+$ echo "updated the parser" | commit-check -m
+CC001 message check failed ==> updated the parser
+The commit message should follow Conventional Commits.
+Suggest: Use <type>(<scope>): <description>, where <type> is one of: feat, fix, ...
+Docs: https://docs.commit-check.com/rules/#cc001
 ```
 
-2. **Create .pre-commit-config.yaml:**
+Fix it and it goes quiet:
 
-```yaml
--   repo: https://github.com/commit-check/commit-check
-    rev: the tag or revision
-    hooks:
-    -   id: check-message
-        stages: [commit-msg]
-    -   id: check-branch
-    -   id: check-author-name
-    -   id: check-author-email
+```console
+$ echo "fix(parser): handle empty input" | commit-check -m
 ```
 
-3. **Install the hooks:**
+### Multi-line messages
 
-```bash
-pre-commit install --hook-type pre-commit --hook-type commit-msg
-```
+A body and trailers survive a heredoc, so you can test the whole thing:
 
-4. **Test the integration:**
+```console
+$ cat > /tmp/msg.txt << 'EOF'
+fix(auth): resolve login timeout
 
-```bash
-# This will trigger validation automatically
-git commit -m "feat: add new user authentication system"
-```
-
-### Pre-commit Validation Examples
-
-**✅ Successful Validation:**
-
-```text
-$ git commit -m "feat: add user authentication system"
-
-check commit message.....................................................Passed
-check committer name.....................................................Passed
-check committer email....................................................Passed
-[main abc1234] feat: add user authentication system
-```
-
-**❌ Failed Validation:**
-
-```text
-$ git commit -m "bad commit message"
-
-check commit message.....................................................Failed
-- hook id: check-message
-- exit code: 1
-
-Commit rejected by Commit-Check.
-
-  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
- __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
-(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-   || E ||      || R ||      || R ||      || O ||      || R ||
- _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
-(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
- `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
-
-Commit rejected.
-
-Type message check failed ==> bad commit message
-It doesn't match regex: ^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?: .+
-The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
-Suggest: Use <type>(<scope>): <description> with allowed types
-```
-
-## Running as CLI
-
-Commit-check provides several command-line options for different validation scenarios. via options or STDIN
-
-!!! tip
-
-    Validate commit messages by piping them through STDIN. This is useful for
-    testing or scripting.
-
-Available Commands see [commit-check --help](cli.md)
-
-### Message Validation Examples
-
-```bash
-# Validate message from STDIN
-echo "feat: new feature" | commit-check -m
-
-# Validate message from file
-commit-check -m commit_message.txt
-
-# Validate current git commit message (from git log)
-commit-check -m
-```
-
-**Reading from file:**
-
-```bash
-# Create a commit message file
-cat > commit_message.txt << EOF
-fix(auth): resolve login timeout issue
-
-Users were experiencing timeouts during login.
-Increased session timeout and improved error handling.
+Users were timing out during login. Raises the session timeout and
+reports the failure instead of hanging.
 
 Fixes #123
 EOF
-
-# Validate from file
-commit-check -m commit_message.txt
-
-# Or pipe file content
-cat commit_message.txt | commit-check -m
+$ commit-check -m /tmp/msg.txt
 ```
 
-### Branch Validation Examples
+## Checking the branch
 
-```bash
-# Check current branch name
-commit-check --branch
-
-# Example valid branch names:
-# - feature/user-auth
-# - fix/login-bug
-# - hotfix/security-patch
-# - release/v1.2.0
+```console
+$ commit-check --branch
 ```
 
-### Push Validation Examples
+Runs [CC201](rules.md#cc201), and [CC202](rules.md#cc202) if
+`require_rebase_target` is set. `master`, `main`, `HEAD` and `PR-*` are always
+accepted; everything else needs a `<type>/<description>` shape:
 
-```bash
-# Check whether pushing HEAD to its configured upstream would require force
-commit-check --no-force-push
+```text
+fix/empty-config-crash
+feature/role-caching
+release/v1.2.0
 ```
 
-```yaml
-# Configure the dedicated pre-push hook
--   repo: https://github.com/commit-check/commit-check
-    rev: the tag or revision
+## Checking the committer
+
+```console
+$ commit-check --author-name --author-email
+```
+
+Either flag works alone. [CC101](rules.md#cc101) and
+[CC102](rules.md#cc102) describe what the built-in patterns accept and how to
+tighten them.
+
+## Blocking force pushes
+
+```console
+$ commit-check --no-force-push
+```
+
+Compares the current branch against its upstream and fails if pushing would
+require a force. Better as a `pre-push` hook, which sees the actual refs being
+pushed:
+
+```yaml title=".pre-commit-config.yaml"
+repos:
+  - repo: https://github.com/commit-check/commit-check
+    rev: v2.11.0
     hooks:
-    -   id: check-no-force-push
+      - id: check-no-force-push
         stages: [pre-push]
 ```
 
-`git push | commit-check --no-force-push` is not a prevention mechanism. The
-push has already started, and normal `git push` output does not include the
-pre-push ref lines that Git provides to hooks.
+!!! warning "Piping `git push` into it does not prevent anything"
 
-### Author Validation Examples
+    `git push | commit-check --no-force-push` reads too late — the push has
+    already started — and `git push` output does not carry the ref lines Git
+    hands to a `pre-push` hook. Install the hook instead.
 
-```bash
-# Check author name
-commit-check --author-name
+## Pointing at a different config
 
-# Check author email
-commit-check --author-email
-
-# Check both author name and email
-commit-check --author-name --author-email
+```console
+$ commit-check -m --config /path/to/cchk.toml
 ```
 
-### Configuration Examples
+Useful for testing a policy change before committing it, or for a monorepo
+where one directory follows different rules. See
+[Configuration](configuration.md) for where the file is looked up by default
+and how CLI, environment and file settings override each other.
 
-```bash
-# Use custom configuration file
-echo "feat: test" | commit-check --config my-config.toml -m
+## Output for scripts and CI
 
-# Use configuration from different directory
-commit-check --config /path/to/config/cchk.toml -m
-```
+=== "JSON"
 
-### Valid Commit Message Examples
+    Machine-readable, one object per check, including `rule_id` and `docs_url`.
 
-```bash
-# Basic feature
-echo "feat: add user registration" | commit-check -m
+    ```console
+    $ commit-check -m --format json
+    ```
 
-# Feature with scope
-echo "feat(auth): implement OAuth2 login" | commit-check -m
+=== "Compact"
 
-# Bug fix
-echo "fix: resolve memory leak in parser" | commit-check -m
+    One line per failure. Implies `--no-banner`.
 
-# Documentation update
-echo "docs: add installation guide" | commit-check -m
+    ```console
+    $ commit-check -m --compact
+    [FAIL] CC003 subject_imperative: docs: revamped the profile
+    ```
 
-# Breaking change
-echo "feat!: redesign API endpoints" | commit-check -m
+=== "No banner"
 
-# Merge commit (automatically allowed)
-echo "Merge pull request #123 from feature/new-api" | commit-check -m
-```
+    Plain text without the ASCII art, which is noise in a CI log.
 
-### Invalid Commit Message Examples
+    ```console
+    $ commit-check -m --no-banner
+    ```
 
-```bash
-# No type prefix
-echo "added new feature" | commit-check -m
+=== "Dry run"
 
-# Capitalized (if configured to disallow)
-echo "feat: Add new feature" | commit-check -m
+    Reports problems but always exits `0`. For adopting the policy on a
+    repository whose history is not clean yet.
 
-# Too short
-echo "fix" | commit-check -m
+    ```console
+    $ commit-check -m --dry-run
+    ```
 
-# Non-imperative mood
-echo "feat: added login functionality" | commit-check -m
+### Checking a range of commits
 
-# Unknown type
-echo "unknown: some changes" | commit-check -m
-```
+Nothing built in, but the exit code makes it a one-liner:
 
-### Error Output Examples
-
-**Commit Message Validation Failure:**
-
-```text
-Commit rejected by Commit-Check.
-
-  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
- __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
-(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-   || E ||      || R ||      || R ||      || O ||      || R ||
- _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
-(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
- `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
-
-Commit rejected.
-
-Type message check failed ==> test commit message check
-It doesn't match regex: ^(chore|ci|docs|feat|fix|refactor|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)
-The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
-Suggest: Use <type>(<scope>): <description> with allowed types
-```
-
-**Branch Name Validation Failure:**
-
-```text
-Commit rejected by Commit-Check.
-
-  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
- __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
-(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-   || E ||      || R ||      || R ||      || O ||      || R ||
- _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
-(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
- `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
-
-Commit rejected.
-
-Type branch check failed ==> test-branch
-It doesn't match regex: ^(feature|bugfix|hotfix|release|chore|feat|fix)\/.+|(master)|(main)|(HEAD)|(PR-.+)
-The branch should follow Conventional Branch. See https://conventionalbranch.org
-Suggest: Use <type>/<description> with allowed types or ignore_authors in config branch section to bypass
-```
-
-**Commit Signature Validation Failure:**
-
-```text
-Commit rejected by Commit-Check.
-
-  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
- __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
-(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-   || E ||      || R ||      || R ||      || O ||      || R ||
- _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
-(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
- `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
-
-Commit rejected.
-
-Type require_signed_off_by check failed ==> fix: add missing file
-It doesn't match regex: Signed-off-by:.*[A-Za-z0-9]\s+<.+@.+>
-Signed-off-by not found in latest commit
-Suggest: git commit --amend --signoff or use --signoff on commit
-```
-
-**Commit Message Validation Failure without ASCII Banner (`--no-banner`):**
-
-```text
-Type message check failed ==> test commit message check
-It doesn't match regex: ^(chore|ci|docs|feat|fix|refactor|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)
-The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
-Suggest: Use <type>(<scope>): <description> with allowed types
-```
-
-**Compact Failure Output (`--compact`):**
-
-```text
-[FAIL] message: test commit message check
-```
-
-**Imperative Mood Validation Failure:**
-
-```text
-Commit rejected by Commit-Check.
-
-  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
-   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
- __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__
-(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)
-   || E ||      || R ||      || R ||      || O ||      || R ||
- _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
-(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
- `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
-
-Commit rejected.
-
-Type imperative check failed ==> fix: added missing file
-It doesn't match regex:
-Commit message should use imperative mood (e.g., 'Add feature' not 'Added feature')
-Suggest: Use imperative mood in the subject line
-```
-
-## Integration Tips
-
-### CI/CD Integration
-
-You can use commit-check in CI/CD pipelines:
-
-```bash
-# In your CI script
-git log --format="%s" -n 1 | commit-check -m
-
-# or just
-commit-check -m
-
-# Keep plain-text output but remove the ASCII art banner
-git log --format="%s" -n 1 | commit-check -m --no-banner
-
-# Emit one machine-friendly line per failure without switching to JSON
-git log --format="%s" -n 1 | commit-check -m --compact
-```
-
-### Scripting
-
-Use commit-check in scripts to validate commit messages programmatically:
-
-```bash
-#!/bin/bash
-# validate-commits.sh
-
-# Get all commit messages from last 10 commits
-for i in {0..9}; do
-    msg=$(git log --format="%s" -n 1 --skip=$i)
-    if [ -n "$msg" ]; then
-        echo "Validating: $msg"
-        echo "$msg" | commit-check -m || exit 1
-    fi
+```bash title="check-recent.sh"
+#!/usr/bin/env bash
+# Check the last N commit messages; exits non-zero if any fail.
+status=0
+for sha in $(git rev-list -n "${1:-10}" HEAD); do
+  if ! git log -1 --format=%B "$sha" | commit-check -m --compact; then
+    echo "  ↑ $sha"
+    status=1
+  fi
 done
-
-echo "All commits are valid!"
+exit $status
 ```
 
-For more configuration options, see the [Configuration Documentation](configuration.md).
+### Reading the JSON
+
+```console
+$ commit-check -m --format json | jq -r '.checks[] | select(.status == "fail") | .rule_id'
+CC001
+```
+
+Each failed check carries the rule ID, the offending value, the suggestion and
+a link to its documentation — the same information the text output prints, in a
+form other tools can consume.

@@ -48,7 +48,7 @@ tracker = "https://github.com/commit-check/commit-check/issues"
 [project.optional-dependencies]
 dev = ['nox==2026.7.11']
 test = ['coverage', 'pytest', 'pytest-mock', 'pytest-codspeed']
-docs = ['mkdocs-material>=9.7']
+docs = ['mkdocs-material[imaging]>=9.7']
 ci = ['twine==7.0.0']
 
 [tool.setuptools]

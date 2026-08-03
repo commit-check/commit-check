@@ -102,6 +102,16 @@ markdown_extensions:
 
 plugins:
   - search
+  # Generates the preview image shown when a page is shared on Slack, X or
+  # LinkedIn. Needs cairo and pillow, which `pip install '.[docs]'` pulls in.
+  #
+  # Deploy previews turn this off (see netlify.toml): nobody shares a preview
+  # link for its preview image, and skipping the cards keeps those builds fast
+  # and free of the system cairo dependency.
+  - social:
+      enabled: !ENV [SOCIAL_CARDS, true]
+      cards_layout_options:
+        background_color: "#2c9ccd"
 
 hooks:
   - scripts/mkdocs_hooks.py

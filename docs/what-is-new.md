@@ -1,365 +1,76 @@
-# What's New
+# Release highlights
 
-This document highlights the major changes and improvements in each version of commit-check.
+The changes worth knowing about, newest first, each pointing at the page that
+documents it properly. For the full record of every change, see the
+[changelog](changelog.md).
 
-## Version 2.11.0 — AI Attribution Governance
+## 2.11.0 — AI attribution policy
 
-### Enforce Your Project's AI Contribution Policy
+Commits carrying the trailers AI coding tools add — Claude Code, Copilot,
+Codex, Gemini, Cursor, Devin, Aider, Windsurf, Tabby — can now be rejected.
 
-commit-check now supports **AI attribution governance** — a neutral enforcement
-layer for the industry-wide discussion on AI disclosure in open source.
-
-Configured under `[commit]`:
-
-```toml
+```toml title="cchk.toml"
 [commit]
-# "ignore" (default) | "forbid"
-ai_attribution = "forbid"
+ai_attribution = "forbid"   # "ignore" is the default
 ```
 
-When set to `"forbid"`, any commit containing known AI tool signatures is
-rejected.  The built-in signature database detects trailers and markers from:
+Whether AI-assisted commits are acceptable is a policy question with no single
+right answer, so this stays off until you turn it on.
 
-* **Claude Code** — `Co-authored-by: Claude`, `Assisted-by: Claude:...`,
-  `🤖 Generated with Claude`, `Claude-Session:`, `Claude-Workflow:`
-* **GitHub Copilot** — `Co-authored-by: Copilot`
-* **OpenAI Codex** — `Co-authored-by: Codex`
-* **Gemini** — `Co-authored-by: Gemini`
-* **Cursor** — `Co-authored-by: Cursor`
-* **Devin** — `Co-authored-by: Devin`
-* **Aider** — `Co-authored-by: Aider`, `Co-authored-by: ... (aider)`
-* **Windsurf** — `Co-authored-by: Windsurf`
-* **Tabby** — `Co-authored-by: Tabby`
-* **Generic AI** — `Assisted-by:` (Linux kernel style, with tool list),
-  model names like `claude-sonnet-4`, `gpt-4-turbo`
+[:octicons-arrow-right-24: AI attribution guide](guides/ai-attribution.md) ·
+[CC013](rules.md#cc013)
 
-The signature database is designed to be extensible — adding a new tool is as
-simple as adding a `KnownAiTool` entry with the tool's patterns.
+## 2.10.0 — Bot branch prefixes accepted by default
 
-This feature is motivated by ongoing discussions in the CPython core
-development community, the Linux kernel's `Assisted-by:` trailer standard,
-VS Code, Apache, Fedora, and other foundations.
+`dependabot/` and `renovate/` branches pass branch validation without
+configuration. Automation was previously failing a check it could not satisfy.
 
-See [Configuration Documentation](configuration.md) for details.
+[:octicons-arrow-right-24: CC201](rules.md#cc201)
 
-## Version 2.10.0 — Bot Branch Types as Default
+## 2.9.0 — AI agent branch prefixes accepted by default
 
-### `dependabot/` and `renovate/` branches now pass by default
+`ai/`, `claude/`, `codex/`, `copilot/` and `cursor/` joined the default branch
+types, following
+[Conventional Branch v1.1.0](https://conventional-branch.github.io/).
 
-`dependabot` and `renovate` are now included in `DEFAULT_BRANCH_TYPES`,
-so branches like `dependabot/go_modules/go-deps-c57c3fe1e0` and
-`renovate/lodash-5.x` are automatically accepted without manual
-`allow_branch_types` configuration.
+[:octicons-arrow-right-24: CC201](rules.md#cc201)
 
-## Version 2.9.0 — AI Agent Branch Prefixes
+## 2.7.0 — Force push blocking
 
-### Conventional Branch v1.1.0 AI agent prefixes supported by default
+A `pre-push` hook that refuses a force push to a shared branch, plus a
+`--no-force-push` flag for running the same check by hand.
 
-`ai/`, `claude/`, `codex/`, `copilot/`, and `cursor/` have been
-added to `DEFAULT_BRANCH_TYPES` as defined in [Conventional Branch v1.1.0](https://conventional-branch.github.io/).  Branches created by AI
-coding agents are now valid out of the box without extra configuration.
-
-## Version 2.7.0 — Force Push Blocking
-
-### Force Push Detection and Prevention
-
-commit-check now includes a **force push detection** feature that blocks
-accidental `git push --force` / `git push -f` by inspecting pushed ref
-ancestry via `git merge-base --is-ancestor`.
-
-**How it works:**
-
-* Runs inside a Git `pre-push` hook — receives pushed ref metadata on stdin
-  and inspects the ancestry relationship.
-* New branch pushes (remote SHA is all zeros) always pass.
-* Fast-forward pushes (remote is ancestor of local) pass.
-* When the remote commit is **not** an ancestor of the local commit, a force
-  push is detected and **blocked**.
-* Git errors (e.g., unknown SHA) result in a safe pass.
-
-**Usage:**
-
-```bash
-# Standalone: check whether pushing HEAD to its upstream requires force
-commit-check --no-force-push
-```
-
-```yaml
-# As a pre-commit pre-push hook
-repos:
-  - repo: https://github.com/commit-check/commit-check
-    rev: v2.7.0
-    hooks:
-      - id: check-no-force-push
-        stages: [pre-push]
-```
-
-```toml
-# Configurable in cchk.toml
+```toml title="cchk.toml"
 [push]
-allow_force_push = false  # default: true (force pushes allowed)
+allow_force_push = false
 ```
 
-**New Python API:**
+[:octicons-arrow-right-24: CC301](rules.md#cc301) ·
+[Command-line recipes](example.md#blocking-force-pushes)
 
-```python
-from commit_check.api import validate_push
+## 2.6.0 — Output controls for scripts and CI
 
-zero = "0000000000000000000000000000000000000000"
-result = validate_push(f"refs/heads/main abc123 refs/heads/main {zero}")
-print(result["status"])  # "pass"
-```
+`--format json` for machine-readable results, `--compact` for one line per
+failure, and `--no-banner` to drop the ASCII art that only adds noise to a CI
+log.
 
-See the [Push Safety section in README](https://github.com/commit-check/commit-check#check-push-safety)
-and [Push Validation Examples](https://docs.commit-check.com/example.html#push-validation-examples)
-for more details.
+[:octicons-arrow-right-24: Command-line recipes](example.md#output-for-scripts-and-ci)
 
-## Version 2.6.0 — Output Controls for CLI Workflows
+## 2.5.0 — Organization-wide configuration
 
-### Quieter Human-Readable Failure Output
+`inherit_from` lets a repository pull a shared base config and override only
+what it needs, so a policy change no longer means editing every repository.
 
-commit-check now includes two CLI flags for workflows that want less verbose
-terminal output without switching to JSON mode:
-
-* `--no-banner` suppresses the ASCII art failure banner while keeping the
-  detailed error message and suggestion output.
-* `--compact` prints a single `[FAIL]` line per failing check and implies
-  `--no-banner`.
-
-These flags are useful in CI logs, pre-commit output, and agent-driven terminal
-sessions where the full banner is noisy but plain-text diagnostics are still
-helpful.
-
-## Version 2.5.0 — New Features
-
-### Co-author Bypass in `ignore_authors`
-
-commit-check can now skip validation when a **co-author** of the commit matches an entry in `ignore_authors`, not just the primary commit author.
-
-This is especially useful for AI-assisted workflows where a bot (e.g., `coderabbitai[bot]`, `copilot[bot]`) co-authors a commit that does not follow Conventional Commits format:
-
-```toml
-[commit]
-ignore_authors = ["dependabot[bot]", "renovate[bot]", "coderabbitai[bot]", "copilot[bot]"]
-```
-
-When a `Co-authored-by:` trailer in the commit message body matches any entry in the list, all commit checks are skipped for that commit.
-
-### Organization-Level Config Inheritance (`inherit_from`)
-
-Teams can now share a **centralized base configuration** across all repositories in an organization using the new `inherit_from` top-level key.
-
-```toml
-# .github/cchk.toml — in every repo
+```toml title=".github/cchk.toml"
 inherit_from = "github:my-org/.github:cchk.toml"
-
-[commit]
-subject_max_length = 72  # Local override
 ```
 
-**Supported source formats:**
+[:octicons-arrow-right-24: Organization guide](guides/organization.md)
 
-* `github:owner/repo:path/to/cchk.toml` — fetches from the default branch via `raw.githubusercontent.com`
-* `github:owner/repo@main:path/to/cchk.toml` — pins to a specific branch, tag, or SHA
-* A local file path (relative or absolute)
-* An HTTPS URL
+## 2.0.0 — TOML configuration
 
-Local settings always **override** the inherited configuration. HTTP (non-TLS) URLs are rejected for security. If the source is unreachable, the local config is used as-is.
+The configuration format moved from YAML to TOML, the CLI was simplified, and
+settings became overridable by environment variable and command-line flag.
+This is a breaking change from 1.x.
 
-### Git Config Author Validation
-
-Author name and email validation now checks **`git config user.name` / `user.email`** first — the identity that will be used for the *next* commit — and falls back to the last commit's author only if git config is unset.
-
-Previously, a developer with a misconfigured `user.name` (e.g., starting with a digit) would pass validation as long as their most recent commit had a valid author name. This fix closes that gap.
-
-## Version 2.0.0 - Major Release
-
-Version 2.0.0 represents a complete architectural overhaul of commit-check, introducing significant improvements in configuration, usability, and maintainability.
-
-### **Overview**
-
-The most significant change in v2.0.0 is the transition from YAML to TOML configuration format, along with a complete redesign of the validation engine using SOLID principles.
-
-**Key Benefits:**
-
-* **Simplified Configuration**: More intuitive TOML syntax
-* **Better Defaults**: Sensible out-of-the-box behavior
-* **Enhanced Validation**: Built-in support for Conventional Commits and Conventional Branches
-* **Improved Architecture**: Modular, maintainable codebase
-* **Better Documentation**: Comprehensive guides and examples
-
-### **Documentation & Migration**
-
-* **Configuration Guide**: Updated [Configuration Documentation](configuration.md) with comprehensive examples
-* **Migration Support**: Complete [Migration Guide](migration.md) for upgrading from v1.x to v2.0+
-
-### **Configuration Format Migration**
-
-The configuration format has changed from YAML to TOML, providing better readability and easier maintenance.
-
-**Format Comparison:**
-
-| Feature | YAML (v1.x) | TOML (v2.0+) |
-|---|---|---|
-| **Syntax** | Complex nested structure | Simple key-value pairs |
-| **Validation** | Custom regex patterns | Built-in conventional standards |
-| **Configuration** | `.commit-check.yml` | `cchk.toml` or `commit-check.toml` |
-| **Maintainability** | Manual regex maintenance | Standardized patterns |
-
-### **Configuration Examples**
-
-Below are side-by-side comparisons showing how common configurations translate from v1.x to v2.0+.
-
-#### Commit Message Validation
-
-Transform complex regex patterns into simple, standardized configuration.
-
-**Before (YAML v1.x):**
-
-```yaml
-checks:
-  - check: message
-    regex: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)'
-    error: "The commit message should be structured as follows:\n\n
-    <type>[optional scope]: <description>\n
-    [optional body]\n
-    [optional footer(s)]\n\n
-    More details please refer to https://www.conventionalcommits.org"
-    suggest: please check your commit message whether matches above regex
-```
-
-**After (TOML v2.0+):**
-
-```toml
-[commit]
-conventional_commits = true
-allow_commit_types = ["build", "chore", "ci", "docs", "feat", "fix", "perf", "refactor", "style", "test"]
-```
-
-**Benefits**: No more complex regex patterns, built-in [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) support, clearer configuration.
-
-#### Branch Naming Validation
-
-Standardize branch naming with conventional patterns.
-
-**Before (YAML v1.x):**
-
-```yaml
-checks:
-  - check: branch
-    regex: ^(bugfix|feature|release|hotfix|task|chore)\/.+|(master)|(main)|(HEAD)|(PR-.+)
-    error: "Branches must begin with these types: bugfix/ feature/ release/ hotfix/ task/ chore/"
-    suggest: run command `git checkout -b type/branch_name`
-```
-
-**After (TOML v2.0+):**
-
-```toml
-[branch]
-conventional_branch = true
-allow_branch_types = ["bugfix", "feature", "release", "hotfix", "task", "chore"]
-```
-
-**Benefits**: Built-in [Conventional Branch](https://conventionalbranch.org) support, automatic handling of special branches (main, master, HEAD, PR-\*).
-
-#### Author Validation
-
-Flexible author validation with allow/ignore lists.
-
-**Before (YAML v1.x):**
-
-```yaml
-checks:
-  - check: author_name
-    regex: ^[A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u017F\u0180-\u024F ,.\'-]+$|.*(\[bot])
-    error: The committer name seems invalid
-    suggest: run command `git config user.name "Your Name"`
-```
-
-**After (TOML v2.0+):**
-
-```toml
-[commit]
-# Built-in validation with sensible defaults for author name/email
-# Optional: ignore specific authors (e.g., bots)
-ignore_authors = ["dependabot[bot]", "renovate[bot]"]
-```
-
-**Benefits**: Built-in validation patterns, flexible ignore lists, automatic bot detection.
-
-#### Signed-off-by Requirements
-
-Simple boolean flag for DCO compliance.
-
-**Before (YAML v1.x):**
-
-```yaml
-checks:
-  - check: commit_signoff
-    regex: Signed-off-by:.*[A-Za-z0-9]\s+<.+@.+>
-    error: Signed-off-by not found in latest commit
-    suggest: run command `git commit -m "conventional commit message" --signoff`
-```
-
-**After (TOML v2.0+):**
-
-```toml
-[commit]
-require_signed_off_by = true
-```
-
-**Benefits**: Simple boolean configuration, built-in DCO validation, clear error messages.
-
-### **Architecture Improvements**
-
-#### **New Validation Engine**
-
-* **SOLID Principles**: Maintainable, extensible design
-* **Specialized Validators**: Dedicated classes for each validation type
-* **Centralized Rules**: Rule catalog with consistent error messages
-* **Flexible Configuration**: Dynamic rule building from configuration
-
-#### **Module Organization**
-
-| Module | Purpose |
-|---|---|
-| `config.py` | TOML configuration loading and validation |
-| `engine.py` | Core validation engine and specialized validators |
-| `rule_builder.py` | Builds validation rules from configuration |
-| `rules_catalog.py` | Centralized catalog of validation rules and messages |
-| `main.py` | CLI interface and orchestration |
-
-### **Getting Started with v2.0**
-
-#### **For New Users:**
-
-1. **Install commit-check v2.0+**:
-
-```bash
-pip install commit-check>=2.0.0
-```
-
-2. **Start with defaults** (no configuration needed):
-
-```bash
-commit-check --message --branch
-```
-
-3. **Customize as needed** with `cchk.toml`:
-
-```toml
-[commit]
-conventional_commits = true
-subject_max_length = 72
-```
-
-#### For Existing Users
-
-1. **Follow the Migration Guide**: See [Migration Guide](migration.md)
-2. **Test thoroughly**: Validate your new configuration before deploying
-
-### **Additional Resources**
-
-* [Configuration Reference](configuration.md) - Complete configuration options
-* [Migration Guide](migration.md) - Step-by-step upgrade instructions
-* [CLI Reference](cli.md) - Command-line interface documentation
+[:octicons-arrow-right-24: Migrating from v1](migration.md)

@@ -95,6 +95,11 @@ jobs:
           with:
             python-version: "3.10"
 
+        # The social plugin renders the cards through cairo, which cairosvg
+        # loads at runtime rather than bundling.
+        - name: Install cairo
+          run: sudo apt-get install -y --no-install-recommends libcairo2
+
         - name: Install nox
           run: |
             python -m pip install --only-binary :all: --upgrade pip
