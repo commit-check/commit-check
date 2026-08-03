@@ -80,9 +80,7 @@ class TestRuleIdPropagation:
     @pytest.mark.benchmark
     def test_internal_entries_have_no_id(self):
         """ignore_authors is bookkeeping - it must not leak a rule ID."""
-        rules = RuleBuilder(
-            {"commit": {"ignore_authors": ["bot"]}}
-        ).build_all_rules()
+        rules = RuleBuilder({"commit": {"ignore_authors": ["bot"]}}).build_all_rules()
         rule = next((r for r in rules if r.check == "ignore_authors"), None)
         if rule is not None:
             assert rule.rule_id is None

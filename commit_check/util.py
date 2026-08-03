@@ -294,9 +294,7 @@ def print_error_header():
     print("                                                                  ")
 
 
-def print_error_message(
-    check_type: str, error: str, reason: str, rule_id: str = ""
-):
+def print_error_message(check_type: str, error: str, reason: str, rule_id: str = ""):
     """Print error message.
 
     :param check_type: the check that failed, e.g. ``subject_imperative``
