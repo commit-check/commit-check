@@ -109,9 +109,14 @@ class TestRuleIdPropagation:
 
 
 class TestRulesDocumentation:
-    """Anti-drift guard: every documented rule stays documented."""
+    """Anti-drift guard: every documented rule stays documented.
 
-    @pytest.mark.benchmark
+    These tests read files rather than exercising the package, so they carry no
+    ``benchmark`` marker: their cost tracks the size of the documentation, and
+    benchmarking them would report a performance regression every time somebody
+    writes more of it.
+    """
+
     def test_every_rule_is_documented(self):
         """Each rule ID must have an anchor in the rules reference page.
 
@@ -124,7 +129,6 @@ class TestRulesDocumentation:
                 f"{entry.rule_id} ({entry.check}) is missing from docs/rules.rst"
             )
 
-    @pytest.mark.benchmark
     def test_every_rule_has_a_section_heading(self):
         """Each rule needs a ``name (CCxxx)`` heading, not just an anchor.
 
@@ -138,7 +142,6 @@ class TestRulesDocumentation:
                 f"docs/rules.rst has no section titled '{heading}'"
             )
 
-    @pytest.mark.benchmark
     def test_every_rule_explains_itself(self):
         """Each rule section must answer what it does and why it matters."""
         content = _read_doc("rules.rst")
@@ -151,9 +154,11 @@ class TestRulesDocumentation:
 
 
 class TestDocumentedDefaults:
-    """The documented defaults must match the ones the code actually uses."""
+    """The documented defaults must match the ones the code actually uses.
 
-    @pytest.mark.benchmark
+    Not benchmarked, for the same reason as :class:`TestRulesDocumentation`.
+    """
+
     def test_every_runtime_option_is_documented(self):
         """Every option the runtime defines has a row in the options table."""
         documented = _parse_options_table(_read_doc("configuration.rst"))
@@ -164,7 +169,6 @@ class TestDocumentedDefaults:
                     f"has no row in the options table of docs/configuration.rst"
                 )
 
-    @pytest.mark.benchmark
     def test_no_invented_options_are_documented(self):
         """The options table does not document options that do not exist."""
         runtime = get_default_config()
@@ -174,7 +178,6 @@ class TestDocumentedDefaults:
                 f"does not exist in get_default_config()"
             )
 
-    @pytest.mark.benchmark
     def test_documented_defaults_match_the_runtime(self):
         """Every documented default equals the value the runtime actually uses.
 
