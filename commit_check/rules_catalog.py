@@ -21,7 +21,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 #: Base URL of the rules reference documentation.
-RULES_DOCS_URL = "https://commit-check.github.io/commit-check/rules.html"
+RULES_DOCS_URL = "https://docs.commit-check.com/rules.html"
 
 
 @dataclass(frozen=True)

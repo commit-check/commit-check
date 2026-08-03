@@ -15,7 +15,7 @@ section on this page:
     CC003 subject_imperative check failed ==> docs: revamped the profile
     Commit message should use imperative mood (e.g., 'fix bug' not 'fixed bug')
     Suggest: Change the first verb to imperative form, e.g., 'fix' instead of 'fixed'
-    Docs: https://commit-check.github.io/commit-check/rules.html#cc003
+    Docs: https://docs.commit-check.com/rules.html#cc003
 
 ``--compact`` prints one line per failure, keeping the rule ID and omitting the
 explanation, suggestion, and documentation link:
