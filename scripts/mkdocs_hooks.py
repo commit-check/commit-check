@@ -82,7 +82,9 @@ def on_pre_build(config, **kwargs) -> None:
 def on_post_build(config, **kwargs) -> None:
     """Write a redirect stub for each URL the Sphinx site used to serve."""
     site = Path(config["site_dir"])
-    base = config["site_url"] or "/"
+    # Deploy previews pass their own URL in, and it may arrive without the
+    # trailing slash the targets below are joined onto.
+    base = (config["site_url"] or "/").rstrip("/") + "/"
     for legacy, target in LEGACY_URLS.items():
         (site / f"{legacy}.html").write_text(
             REDIRECT.format(url=base + target), encoding="utf-8"
