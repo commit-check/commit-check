@@ -121,7 +121,7 @@ ancestry via ``git merge-base --is-ancestor``.
     print(result["status"])  # "pass"
 
 See the `Push Safety section in README <https://github.com/commit-check/commit-check#check-push-safety>`_
-and `Push Validation Examples <https://commit-check.github.io/commit-check/example.html#push-validation-examples>`_
+and `Push Validation Examples <https://docs.commit-check.com/example.html#push-validation-examples>`_
 for more details.
 
 
