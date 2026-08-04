@@ -556,6 +556,23 @@ class TestJsonFormat:
         assert all("check" in c and "status" in c for c in data["checks"])
 
     @pytest.mark.benchmark
+    def test_json_format_pass_reports_checked_value(self, mocker, capsys, monkeypatch):
+        """JSON output reports the checked value even when the check passed."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
+
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--format", "json"])
+        main()
+
+        out, _ = capsys.readouterr()
+        data = json.loads(out)
+        passed_with_value = [
+            c for c in data["checks"] if c["status"] == "pass" and c["value"]
+        ]
+        assert passed_with_value
+        assert all(c["value"] == "feat: add new feature" for c in passed_with_value)
+
+    @pytest.mark.benchmark
     def test_json_format_invalid_message_returns_fail(
         self, mocker, capsys, monkeypatch
     ):

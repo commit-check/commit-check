@@ -55,6 +55,9 @@ class CheckOutcome:
 
     check: str
     status: str  # "pass" or "fail"
+    # The concrete value that was checked (subject, branch, author, ...),
+    # populated on both pass and fail so consumers can report what was
+    # validated even when the check succeeded.
     value: str = ""
     error: str = ""
     suggest: str = ""
@@ -87,6 +90,11 @@ class BaseValidator(ABC):
         self._compact: bool = False
         # Populated by _print_failure() on every failure, regardless of mode.
         self._last_failure: dict[str, str] | None = None
+        # Populated by subclasses on every validation (pass or fail) with the
+        # concrete value that was checked (subject, branch, author, ...), so
+        # structured consumers (--format json, validate_all_detailed) can
+        # report what was checked even when the check passed.
+        self._checked_value: str = ""
 
     @abstractmethod
     def validate(self, context: ValidationContext) -> ValidationResult:
@@ -244,6 +252,8 @@ class CommitMessageValidator(BaseValidator):
         if not message:
             return ValidationResult.PASS
 
+        self._checked_value = message
+
         import re
 
         if self.rule.regex and re.match(self.rule.regex, message):
@@ -263,6 +273,8 @@ class SubjectValidator(BaseValidator):
         subject = self._get_subject(context)
         if not subject:
             return ValidationResult.PASS
+
+        self._checked_value = subject
 
         return self._validate_subject(subject)
 
@@ -369,6 +381,8 @@ class AuthorValidator(BaseValidator):
         if not author_value:
             return ValidationResult.PASS
 
+        self._checked_value = author_value
+
         return self._validate_author(author_value)
 
     def _get_author_value(self, context: ValidationContext) -> str:
@@ -429,6 +443,7 @@ class BranchValidator(BaseValidator):
         branch_name = (
             context.stdin_text.strip() if context.stdin_text else get_branch_name()
         )
+        self._checked_value = branch_name
 
         if not self.rule.regex:
             return ValidationResult.PASS
@@ -451,6 +466,7 @@ class MergeBaseValidator(BaseValidator):
 
         current_branch = get_branch_name()
         target_pattern = self.rule.regex
+        self._checked_value = current_branch
 
         if not target_pattern:
             return ValidationResult.PASS
@@ -525,6 +541,8 @@ class SignoffValidator(BaseValidator):
         if not message:
             return ValidationResult.PASS
 
+        self._checked_value = message
+
         import re
 
         if self.rule.regex and re.search(self.rule.regex, message):
@@ -544,6 +562,8 @@ class BodyValidator(BaseValidator):
         message = self._get_commit_message(context)
         if not message:
             return ValidationResult.PASS
+
+        self._checked_value = message
 
         # Split message into lines and check if there's content after the subject
         lines = message.strip().split("\n")
@@ -598,6 +618,8 @@ class ForcePushValidator(BaseValidator):
         if not upstream_ref:
             return ValidationResult.PASS
 
+        self._checked_value = f"{get_branch_name()} -> {upstream_ref}"
+
         target_ref = get_upstream_remote_sha(upstream_ref) or upstream_ref
         returncode = git_merge_base(target_ref, "HEAD")
         if (
@@ -627,6 +649,7 @@ class ForcePushValidator(BaseValidator):
             parts[2],
             parts[3],
         )
+        self._checked_value = f"{local_ref} -> {remote_ref}"
 
         # Zero SHA for remote means a new branch push (not a force push)
         if remote_sha == self.ZERO_SHA:
@@ -676,6 +699,8 @@ class CommitTypeValidator(BaseValidator):
         message = self._get_commit_message(context)
         if not message:
             return ValidationResult.PASS
+
+        self._checked_value = message
 
         # Check if this commit type is allowed based on rule configuration
         is_allowed = self._is_commit_type_allowed(message)
@@ -886,6 +911,7 @@ class ValidationEngine:
                     CheckOutcome(
                         check=rule.check,
                         status="pass",
+                        value=validator._checked_value or "",
                         rule_id=rule.rule_id or "",
                         docs_url=rule.docs_url or "",
                     )

@@ -1159,6 +1159,46 @@ class TestValidationEngine:
         assert result == ValidationResult.PASS
 
     @pytest.mark.benchmark
+    def test_validate_all_detailed_reports_value_on_pass(self):
+        """Passed checks still report the concrete value that was checked."""
+        rules = [
+            ValidationRule(check="message", regex=r"^feat:"),
+            ValidationRule(check="subject_imperative", regex=r""),
+        ]
+        engine = ValidationEngine(rules)
+        context = ValidationContext(stdin_text="feat: add feature")
+
+        outcomes = engine.validate_all_detailed(context)
+        assert len(outcomes) == 2
+        assert all(o.status == "pass" for o in outcomes)
+        by_check = {o.check: o for o in outcomes}
+        assert by_check["message"].value == "feat: add feature"
+        assert by_check["subject_imperative"].value == "feat: add feature"
+
+    @pytest.mark.benchmark
+    def test_validate_all_detailed_author_reports_author_name(self):
+        """Author check reports the checked identity even when it passes."""
+        rules = [ValidationRule(check="author_name", regex=r"^Jane")]
+        engine = ValidationEngine(rules)
+
+        with patch(GIT_CONFIG_VALUE, return_value="Jane Doe"):
+            outcomes = engine.validate_all_detailed(ValidationContext())
+
+        assert outcomes[0].status == "pass"
+        assert outcomes[0].value == "Jane Doe"
+
+    @pytest.mark.benchmark
+    def test_validate_all_detailed_branch_reports_branch_name(self):
+        """Branch check reports the branch name even when it passes."""
+        rules = [ValidationRule(check="branch", regex=r"^feature/")]
+        engine = ValidationEngine(rules)
+        context = ValidationContext(stdin_text="feature/add-login")
+
+        outcomes = engine.validate_all_detailed(context)
+        assert outcomes[0].status == "pass"
+        assert outcomes[0].value == "feature/add-login"
+
+    @pytest.mark.benchmark
     def test_validation_engine_validate_all_fail(self):
         """Test ValidationEngine with some validations failing."""
         rules = [
