@@ -22,6 +22,8 @@ assistant by Claude (claude-sonnet-4), tools: read, bash, edit, write, gh
 
 ## Git Rules
 
+- **Follow the Conventional Branch spec** for branch names: `<type>/<description>` with lowercase kebab-case descriptions. Allowed types: `feature/`, `bugfix/`, `hotfix/`, `release/`, `chore/`. Example: `chore/add-agent-guidelines`.
+- **Follow the Conventional Commits spec** for commit messages: `<type>: <description>` (e.g., `feat: ...`, `fix: ...`, `chore: ...`, `docs: ...`).
 - **No force push.** Never use `git push --force` or `git push --force-with-lease`.
 - **Additive commits only.** When addressing review feedback, add new commits on top. Never rebase, squash, or amend pushed commits (e.g., do not use `git rebase -i` or `git commit --amend` to rewrite history after the PR is open).
 
