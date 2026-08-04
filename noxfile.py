@@ -48,4 +48,3 @@ def coverage(session):
     session.run("coverage", "run", "--source", "commit_check", "-m", "pytest")
     session.run("coverage", "report")
     session.run("coverage", "xml")
-
