@@ -1,0 +1,23 @@
+commit_check/engine.py
+  s_192055f7306c39::t_182b5aec0bcd06 711-714
+  s_192055f7306c39::t_b7e9d2f7680ad8 98-101,625-627,638,919
+tests/engine_test.py
+  s_192055f7306c39::t_064b13bb150e1b 1798-1840
+  s_192055f7306c39::t_0c8512d9fef3df 626,642
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "433f6a77421a3a6499e851eb5419a541a5f0be1a",
+  "prompts": {},
+  "sessions": {
+    "s_192055f7306c39": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019fcdc0-0c8f-7df5-b2d6-362cbe07f50b",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
