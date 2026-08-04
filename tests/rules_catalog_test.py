@@ -66,6 +66,18 @@ class TestRuleIds:
         assert entry.docs_url == f"{RULES_DOCS_URL}#cc003"
 
     @pytest.mark.benchmark
+    def test_docs_url_points_at_the_published_site(self):
+        """The base URL is pinned, not just derived.
+
+        Every failure the tool reports carries this URL, and released versions
+        keep printing whatever they shipped with, so a wrong value cannot be
+        corrected after the fact. The other tests build their expectations from
+        ``RULES_DOCS_URL`` and would follow it anywhere, including back to a
+        host that no longer serves the documentation.
+        """
+        assert RULES_DOCS_URL == "https://commit-check.com/rules/"
+
+    @pytest.mark.benchmark
     def test_no_docs_url_without_id(self):
         """An entry without a rule ID has no docs URL to link to."""
         assert RuleCatalogEntry(check="ignore_authors").docs_url is None

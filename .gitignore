@@ -23,3 +23,6 @@ docs/__pycache__
 # MkDocs
 site/
 docs/cli.md
+
+# Social card cache written by the docs build
+.cache/
