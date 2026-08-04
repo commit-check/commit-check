@@ -1,0 +1,19 @@
+commit_check/engine.py
+  s_192055f7306c39::t_88418859b7fe17 621-622,633
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "13ed4b65963a87fb90daa49eff491ecfb311b889",
+  "prompts": {},
+  "sessions": {
+    "s_192055f7306c39": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019fcdc0-0c8f-7df5-b2d6-362cbe07f50b",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
