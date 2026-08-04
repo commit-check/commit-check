@@ -15,6 +15,9 @@ from commit_check.util import (
     print_error_header,
     print_error_message,
     print_suggestion,
+    supports_hyperlinks,
+    hyperlink,
+    _print_failure,
 )
 from subprocess import CalledProcessError, PIPE
 from unittest.mock import MagicMock
@@ -577,25 +580,178 @@ class TestUtil:
 
         @pytest.mark.benchmark
         @pytest.mark.parametrize(
-            "check_type, type_failed_msg",
+            "check_type, printed_name",
             [
-                ("message", "check failed ==>"),
-                ("branch", "check failed ==>"),
-                ("author_name", "check failed ==>"),
-                ("author_email", "check failed ==>"),
-                ("signoff", "check failed ==>"),
+                ("message", "message"),
+                ("branch", "branch"),
+                # The config key is snake_case, but the rules reference titles
+                # its sections in kebab-case. The output follows the reference,
+                # so a name read here can be searched for there verbatim.
+                ("author_name", "author-name"),
+                ("author_email", "author-email"),
+                ("signoff", "signoff"),
             ],
         )
         @pytest.mark.benchmark
-        def test_print_error_message(self, capfd, check_type, type_failed_msg):
+        def test_print_error_message(self, capfd, check_type, printed_name):
             # Must print on stdout with given argument.
             dummy_reason = "failure reason"
             dummy_error = "dummy error"
             print_error_message(check_type, dummy_error, dummy_reason)
             stdout, _ = capfd.readouterr()
-            assert check_type in stdout
-            assert type_failed_msg in stdout
+            assert printed_name in stdout
+            assert "_" not in stdout.split(" check failed")[0]
+            assert "check failed ==>" in stdout
             assert dummy_error in stdout
+
+    class TestHyperlinks:
+        """The rule ID doubles as a link to its documentation.
+
+        Only where that renders: a terminal that does not understand OSC 8 may
+        print the escape payload as visible junk, and in a CI log the sequence
+        is noise around a URL the reader can no longer click anyway.
+        """
+
+        @pytest.mark.benchmark
+        def test_hyperlink_wraps_text_in_osc8(self):
+            assert hyperlink("CC001", "https://example.com/#cc001") == (
+                "\033]8;;https://example.com/#cc001\033\\CC001\033]8;;\033\\"
+            )
+
+        @pytest.mark.benchmark
+        def test_not_supported_when_piped(self, mocker):
+            mocker.patch.dict("os.environ", {}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=False)
+            assert supports_hyperlinks() is False
+
+        @pytest.mark.benchmark
+        def test_forced_even_when_piped(self, mocker):
+            mocker.patch.dict("os.environ", {"FORCE_HYPERLINK": "1"}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=False)
+            assert supports_hyperlinks() is True
+
+        @pytest.mark.benchmark
+        def test_force_zero_turns_links_off(self, mocker):
+            """Setting it to 0 must not read as "set, therefore on"."""
+            mocker.patch.dict(
+                "os.environ",
+                {"FORCE_HYPERLINK": "0", "TERM_PROGRAM": "WezTerm"},
+                clear=True,
+            )
+            mocker.patch("sys.stdout.isatty", return_value=True)
+            assert supports_hyperlinks() is False
+
+        @pytest.mark.benchmark
+        def test_force_empty_falls_through_to_detection(self, mocker):
+            mocker.patch.dict("os.environ", {"FORCE_HYPERLINK": ""}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=False)
+            assert supports_hyperlinks() is False
+
+        @pytest.mark.benchmark
+        @pytest.mark.parametrize(
+            "env, expected",
+            [
+                ({"TERM_PROGRAM": "WezTerm"}, True),
+                ({"TERM_PROGRAM": "iTerm.app"}, True),
+                ({"TERM_PROGRAM": "vscode"}, True),
+                ({"TERM": "xterm-kitty"}, True),
+                ({"VTE_VERSION": "6003"}, True),
+                ({"VTE_VERSION": "4000"}, False),
+                # Malformed rather than absent; must not raise.
+                ({"VTE_VERSION": "not-a-number"}, False),
+                ({"TERM": "xterm"}, False),
+                ({"TERM": "dumb", "TERM_PROGRAM": "WezTerm"}, False),
+            ],
+        )
+        def test_terminal_detection(self, mocker, env, expected):
+            mocker.patch.dict("os.environ", env, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=True)
+            assert supports_hyperlinks() is expected
+
+        @pytest.mark.benchmark
+        def test_id_is_linked_when_supported(self, capfd, mocker):
+            mocker.patch("commit_check.util.supports_hyperlinks", return_value=True)
+            print_error_message(
+                "subject_min_length",
+                "too short",
+                "hi",
+                rule_id="CC005",
+                docs_url="https://commit-check.com/rules/#cc005",
+            )
+            stdout, _ = capfd.readouterr()
+            assert "\033]8;;https://commit-check.com/rules/#cc005\033\\" in stdout
+
+        @pytest.mark.benchmark
+        def test_id_is_plain_when_unsupported(self, capfd, mocker):
+            mocker.patch("commit_check.util.supports_hyperlinks", return_value=False)
+            print_error_message(
+                "subject_min_length",
+                "too short",
+                "hi",
+                rule_id="CC005",
+                docs_url="https://commit-check.com/rules/#cc005",
+            )
+            stdout, _ = capfd.readouterr()
+            assert "\033]8;;" not in stdout
+            assert "CC005" in stdout
+
+        @pytest.mark.benchmark
+        def test_docs_line_kept_without_hyperlinks(self, capfd, mocker):
+            """A CI log is where the printed URL is the only way to reach it."""
+            mocker.patch("commit_check.util.supports_hyperlinks", return_value=False)
+            _print_failure(
+                {
+                    "check": "subject_min_length",
+                    "error": "too short",
+                    "suggest": "write more",
+                    "rule_id": "CC005",
+                    "docs_url": "https://commit-check.com/rules/#cc005",
+                },
+                "hi",
+                no_banner=True,
+            )
+            stdout, _ = capfd.readouterr()
+            assert "Docs: https://commit-check.com/rules/#cc005" in stdout
+
+        @pytest.mark.benchmark
+        def test_docs_line_dropped_when_id_is_the_link(self, capfd, mocker):
+            """Otherwise every failure spends a line repeating its own link."""
+            mocker.patch("commit_check.util.supports_hyperlinks", return_value=True)
+            _print_failure(
+                {
+                    "check": "subject_min_length",
+                    "error": "too short",
+                    "suggest": "write more",
+                    "rule_id": "CC005",
+                    "docs_url": "https://commit-check.com/rules/#cc005",
+                },
+                "hi",
+                no_banner=True,
+            )
+            stdout, _ = capfd.readouterr()
+            assert "Docs: " not in stdout
+            assert "\033]8;;" in stdout
+
+        @pytest.mark.benchmark
+        def test_blank_line_closes_the_block(self, capfd, mocker):
+            """The separator belongs between rules, not inside one."""
+            mocker.patch("commit_check.util.supports_hyperlinks", return_value=False)
+            _print_failure(
+                {
+                    "check": "subject_min_length",
+                    "error": "too short",
+                    "suggest": "write more",
+                    "rule_id": "CC005",
+                    "docs_url": "https://commit-check.com/rules/#cc005",
+                },
+                "hi",
+                no_banner=True,
+            )
+            stdout, _ = capfd.readouterr()
+            lines = stdout.splitlines()
+            assert lines[-1] == ""
+            assert lines[-2].startswith("Docs: ")
+            assert "" not in lines[:-1]
 
     class TestPrintSuggestion:
         @pytest.mark.benchmark

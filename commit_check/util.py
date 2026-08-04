@@ -8,6 +8,7 @@ A module containing utility functions.
 from __future__ import annotations
 import os
 import subprocess
+import sys
 from subprocess import CalledProcessError
 from commit_check import RED, GREEN, YELLOW, RESET_COLOR
 
@@ -27,17 +28,24 @@ def _print_failure(
         return
     if not no_banner and not print_error_header.has_been_called:
         print_error_header()
+    docs_url = check.get("docs_url", "") or ""
     print_error_message(
         check["check"],
         check.get("error", ""),
         actual,
         rule_id=rule_id,
+        docs_url=docs_url,
     )
     if check.get("suggest"):
         print_suggestion(check["suggest"])
-    docs_url = check.get("docs_url", "")
-    if docs_url:
+    # When the ID above is already a link, repeating the URL only adds a line
+    # to read. Without hyperlink support — a pipe, a CI log — it is the only
+    # way the reader gets the address at all, so it stays.
+    if docs_url and not (rule_id and supports_hyperlinks()):
         print(f"Docs: {docs_url}")
+    # Blank line closes the whole block, rather than splitting it before the
+    # documentation link.
+    print()
 
 
 def get_branch_name() -> str:
@@ -294,22 +302,78 @@ def print_error_header():
     print("                                                                  ")
 
 
-def print_error_message(check_type: str, error: str, reason: str, rule_id: str = ""):
+#: Terminals known to render OSC 8 hyperlinks, by ``TERM_PROGRAM``.
+_HYPERLINK_TERM_PROGRAMS = frozenset(
+    {"iTerm.app", "WezTerm", "vscode", "Hyper", "ghostty", "rio"}
+)
+
+
+def supports_hyperlinks() -> bool:
+    """Whether the terminal renders OSC 8 hyperlinks.
+
+    A terminal that does not understand the escape sequence may print its
+    payload as visible junk, so this errs towards saying no. The signals are
+    the ones the wider tooling ecosystem settled on, which is why a link that
+    works in ``ruff`` works here too.
+
+    Piped or redirected output always says no: the sequence would end up in
+    the file, and a CI log is read as plain text.
+
+    ``FORCE_HYPERLINK`` overrides the detection in both directions, following
+    the convention ``FORCE_COLOR`` established: ``0`` turns links off even on a
+    terminal that renders them, any other value turns them on.
+    """
+    forced = os.environ.get("FORCE_HYPERLINK")
+    if forced:
+        return forced != "0"
+    if not sys.stdout.isatty():
+        return False
+    if os.environ.get("TERM") == "dumb":
+        return False
+    if os.environ.get("TERM_PROGRAM") in _HYPERLINK_TERM_PROGRAMS:
+        return True
+    if "kitty" in os.environ.get("TERM", ""):
+        return True
+    # GNOME Terminal and the other VTE-based terminals, from 0.50 onwards.
+    try:
+        return int(os.environ.get("VTE_VERSION", "0")) >= 5000
+    except ValueError:
+        return False
+
+
+def hyperlink(text: str, url: str) -> str:
+    """Wrap ``text`` in an OSC 8 hyperlink pointing at ``url``."""
+    return f"\033]8;;{url}\033\\{text}\033]8;;\033\\"
+
+
+def print_error_message(
+    check_type: str,
+    error: str,
+    reason: str,
+    rule_id: str = "",
+    docs_url: str = "",
+) -> None:
     """Print error message.
 
     :param check_type: the check that failed, e.g. ``subject_imperative``
     :param error: the human-readable explanation of the failure
     :param reason: the offending value
     :param rule_id: stable rule ID, e.g. ``CC003`` (omitted when empty)
+    :param docs_url: the rule's documentation, linked from the ID when the
+        terminal supports it
 
     :returns: Give error messages to user
     """
-    prefix = f"{YELLOW}{rule_id}{RESET_COLOR} " if rule_id else ""
+    # The kebab-case form is what the rules reference uses as its headings, so
+    # the name printed here can be searched for there verbatim.
+    name = check_type.replace("_", "-")
+    label = rule_id
+    if rule_id and docs_url and supports_hyperlinks():
+        label = hyperlink(rule_id, docs_url)
+    prefix = f"{YELLOW}{label}{RESET_COLOR} " if rule_id else ""
     print(
-        f"{prefix}{YELLOW}{check_type}{RESET_COLOR} check failed ==> {RED}{reason}{RESET_COLOR} ",
-        end="",
+        f"{prefix}{YELLOW}{name}{RESET_COLOR} check failed ==> {RED}{reason}{RESET_COLOR}"
     )
-    print("")
     if error:
         print(error)
 
@@ -319,8 +383,4 @@ def print_suggestion(suggest: str) -> None:
     :param suggest: what message to print out
     """
     if suggest:
-        print(
-            f"Suggest: {GREEN}{suggest}{RESET_COLOR} ",
-            end="",
-        )
-    print("\n")
+        print(f"Suggest: {GREEN}{suggest}{RESET_COLOR}")

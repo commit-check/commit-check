@@ -73,14 +73,14 @@ COMMIT_RULES = [
         check="subject_max_length",
         regex=None,
         error="Subject must be at most {max_len} characters",
-        suggest="Keep the subject concise (<= configured max)",
+        suggest="Shorten the subject to {max_len} characters or fewer",
     ),
     RuleCatalogEntry(
         rule_id="CC005",
         check="subject_min_length",
         regex=None,
         error="Subject must be at least {min_len} characters",
-        suggest="Provide a meaningful subject (>= configured min)",
+        suggest="Write a subject of at least {min_len} characters",
     ),
     RuleCatalogEntry(
         rule_id="CC006",

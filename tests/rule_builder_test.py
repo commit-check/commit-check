@@ -438,3 +438,37 @@ class TestAiAttributionRuleBuilder:
         rules = builder.build_all_rules()
         ai_rules = [r for r in rules if r.check.startswith("ai_")]
         assert len(ai_rules) == 0
+
+
+class TestLengthRuleMessages:
+    """The configured limit reaches both the error and the advice.
+
+    The suggestion used to name no length at all — "Provide a meaningful
+    subject (>= configured min)" sat directly under an error that had already
+    said "at least 5 characters", so the advice was vaguer than the complaint
+    above it.
+    """
+
+    @pytest.mark.benchmark
+    def test_min_length_names_the_limit(self):
+        rules = RuleBuilder({"commit": {"subject_min_length": 12}}).build_all_rules()
+        rule = next(r for r in rules if r.check == "subject_min_length")
+        assert rule.error == "Subject must be at least 12 characters"
+        assert rule.suggest == "Write a subject of at least 12 characters"
+
+    @pytest.mark.benchmark
+    def test_max_length_names_the_limit(self):
+        rules = RuleBuilder({"commit": {"subject_max_length": 72}}).build_all_rules()
+        rule = next(r for r in rules if r.check == "subject_max_length")
+        assert rule.error == "Subject must be at most 72 characters"
+        assert rule.suggest == "Shorten the subject to 72 characters or fewer"
+
+    @pytest.mark.benchmark
+    @pytest.mark.parametrize("check", ["subject_min_length", "subject_max_length"])
+    def test_no_placeholder_survives_into_output(self, check):
+        """A missed substitution would print a literal brace to the user."""
+        rules = RuleBuilder({"commit": {check: 40}}).build_all_rules()
+        rule = next(r for r in rules if r.check == check)
+        assert "{" not in (rule.error or "")
+        assert "{" not in (rule.suggest or "")
+        assert "40" in (rule.suggest or "")

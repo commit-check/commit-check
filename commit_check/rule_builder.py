@@ -234,16 +234,24 @@ class RuleBuilder:
         if not isinstance(length, int):
             return None
 
+        # The suggestion is templated on the same values as the error: naming
+        # the configured length is the whole point of the advice, and "the
+        # configured minimum" told the reader less than the error above it.
         error = (
             catalog_entry.error.format(max_len=length, min_len=length)
             if catalog_entry.error
+            else None
+        )
+        suggest = (
+            catalog_entry.suggest.format(max_len=length, min_len=length)
+            if catalog_entry.suggest
             else None
         )
 
         return ValidationRule(
             check=catalog_entry.check,
             error=error,
-            suggest=catalog_entry.suggest,
+            suggest=suggest,
             value=length,
         )
 

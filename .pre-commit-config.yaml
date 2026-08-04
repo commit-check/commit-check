@@ -32,6 +32,8 @@ repos:
     rev: v2.4.2
     hooks:
     -   id: codespell
+        # iTerm is a terminal emulator, named in the hyperlink support probe.
+        args: [--ignore-words-list=iterm]
 -   repo: https://github.com/commit-check/commit-check
     rev: v2.11.0
     hooks:
