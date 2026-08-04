@@ -318,9 +318,14 @@ def supports_hyperlinks() -> bool:
 
     Piped or redirected output always says no: the sequence would end up in
     the file, and a CI log is read as plain text.
+
+    ``FORCE_HYPERLINK`` overrides the detection in both directions, following
+    the convention ``FORCE_COLOR`` established: ``0`` turns links off even on a
+    terminal that renders them, any other value turns them on.
     """
-    if os.environ.get("FORCE_HYPERLINK"):
-        return True
+    forced = os.environ.get("FORCE_HYPERLINK")
+    if forced:
+        return forced != "0"
     if not sys.stdout.isatty():
         return False
     if os.environ.get("TERM") == "dumb":

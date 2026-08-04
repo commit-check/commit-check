@@ -631,6 +631,23 @@ class TestUtil:
             assert supports_hyperlinks() is True
 
         @pytest.mark.benchmark
+        def test_force_zero_turns_links_off(self, mocker):
+            """Setting it to 0 must not read as "set, therefore on"."""
+            mocker.patch.dict(
+                "os.environ",
+                {"FORCE_HYPERLINK": "0", "TERM_PROGRAM": "WezTerm"},
+                clear=True,
+            )
+            mocker.patch("sys.stdout.isatty", return_value=True)
+            assert supports_hyperlinks() is False
+
+        @pytest.mark.benchmark
+        def test_force_empty_falls_through_to_detection(self, mocker):
+            mocker.patch.dict("os.environ", {"FORCE_HYPERLINK": ""}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=False)
+            assert supports_hyperlinks() is False
+
+        @pytest.mark.benchmark
         @pytest.mark.parametrize(
             "env, expected",
             [
