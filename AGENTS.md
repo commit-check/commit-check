@@ -1,4 +1,4 @@
-# agent.md — AI Agent Guidelines
+# AGENTS.md — AI Agent Guidelines
 
 This file provides working guidelines for AI coding agents (e.g., GitHub Copilot, Claude Code, Cursor, etc.) contributing to this repository.
 
