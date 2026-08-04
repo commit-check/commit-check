@@ -189,7 +189,7 @@ cchk --help  # Verify alias works
 │   ├── engine_test.py       # Validator tests
 │   ├── config_merger_test.py # Config merging tests
 │   └── rule_builder_test.py # Rule building tests
-├── docs/                     # Sphinx documentation
+├── assets/                   # README assets (demo recording)
 ├── cchk.toml                # Example TOML configuration (v2.0 format)
 ├── pyproject.toml           # Package metadata, build config, tool settings
 ├── noxfile.py              # Build automation sessions

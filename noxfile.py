@@ -49,14 +49,3 @@ def coverage(session):
     session.run("coverage", "report")
     session.run("coverage", "xml")
 
-
-@nox.session()
-def docs(session):
-    session.install(".[docs]")
-    session.run("mkdocs", "build", "--strict")
-
-
-@nox.session(name="docs-live")
-def docs_live(session):
-    session.install(".[docs]")
-    session.run("mkdocs", "serve")
