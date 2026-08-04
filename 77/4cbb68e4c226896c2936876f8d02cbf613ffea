@@ -1,0 +1,20 @@
+cchk.toml
+  s_0fd680379e957f::t_7dae539412c7da 1
+  s_0fd680379e957f::t_0002b73732e877 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "774cbb68e4c226896c2936876f8d02cbf613ffea",
+  "prompts": {},
+  "sessions": {
+    "s_0fd680379e957f": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019fcef3-0f91-7b85-b544-eebb2db1147a",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": null
+    }
+  }
+}
