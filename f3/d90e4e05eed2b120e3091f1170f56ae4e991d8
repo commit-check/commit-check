@@ -1,0 +1,19 @@
+agent.md
+  s_821cce17e54d40::t_055607aeed3b7f 1-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "f3d90e4e05eed2b120e3091f1170f56ae4e991d8",
+  "prompts": {},
+  "sessions": {
+    "s_821cce17e54d40": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019fcee8-f2be-75e2-9e6b-8881f7f3f29a",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
