@@ -619,6 +619,35 @@ class TestCommitTypeValidator:
         assert result == ValidationResult.PASS
 
     @pytest.mark.benchmark
+    def test_ignore_authors_records_resolved_author(self):
+        """ignore_authors records the checked author identity, not the message."""
+        rule = ValidationRule(check="ignore_authors", value=["ignored"])
+        validator = CommitTypeValidator(rule)
+        context = ValidationContext(config={"commit": {"ignore_authors": ["ignored"]}})
+
+        with patch("commit_check.engine.get_commit_info", return_value=""):
+            with patch(GIT_CONFIG_VALUE, return_value="Jane Doe"):
+                with patch("commit_check.engine.has_commits", return_value=True):
+                    result = validator.validate(context)
+
+        assert result == ValidationResult.PASS
+        assert validator._checked_value == "Jane Doe"
+
+    @pytest.mark.benchmark
+    def test_ignore_authors_skipped_keeps_value_empty(self):
+        """An ignored author skips the rule and leaves the value empty."""
+        rule = ValidationRule(check="ignore_authors", value=["Jane Doe"])
+        validator = CommitTypeValidator(rule)
+        context = ValidationContext(config={"commit": {"ignore_authors": ["Jane Doe"]}})
+
+        with patch("commit_check.engine.get_commit_info", return_value="Jane Doe"):
+            with patch("commit_check.engine.has_commits", return_value=True):
+                result = validator.validate(context)
+
+        assert result == ValidationResult.PASS
+        assert validator._checked_value == ""
+
+    @pytest.mark.benchmark
     def test_commit_type_validator_revert_commits(self):
         """Test CommitTypeValidator with revert commits."""
         rule = ValidationRule(check="allow_revert_commits", value=True)
@@ -1714,6 +1743,27 @@ class TestForcePushValidator:
         assert result == ValidationResult.PASS
 
     @pytest.mark.benchmark
+    def test_multiple_push_refs_accumulate_checked_value(self):
+        """Every validated ref pair is preserved, not overwritten."""
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        stdin = (
+            "refs/heads/main deadbeef refs/heads/main abc123\n"
+            "refs/heads/feature/x deadbeef refs/heads/feature/x "
+            f"{self.ZERO_SHA}\n"
+        )
+        context = ValidationContext(stdin_text=stdin)
+
+        with patch("commit_check.engine.git_merge_base", return_value=0):
+            result = validator.validate(context)
+
+        assert result == ValidationResult.PASS
+        assert validator._checked_value == (
+            "refs/heads/main -> refs/heads/main\n"
+            "refs/heads/feature/x -> refs/heads/feature/x"
+        )
+
+    @pytest.mark.benchmark
     def test_no_stdin_with_upstream_fallback_passes_without_upstream(self):
         """Standalone mode passes when the current branch has no upstream."""
         rule = self._make_rule()
@@ -2045,6 +2095,32 @@ class TestAiAttributionValidator:
         context = ValidationContext(stdin_text="feat: add feature by hand")
         result = validator.validate(context)
         assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_forbid_policy_clean_commit_records_message(self):
+        """forbid policy records the scanned message when no signature is found."""
+        rule = ValidationRule(
+            check="ai_attribution",
+            value="forbid",
+        )
+        validator = AiAttributionValidator(rule)
+        context = ValidationContext(stdin_text="feat: add feature by hand")
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+        assert validator._checked_value == "feat: add feature by hand"
+
+    @pytest.mark.benchmark
+    def test_ignore_policy_records_no_value(self):
+        """ignore policy is a no-op and records no checked value."""
+        rule = ValidationRule(
+            check="ai_attribution",
+            value="ignore",
+        )
+        validator = AiAttributionValidator(rule)
+        context = ValidationContext(stdin_text="feat: add feature")
+        result = validator.validate(context)
+        assert result == ValidationResult.PASS
+        assert validator._checked_value == ""
 
     @pytest.mark.benchmark
     def test_forbid_policy_multiple_tools(self):

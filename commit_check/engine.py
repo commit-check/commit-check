@@ -649,7 +649,12 @@ class ForcePushValidator(BaseValidator):
             parts[2],
             parts[3],
         )
-        self._checked_value = f"{local_ref} -> {remote_ref}"
+        pair = f"{local_ref} -> {remote_ref}"
+        # Accumulate every checked ref pair: a pre-push stdin may carry
+        # several refs, and each one is validated individually.
+        self._checked_value = (
+            f"{self._checked_value}\n{pair}" if self._checked_value else pair
+        )
 
         # Zero SHA for remote means a new branch push (not a force push)
         if remote_sha == self.ZERO_SHA:
@@ -693,7 +698,16 @@ class CommitTypeValidator(BaseValidator):
     """Base validator for special commit types (merge, revert, fixup, WIP, empty)."""
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        if self._should_skip_commit_validation(context):
+        if self.rule.check == "ignore_authors":
+            # The ignore_authors rule is about the commit author, not the
+            # message; record it before the skip check so non-ignored
+            # authors still carry the checked identity. An ignored author
+            # means nothing was checked, so the value stays empty.
+            self._checked_value = self._resolve_current_author(context)
+            if self._should_skip_commit_validation(context):
+                self._checked_value = ""
+                return ValidationResult.PASS
+        elif self._should_skip_commit_validation(context):
             return ValidationResult.PASS
 
         message = self._get_commit_message(context)
@@ -779,10 +793,13 @@ class AiAttributionValidator(BaseValidator):
 
         policy = self.rule.value  # "ignore" | "forbid"
         if policy != "forbid":
+            # No-op policy: nothing is checked, so no value is recorded.
             return ValidationResult.PASS
 
         signatures = detect_ai_signatures(message)
         if not signatures:
+            # The message was scanned and no AI signature found.
+            self._checked_value = message
             return ValidationResult.PASS
 
         tools = {s["tool"] for s in signatures}
