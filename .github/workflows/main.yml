@@ -10,7 +10,6 @@ on:
       - pyproject.toml
       - ".github/workflows/main.yml"
       - ".pre-commit-config.yaml"
-      - "!docs/**"
   workflow_dispatch:
 
 permissions:
@@ -84,38 +83,3 @@ jobs:
         # using a wildcard as filename on Windows requires a bash shell
         shell: bash
         run: nox -s install
-
-  docs:
-      runs-on: ubuntu-24.04
-      permissions:
-        contents: write
-      steps:
-        - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-          with:
-            python-version: "3.10"
-
-        - name: Install nox
-          run: |
-            python -m pip install --only-binary :all: --upgrade pip
-            python -m pip install --only-binary :all: ".[dev]"
-
-        - name: Build docs
-          run: nox -s docs
-
-        - name: Save built docs as artifact
-          uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-          with:
-            name: "commit-check_docs"
-            path: ${{ github.workspace }}/site
-
-        - name: Upload docs to github pages
-          # only publish doc changes from main branch
-          if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-          uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
-          with:
-            github_token: ${{ secrets.GITHUB_TOKEN }}
-            publish_dir: ./site
-            # Pinned explicitly so the custom domain cannot be lost when the
-            # publish branch is replaced.
-            cname: docs.commit-check.com

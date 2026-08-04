@@ -43,7 +43,7 @@ local hooks, CI, GitHub Actions, and AI automation.
 - **Multiple enforcement points:** CLI, pre-commit, CI / GitHub Actions
 - **Machine-readable output:** JSON + Python API for automation and AI agents
 
-![commit-check demo](https://github.com/commit-check/commit-check/raw/main/docs/demo.gif)
+![commit-check demo](https://github.com/commit-check/commit-check/raw/main/assets/demo.gif)
 
 <br>
 
@@ -100,7 +100,7 @@ Commit Check can be configured in three ways (in order of priority):
 
 ### Use Default Configuration
 
-- **Commit Check** uses a [default configuration](https://github.com/commit-check/commit-check/blob/main/docs/configuration.rst) if you do not provide a `cchk.toml` or `commit-check.toml` file.
+- **Commit Check** uses a [default configuration](https://commit-check.com/configuration/) if you do not provide a `cchk.toml` or `commit-check.toml` file.
 
 - The default configuration is lenient — it only checks whether commit messages follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) specification and branch names follow the [Conventional Branch](https://conventionalbranch.org#summary) convention.
 
@@ -130,7 +130,7 @@ conventional_branch = true
 # Optional: the defaults are a superset of the Conventional Branch spec — spec
 # types plus Conventional Commit types (build, ci, docs, perf, refactor, style,
 # test) and AI/bot prefixes (ai, claude, codex, copilot, cursor, dependabot,
-# renovate), see docs/configuration.rst. Omit this option to use the defaults.
+# renovate), see https://commit-check.com/configuration/. Omit this option to use the defaults.
 allow_branch_types = [
     "feature",
     "bugfix",

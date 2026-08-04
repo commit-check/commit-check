@@ -14,15 +14,3 @@ tests/__pycache__
 coverage.xml
 .nox
 _build/
-
-# docs
-docs/_build
-docs/cli_args.rst
-docs/__pycache__
-
-# MkDocs
-site/
-docs/cli.md
-
-# Social card cache written by the docs build
-.cache/

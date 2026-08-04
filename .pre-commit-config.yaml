@@ -12,11 +12,6 @@ repos:
     rev: v6.0.0
     hooks:
     -   id: check-yaml
-        # mkdocs.yml carries the `!!python/name:` tags that Material's emoji
-        # extension requires, which yaml.safe_load cannot construct. MkDocs
-        # validates the file itself on every build (`mkdocs build --strict`),
-        # so it is checked more thoroughly than this hook would manage.
-        exclude: ^mkdocs\.yml$
     -   id: check-toml
     -   id: end-of-file-fixer
     -   id: trailing-whitespace
