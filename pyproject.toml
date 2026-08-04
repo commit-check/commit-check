@@ -38,7 +38,7 @@ commit-check = "commit_check.main:main"
 cchk = "commit_check.main:main"  # short alias without clobbering system cc
 
 [project.urls]
-documentation = "https://docs.commit-check.com/"
+documentation = "https://commit-check.com/"
 source = "https://github.com/commit-check/commit-check"
 tracker = "https://github.com/commit-check/commit-check/issues"
 
