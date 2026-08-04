@@ -88,7 +88,7 @@ pip install git+https://github.com/commit-check/commit-check.git@main
 ```
 
 Then, run `commit-check --help` or `cchk --help` (alias for `commit-check`) from the command line.
-For more information, see the [docs](https://docs.commit-check.com/cli_args.html).
+For more information, see the [docs](https://commit-check.com/configuration/).
 
 ## Configuration
 
@@ -209,7 +209,7 @@ repos:
           - --author-email-pattern=^.+@example\.com$
 ```
 
-See the [Configuration documentation](https://docs.commit-check.com/configuration.html) for all available options.
+See the [Configuration documentation](https://commit-check.com/configuration/) for all available options.
 
 ### Check Push Safety
 
@@ -377,7 +377,7 @@ Available API functions:
 - `validate_author(name=None, email=None, *, config=None)` — validate author name/email
 - `validate_all(message, branch, author_name, author_email, *, config=None)` — run all checks at once
 
-For detailed usage instructions including pre-commit hooks, CLI commands, and STDIN examples, see the [Usage Examples documentation](https://docs.commit-check.com/example.html).
+For detailed usage instructions including pre-commit hooks, CLI commands, and STDIN examples, see the [Usage Examples documentation](https://commit-check.com/example/).
 
 ## Examples
 
@@ -423,7 +423,7 @@ The branch should follow Conventional Branch. See https://conventionalbranch.org
 Suggest: Use <type>/<description> with allowed types or add branch name to allow_branch_names in config, or use ignore_authors in config branch section to bypass
 ```
 
-More examples see [example documentation](https://docs.commit-check.com/example.html).
+For more examples, see the [example documentation](https://commit-check.com/example/).
 
 ## Badging your repository
 
