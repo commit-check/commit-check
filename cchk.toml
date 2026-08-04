@@ -1,3 +1,5 @@
+# Learn more: https://commit-check.com
+
 [commit]
 # https://www.conventionalcommits.org
 conventional_commits = true
