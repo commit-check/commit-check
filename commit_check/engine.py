@@ -95,6 +95,10 @@ class BaseValidator(ABC):
         # structured consumers (--format json, validate_all_detailed) can
         # report what was checked even when the check passed.
         self._checked_value: str = ""
+        # Set by ValidationEngine.validate_all_detailed() to opt into value
+        # collection. Text-mode validation skips the extra lookups (e.g. a
+        # git subprocess for the branch name) and keeps values empty.
+        self._collect_value: bool = False
 
     @abstractmethod
     def validate(self, context: ValidationContext) -> ValidationResult:
@@ -618,8 +622,9 @@ class ForcePushValidator(BaseValidator):
         if not upstream_ref:
             return ValidationResult.PASS
 
-        branch = get_branch_name()
-        self._checked_value = f"{branch} -> {upstream_ref}"
+        if self._collect_value:
+            branch = get_branch_name()
+            self._checked_value = f"{branch} -> {upstream_ref}"
 
         target_ref = get_upstream_remote_sha(upstream_ref) or upstream_ref
         returncode = git_merge_base(target_ref, "HEAD")
@@ -630,7 +635,7 @@ class ForcePushValidator(BaseValidator):
         ):
             returncode = git_merge_base(target_ref, "HEAD")
         if returncode == 1:
-            self._print_failure(f"{branch} -> {upstream_ref}")
+            self._print_failure(f"{get_branch_name()} -> {upstream_ref}")
             return ValidationResult.FAIL
 
         return ValidationResult.PASS
@@ -703,8 +708,10 @@ class CommitTypeValidator(BaseValidator):
             # The ignore_authors rule is about the commit author, not the
             # message; record it before the skip check so non-ignored
             # authors still carry the checked identity. An ignored author
-            # means nothing was checked, so the value stays empty.
-            self._checked_value = self._resolve_current_author(context)
+            # means nothing was checked, so the value stays empty. The
+            # author lookup only runs when structured consumers opt in.
+            if self._collect_value:
+                self._checked_value = self._resolve_current_author(context)
             if self._should_skip_commit_validation(context):
                 self._checked_value = ""
                 return ValidationResult.PASS
@@ -909,6 +916,7 @@ class ValidationEngine:
 
             validator: BaseValidator = validator_class(rule)
             validator._suppress_output = True  # collect, don't print
+            validator._collect_value = True  # report checked values on pass
             result = validator.validate(context)
 
             if result == ValidationResult.FAIL:

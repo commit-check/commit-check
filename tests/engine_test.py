@@ -623,6 +623,7 @@ class TestCommitTypeValidator:
         """ignore_authors records the checked author identity, not the message."""
         rule = ValidationRule(check="ignore_authors", value=["ignored"])
         validator = CommitTypeValidator(rule)
+        validator._collect_value = True
         context = ValidationContext(config={"commit": {"ignore_authors": ["ignored"]}})
 
         with patch("commit_check.engine.get_commit_info", return_value=""):
@@ -638,6 +639,7 @@ class TestCommitTypeValidator:
         """An ignored author skips the rule and leaves the value empty."""
         rule = ValidationRule(check="ignore_authors", value=["Jane Doe"])
         validator = CommitTypeValidator(rule)
+        validator._collect_value = True
         context = ValidationContext(config={"commit": {"ignore_authors": ["Jane Doe"]}})
 
         with patch("commit_check.engine.get_commit_info", return_value="Jane Doe"):
@@ -1792,6 +1794,49 @@ class TestForcePushValidator:
                     result = validator.validate(context)
 
         assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_upstream_fallback_text_mode_skips_branch_lookup(self):
+        """Text mode does not pay for the extra branch-name lookup."""
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        context = ValidationContext(push_upstream_fallback=True)
+
+        with patch(
+            "commit_check.engine.get_upstream_branch", return_value="origin/main"
+        ):
+            with patch(
+                "commit_check.engine.get_upstream_remote_sha", return_value="abc123"
+            ):
+                with patch("commit_check.engine.git_merge_base", return_value=0):
+                    with patch("commit_check.engine.get_branch_name") as mock_branch:
+                        result = validator.validate(context)
+
+        assert result == ValidationResult.PASS
+        mock_branch.assert_not_called()
+
+    @pytest.mark.benchmark
+    def test_upstream_fallback_structured_mode_records_value(self):
+        """Structured mode records branch -> upstream as the checked value."""
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        validator._collect_value = True
+        context = ValidationContext(push_upstream_fallback=True)
+
+        with patch(
+            "commit_check.engine.get_upstream_branch", return_value="origin/main"
+        ):
+            with patch(
+                "commit_check.engine.get_upstream_remote_sha", return_value="abc123"
+            ):
+                with patch("commit_check.engine.git_merge_base", return_value=0):
+                    with patch(
+                        "commit_check.engine.get_branch_name", return_value="main"
+                    ):
+                        result = validator.validate(context)
+
+        assert result == ValidationResult.PASS
+        assert validator._checked_value == "main -> origin/main"
 
     @pytest.mark.benchmark
     def test_no_stdin_with_upstream_fallback_uses_tracking_ref_when_remote_sha_missing(
