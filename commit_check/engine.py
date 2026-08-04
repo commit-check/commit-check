@@ -618,7 +618,8 @@ class ForcePushValidator(BaseValidator):
         if not upstream_ref:
             return ValidationResult.PASS
 
-        self._checked_value = f"{get_branch_name()} -> {upstream_ref}"
+        branch = get_branch_name()
+        self._checked_value = f"{branch} -> {upstream_ref}"
 
         target_ref = get_upstream_remote_sha(upstream_ref) or upstream_ref
         returncode = git_merge_base(target_ref, "HEAD")
@@ -629,7 +630,7 @@ class ForcePushValidator(BaseValidator):
         ):
             returncode = git_merge_base(target_ref, "HEAD")
         if returncode == 1:
-            self._print_failure(f"{get_branch_name()} -> {upstream_ref}")
+            self._print_failure(f"{branch} -> {upstream_ref}")
             return ValidationResult.FAIL
 
         return ValidationResult.PASS
