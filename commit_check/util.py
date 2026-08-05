@@ -13,6 +13,22 @@ from subprocess import CalledProcessError
 from commit_check import RED, GREEN, YELLOW, RESET_COLOR
 
 
+def display_name(check_type: str) -> str:
+    """Human-readable form of a check name, e.g. ``subject-imperative``.
+
+    Config files and the JSON output carry the snake_case key, because that is
+    what a reader sets in ``cchk.toml`` and what a consumer maps back to an
+    option. Text written for a person uses the kebab-case form instead: it is
+    how the rules reference titles each rule, so a name printed to a terminal
+    can be searched for there verbatim.
+
+    Every text surface goes through here so the two forms cannot drift apart
+    again — the compact output once printed the config key while the default
+    output printed this one.
+    """
+    return check_type.replace("_", "-")
+
+
 def _print_failure(
     check: dict,
     actual: str,
@@ -23,7 +39,8 @@ def _print_failure(
     rule_id = check.get("rule_id", "")
     if compact:
         compact_value = actual.splitlines()[0] if actual else actual
-        label = f"{rule_id} {check['check']}" if rule_id else check["check"]
+        name = display_name(check["check"])
+        label = f"{rule_id} {name}" if rule_id else name
         print(f"[FAIL] {label}: {compact_value}")
         return
     if not no_banner and not print_error_header.has_been_called:
@@ -364,9 +381,7 @@ def print_error_message(
 
     :returns: Give error messages to user
     """
-    # The kebab-case form is what the rules reference uses as its headings, so
-    # the name printed here can be searched for there verbatim.
-    name = check_type.replace("_", "-")
+    name = display_name(check_type)
     label = rule_id
     if rule_id and docs_url and supports_hyperlinks():
         label = hyperlink(rule_id, docs_url)

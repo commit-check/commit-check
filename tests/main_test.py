@@ -729,6 +729,35 @@ class TestCompact:
         assert len(lines) >= 1
 
     @pytest.mark.benchmark
+    def test_compact_names_checks_the_way_the_default_output_does(
+        self, mocker, capsys, monkeypatch
+    ):
+        """--compact prints the kebab-case name, not the config key.
+
+        Both are text written for a person, so they have to agree. This
+        assertion is the one the suite was missing: --compact shipped
+        printing ``subject_imperative`` while the default output printed
+        ``subject-imperative``, and nothing here noticed.
+        """
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="docs: revamped the profile\n")
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
+
+        # A check whose name contains an underscore, so the two forms differ.
+        monkeypatch.setattr(
+            "sys.argv", [CMD, "-m", "--compact", "--subject-imperative=true"]
+        )
+        main()
+
+        out, _ = capsys.readouterr()
+        assert "CC003 subject-imperative:" in out, (
+            f"--compact should print the display name: {out!r}"
+        )
+        assert "subject_imperative" not in out, (
+            f"--compact printed the config key: {out!r}"
+        )
+
+    @pytest.mark.benchmark
     def test_compact_no_suggestions(self, mocker, capsys, monkeypatch):
         """--compact output must not include 'Suggest:' lines."""
         mocker.patch("sys.stdin.isatty", return_value=False)
