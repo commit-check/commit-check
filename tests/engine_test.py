@@ -1349,7 +1349,6 @@ class TestSubjectImperativeValidator:
 
         assert result == ValidationResult.PASS
 
-    @pytest.mark.benchmark
     @pytest.mark.parametrize(
         "subject",
         [
