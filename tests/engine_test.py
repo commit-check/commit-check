@@ -1350,6 +1350,56 @@ class TestSubjectImperativeValidator:
         assert result == ValidationResult.PASS
 
     @pytest.mark.benchmark
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            # Rejected before the list was extended, every one of them written
+            # in correct imperative mood.
+            "feat: settle the report format",
+            "fix: avoid a second lookup",
+            "docs: clarify the default value",
+            "refactor: factor out the helper",
+            "chore: teach the parser about tabs",
+            "fix: free the buffer on the error path",
+            "refactor: inline the wrapper",
+            "fix: restore the previous behaviour",
+            "chore: retire the legacy flag",
+            # British spelling is not a mistake.
+            "refactor: normalise the path separators",
+            "chore: prioritise the queue",
+            "refactor: serialise the payload",
+        ],
+    )
+    def test_correct_imperative_subjects_are_not_rejected(self, subject):
+        """Words a contributor would have had to reword around must pass.
+
+        A whitelist can only approximate "is this an imperative verb", and the
+        cost of a gap falls on someone who wrote the subject correctly.
+        """
+        rule = ValidationRule(check="subject_imperative")
+        validator = SubjectImperativeValidator(rule)
+        context = ValidationContext(stdin_text=subject)
+
+        assert validator.validate(context) == ValidationResult.PASS
+
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "fix: updated the parser",
+            "feat: adding a new flag",
+            "fix: fixes the crash",
+            "chore: removed the dead code",
+        ],
+    )
+    def test_wrong_verb_forms_still_fail(self, subject):
+        """Extending the list must not weaken what the rule is there to catch."""
+        rule = ValidationRule(check="subject_imperative")
+        validator = SubjectImperativeValidator(rule)
+        context = ValidationContext(stdin_text=subject)
+
+        assert validator.validate(context) == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
     def test_validate_with_imperative_subject(self):
         """Test validation with proper imperative subject."""
         rule = ValidationRule(check="subject_imperative")
