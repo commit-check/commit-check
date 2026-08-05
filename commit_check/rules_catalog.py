@@ -24,6 +24,22 @@ from dataclasses import dataclass
 RULES_DOCS_URL = "https://commit-check.com/rules/"
 
 
+def display_name(check: str) -> str:
+    """Human-readable form of a check name, e.g. ``subject-imperative``.
+
+    Config files and the JSON output carry the snake_case key, because that is
+    what a reader sets in ``cchk.toml`` and what a consumer maps back to an
+    option. Text written for a person uses the kebab-case form instead: it is
+    how the rules reference titles each rule, so a name printed to a terminal
+    can be searched for there verbatim.
+
+    Every text surface goes through here so the two forms cannot drift apart
+    again — the compact output once printed the config key while the default
+    output printed this one.
+    """
+    return check.replace("_", "-")
+
+
 @dataclass(frozen=True)
 class RuleCatalogEntry:
     check: str
@@ -35,7 +51,7 @@ class RuleCatalogEntry:
     @property
     def name(self) -> str:
         """Human-readable rule name, e.g. ``subject-imperative``."""
-        return self.check.replace("_", "-")
+        return display_name(self.check)
 
     @property
     def docs_url(self) -> str | None:
