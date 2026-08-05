@@ -1363,10 +1363,13 @@ class TestSubjectImperativeValidator:
             "refactor: inline the wrapper",
             "fix: restore the previous behaviour",
             "chore: retire the legacy flag",
-            # British spelling is not a mistake.
+            # British spelling is not a mistake. The last pair is the case the
+            # file used to get wrong most often: the -ize form was listed and
+            # the -ise one was not, so only half of a spelling pair worked.
             "refactor: normalise the path separators",
             "chore: prioritise the queue",
-            "refactor: serialise the payload",
+            "feat: customise the template",
+            "feat: customize the template",
         ],
     )
     def test_correct_imperative_subjects_are_not_rejected(self, subject):
