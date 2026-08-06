@@ -11,6 +11,7 @@ import subprocess
 import sys
 from subprocess import CalledProcessError
 from commit_check import RED, GREEN, YELLOW, RESET_COLOR
+from commit_check.rules_catalog import display_name
 
 
 def _print_failure(
@@ -23,7 +24,8 @@ def _print_failure(
     rule_id = check.get("rule_id", "")
     if compact:
         compact_value = actual.splitlines()[0] if actual else actual
-        label = f"{rule_id} {check['check']}" if rule_id else check["check"]
+        name = display_name(check["check"])
+        label = f"{rule_id} {name}" if rule_id else name
         print(f"[FAIL] {label}: {compact_value}")
         return
     if not no_banner and not print_error_header.has_been_called:
@@ -364,9 +366,7 @@ def print_error_message(
 
     :returns: Give error messages to user
     """
-    # The kebab-case form is what the rules reference uses as its headings, so
-    # the name printed here can be searched for there verbatim.
-    name = check_type.replace("_", "-")
+    name = display_name(check_type)
     label = rule_id
     if rule_id and docs_url and supports_hyperlinks():
         label = hyperlink(rule_id, docs_url)
