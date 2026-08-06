@@ -35,6 +35,43 @@ BAD_COMMIT_MSG = "Bad commit"
 USE_CONVENTIONAL_FORMAT = "Use conventional format"
 
 
+def _pull_request_shaped_clone(tmp_path):
+    """Build a clone shaped like a CI checkout of a pull request.
+
+    One commit on origin/main, one commit of work on top, then every local
+    branch removed and HEAD detached — so the target exists only as a
+    remote-tracking ref and the branch name resolves to nothing.
+
+    Returns the clone path.
+    """
+    import subprocess as sp
+
+    def git(*args, cwd):
+        return sp.run(
+            ["git", *args],
+            cwd=cwd,
+            check=True,
+            stdout=sp.PIPE,
+            stderr=sp.PIPE,
+            text=True,
+        )
+
+    origin = tmp_path / "origin"
+    origin.mkdir()
+    git("init", "-q", "-b", "main", ".", cwd=origin)
+    git("config", "user.name", "Dev", cwd=origin)
+    git("config", "user.email", "dev@example.com", cwd=origin)
+    git("commit", "-q", "--allow-empty", "-m", "feat: base", cwd=origin)
+
+    clone = tmp_path / "clone"
+    git("clone", "-q", str(origin), str(clone), cwd=tmp_path)
+    git("config", "user.name", "Dev", cwd=clone)
+    git("config", "user.email", "dev@example.com", cwd=clone)
+    git("checkout", "-q", "-b", "feat/work", cwd=clone)
+    git("commit", "-q", "--allow-empty", "-m", "feat: work", cwd=clone)
+    return clone, git
+
+
 class TestValidationResult:
     @pytest.mark.benchmark
     def test_validation_result_enum(self):
@@ -1045,22 +1082,38 @@ class TestBodyValidator:
 
 
 class TestMergeBaseValidator:
-    @patch("commit_check.util.git_merge_base")
+    @patch("commit_check.engine.git_merge_base")
     @pytest.mark.benchmark
     def test_merge_base_validator_valid(self, mock_git_merge_base):
-        """Test MergeBaseValidator with valid merge base."""
+        """Test MergeBaseValidator with valid merge base.
+
+        Patched on commit_check.engine, not commit_check.util: the engine
+        imported the name directly, so patching the util module rebound
+        nothing and these tests were running real git against the checkout
+        they happened to be executed in.
+        """
         mock_git_merge_base.return_value = 0
 
-        rule = ValidationRule(check="merge_base")
+        # With no regex, validate() returns PASS at the "no target configured"
+        # exit without ever calling git_merge_base — the assertion below would
+        # hold no matter what the mock returned. Give it a target so the
+        # merge-base path actually runs.
+        rule = ValidationRule(check="merge_base", regex=r"^main$")
         validator = MergeBaseValidator(rule)
         context = ValidationContext()
 
-        result = validator.validate(context)
+        with (
+            patch.object(validator, "_find_target_branch", return_value="origin/main"),
+            patch("commit_check.engine.get_branch_name", return_value="feature/test"),
+            patch("commit_check.engine.has_commits", return_value=True),
+        ):
+            result = validator.validate(context)
         assert result == ValidationResult.PASS
+        mock_git_merge_base.assert_called_once_with("origin/main", "feature/test")
 
     @patch("commit_check.engine.has_commits")
     @patch("commit_check.engine.get_branch_name")
-    @patch("commit_check.util.git_merge_base")
+    @patch("commit_check.engine.git_merge_base")
     @pytest.mark.benchmark
     def test_merge_base_validator_invalid(
         self, mock_git_merge_base, mock_get_branch_name, mock_has_commits
@@ -1122,14 +1175,21 @@ class TestMergeBaseValidator:
 
     @patch("subprocess.run")
     def test_find_target_branch_local_missing_remote_found(self, mock_run):
-        """Local missing, remote tracking exists: returns the stripped branch name."""
+        """Local missing, remote tracking exists: returns the remote-qualified name.
+
+        Qualified, not bare: the caller feeds this straight to ``git merge-base
+        --is-ancestor``, and a checkout holding only ``origin/develop`` cannot
+        resolve ``develop``. Git exits 128 there, which the validator reports as
+        "not rebased onto target branch" — a clean branch failing for a name it
+        could not look up.
+        """
         mock_run.side_effect = [
             subprocess.CalledProcessError(1, []),  # local fails
             subprocess.CompletedProcess(args=[], returncode=0),  # remote succeeds
         ]
         validator = MergeBaseValidator(ValidationRule(check="merge_base"))
         result = validator._find_target_branch("develop")
-        assert result == "develop"
+        assert result == "origin/develop"
         assert mock_run.call_args_list[1][0][0][:5] == [
             "git",
             "rev-parse",
@@ -1147,6 +1207,54 @@ class TestMergeBaseValidator:
         validator = MergeBaseValidator(ValidationRule(check="merge_base"))
         result = validator._find_target_branch("nonexistent-branch")
         assert result is None
+
+    def test_merge_base_against_a_real_pull_request_shaped_checkout(self, tmp_path):
+        """A branch based on origin/main passes when no local main exists.
+
+        Mocked subprocess is what let this through: every call was asserted
+        against the arguments the code happened to pass, so a target name git
+        could not resolve looked correct. This drives real git instead.
+        """
+        from commit_check.util import git_merge_base
+
+        clone, git = _pull_request_shaped_clone(tmp_path)
+        git("branch", "-q", "-D", "main", cwd=clone)
+
+        cwd = os.getcwd()
+        try:
+            os.chdir(clone)
+            validator = MergeBaseValidator(ValidationRule(check="merge_base"))
+            target = validator._find_target_branch("main")
+            assert target == "origin/main"
+            # The point of the qualification: this is what the caller runs.
+            assert git_merge_base(target, "feat/work") == 0
+        finally:
+            os.chdir(cwd)
+
+    def test_merge_base_on_a_detached_checkout_with_no_local_branch(self, tmp_path):
+        """A detached checkout passes when the branch name resolves to nothing.
+
+        The other half of the same mistake: get_branch_name() falls back to
+        GITHUB_HEAD_REF, so on a CI checkout of a pull request it reports a
+        branch that was never created locally. git exits 128 on the name, and
+        128 was read as "not an ancestor" rather than "could not look that up".
+        """
+        clone, git = _pull_request_shaped_clone(tmp_path)
+        git("checkout", "-q", "--detach", "HEAD", cwd=clone)
+        git("branch", "-q", "-D", "main", cwd=clone)
+        git("branch", "-q", "-D", "feat/work", cwd=clone)
+
+        cwd = os.getcwd()
+        try:
+            os.chdir(clone)
+            with patch.dict(os.environ, {"GITHUB_HEAD_REF": "feat/never-created"}):
+                validator = MergeBaseValidator(
+                    ValidationRule(check="merge_base", regex="main")
+                )
+                result = validator.validate(ValidationContext())
+        finally:
+            os.chdir(cwd)
+        assert result == ValidationResult.PASS
 
     @patch("subprocess.run")
     def test_find_target_branch_empty_pattern(self, mock_run):
