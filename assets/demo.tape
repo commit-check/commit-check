@@ -25,7 +25,11 @@ Hide
 # The identity matters: without it the initial commit fails, the repository is
 # left with no commits at all, and every branch check then silently passes —
 # which is exactly how this demo once recorded a failing branch as clean.
-Type "cd $(mktemp -d) && git init -q -b main . && git config user.name 'Dev' && git config user.email 'dev@example.com'"
+# ${DEMO_REPO:?} rather than a bare cd: when a command substitution produces
+# nothing, zsh reads `cd $(...)` as plain `cd` and goes to $HOME — so a failing
+# mktemp would have this git init a maintainer's home directory. The guard
+# aborts the chain instead.
+Type "DEMO_REPO=$(mktemp -d) && cd ${DEMO_REPO:?} && git init -q -b main . && git config user.name 'Dev' && git config user.email 'dev@example.com'"
 Enter
 Type "git commit -q --allow-empty -m 'feat: initial commit'"
 Enter
@@ -67,3 +71,10 @@ Sleep 1500ms
 Type "commit-check -b && echo 'passed'"
 Enter
 Sleep 3s
+
+Hide
+# Leave no throwaway repository behind. The same guard applies: an unset or
+# empty DEMO_REPO aborts rather than handing rm -rf a bare path.
+Type "cd / && rm -rf ${DEMO_REPO:?}"
+Enter
+Show
