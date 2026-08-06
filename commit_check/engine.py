@@ -486,7 +486,15 @@ class MergeBaseValidator(BaseValidator):
             # ancestry. A CI checkout of a pull request leaves a detached HEAD
             # with no local branch created, while get_branch_name() still
             # reports a name from GITHUB_HEAD_REF — so the name here refers to
-            # nothing on disk. HEAD is the same commit and always resolves.
+            # nothing on disk. The remote-tracking ref is the real branch.
+            result = git_merge_base(target_branch, f"origin/{current_branch}")
+        if result == 128:
+            # Last resort, and only when even the remote ref is absent. On a
+            # pull_request event HEAD is GitHub's synthetic merge commit, whose
+            # first parent IS the target tip — so answering from HEAD passes
+            # any branch, rebased or not. That is why origin/<branch> must be
+            # tried first: this line only gives a real answer on checkouts
+            # where HEAD is the branch commit itself (e.g. a push event).
             result = git_merge_base(target_branch, "HEAD")
         if result == 0:
             return ValidationResult.PASS

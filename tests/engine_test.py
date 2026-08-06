@@ -1256,6 +1256,46 @@ class TestMergeBaseValidator:
             os.chdir(cwd)
         assert result == ValidationResult.PASS
 
+    def test_merge_base_fails_a_diverged_branch_on_a_merge_ref_checkout(self, tmp_path):
+        """A branch that is NOT rebased must fail, even on a merge-ref checkout.
+
+        On a pull_request event the runner checks out GitHub's synthetic merge
+        commit, whose first parent IS the target tip — so answering the
+        ancestry question from HEAD passes every branch, rebased or not. The
+        branch must be resolved through its remote-tracking ref instead; this
+        test pins that, and fails if the HEAD fallback is consulted first.
+        """
+        clone, git = _pull_request_shaped_clone(tmp_path)
+        # Publish the branch, then move main forward so feat/work is diverged.
+        git("push", "-q", "origin", "feat/work", cwd=clone)
+        origin = tmp_path / "origin"
+        git("commit", "-q", "--allow-empty", "-m", "feat: main moved on", cwd=origin)
+        git("fetch", "-q", "origin", cwd=clone)
+        # Build the merge-ref shape: detached at a merge of target and branch.
+        git("checkout", "-q", "--detach", "origin/main", cwd=clone)
+        git(
+            "merge",
+            "-q",
+            "--no-ff",
+            "-m",
+            "Merge feat/work into main",
+            "feat/work",
+            cwd=clone,
+        )
+        git("branch", "-q", "-D", "main", "feat/work", cwd=clone)
+
+        cwd = os.getcwd()
+        try:
+            os.chdir(clone)
+            with patch.dict(os.environ, {"GITHUB_HEAD_REF": "feat/work"}):
+                validator = MergeBaseValidator(
+                    ValidationRule(check="merge_base", regex="main")
+                )
+                result = validator.validate(ValidationContext(no_banner=True))
+        finally:
+            os.chdir(cwd)
+        assert result == ValidationResult.FAIL
+
     @patch("subprocess.run")
     def test_find_target_branch_empty_pattern(self, mock_run):
         """Empty or anchor-only pattern: returns None without calling subprocess."""
