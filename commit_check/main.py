@@ -13,6 +13,7 @@ from commit_check.engine import (
     ValidationContext,
     ValidationResult,
     CheckOutcome,
+    overall_status,
 )
 from . import __version__
 
@@ -446,7 +447,7 @@ def _get_requested_checks(args: argparse.Namespace) -> list[str]:
 def _run_json_output(engine: ValidationEngine, context: ValidationContext) -> int:
     """Run validation and print JSON output."""
     outcomes: list[CheckOutcome] = engine.validate_all_detailed(context)
-    overall = "fail" if any(o.status == "fail" for o in outcomes) else "pass"
+    overall = overall_status(outcomes)
     print(
         json.dumps(
             {
@@ -456,7 +457,9 @@ def _run_json_output(engine: ValidationEngine, context: ValidationContext) -> in
             indent=2,
         )
     )
-    return 0 if overall == "pass" else 1
+    # Only a failure is an error. A skipped run validated nothing, but that
+    # is not a policy violation, so it must not turn into a non-zero exit.
+    return 1 if overall == "fail" else 0
 
 
 def main() -> int:

@@ -401,12 +401,12 @@ print(result["status"])          # "fail" — 'docs' not in allowed types
 
 ```python
 {
-    "status": "pass" | "fail",
+    "status": "pass" | "fail" | "skip",
     "checks": [
         {
             "rule_id":  "<rule identifier, e.g. CC001>",
             "check":    "<rule name>",
-            "status":   "pass" | "fail",
+            "status":   "pass" | "fail" | "skip",
             "value":    "<actual value that was checked>",
             "error":    "<human-readable error description>",
             "suggest":  "<how to fix>",
@@ -414,6 +414,56 @@ print(result["status"])          # "fail" — 'docs' not in allowed types
         },
         # ... one entry per active rule
     ]
+}
+```
+
+`skip` means the rule never ran — the author matched `ignore_authors`, or
+there was nothing to check. It is deliberately not `pass`: a skipped rule
+validated nothing, so reporting it as a pass makes a bypassed policy
+indistinguishable from an enforced one. A skipped check carries no `value`,
+since nothing was examined.
+
+The top-level `status` is `skip` only when **every** check skipped; one real
+verdict makes it `pass` or `fail` as before. Only `fail` is an error, and the
+CLI exit code follows that — a fully skipped run still exits `0`, so code
+branching on `status == "fail"` is unaffected.
+
+```bash
+echo "chore(deps): bump commit-check" | CCHK_IGNORE_AUTHORS="dependabot[bot]" commit-check -m --format json
+```
+
+```json
+{
+  "status": "skip",
+  "checks": [
+    {
+      "rule_id": "CC001",
+      "check": "message",
+      "status": "skip",
+      "value": "",
+      "error": "",
+      "suggest": "",
+      "docs_url": "https://commit-check.com/rules/#cc001"
+    },
+    {
+      "rule_id": "CC004",
+      "check": "subject_max_length",
+      "status": "skip",
+      "value": "",
+      "error": "",
+      "suggest": "",
+      "docs_url": "https://commit-check.com/rules/#cc004"
+    },
+    {
+      "rule_id": "CC005",
+      "check": "subject_min_length",
+      "status": "skip",
+      "value": "",
+      "error": "",
+      "suggest": "",
+      "docs_url": "https://commit-check.com/rules/#cc005"
+    }
+  ]
 }
 ```
 

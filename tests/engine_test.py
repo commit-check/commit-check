@@ -338,7 +338,7 @@ class TestBranchValidator:
         config = {"branch": {"ignore_authors": ["ignored"]}}
         context = ValidationContext(config=config)
         result = validator.validate(context)
-        assert result == ValidationResult.PASS
+        assert result == ValidationResult.SKIP
 
     @pytest.mark.benchmark
     def test_validate_with_stdin_text(self):
@@ -512,7 +512,7 @@ class TestBranchValidator:
         ):
             result = validator.validate(context)
         # Skipped — the commit's author (dependabot[bot]) is in ignore_authors
-        assert result == ValidationResult.PASS
+        assert result == ValidationResult.SKIP
 
 
 class TestAuthorValidator:
@@ -578,7 +578,7 @@ class TestAuthorValidator:
         config = {"commit": {"ignore_authors": ["ignored"]}}
         context = ValidationContext(config=config)
         result = validator.validate(context)
-        assert result == ValidationResult.PASS
+        assert result == ValidationResult.SKIP
 
     @pytest.mark.benchmark
     def test_validate_author_with_allowed_list(self):
@@ -615,7 +615,7 @@ class TestAuthorValidator:
         with patch.object(validator, "_get_author_value", return_value="Bot User"):
             context = ValidationContext()
             result = validator.validate(context)
-            assert result == ValidationResult.PASS
+            assert result == ValidationResult.SKIP
 
     @pytest.mark.benchmark
     def test_get_author_value_with_email_format(self):
@@ -751,7 +751,7 @@ class TestCommitTypeValidator:
             with patch("commit_check.engine.has_commits", return_value=True):
                 result = validator.validate(context)
 
-        assert result == ValidationResult.PASS
+        assert result == ValidationResult.SKIP
         assert validator._checked_value == ""
 
     @pytest.mark.benchmark
@@ -978,7 +978,7 @@ class TestSignoffValidator:
         context = ValidationContext(stdin_text="chore: bump dep", config=config)
 
         result = validator.validate(context)
-        assert result == ValidationResult.PASS
+        assert result == ValidationResult.SKIP
 
     @pytest.mark.benchmark
     def test_signoff_validator_missing_signoff(self):
@@ -1220,7 +1220,7 @@ class TestMergeBaseValidator:
 
         with patch("commit_check.engine.has_commits", return_value=False):
             result = validator.validate(context)
-            assert result == ValidationResult.PASS  # Skipped
+            assert result == ValidationResult.SKIP  # the rule never ran
 
     # ------------------------------------------------------------------ #
     #  _find_target_branch —— unit tests for the new impl
@@ -1750,7 +1750,7 @@ class TestCoAuthorSkip:
 
         with patch("commit_check.engine.get_commit_info", return_value="other-author"):
             result = validator.validate(context)
-        assert result == ValidationResult.PASS
+        assert result == ValidationResult.SKIP
 
     @pytest.mark.benchmark
     def test_co_author_not_in_ignore_list_does_not_skip(self):
@@ -1799,7 +1799,7 @@ class TestCoAuthorSkip:
                 "commit_check.engine.get_commit_info", return_value="main-author"
             ):
                 result = validator.validate(context)
-            assert result == ValidationResult.PASS
+            assert result == ValidationResult.SKIP
         finally:
             os.unlink(commit_file)
 
@@ -1872,7 +1872,7 @@ class TestCoAuthorSkip:
         ):
             result = validator.validate(context)
         # Skipped — the commit's author (dependabot[bot]) is in ignore_authors
-        assert result == ValidationResult.PASS
+        assert result == ValidationResult.SKIP
 
     @pytest.mark.benchmark
     def test_author_in_ignore_list_falls_back_to_git_config_when_commit_info_empty(
@@ -1904,7 +1904,7 @@ class TestCoAuthorSkip:
         ):
             result = validator.validate(context)
         # Skipped — fallback author (Developer Bot) is in ignore_authors
-        assert result == ValidationResult.PASS
+        assert result == ValidationResult.SKIP
 
 
 class TestGetGitConfigValue:
@@ -2455,7 +2455,7 @@ class TestAiAttributionValidator:
             patch("commit_check.engine.get_git_config_value", return_value=""),
         ):
             result = validator.validate(context)
-        assert result == ValidationResult.PASS  # Skipped due to ignored author
+        assert result == ValidationResult.SKIP  # the rule never ran
 
     @pytest.mark.benchmark
     def test_empty_message_passes(self):
