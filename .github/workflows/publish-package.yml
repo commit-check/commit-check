@@ -28,8 +28,11 @@ jobs:
         # Install dependencies
         python -m pip install --only-binary :all: --upgrade pip
         python -m pip install --only-binary :all: ".[ci]"
-        # Build wheel
-        python -m pip wheel -w dist .
+        # Build wheel. --no-deps is load-bearing: without it pip also writes
+        # every dependency's wheel into dist/, and the publish step uploads
+        # the whole directory (it has no file-selection input), so PyPI is
+        # asked to accept someone else's package under our scoped token.
+        python -m pip wheel --no-deps -w dist .
         # Check distribution
         twine check dist/commit_check*
 
