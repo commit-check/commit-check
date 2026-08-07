@@ -28,10 +28,22 @@ jobs:
         # Install dependencies
         python -m pip install --only-binary :all: --upgrade pip
         python -m pip install --only-binary :all: ".[ci]"
-        # Build wheel
-        python -m pip wheel -w dist .
+        # Build wheel. --no-deps matters: without it pip also resolves and
+        # writes every dependency's wheel into dist/, and the publish step
+        # below uploads the whole directory, so PyPI is asked to accept
+        # someone else's package under our project-scoped token.
+        python -m pip wheel --no-deps -w dist .
         # Check distribution
         twine check dist/commit_check*
+        # The publish step has no way to select files, so dist/ being ours
+        # alone is a precondition it cannot check for itself. Fail here, with
+        # a message that names the problem, rather than at the upload with a
+        # 403 about a project we do not own.
+        foreign=$(find dist -mindepth 1 -not -name 'commit_check-*' -printf '%f\n')
+        if [ -n "$foreign" ]; then
+          echo "::error::dist/ must contain only commit-check artifacts, found: $foreign"
+          exit 1
+        fi
 
     - name: Create attestations
       uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
