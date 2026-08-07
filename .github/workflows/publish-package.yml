@@ -35,13 +35,18 @@ jobs:
         python -m pip wheel --no-deps -w dist .
         # Check distribution
         twine check dist/commit_check*
-        # The publish step has no way to select files, so dist/ being ours
-        # alone is a precondition it cannot check for itself. Fail here, with
-        # a message that names the problem, rather than at the upload with a
-        # 403 about a project we do not own.
-        foreign=$(find dist -mindepth 1 -not -name 'commit_check-*' -printf '%f\n')
+        # The publish step has no way to select files, so dist/ holding
+        # exactly what we mean to upload is a precondition it cannot check
+        # for itself. Fail here, with a message that names the problem,
+        # rather than at the upload with a 403 about a project we do not own.
+        #
+        # This names our own wheels specifically, not merely "not someone
+        # else's": a release that starts producing anything else -- an sdist,
+        # a stray file, a leftover directory -- should stop here and be
+        # looked at, not be uploaded because it happened to carry our prefix.
+        foreign=$(find dist -mindepth 1 \( ! -type f -o ! -name 'commit_check-*.whl' \) -printf '%f\n')
         if [ -n "$foreign" ]; then
-          echo "::error::dist/ must contain only commit-check artifacts, found: $foreign"
+          echo "::error::dist/ must contain only commit-check wheels, found: $foreign"
           exit 1
         fi
 
