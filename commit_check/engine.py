@@ -139,9 +139,19 @@ class BaseValidator(ABC):
         return get_commit_info("an") or get_git_config_value("user.name")
 
     @staticmethod
+    def _message_was_supplied(context: ValidationContext) -> bool:
+        """Whether the caller handed us a message rather than leaving it to git.
+
+        Distinguishes "you asked me about this empty message" from "git had
+        nothing to give me", which decide opposite answers: the first is a
+        message that fails, the second is nothing to check.
+        """
+        return context.stdin_text is not None or context.commit_file is not None
+
+    @staticmethod
     def _get_commit_message(context: ValidationContext) -> str:
         """Get commit message from context or git."""
-        if context.stdin_text:
+        if context.stdin_text is not None:
             return context.stdin_text.strip()
 
         if context.commit_file:
@@ -290,7 +300,7 @@ class SubjectValidator(BaseValidator):
 
     def _get_subject(self, context: ValidationContext) -> str:
         """Extract subject from commit message."""
-        if context.stdin_text:
+        if context.stdin_text is not None:
             return context.stdin_text.strip().split("\n")[0]
 
         if context.commit_file:
@@ -401,7 +411,7 @@ class AuthorValidator(BaseValidator):
         Checks git config first (for pre-commit validation of the configured identity),
         then falls back to the last commit's author info.
         """
-        if context.stdin_text:
+        if context.stdin_text is not None:
             return context.stdin_text.strip()
 
         git_config_map = {
@@ -451,7 +461,9 @@ class BranchValidator(BaseValidator):
         if self._should_skip_branch_validation(context):
             return ValidationResult.PASS
         branch_name = (
-            context.stdin_text.strip() if context.stdin_text else get_branch_name()
+            context.stdin_text.strip()
+            if context.stdin_text is not None
+            else get_branch_name()
         )
         self._checked_value = branch_name
 
@@ -635,6 +647,10 @@ class ForcePushValidator(BaseValidator):
     ZERO_SHA = "0000000000000000000000000000000000000000"
 
     def validate(self, context: ValidationContext) -> ValidationResult:
+        # Emptiness, not absence, is the question here: unlike a message or a
+        # branch name, stdin_text carries a *list* of refs, and no refs means
+        # there is nothing to check either way. So this one stays a truth test
+        # while the single-value readers above distinguish "" from None.
         if not context.stdin_text:
             if context.push_upstream_fallback:
                 return self._check_current_branch_against_upstream()
@@ -750,7 +766,12 @@ class CommitTypeValidator(BaseValidator):
             return ValidationResult.PASS
 
         message = self._get_commit_message(context)
-        if not message:
+        # allow_empty_commits is the rule that exists to judge an empty
+        # message, so returning early on one made it unreachable: the branch
+        # in _is_empty_commit_allowed that rejects an empty message could
+        # never run. A message the caller supplied goes to the rule even when
+        # it is empty; an empty one from git is still nothing to check.
+        if not message and not self._message_was_supplied(context):
             return ValidationResult.PASS
 
         self._checked_value = message

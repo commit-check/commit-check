@@ -686,6 +686,33 @@ class TestAuthorPatternConfig:
 
 
 class TestCommitTypeValidator:
+    def test_supplied_empty_message_reaches_the_empty_commit_rule(self):
+        """allow_empty_commits=False must actually reject an empty message.
+
+        The early return on a falsy message used to make this unreachable, so
+        the rejecting branch of _is_empty_commit_allowed was dead code. Patches
+        get_commit_info to prove the verdict comes from the supplied message
+        and not from the repository's own HEAD commit.
+        """
+        rule = ValidationRule(check="allow_empty_commits", value=False)
+        validator = CommitTypeValidator(rule)
+        with patch("commit_check.engine.get_commit_info") as mock_commit_info:
+            mock_commit_info.return_value = "feat: something from git"
+            result = validator.validate(
+                ValidationContext(stdin_text="", no_banner=True)
+            )
+        assert result == ValidationResult.FAIL
+        mock_commit_info.assert_not_called()
+
+    def test_absent_message_still_skips_the_empty_commit_rule(self):
+        """A message git never supplied is nothing to check, not a failure."""
+        rule = ValidationRule(check="allow_empty_commits", value=False)
+        validator = CommitTypeValidator(rule)
+        with patch("commit_check.engine.get_commit_info", return_value=""):
+            with patch("commit_check.engine.has_commits", return_value=True):
+                result = validator.validate(ValidationContext(no_banner=True))
+        assert result == ValidationResult.PASS
+
     @pytest.mark.benchmark
     def test_commit_type_validator_merge_commits(self):
         """Test CommitTypeValidator with merge commits."""
