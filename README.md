@@ -256,8 +256,33 @@ echo "feat: add streaming support" | commit-check -m --format json
 {
   "status": "pass",
   "checks": [
-    { "check": "message",           "status": "pass", "value": "", "error": "", "suggest": "" },
-    { "check": "subject_imperative", "status": "pass", "value": "", "error": "", "suggest": "" }
+    {
+      "rule_id": "CC001",
+      "check": "message",
+      "status": "pass",
+      "value": "feat: add streaming support",
+      "error": "",
+      "suggest": "",
+      "docs_url": "https://commit-check.com/rules/#cc001"
+    },
+    {
+      "rule_id": "CC004",
+      "check": "subject_max_length",
+      "status": "pass",
+      "value": "feat: add streaming support",
+      "error": "",
+      "suggest": "",
+      "docs_url": "https://commit-check.com/rules/#cc004"
+    },
+    {
+      "rule_id": "CC005",
+      "check": "subject_min_length",
+      "status": "pass",
+      "value": "feat: add streaming support",
+      "error": "",
+      "suggest": "",
+      "docs_url": "https://commit-check.com/rules/#cc005"
+    }
   ]
 }
 ```
@@ -274,11 +299,31 @@ echo "wip bad commit" | commit-check -m --format json
   "status": "fail",
   "checks": [
     {
-      "check":   "message",
-      "status":  "fail",
-      "value":   "wip bad commit",
-      "error":   "The commit message should follow Conventional Commits. See https://www.conventionalcommits.org",
-      "suggest": "Use <type>(<scope>): <description>, where <type> is one of: feat, fix, docs, ..."
+      "rule_id": "CC001",
+      "check": "message",
+      "status": "fail",
+      "value": "wip bad commit",
+      "error": "The commit message should follow Conventional Commits. See https://www.conventionalcommits.org",
+      "suggest": "Use <type>(<scope>): <description>, where <type> is one of: feat, fix, docs, style, refactor, test, chore, perf, build, ci",
+      "docs_url": "https://commit-check.com/rules/#cc001"
+    },
+    {
+      "rule_id": "CC004",
+      "check": "subject_max_length",
+      "status": "pass",
+      "value": "wip bad commit",
+      "error": "",
+      "suggest": "",
+      "docs_url": "https://commit-check.com/rules/#cc004"
+    },
+    {
+      "rule_id": "CC005",
+      "check": "subject_min_length",
+      "status": "pass",
+      "value": "wip bad commit",
+      "error": "",
+      "suggest": "",
+      "docs_url": "https://commit-check.com/rules/#cc005"
     }
   ]
 }
@@ -299,10 +344,10 @@ echo "wip bad commit" | commit-check -m --no-banner
 ```
 
 ```text
-Type message check failed ==> wip bad commit
-It doesn't match regex: ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([\w\-\.]+\))?(!)?: ([\w ])+([\s\S]*)|(Merge).*|(fixup!.*)
+CC001 message check failed ==> wip bad commit
 The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
-Suggest: Use <type>(<scope>): <description>, where <type> is one of: feat, fix, docs, ...
+Suggest: Use <type>(<scope>): <description>, where <type> is one of: feat, fix, docs, style, refactor, test, chore, perf, build, ci
+Docs: https://commit-check.com/rules/#cc001
 ```
 
 ```bash
@@ -310,7 +355,7 @@ echo "wip bad commit" | commit-check -m --compact
 ```
 
 ```text
-[FAIL] message: wip bad commit
+[FAIL] CC001 message: wip bad commit
 ```
 
 ### Python API (no subprocess required)
@@ -359,11 +404,13 @@ print(result["status"])          # "fail" — 'docs' not in allowed types
     "status": "pass" | "fail",
     "checks": [
         {
-            "check":   "<rule name>",
-            "status":  "pass" | "fail",
-            "value":   "<actual value that was checked>",
-            "error":   "<human-readable error description>",
-            "suggest": "<how to fix>",
+            "rule_id":  "<rule identifier, e.g. CC001>",
+            "check":    "<rule name>",
+            "status":   "pass" | "fail",
+            "value":    "<actual value that was checked>",
+            "error":    "<human-readable error description>",
+            "suggest":  "<how to fix>",
+            "docs_url": "<link to the rule's documentation>",
         },
         # ... one entry per active rule
     ]
@@ -397,9 +444,10 @@ Commit rejected by Commit-Check.
 
 Commit rejected.
 
-Type message check failed ==> test commit message check
+CC001 message check failed ==> test commit message check
 The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
-Suggest: Use <type>(<scope>): <description>, where <type> is one of: feat, fix, docs, style, refactor, test, chore, ci
+Suggest: Use <type>(<scope>): <description>, where <type> is one of: feat, fix, docs, style, refactor, test, chore, perf, build, ci
+Docs: https://commit-check.com/rules/#cc001
 ```
 
 ### Check Branch Naming Failed
@@ -418,9 +466,10 @@ Commit rejected by Commit-Check.
 
 Commit rejected.
 
-Type branch check failed ==> test-branch
+CC201 branch check failed ==> test-branch
 The branch should follow Conventional Branch. See https://conventionalbranch.org
 Suggest: Use <type>/<description> with allowed types or add branch name to allow_branch_names in config, or use ignore_authors in config branch section to bypass
+Docs: https://commit-check.com/rules/#cc201
 ```
 
 For more examples, see the [example documentation](https://commit-check.com/example/).
