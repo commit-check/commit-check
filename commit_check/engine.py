@@ -21,6 +21,7 @@ from commit_check.util import (
     get_upstream_remote_sha,
     has_commits,
     git_merge_base,
+    git_rev_parse_verify,
 )
 from commit_check.imperatives import IMPERATIVES
 
@@ -489,13 +490,16 @@ class MergeBaseValidator(BaseValidator):
             # nothing on disk. The remote-tracking ref is the real branch.
             result = git_merge_base(target_branch, f"origin/{current_branch}")
         if result == 128:
-            # Last resort, and only when even the remote ref is absent. On a
-            # pull_request event HEAD is GitHub's synthetic merge commit, whose
-            # first parent IS the target tip — so answering from HEAD passes
-            # any branch, rebased or not. That is why origin/<branch> must be
-            # tried first: this line only gives a real answer on checkouts
-            # where HEAD is the branch commit itself (e.g. a push event).
-            result = git_merge_base(target_branch, "HEAD")
+            # Last resort, when the branch is unresolvable under either name.
+            # On a pull_request event HEAD is GitHub's synthetic merge commit,
+            # whose first parent IS the target tip, so asking about HEAD would
+            # pass every branch, rebased or not. Its *second* parent is the
+            # pull request head — the commit actually under review — so ask
+            # about that instead whenever HEAD is a merge. Where HEAD has a
+            # single parent it is the branch commit itself (a push event, or a
+            # branch that was never pushed) and answers for itself.
+            source = "HEAD^2" if git_rev_parse_verify("HEAD^2") else "HEAD"
+            result = git_merge_base(target_branch, source)
         if result == 0:
             return ValidationResult.PASS
 

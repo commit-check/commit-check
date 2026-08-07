@@ -1296,6 +1296,46 @@ class TestMergeBaseValidator:
             os.chdir(cwd)
         assert result == ValidationResult.FAIL
 
+    def test_merge_base_fails_a_diverged_branch_with_no_remote_ref(self, tmp_path):
+        """The same diverged branch must still fail when even the remote ref is
+        gone, which is where the fallback chain runs out of names.
+
+        Measured in this shape: origin/main vs feat/work is 128, vs
+        origin/feat/work is 128, and vs HEAD is 0 -- so falling through to HEAD
+        would pass a branch that is genuinely behind. HEAD's *second* parent is
+        the pull request head and answers 1, the truth.
+        """
+        clone, git = _pull_request_shaped_clone(tmp_path)
+        git("push", "-q", "origin", "feat/work", cwd=clone)
+        origin = tmp_path / "origin"
+        git("commit", "-q", "--allow-empty", "-m", "feat: main moved on", cwd=origin)
+        git("fetch", "-q", "origin", cwd=clone)
+        git("checkout", "-q", "--detach", "origin/main", cwd=clone)
+        git(
+            "merge",
+            "-q",
+            "--no-ff",
+            "-m",
+            "Merge feat/work into main",
+            "feat/work",
+            cwd=clone,
+        )
+        git("branch", "-q", "-D", "main", "feat/work", cwd=clone)
+        # Leave the branch unresolvable under every name.
+        git("update-ref", "-d", "refs/remotes/origin/feat/work", cwd=clone)
+
+        cwd = os.getcwd()
+        try:
+            os.chdir(clone)
+            with patch.dict(os.environ, {"GITHUB_HEAD_REF": "feat/work"}):
+                validator = MergeBaseValidator(
+                    ValidationRule(check="merge_base", regex="main")
+                )
+                result = validator.validate(ValidationContext(no_banner=True))
+        finally:
+            os.chdir(cwd)
+        assert result == ValidationResult.FAIL
+
     @patch("subprocess.run")
     def test_find_target_branch_empty_pattern(self, mock_run):
         """Empty or anchor-only pattern: returns None without calling subprocess."""
