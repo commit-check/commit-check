@@ -195,6 +195,24 @@ def has_commits() -> bool:
         return False
 
 
+def git_rev_parse_verify(rev: str) -> bool:
+    """Check whether a revision resolves in the current repository.
+    :param rev: any revision expression, e.g. ``HEAD^2``
+
+    :returns: `True` if the revision resolves, `False` otherwise.
+    """
+    try:
+        subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", f"{rev}^{{commit}}"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
 def get_commit_info(format_string: str, sha: str = "HEAD") -> str:
     """Get latest commits information
     :param format_string: could be

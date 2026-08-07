@@ -21,6 +21,7 @@ from commit_check.util import (
     get_upstream_remote_sha,
     has_commits,
     git_merge_base,
+    git_rev_parse_verify,
 )
 from commit_check.imperatives import IMPERATIVES
 
@@ -481,6 +482,24 @@ class MergeBaseValidator(BaseValidator):
             return ValidationResult.PASS
 
         result = git_merge_base(target_branch, current_branch)
+        if result == 128:
+            # 128 is git failing to resolve a name, not an answer about
+            # ancestry. A CI checkout of a pull request leaves a detached HEAD
+            # with no local branch created, while get_branch_name() still
+            # reports a name from GITHUB_HEAD_REF — so the name here refers to
+            # nothing on disk. The remote-tracking ref is the real branch.
+            result = git_merge_base(target_branch, f"origin/{current_branch}")
+        if result == 128:
+            # Last resort, when the branch is unresolvable under either name.
+            # On a pull_request event HEAD is GitHub's synthetic merge commit,
+            # whose first parent IS the target tip, so asking about HEAD would
+            # pass every branch, rebased or not. Its *second* parent is the
+            # pull request head — the commit actually under review — so ask
+            # about that instead whenever HEAD is a merge. Where HEAD has a
+            # single parent it is the branch commit itself (a push event, or a
+            # branch that was never pushed) and answers for itself.
+            source = "HEAD^2" if git_rev_parse_verify("HEAD^2") else "HEAD"
+            result = git_merge_base(target_branch, source)
         if result == 0:
             return ValidationResult.PASS
 
@@ -527,7 +546,14 @@ class MergeBaseValidator(BaseValidator):
                 stderr=subprocess.DEVNULL,
                 check=True,
             )
-            return branch_name
+            # Qualified with the remote, because that is the ref that was just
+            # verified. Returning the bare name here made the caller run
+            # ``git merge-base --is-ancestor main HEAD`` in a checkout that has
+            # only ``origin/main``; git exits 128 on the unresolvable name and
+            # the branch was reported as "not rebased onto target branch" when
+            # it was correctly based all along. A CI checkout of a pull request
+            # is exactly that shape.
+            return f"origin/{branch_name}"
         except subprocess.CalledProcessError:
             pass
 
