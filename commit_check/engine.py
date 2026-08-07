@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import IntEnum
 from dataclasses import field
@@ -27,10 +28,22 @@ from commit_check.imperatives import IMPERATIVES
 
 
 class ValidationResult(IntEnum):
-    """Validation result codes."""
+    """Validation result codes.
+
+    ``SKIP`` means the validator declined to run — the author is on an
+    ignore list, or there was nothing to check — as opposed to ``PASS``,
+    which means the rule ran and found nothing to object to. Reporting a
+    skip as a pass makes a bypassed policy indistinguishable from an
+    enforced one, so the two are kept apart.
+
+    Only ``FAIL`` is an error. ``validate_all`` returns ``PASS``/``FAIL``
+    explicitly rather than propagating this value, so the new member never
+    reaches an exit code.
+    """
 
     PASS = 0
     FAIL = 1
+    SKIP = 2
 
 
 @dataclass(frozen=True)
@@ -55,7 +68,11 @@ class CheckOutcome:
     """
 
     check: str
-    status: str  # "pass" or "fail"
+    # "pass" (the rule ran and was satisfied), "fail" (the rule ran and was
+    # not), or "skip" (the rule never ran — ignored author, or nothing to
+    # check). A skip is not a pass: it means the policy was bypassed, and
+    # collapsing the two lets a run that validated nothing report success.
+    status: str
     # The concrete value that was checked (subject, branch, author, ...),
     # populated on both pass and fail so consumers can report what was
     # validated even when the check succeeded.
@@ -76,6 +93,31 @@ class CheckOutcome:
             "suggest": self.suggest,
             "docs_url": self.docs_url,
         }
+
+
+def overall_status(statuses: Iterable[str]) -> str:
+    """Reduce per-check statuses to one of ``"pass"``/``"fail"``/``"skip"``.
+
+    Takes plain status strings rather than a specific type so that every
+    caller can share it: the CLI's ``--format json`` and the API's
+    :class:`CheckOutcome` objects, and the API's combined paths
+    (``validate_author`` with both inputs, ``validate_all``) which merge
+    already-serialised check dicts.
+
+    That breadth is the point. This rule had been copied into four places,
+    and each copy defaulted to ``"pass"`` for anything that was not a
+    failure — which is how a fully skipped run kept reporting success even
+    after the skip status existed.
+
+    ``"skip"`` requires that *every* check skipped: a single real verdict
+    means something was actually validated. Only ``"fail"`` is an error.
+    """
+    seen = list(statuses)
+    if any(s == "fail" for s in seen):
+        return "fail"
+    if seen and all(s == "skip" for s in seen):
+        return "skip"
+    return "pass"
 
 
 class BaseValidator(ABC):
@@ -272,7 +314,7 @@ class CommitMessageValidator(BaseValidator):
 
     def validate(self, context: ValidationContext) -> ValidationResult:
         if self._should_skip_commit_validation(context):
-            return ValidationResult.PASS
+            return ValidationResult.SKIP
 
         message = self._get_commit_message(context)
         if not message:
@@ -294,7 +336,7 @@ class SubjectValidator(BaseValidator):
 
     def validate(self, context: ValidationContext) -> ValidationResult:
         if self._should_skip_commit_validation(context):
-            return ValidationResult.PASS
+            return ValidationResult.SKIP
 
         subject = self._get_subject(context)
         if not subject:
@@ -401,7 +443,7 @@ class AuthorValidator(BaseValidator):
     def validate(self, context: ValidationContext) -> ValidationResult:
         # Use commit skip logic for ignore_authors
         if self._should_skip_commit_validation(context):
-            return ValidationResult.PASS
+            return ValidationResult.SKIP
 
         author_value = self._get_author_value(context)
         if not author_value:
@@ -455,7 +497,8 @@ class AuthorValidator(BaseValidator):
             return ValidationResult.FAIL
 
         if self.rule.ignored and author_value in self.rule.ignored:
-            return ValidationResult.PASS  # Ignored authors pass silently
+            # An ignored author is a deliberate bypass, not a verdict.
+            return ValidationResult.SKIP
 
         return ValidationResult.PASS
 
@@ -465,7 +508,7 @@ class BranchValidator(BaseValidator):
 
     def validate(self, context: ValidationContext) -> ValidationResult:
         if self._should_skip_branch_validation(context):
-            return ValidationResult.PASS
+            return ValidationResult.SKIP
         branch_name = (
             context.stdin_text.strip()
             if context.stdin_text is not None
@@ -490,7 +533,7 @@ class MergeBaseValidator(BaseValidator):
 
     def validate(self, context: ValidationContext) -> ValidationResult:
         if self._should_skip_branch_validation(context):
-            return ValidationResult.PASS
+            return ValidationResult.SKIP
 
         current_branch = get_branch_name()
         target_pattern = self.rule.regex
@@ -588,7 +631,7 @@ class SignoffValidator(BaseValidator):
 
     def validate(self, context: ValidationContext) -> ValidationResult:
         if self._should_skip_commit_validation(context):
-            return ValidationResult.PASS
+            return ValidationResult.SKIP
 
         message = self._get_commit_message(context)
         if not message:
@@ -610,7 +653,7 @@ class BodyValidator(BaseValidator):
 
     def validate(self, context: ValidationContext) -> ValidationResult:
         if self._should_skip_commit_validation(context):
-            return ValidationResult.PASS
+            return ValidationResult.SKIP
 
         message = self._get_commit_message(context)
         if not message:
@@ -767,9 +810,9 @@ class CommitTypeValidator(BaseValidator):
                 self._checked_value = self._resolve_current_author(context)
             if self._should_skip_commit_validation(context):
                 self._checked_value = ""
-                return ValidationResult.PASS
+                return ValidationResult.SKIP
         elif self._should_skip_commit_validation(context):
-            return ValidationResult.PASS
+            return ValidationResult.SKIP
 
         message = self._get_commit_message(context)
         # allow_empty_commits is the rule that exists to judge an empty
@@ -851,7 +894,7 @@ class AiAttributionValidator(BaseValidator):
 
     def validate(self, context: ValidationContext) -> ValidationResult:
         if self._should_skip_commit_validation(context):
-            return ValidationResult.PASS
+            return ValidationResult.SKIP
 
         message = self._get_commit_body(context)
         if not message:
@@ -991,11 +1034,14 @@ class ValidationEngine:
                     )
                 )
             else:
+                # A skipped rule never ran, so it has no value to report and
+                # must not be reported as a pass — see ValidationResult.SKIP.
+                skipped = result == ValidationResult.SKIP
                 outcomes.append(
                     CheckOutcome(
                         check=rule.check,
-                        status="pass",
-                        value=validator._checked_value or "",
+                        status="skip" if skipped else "pass",
+                        value="" if skipped else (validator._checked_value or ""),
                         rule_id=rule.rule_id or "",
                         docs_url=rule.docs_url or "",
                     )

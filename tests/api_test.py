@@ -334,3 +334,142 @@ class TestValidatePush:
             assert "value" in c
             assert "error" in c
             assert "suggest" in c
+
+
+class TestSkippedStatus:
+    """A skipped rule must not be reported as a passing one.
+
+    An ignored author bypasses the policy entirely. Reporting that as
+    ``pass`` made a run that validated nothing indistinguishable from one
+    that validated everything, so consumers (the GitHub Action's summary,
+    an agent reading the JSON) announced success for unchecked commits.
+    """
+
+    IGNORED = {"commit": {"ignore_authors": ["dependabot[bot]"]}}
+
+    @pytest.mark.benchmark
+    def test_ignored_author_reports_skip_not_pass(self):
+        """Every rule reports 'skip', and the overall status follows."""
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="dependabot[bot]",
+            ),
+            patch(
+                "commit_check.engine.get_commit_info", return_value="dependabot[bot]"
+            ),
+        ):
+            result = validate_message(
+                "chore(deps): bump commit-check", config=self.IGNORED
+            )
+
+        assert result["status"] == "skip"
+        assert result["checks"], "expected the rules to be reported, not dropped"
+        assert {c["status"] for c in result["checks"]} == {"skip"}
+
+    @pytest.mark.benchmark
+    def test_skipped_checks_carry_no_value(self):
+        """A skipped rule checked nothing, so it reports no checked value."""
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="dependabot[bot]",
+            ),
+            patch(
+                "commit_check.engine.get_commit_info", return_value="dependabot[bot]"
+            ),
+        ):
+            result = validate_message(
+                "chore(deps): bump commit-check", config=self.IGNORED
+            )
+
+        assert [c["value"] for c in result["checks"]] == [""] * len(result["checks"])
+
+    @pytest.mark.benchmark
+    def test_same_message_from_a_listed_author_still_passes(self):
+        """The control: only the author differs, and the verdict is real.
+
+        Without this the skip test would pass even if the rules had simply
+        stopped running for everyone.
+        """
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value", return_value="Ada Lovelace"
+            ),
+            patch("commit_check.engine.get_commit_info", return_value="Ada Lovelace"),
+        ):
+            result = validate_message(
+                "chore(deps): bump commit-check", config=self.IGNORED
+            )
+
+        assert result["status"] == "pass"
+        assert {c["status"] for c in result["checks"]} == {"pass"}
+        assert any(c["value"] for c in result["checks"]), (
+            "a real pass reports what it checked"
+        )
+
+    @pytest.mark.benchmark
+    def test_a_failure_still_outranks_a_skip(self):
+        """Overall status is 'skip' only when nothing ran at all."""
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value", return_value="Ada Lovelace"
+            ),
+            patch("commit_check.engine.get_commit_info", return_value="Ada Lovelace"),
+        ):
+            result = validate_message("wip nonsense", config=self.IGNORED)
+
+        assert result["status"] == "fail"
+
+    @pytest.mark.benchmark
+    def test_combined_author_call_preserves_skip(self):
+        """validate_author(name=..., email=...) merges two runs of checks.
+
+        That merge had its own copy of the reduce-to-overall rule which
+        defaulted to "pass", so a fully skipped combined call reported a
+        pass even after the skip status existed.
+        """
+        cfg = {"commit": {"ignore_authors": ["dependabot[bot]"]}}
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="dependabot[bot]",
+            ),
+            patch(
+                "commit_check.engine.get_commit_info", return_value="dependabot[bot]"
+            ),
+        ):
+            result = validate_author(
+                name="whoever", email="who@example.com", config=cfg
+            )
+
+        assert result["status"] == "skip"
+        assert {c["status"] for c in result["checks"]} == {"skip"}
+
+    @pytest.mark.benchmark
+    def test_validate_all_preserves_skip(self):
+        """validate_all() merges every group and had the same private copy."""
+        cfg = {
+            "commit": {"ignore_authors": ["dependabot[bot]"]},
+            "branch": {"ignore_authors": ["dependabot[bot]"]},
+        }
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="dependabot[bot]",
+            ),
+            patch(
+                "commit_check.engine.get_commit_info", return_value="dependabot[bot]"
+            ),
+            patch("commit_check.engine.get_branch_name", return_value="main"),
+        ):
+            result = validate_all(
+                message="chore(deps): bump commit-check",
+                branch="dependabot/pip/commit-check-2.13.3",
+                author_name="whoever",
+                author_email="who@example.com",
+                config=cfg,
+            )
+
+        assert result["status"] == "skip"
+        assert {c["status"] for c in result["checks"]} == {"skip"}

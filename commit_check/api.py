@@ -19,11 +19,11 @@ Typical usage::
 Return-value schema (all functions)::
 
     {
-        "status": "pass" | "fail",
+        "status": "pass" | "fail" | "skip",
         "checks": [
             {
                 "check":   "<rule name>",
-                "status":  "pass" | "fail",
+                "status":  "pass" | "fail" | "skip",
                 "value":   "<actual value that was checked>",
                 "error":   "<error description>",
                 "suggest": "<how to fix>",
@@ -31,6 +31,14 @@ Return-value schema (all functions)::
             ...
         ]
     }
+
+``"skip"`` means the rule never ran — the author is on an ``ignore_authors``
+list, or there was nothing to check. It is deliberately not ``"pass"``: a
+skipped rule validated nothing, and collapsing the two makes a bypassed
+policy indistinguishable from an enforced one. The top-level ``status`` is
+``"skip"`` only when *every* check skipped; a run with any real verdict
+reports ``"pass"`` or ``"fail"`` as before. Only ``"fail"`` is an error, so
+code branching on ``status == "fail"`` keeps working unchanged.
 """
 
 from __future__ import annotations
@@ -43,6 +51,7 @@ from commit_check.engine import (
     CheckOutcome,
     ValidationContext,
     ValidationEngine,
+    overall_status,
 )
 from commit_check.rule_builder import RuleBuilder
 
@@ -55,9 +64,8 @@ from commit_check.rule_builder import RuleBuilder
 def _build_result(outcomes: list[CheckOutcome]) -> dict[str, Any]:
     """Convert a list of :class:`~commit_check.engine.CheckOutcome` into the
     public return-value dict."""
-    overall = "fail" if any(o.status == "fail" for o in outcomes) else "pass"
     return {
-        "status": overall,
+        "status": overall_status(o.status for o in outcomes),
         "checks": [o.to_dict() for o in outcomes],
     }
 
@@ -245,7 +253,9 @@ def validate_author(
             cfg,
         )
         all_checks = name_result["checks"] + email_result["checks"]
-        overall = "fail" if any(c["status"] == "fail" for c in all_checks) else "pass"
+        # Shared reducer, not a local "fail or else pass": a combined call
+        # in which every nested check skipped is still a skip.
+        overall = overall_status(c["status"] for c in all_checks)
         return {"status": overall, "checks": all_checks}
 
     stdin = None
@@ -303,5 +313,5 @@ def validate_all(
         author_result = validate_author(author_name, author_email, config=config)
         all_checks.extend(author_result["checks"])
 
-    overall = "fail" if any(c["status"] == "fail" for c in all_checks) else "pass"
+    overall = overall_status(c["status"] for c in all_checks)
     return {"status": overall, "checks": all_checks}
