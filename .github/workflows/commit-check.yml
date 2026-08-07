@@ -1,0 +1,45 @@
+name: Commit Check
+
+permissions:
+  contents: read
+  pull-requests: write # pr-comments writes back to the pull request
+
+on:
+  # Pull requests only, deliberately.
+  #
+  # A push to main carries the squashed commit, whose subject is the pull
+  # request title with " (#N)" appended by GitHub. Checking there re-runs work
+  # that already passed, against a subject the author never wrote and cannot
+  # shorten — which is how #530 passed review at 75 characters and then failed
+  # on main at 82, against a limit of 80.
+  #
+  # No `paths:` filter either. A subject, a branch name or an author address is
+  # wrong regardless of which files the change touches, and the filter on
+  # main.yml is why nothing ran on #530 at all: it changed only assets/.
+  #
+  # `edited` matters: a squash merge turns the title into the commit subject,
+  # so retitling a pull request changes what will be committed.
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  commit-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # full history, so branch and rebase checks can resolve
+          # Nothing after checkout needs authenticated git.
+          persist-credentials: false
+      # The action rather than a nox session: this repository is what the
+      # action installs, so running it here is the project checking itself
+      # with the thing users actually run.
+      - uses: commit-check/commit-check-action@562a184b2b8e583e757b17eb385bc48370f44547 # v2.13.1
+        with:
+          message: true
+          branch: true
+          author-name: true
+          author-email: true
+          pr-title: true # the subject a squash merge will commit
+          job-summary: true
+          pr-comments: true
