@@ -183,7 +183,12 @@ class BaseValidator(ABC):
     @staticmethod
     def _get_commit_body(context: ValidationContext) -> str:
         """Retrieve the commit message body from context or git."""
-        if context.stdin_text:
+        # An empty string is a message the caller supplied, not an absent one.
+        # Reading it as absent sends the check off to the repository's HEAD
+        # commit instead, so a caller asking about "" is answered about
+        # whatever was committed last. The skip logic above already draws the
+        # line at None; this follows it.
+        if context.stdin_text is not None:
             return context.stdin_text
         if context.commit_file:
             try:

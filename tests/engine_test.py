@@ -2444,3 +2444,21 @@ class TestAiAttributionValidator:
 
         result = validator.validate(context)
         assert result == ValidationResult.PASS
+
+    def test_empty_message_is_not_read_from_git(self):
+        """An empty stdin_text must not fall through to the HEAD commit.
+
+        The assertion above only holds while the checkout's own HEAD carries no
+        AI trailers, so it passed on pull request runs — where HEAD is GitHub's
+        synthetic merge commit with an empty body — and went red on main the
+        moment a commit with a Co-authored-by trailer landed. This pins the
+        behaviour itself, independent of whatever the repository last
+        committed.
+        """
+        with patch("commit_check.engine.get_commit_info") as mock_commit_info:
+            mock_commit_info.return_value = "Co-authored-by: Claude <n@example.com>"
+            body = AiAttributionValidator._get_commit_body(
+                ValidationContext(stdin_text="")
+            )
+        assert body == ""
+        mock_commit_info.assert_not_called()
