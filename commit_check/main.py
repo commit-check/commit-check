@@ -447,7 +447,7 @@ def _get_requested_checks(args: argparse.Namespace) -> list[str]:
 def _run_json_output(engine: ValidationEngine, context: ValidationContext) -> int:
     """Run validation and print JSON output."""
     outcomes: list[CheckOutcome] = engine.validate_all_detailed(context)
-    overall = overall_status(outcomes)
+    overall = overall_status(o.status for o in outcomes)
     print(
         json.dumps(
             {

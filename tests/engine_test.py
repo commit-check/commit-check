@@ -2489,3 +2489,74 @@ class TestAiAttributionValidator:
             )
         assert body == ""
         mock_commit_info.assert_not_called()
+
+
+class TestSkipCoverage:
+    """The remaining skip guards, pinned so they cannot regress to PASS.
+
+    Every validator routes its bypass through the same two helpers, but each
+    call site returns independently, so each needs its own guard.
+    """
+
+    IGNORED = {"commit": {"ignore_authors": ["dependabot[bot]"]}}
+
+    def _as_ignored_author(self):
+        return (
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="dependabot[bot]",
+            ),
+            patch(
+                "commit_check.engine.get_commit_info", return_value="dependabot[bot]"
+            ),
+        )
+
+    @pytest.mark.benchmark
+    def test_body_validator_skips_ignored_author(self):
+        """BodyValidator declines to run rather than reporting a pass."""
+        validator = BodyValidator(ValidationRule(check="require_body"))
+        context = ValidationContext(stdin_text="feat: add feature", config=self.IGNORED)
+        cfg, info = self._as_ignored_author()
+        with cfg, info:
+            assert validator.validate(context) == ValidationResult.SKIP
+
+    @pytest.mark.benchmark
+    def test_body_validator_still_runs_for_other_authors(self):
+        """Control: only the author differs, and the rule reaches a verdict."""
+        validator = BodyValidator(ValidationRule(check="require_body"))
+        context = ValidationContext(stdin_text="feat: add feature", config=self.IGNORED)
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value", return_value="Ada Lovelace"
+            ),
+            patch("commit_check.engine.get_commit_info", return_value="Ada Lovelace"),
+        ):
+            assert validator.validate(context) != ValidationResult.SKIP
+
+    @pytest.mark.benchmark
+    def test_commit_type_rule_skips_ignored_author(self):
+        """CommitTypeValidator's non-ignore_authors branch skips too.
+
+        ``ignore_authors`` itself takes a separate path in this validator, so
+        a rule such as ``allow_wip_commits`` exercises the other one.
+        """
+        rule = ValidationRule(check="allow_wip_commits", value=False)
+        validator = CommitTypeValidator(rule)
+        context = ValidationContext(stdin_text="wip: not done", config=self.IGNORED)
+        cfg, info = self._as_ignored_author()
+        with cfg, info:
+            assert validator.validate(context) == ValidationResult.SKIP
+
+    @pytest.mark.benchmark
+    def test_commit_type_rule_still_fails_for_other_authors(self):
+        """Control: the same WIP message from a human is still rejected."""
+        rule = ValidationRule(check="allow_wip_commits", value=False)
+        validator = CommitTypeValidator(rule)
+        context = ValidationContext(stdin_text="wip: not done", config=self.IGNORED)
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value", return_value="Ada Lovelace"
+            ),
+            patch("commit_check.engine.get_commit_info", return_value="Ada Lovelace"),
+        ):
+            assert validator.validate(context) == ValidationResult.FAIL

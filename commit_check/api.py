@@ -65,7 +65,7 @@ def _build_result(outcomes: list[CheckOutcome]) -> dict[str, Any]:
     """Convert a list of :class:`~commit_check.engine.CheckOutcome` into the
     public return-value dict."""
     return {
-        "status": overall_status(outcomes),
+        "status": overall_status(o.status for o in outcomes),
         "checks": [o.to_dict() for o in outcomes],
     }
 
@@ -253,7 +253,9 @@ def validate_author(
             cfg,
         )
         all_checks = name_result["checks"] + email_result["checks"]
-        overall = "fail" if any(c["status"] == "fail" for c in all_checks) else "pass"
+        # Shared reducer, not a local "fail or else pass": a combined call
+        # in which every nested check skipped is still a skip.
+        overall = overall_status(c["status"] for c in all_checks)
         return {"status": overall, "checks": all_checks}
 
     stdin = None
@@ -311,5 +313,5 @@ def validate_all(
         author_result = validate_author(author_name, author_email, config=config)
         all_checks.extend(author_result["checks"])
 
-    overall = "fail" if any(c["status"] == "fail" for c in all_checks) else "pass"
+    overall = overall_status(c["status"] for c in all_checks)
     return {"status": overall, "checks": all_checks}

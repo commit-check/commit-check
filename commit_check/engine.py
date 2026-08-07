@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import IntEnum
 from dataclasses import field
@@ -94,19 +95,27 @@ class CheckOutcome:
         }
 
 
-def overall_status(outcomes: list[CheckOutcome]) -> str:
-    """Reduce per-check outcomes to one of ``"pass"``/``"fail"``/``"skip"``.
+def overall_status(statuses: Iterable[str]) -> str:
+    """Reduce per-check statuses to one of ``"pass"``/``"fail"``/``"skip"``.
 
-    Lives here, and is used by both the CLI's ``--format json`` and the
-    Python API, because two copies of this rule is how the CLI came to
-    report ``"pass"`` for a run in which every rule had been skipped.
+    Takes plain status strings rather than a specific type so that every
+    caller can share it: the CLI's ``--format json`` and the API's
+    :class:`CheckOutcome` objects, and the API's combined paths
+    (``validate_author`` with both inputs, ``validate_all``) which merge
+    already-serialised check dicts.
+
+    That breadth is the point. This rule had been copied into four places,
+    and each copy defaulted to ``"pass"`` for anything that was not a
+    failure — which is how a fully skipped run kept reporting success even
+    after the skip status existed.
 
     ``"skip"`` requires that *every* check skipped: a single real verdict
     means something was actually validated. Only ``"fail"`` is an error.
     """
-    if any(o.status == "fail" for o in outcomes):
+    seen = list(statuses)
+    if any(s == "fail" for s in seen):
         return "fail"
-    if outcomes and all(o.status == "skip" for o in outcomes):
+    if seen and all(s == "skip" for s in seen):
         return "skip"
     return "pass"
 

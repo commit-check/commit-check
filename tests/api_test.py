@@ -420,3 +420,56 @@ class TestSkippedStatus:
             result = validate_message("wip nonsense", config=self.IGNORED)
 
         assert result["status"] == "fail"
+
+    @pytest.mark.benchmark
+    def test_combined_author_call_preserves_skip(self):
+        """validate_author(name=..., email=...) merges two runs of checks.
+
+        That merge had its own copy of the reduce-to-overall rule which
+        defaulted to "pass", so a fully skipped combined call reported a
+        pass even after the skip status existed.
+        """
+        cfg = {"commit": {"ignore_authors": ["dependabot[bot]"]}}
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="dependabot[bot]",
+            ),
+            patch(
+                "commit_check.engine.get_commit_info", return_value="dependabot[bot]"
+            ),
+        ):
+            result = validate_author(
+                name="whoever", email="who@example.com", config=cfg
+            )
+
+        assert result["status"] == "skip"
+        assert {c["status"] for c in result["checks"]} == {"skip"}
+
+    @pytest.mark.benchmark
+    def test_validate_all_preserves_skip(self):
+        """validate_all() merges every group and had the same private copy."""
+        cfg = {
+            "commit": {"ignore_authors": ["dependabot[bot]"]},
+            "branch": {"ignore_authors": ["dependabot[bot]"]},
+        }
+        with (
+            patch(
+                "commit_check.engine.get_git_config_value",
+                return_value="dependabot[bot]",
+            ),
+            patch(
+                "commit_check.engine.get_commit_info", return_value="dependabot[bot]"
+            ),
+            patch("commit_check.engine.get_branch_name", return_value="main"),
+        ):
+            result = validate_all(
+                message="chore(deps): bump commit-check",
+                branch="dependabot/pip/commit-check-2.13.3",
+                author_name="whoever",
+                author_email="who@example.com",
+                config=cfg,
+            )
+
+        assert result["status"] == "skip"
+        assert {c["status"] for c in result["checks"]} == {"skip"}
