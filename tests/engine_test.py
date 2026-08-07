@@ -72,6 +72,47 @@ def _pull_request_shaped_clone(tmp_path):
     return clone, git
 
 
+def _diverged_merge_ref_clone(tmp_path):
+    """Extend the pull-request shape into the one that hides false passes.
+
+    Publishes feat/work, moves main past it so the branch is genuinely behind,
+    then detaches at a merge of the two — the shape of GitHub's synthetic merge
+    commit, whose first parent is the target tip. Every local branch is removed,
+    so the branch resolves only through refs/remotes/origin/feat/work.
+    """
+    clone, git = _pull_request_shaped_clone(tmp_path)
+    git("push", "-q", "origin", "feat/work", cwd=clone)
+    origin = tmp_path / "origin"
+    git("commit", "-q", "--allow-empty", "-m", "feat: main moved on", cwd=origin)
+    git("fetch", "-q", "origin", cwd=clone)
+    git("checkout", "-q", "--detach", "origin/main", cwd=clone)
+    git(
+        "merge",
+        "-q",
+        "--no-ff",
+        "-m",
+        "Merge feat/work into main",
+        "feat/work",
+        cwd=clone,
+    )
+    git("branch", "-q", "-D", "main", "feat/work", cwd=clone)
+    return clone, git
+
+
+def _validate_merge_base(clone, branch="feat/work", target="main"):
+    """Run MergeBaseValidator inside ``clone`` as a CI checkout would."""
+    cwd = os.getcwd()
+    try:
+        os.chdir(clone)
+        with patch.dict(os.environ, {"GITHUB_HEAD_REF": branch}):
+            validator = MergeBaseValidator(
+                ValidationRule(check="merge_base", regex=target)
+            )
+            return validator.validate(ValidationContext(no_banner=True))
+    finally:
+        os.chdir(cwd)
+
+
 class TestValidationResult:
     @pytest.mark.benchmark
     def test_validation_result_enum(self):
@@ -1265,36 +1306,8 @@ class TestMergeBaseValidator:
         branch must be resolved through its remote-tracking ref instead; this
         test pins that, and fails if the HEAD fallback is consulted first.
         """
-        clone, git = _pull_request_shaped_clone(tmp_path)
-        # Publish the branch, then move main forward so feat/work is diverged.
-        git("push", "-q", "origin", "feat/work", cwd=clone)
-        origin = tmp_path / "origin"
-        git("commit", "-q", "--allow-empty", "-m", "feat: main moved on", cwd=origin)
-        git("fetch", "-q", "origin", cwd=clone)
-        # Build the merge-ref shape: detached at a merge of target and branch.
-        git("checkout", "-q", "--detach", "origin/main", cwd=clone)
-        git(
-            "merge",
-            "-q",
-            "--no-ff",
-            "-m",
-            "Merge feat/work into main",
-            "feat/work",
-            cwd=clone,
-        )
-        git("branch", "-q", "-D", "main", "feat/work", cwd=clone)
-
-        cwd = os.getcwd()
-        try:
-            os.chdir(clone)
-            with patch.dict(os.environ, {"GITHUB_HEAD_REF": "feat/work"}):
-                validator = MergeBaseValidator(
-                    ValidationRule(check="merge_base", regex="main")
-                )
-                result = validator.validate(ValidationContext(no_banner=True))
-        finally:
-            os.chdir(cwd)
-        assert result == ValidationResult.FAIL
+        clone, _ = _diverged_merge_ref_clone(tmp_path)
+        assert _validate_merge_base(clone) == ValidationResult.FAIL
 
     def test_merge_base_fails_a_diverged_branch_with_no_remote_ref(self, tmp_path):
         """The same diverged branch must still fail when even the remote ref is
@@ -1305,36 +1318,10 @@ class TestMergeBaseValidator:
         would pass a branch that is genuinely behind. HEAD's *second* parent is
         the pull request head and answers 1, the truth.
         """
-        clone, git = _pull_request_shaped_clone(tmp_path)
-        git("push", "-q", "origin", "feat/work", cwd=clone)
-        origin = tmp_path / "origin"
-        git("commit", "-q", "--allow-empty", "-m", "feat: main moved on", cwd=origin)
-        git("fetch", "-q", "origin", cwd=clone)
-        git("checkout", "-q", "--detach", "origin/main", cwd=clone)
-        git(
-            "merge",
-            "-q",
-            "--no-ff",
-            "-m",
-            "Merge feat/work into main",
-            "feat/work",
-            cwd=clone,
-        )
-        git("branch", "-q", "-D", "main", "feat/work", cwd=clone)
+        clone, git = _diverged_merge_ref_clone(tmp_path)
         # Leave the branch unresolvable under every name.
         git("update-ref", "-d", "refs/remotes/origin/feat/work", cwd=clone)
-
-        cwd = os.getcwd()
-        try:
-            os.chdir(clone)
-            with patch.dict(os.environ, {"GITHUB_HEAD_REF": "feat/work"}):
-                validator = MergeBaseValidator(
-                    ValidationRule(check="merge_base", regex="main")
-                )
-                result = validator.validate(ValidationContext(no_banner=True))
-        finally:
-            os.chdir(cwd)
-        assert result == ValidationResult.FAIL
+        assert _validate_merge_base(clone) == ValidationResult.FAIL
 
     @patch("subprocess.run")
     def test_find_target_branch_empty_pattern(self, mock_run):
