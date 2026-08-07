@@ -34,7 +34,7 @@ jobs:
       # The action rather than a nox session: this repository is what the
       # action installs, so running it here is the project checking itself
       # with the thing users actually run.
-      - uses: commit-check/commit-check-action@124de73e3d47e0b4c1a89f70bbe1f17138c191ce # v2.13.0
+      - uses: commit-check/commit-check-action@562a184b2b8e583e757b17eb385bc48370f44547 # v2.13.1
         with:
           message: true
           branch: true
