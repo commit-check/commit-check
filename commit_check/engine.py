@@ -140,11 +140,17 @@ class BaseValidator(ABC):
 
     @staticmethod
     def _message_was_supplied(context: ValidationContext) -> bool:
-        """Whether the caller handed us a message rather than leaving it to git.
+        """Whether the caller named a message source rather than leaving it to git.
 
         Distinguishes "you asked me about this empty message" from "git had
         nothing to give me", which decide opposite answers: the first is a
         message that fails, the second is nothing to check.
+
+        A commit_file that cannot be read counts as named even though the text
+        then comes from git. That stays correct where it matters: the only way
+        to reach an empty message from there is a HEAD commit whose message is
+        genuinely empty, and rejecting that under allow_empty_commits = false
+        is the verdict the rule exists to give.
         """
         return context.stdin_text is not None or context.commit_file is not None
 
