@@ -2,17 +2,15 @@
 # https://github.com/crate-ci/imperative/blob/master/assets/imperatives.txt
 # and extended since.
 #
-# Some of these are more commonly encountered as nouns, but leaving them out
-# rejects a subject that is written correctly, which is the worse failure: the
-# contributor has to reword something that was never wrong, and the only way
-# they learn which words are acceptable is by trial and error.
+# This is NOT an allow-list, and a subject is never rejected for being absent
+# from it. CC003 decides on the word's form (see SubjectImperativeValidator),
+# and the only thing this set is still consulted for is the stem test behind
+# the third-person -s rule: "fixes" is a verb because "fix" is in here, while
+# "status" is not, because dropping its -s leaves nothing this set contains.
 #
-# For the same reason both spellings of every -ize/-ise verb are listed. A
-# project writing British English is not making a mistake.
-#
-# Additions are welcome and cheap. The list can only ever approximate "is this
-# an English imperative verb", so treat a rejected-but-correct subject as a bug
-# in this file rather than as something the author should work around.
+# So a missing verb costs a missed violation, never a false rejection -- there
+# is nothing to keep up with, and no need to send a patch adding the verb you
+# just used. Additions still help the -s rule catch more, and cost nothing.
 
 IMPERATIVES = {
     "abort",
@@ -44,7 +42,6 @@ IMPERATIVES = {
     "authenticate",
     "authorise",
     "authorize",
-    "auto",
     "automate",
     "avoid",
     "await",
@@ -304,7 +301,6 @@ IMPERATIVES = {
     "parameterise",
     "parameterize",
     "parse",
-    "partial",
     "pass",
     "pause",
     "perform",
@@ -441,7 +437,6 @@ IMPERATIVES = {
     "serve",
     "set",
     "settle",
-    "setup",
     "shard",
     "shorten",
     "show",
@@ -544,4 +539,51 @@ IMPERATIVES = {
     "write",
     "yield",
     "zip",
+}
+
+
+# Imperative verbs that end in -ed or -ing without being a past tense or a
+# gerund, and so would be misread by the morphology rule in
+# SubjectImperativeValidator. Short enough to enumerate, which is what lets
+# that rule work on shape instead of on a vocabulary of every English verb.
+#
+# Both groups are meant to be the whole family rather than a sample of it --
+# a half-enumerated closed set would put back exactly the "add my word"
+# treadmill this check was rebuilt to escape. Err towards including a word:
+# an entry that never comes up costs nothing, a missing one rejects someone
+# who wrote correct English.
+NON_IMPERATIVE_LOOKALIKES = {
+    # -ed, but not a past tense
+    "bleed",
+    "breed",
+    "embed",
+    "exceed",
+    "feed",
+    "heed",
+    "need",
+    "proceed",
+    "seed",
+    "shed",
+    "shred",
+    "speed",
+    "spread",
+    "succeed",
+    "wed",
+    "weed",
+    # -ing, but not a gerund
+    "bring",
+    "cling",
+    "ding",
+    "fling",
+    "ping",
+    "ring",
+    "sing",
+    "sling",
+    "spring",
+    "sting",
+    "string",
+    "swing",
+    "wing",
+    "wring",
+    "zing",
 }

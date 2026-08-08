@@ -2560,3 +2560,117 @@ class TestSkipCoverage:
             patch("commit_check.engine.get_commit_info", return_value="Ada Lovelace"),
         ):
             assert validator.validate(context) == ValidationResult.FAIL
+
+
+class TestImperativeMorphology:
+    """The rule decides on form, not on vocabulary. See #526.
+
+    A word list can only approximate "is this an English imperative", and the
+    cost of every gap falls on someone who wrote the subject correctly. These
+    pin the three things that replace it: inflected first words are rejected,
+    everything else is not, and the few words whose spelling trips the test
+    are named rather than guessed at.
+    """
+
+    def _verdict(self, subject):
+        validator = SubjectImperativeValidator(
+            ValidationRule(check="subject_imperative")
+        )
+        return validator.validate(ValidationContext(stdin_text=subject))
+
+    @pytest.mark.benchmark
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "fix: fixed the parser",  # past tense
+            "fix: updated the docs",
+            "fix: removed the flag",
+            "feat: adding a retry",  # gerund
+            "feat: implementing the cache",
+            "fix: fixes the parser",  # third person
+            "fix: removes the flag",
+            "docs: documents the API",
+            "fix: tries the fallback",  # -ies, so the stem is "try"
+            "fix: applies the patch",
+        ],
+    )
+    def test_inflected_first_words_are_rejected(self, subject):
+        """The failure the rule exists for, and now the only one it reports."""
+        assert self._verdict(subject) == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            # Correct imperatives that no list contained, or ever would.
+            "feat: reword the report format",
+            "refactor: dedupe the helper",
+            "chore: decommission the legacy path",
+            "fix: loosen the guard",
+            "fix: backfill an absent value",
+            # Adverb-led subjects, which a list of *verbs* cannot represent
+            # without becoming a list of not-verbs.
+            "feat: optionally skip the hook",
+            "fix: explicitly close the handle",
+            # British spelling, which is not a mistake.
+            "refactor: normalise the path separators",
+        ],
+    )
+    def test_uninflected_first_words_pass_without_being_listed(self, subject):
+        assert self._verdict(subject) == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "fix: embed the token",  # -ed, not a past tense
+            "fix: need a newer pip",
+            "fix: proceed without the cache",
+            "chore: spread the load",
+            "feat: bring back the flag",  # -ing, not a gerund
+            "fix: string the parts together",
+            "fix: ping the endpoint",
+            "chore: weed out the dead code",
+            "fix: heed the configured timeout",
+            "feat: sling the payload over the wire",
+        ],
+    )
+    def test_lookalikes_are_not_mistaken_for_inflection(self, subject):
+        """The words a suffix rule gets wrong, enumerated rather than guessed."""
+        assert self._verdict(subject) == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "fix: address the warning",  # -ss, never third person
+            "fix: process the queue",
+            "fix: guess the encoding",
+            "fix: focus the search",  # -s, but the stem is not a verb
+            "fix: status report is empty",  # noun-led
+            "chore: deps bump",
+            # Stems that are not verbs at all, so their plurals are nouns.
+            "fix: partials are rendered twice",
+            "chore: setups differ between CI and local",
+            "fix: always quote the path",  # adverb-led
+            "fix: sometimes the cache is stale",
+        ],
+    )
+    def test_single_s_words_are_not_assumed_third_person(self, subject):
+        """A trailing -s only counts when the stem is a verb we know."""
+        assert self._verdict(subject) == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_a_noun_led_subject_now_passes(self):
+        """Documents the deliberate loosening, so a change to it is a choice.
+
+        The old list rejected this by accident of vocabulary, not because it
+        detected the mood. Naming it here means anyone tightening it later
+        does so on purpose.
+        """
+        assert self._verdict("fix: parser improvements") == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_merge_and_fixup_subjects_still_bypass_the_rule(self):
+        assert self._verdict("Merge branch 'main' into topic") == ValidationResult.PASS
+        assert self._verdict("fixup! fixed the parser") == ValidationResult.PASS

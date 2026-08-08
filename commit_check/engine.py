@@ -24,7 +24,7 @@ from commit_check.util import (
     git_merge_base,
     git_rev_parse_verify,
 )
-from commit_check.imperatives import IMPERATIVES
+from commit_check.imperatives import IMPERATIVES, NON_IMPERATIVE_LOOKALIKES
 
 
 class ValidationResult(IntEnum):
@@ -392,7 +392,20 @@ class SubjectCapitalizationValidator(SubjectValidator):
 
 
 class SubjectImperativeValidator(SubjectValidator):
-    """Validates that subject uses imperative mood."""
+    """Validates that subject uses imperative mood.
+
+    Decides on the first word's form rather than its membership in a
+    vocabulary: a past tense ("fixed"), a gerund ("adding") or a third person
+    ("fixes") is not imperative, and nothing else disqualifies. A list can
+    only reject correct subjects wherever it falls short, and it always does:
+    on 59k strictly imperative subjects from git.git it rejected 45%, against
+    1% here. See #526.
+
+    The loosening is deliberate: a noun-led subject ("parser improvements")
+    now passes, where the list rejected it by accident of vocabulary.
+    """
+
+    _INFLECTED = ("ed", "ing")
 
     def _validate_subject(self, subject: str) -> ValidationResult:
         # Skip merge commits and fixup commits
@@ -408,11 +421,40 @@ class SubjectImperativeValidator(SubjectValidator):
             return ValidationResult.PASS
 
         first_word = match.group(1).lower()
-        if first_word in IMPERATIVES:
-            return ValidationResult.PASS
 
-        self._print_failure(subject)
-        return ValidationResult.FAIL
+        if self._is_inflected(first_word):
+            self._print_failure(subject)
+            return ValidationResult.FAIL
+
+        return ValidationResult.PASS
+
+    @classmethod
+    def _is_inflected(cls, word: str) -> bool:
+        """Whether *word* carries past-tense, gerund or third-person marking."""
+        if word in NON_IMPERATIVE_LOOKALIKES:
+            return False
+        if word.endswith(cls._INFLECTED):
+            return True
+        return cls._is_third_person(word)
+
+    @classmethod
+    def _is_third_person(cls, word: str) -> bool:
+        """Whether *word* is a verb wearing the third-person singular -s.
+
+        Unlike -ed and -ing, a trailing -s is weak evidence on its own --
+        plural nouns wear one too ("status report") -- so it asks for
+        corroboration: the stem has to be a verb we already know. "tests" is
+        genuinely both, and this reads it as the verb.
+        """
+        # "address" and "process" end in -ss without being third person.
+        if not word.endswith("s") or word.endswith("ss"):
+            return False
+        stems = {word[:-1]}
+        if word.endswith("es"):
+            stems.add(word[:-2])
+        if word.endswith("ies"):
+            stems.add(word[:-3] + "y")
+        return any(stem in IMPERATIVES for stem in stems)
 
 
 class SubjectLengthValidator(SubjectValidator):
