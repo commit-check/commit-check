@@ -545,3 +545,37 @@ IMPERATIVES = {
     "yield",
     "zip",
 }
+
+
+# Imperative verbs that end in -ed or -ing without being a past tense or a
+# gerund, and so would be misread by the morphology rule in
+# SubjectImperativeValidator. Short enough to enumerate, which is what lets
+# that rule work on shape instead of on a vocabulary of every English verb.
+NON_IMPERATIVE_LOOKALIKES = {
+    # -ed, but not a past tense
+    "bleed",
+    "breed",
+    "embed",
+    "exceed",
+    "feed",
+    "need",
+    "proceed",
+    "seed",
+    "shed",
+    "shred",
+    "speed",
+    "spread",
+    "succeed",
+    # -ing, but not a gerund
+    "bring",
+    "cling",
+    "fling",
+    "ping",
+    "ring",
+    "sing",
+    "spring",
+    "sting",
+    "string",
+    "swing",
+    "wring",
+}
