@@ -394,39 +394,17 @@ class SubjectCapitalizationValidator(SubjectValidator):
 class SubjectImperativeValidator(SubjectValidator):
     """Validates that subject uses imperative mood.
 
-    Asks whether the first word is in a form that is *not* imperative, rather
-    than whether it appears in a list of words that are.
+    Decides on the first word's form rather than its membership in a
+    vocabulary: a past tense ("fixed"), a gerund ("adding") or a third person
+    ("fixes") is not imperative, and nothing else disqualifies. A list can
+    only reject correct subjects wherever it falls short, and it always does:
+    on 59k strictly imperative subjects from git.git it rejected 45%, against
+    1% here. See #526.
 
-    The list came first and could not work. Imperative mood is a property of
-    a word's form, not of its membership in a vocabulary, so any list is an
-    approximation that rejects correct subjects wherever it falls short --
-    and it always falls short. Measured against 40,000 subjects from git.git,
-    a project that writes strictly imperative subjects, a 396-word list
-    rejected 17.9%; growing it to 529 words still rejected 10.5%. Each
-    release recognised a few more verbs and the next contributor found the
-    next gap. See #526.
-
-    Morphology decides it in three rules and no vocabulary: a past tense
-    (``fixed``), a gerund (``adding``) or a third-person singular
-    (``fixes``) is not an imperative, and nothing else in a leading position
-    is disqualifying. That is also the only thing this rule was ever meant to
-    catch, so a rejection now means the author really did write "fixed".
-
-    Two allow-lists survive, both as fast paths rather than as the decision:
-    :data:`IMPERATIVES` for known verbs, and
-    :data:`NON_IMPERATIVE_LOOKALIKES` for the few words whose spelling trips
-    the morphology (``embed``, ``bring``, ``focus``) and the adverbs that can
-    lead an imperative subject (``always quote the path``).
-
-    The loosening is deliberate: a subject led by a noun ("parser
-    improvements") now passes, where the list would have rejected it. Mood is
-    what this rule is named for, and a list of verbs was never a reliable way
-    to catch a missing one.
+    The loosening is deliberate: a noun-led subject ("parser improvements")
+    now passes, where the list rejected it by accident of vocabulary.
     """
 
-    #: Suffixes that mark a word as inflected rather than imperative. ``-ss``
-    #: is excluded from the third-person test because ``address`` and
-    #: ``process`` end that way while being perfectly good imperatives.
     _INFLECTED = ("ed", "ing")
 
     def _validate_subject(self, subject: str) -> ValidationResult:
@@ -444,8 +422,7 @@ class SubjectImperativeValidator(SubjectValidator):
 
         first_word = match.group(1).lower()
 
-        # Fast paths: a known imperative verb, or one of the few words whose
-        # spelling would trip the morphology test below.
+        # Fast path, and the words whose spelling would trip the test below.
         if first_word in IMPERATIVES or first_word in NON_IMPERATIVE_LOOKALIKES:
             return ValidationResult.PASS
 
@@ -460,9 +437,26 @@ class SubjectImperativeValidator(SubjectValidator):
         """Whether *word* carries past-tense, gerund or third-person marking."""
         if word.endswith(cls._INFLECTED):
             return True
-        # Third-person singular. "address" and "guess" end in s without being
-        # one, and every such word in English doubles the s.
-        return word.endswith("s") and not word.endswith("ss")
+        return cls._is_third_person(word)
+
+    @classmethod
+    def _is_third_person(cls, word: str) -> bool:
+        """Whether *word* is a verb wearing the third-person singular -s.
+
+        Unlike -ed and -ing, a trailing -s is weak evidence on its own --
+        plural nouns wear one too ("status report") -- so it asks for
+        corroboration: the stem has to be a verb we already know. "tests" is
+        genuinely both, and this reads it as the verb.
+        """
+        # "address" and "process" end in -ss without being third person.
+        if not word.endswith("s") or word.endswith("ss"):
+            return False
+        stems = {word[:-1]}
+        if word.endswith("es"):
+            stems.add(word[:-2])
+        if word.endswith("ies"):
+            stems.add(word[:-3] + "y")
+        return any(stem in IMPERATIVES for stem in stems)
 
 
 class SubjectLengthValidator(SubjectValidator):

@@ -547,19 +547,10 @@ IMPERATIVES = {
 }
 
 
-# Words the morphology rule in SubjectImperativeValidator would misread.
-#
-# That rule rejects a subject whose first word carries non-imperative
-# morphology -- a past tense, a gerund, or a third-person singular. English
-# spelling being what it is, a handful of words end in those letters without
-# being those forms, and they are the only cases the rule gets wrong. There
-# are few enough to enumerate honestly, which is why the check can rely on
-# shape rather than on a vocabulary of every imperative verb in the language.
-#
-# The adverbs are here rather than in IMPERATIVES on purpose. "always" is not
-# an imperative verb, and putting it in a set by that name would be a lie
-# about what the set contains; what is true is that "always quote the path"
-# is a correct imperative subject, and that the -s rule would reject it.
+# Imperative verbs that end in -ed or -ing without being a past tense or a
+# gerund, and so would be misread by the morphology rule in
+# SubjectImperativeValidator. Short enough to enumerate, which is what lets
+# that rule work on shape instead of on a vocabulary of every English verb.
 NON_IMPERATIVE_LOOKALIKES = {
     # -ed, but not a past tense
     "bleed",
@@ -587,10 +578,4 @@ NON_IMPERATIVE_LOOKALIKES = {
     "string",
     "swing",
     "wring",
-    # -s, but not a third-person singular. Words ending -ss are handled by
-    # the rule itself, so only the single-s ones need naming here.
-    "focus",
-    # adverbs that legitimately lead an imperative subject
-    "always",
-    "sometimes",
 }

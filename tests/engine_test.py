@@ -2601,14 +2601,13 @@ class TestImperativeMorphology:
         "subject",
         [
             # Correct imperatives that no list contained, or ever would.
-            "feat: settle the report format",
-            "refactor: inline the helper",
-            "chore: retire the legacy path",
-            "fix: tighten the guard",
-            "fix: treat an absent value as missing",
-            # Adverb-led subjects. Correct imperative English that a list of
-            # *verbs* cannot represent without becoming a list of not-verbs.
-            "fix: always quote the path",
+            "feat: reword the report format",
+            "refactor: dedupe the helper",
+            "chore: decommission the legacy path",
+            "fix: loosen the guard",
+            "fix: backfill an absent value",
+            # Adverb-led subjects, which a list of *verbs* cannot represent
+            # without becoming a list of not-verbs.
             "feat: optionally skip the hook",
             "fix: explicitly close the handle",
             # British spelling, which is not a mistake.
@@ -2629,14 +2628,28 @@ class TestImperativeMorphology:
             "feat: bring back the flag",  # -ing, not a gerund
             "fix: string the parts together",
             "fix: ping the endpoint",
-            "fix: address the warning",  # -ss, not third person
-            "fix: process the queue",
-            "fix: guess the encoding",
-            "fix: focus the search",  # -s, not third person
         ],
     )
     def test_lookalikes_are_not_mistaken_for_inflection(self, subject):
         """The words a suffix rule gets wrong, enumerated rather than guessed."""
+        assert self._verdict(subject) == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "fix: address the warning",  # -ss, never third person
+            "fix: process the queue",
+            "fix: guess the encoding",
+            "fix: focus the search",  # -s, but the stem is not a verb
+            "fix: status report is empty",  # noun-led
+            "chore: deps bump",
+            "fix: always quote the path",  # adverb-led
+            "fix: sometimes the cache is stale",
+        ],
+    )
+    def test_single_s_words_are_not_assumed_third_person(self, subject):
+        """A trailing -s only counts when the stem is a verb we know."""
         assert self._verdict(subject) == ValidationResult.PASS
 
     @pytest.mark.benchmark
