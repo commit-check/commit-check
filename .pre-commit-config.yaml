@@ -34,7 +34,8 @@ repos:
     -   id: codespell
         # iTerm is a terminal emulator, named in the hyperlink support probe.
         # "sting" is a real verb, listed in NON_IMPERATIVE_LOOKALIKES.
-        args: [--ignore-words-list=iterm,sting]
+        # Quoted: an unquoted comma splits the flow sequence into two args.
+        args: ["--ignore-words-list=iterm,sting"]
 -   repo: https://github.com/commit-check/commit-check
     rev: v2.11.0
     hooks:
