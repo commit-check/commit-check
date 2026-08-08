@@ -422,10 +422,6 @@ class SubjectImperativeValidator(SubjectValidator):
 
         first_word = match.group(1).lower()
 
-        # Fast path, and the words whose spelling would trip the test below.
-        if first_word in IMPERATIVES or first_word in NON_IMPERATIVE_LOOKALIKES:
-            return ValidationResult.PASS
-
         if self._is_inflected(first_word):
             self._print_failure(subject)
             return ValidationResult.FAIL
@@ -435,6 +431,8 @@ class SubjectImperativeValidator(SubjectValidator):
     @classmethod
     def _is_inflected(cls, word: str) -> bool:
         """Whether *word* carries past-tense, gerund or third-person marking."""
+        if word in NON_IMPERATIVE_LOOKALIKES:
+            return False
         if word.endswith(cls._INFLECTED):
             return True
         return cls._is_third_person(word)

@@ -2,17 +2,15 @@
 # https://github.com/crate-ci/imperative/blob/master/assets/imperatives.txt
 # and extended since.
 #
-# Some of these are more commonly encountered as nouns, but leaving them out
-# rejects a subject that is written correctly, which is the worse failure: the
-# contributor has to reword something that was never wrong, and the only way
-# they learn which words are acceptable is by trial and error.
+# This is NOT an allow-list, and a subject is never rejected for being absent
+# from it. CC003 decides on the word's form (see SubjectImperativeValidator),
+# and the only thing this set is still consulted for is the stem test behind
+# the third-person -s rule: "fixes" is a verb because "fix" is in here, while
+# "status" is not, because dropping its -s leaves nothing this set contains.
 #
-# For the same reason both spellings of every -ize/-ise verb are listed. A
-# project writing British English is not making a mistake.
-#
-# Additions are welcome and cheap. The list can only ever approximate "is this
-# an English imperative verb", so treat a rejected-but-correct subject as a bug
-# in this file rather than as something the author should work around.
+# So a missing verb costs a missed violation, never a false rejection -- there
+# is nothing to keep up with, and no need to send a patch adding the verb you
+# just used. Additions still help the -s rule catch more, and cost nothing.
 
 IMPERATIVES = {
     "abort",
