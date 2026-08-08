@@ -2590,6 +2590,8 @@ class TestImperativeMorphology:
             "fix: fixes the parser",  # third person
             "fix: removes the flag",
             "docs: documents the API",
+            "fix: tries the fallback",  # -ies, so the stem is "try"
+            "fix: applies the patch",
         ],
     )
     def test_inflected_first_words_are_rejected(self, subject):
