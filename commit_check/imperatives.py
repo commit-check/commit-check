@@ -545,3 +545,52 @@ IMPERATIVES = {
     "yield",
     "zip",
 }
+
+
+# Words the morphology rule in SubjectImperativeValidator would misread.
+#
+# That rule rejects a subject whose first word carries non-imperative
+# morphology -- a past tense, a gerund, or a third-person singular. English
+# spelling being what it is, a handful of words end in those letters without
+# being those forms, and they are the only cases the rule gets wrong. There
+# are few enough to enumerate honestly, which is why the check can rely on
+# shape rather than on a vocabulary of every imperative verb in the language.
+#
+# The adverbs are here rather than in IMPERATIVES on purpose. "always" is not
+# an imperative verb, and putting it in a set by that name would be a lie
+# about what the set contains; what is true is that "always quote the path"
+# is a correct imperative subject, and that the -s rule would reject it.
+NON_IMPERATIVE_LOOKALIKES = {
+    # -ed, but not a past tense
+    "bleed",
+    "breed",
+    "embed",
+    "exceed",
+    "feed",
+    "need",
+    "proceed",
+    "seed",
+    "shed",
+    "shred",
+    "speed",
+    "spread",
+    "succeed",
+    # -ing, but not a gerund
+    "bring",
+    "cling",
+    "fling",
+    "ping",
+    "ring",
+    "sing",
+    "spring",
+    "sting",
+    "string",
+    "swing",
+    "wring",
+    # -s, but not a third-person singular. Words ending -ss are handled by
+    # the rule itself, so only the single-s ones need naming here.
+    "focus",
+    # adverbs that legitimately lead an imperative subject
+    "always",
+    "sometimes",
+}

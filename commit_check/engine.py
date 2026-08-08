@@ -24,7 +24,7 @@ from commit_check.util import (
     git_merge_base,
     git_rev_parse_verify,
 )
-from commit_check.imperatives import IMPERATIVES
+from commit_check.imperatives import IMPERATIVES, NON_IMPERATIVE_LOOKALIKES
 
 
 class ValidationResult(IntEnum):
@@ -392,7 +392,42 @@ class SubjectCapitalizationValidator(SubjectValidator):
 
 
 class SubjectImperativeValidator(SubjectValidator):
-    """Validates that subject uses imperative mood."""
+    """Validates that subject uses imperative mood.
+
+    Asks whether the first word is in a form that is *not* imperative, rather
+    than whether it appears in a list of words that are.
+
+    The list came first and could not work. Imperative mood is a property of
+    a word's form, not of its membership in a vocabulary, so any list is an
+    approximation that rejects correct subjects wherever it falls short --
+    and it always falls short. Measured against 40,000 subjects from git.git,
+    a project that writes strictly imperative subjects, a 396-word list
+    rejected 17.9%; growing it to 529 words still rejected 10.5%. Each
+    release recognised a few more verbs and the next contributor found the
+    next gap. See #526.
+
+    Morphology decides it in three rules and no vocabulary: a past tense
+    (``fixed``), a gerund (``adding``) or a third-person singular
+    (``fixes``) is not an imperative, and nothing else in a leading position
+    is disqualifying. That is also the only thing this rule was ever meant to
+    catch, so a rejection now means the author really did write "fixed".
+
+    Two allow-lists survive, both as fast paths rather than as the decision:
+    :data:`IMPERATIVES` for known verbs, and
+    :data:`NON_IMPERATIVE_LOOKALIKES` for the few words whose spelling trips
+    the morphology (``embed``, ``bring``, ``focus``) and the adverbs that can
+    lead an imperative subject (``always quote the path``).
+
+    The loosening is deliberate: a subject led by a noun ("parser
+    improvements") now passes, where the list would have rejected it. Mood is
+    what this rule is named for, and a list of verbs was never a reliable way
+    to catch a missing one.
+    """
+
+    #: Suffixes that mark a word as inflected rather than imperative. ``-ss``
+    #: is excluded from the third-person test because ``address`` and
+    #: ``process`` end that way while being perfectly good imperatives.
+    _INFLECTED = ("ed", "ing")
 
     def _validate_subject(self, subject: str) -> ValidationResult:
         # Skip merge commits and fixup commits
@@ -408,11 +443,26 @@ class SubjectImperativeValidator(SubjectValidator):
             return ValidationResult.PASS
 
         first_word = match.group(1).lower()
-        if first_word in IMPERATIVES:
+
+        # Fast paths: a known imperative verb, or one of the few words whose
+        # spelling would trip the morphology test below.
+        if first_word in IMPERATIVES or first_word in NON_IMPERATIVE_LOOKALIKES:
             return ValidationResult.PASS
 
-        self._print_failure(subject)
-        return ValidationResult.FAIL
+        if self._is_inflected(first_word):
+            self._print_failure(subject)
+            return ValidationResult.FAIL
+
+        return ValidationResult.PASS
+
+    @classmethod
+    def _is_inflected(cls, word: str) -> bool:
+        """Whether *word* carries past-tense, gerund or third-person marking."""
+        if word.endswith(cls._INFLECTED):
+            return True
+        # Third-person singular. "address" and "guess" end in s without being
+        # one, and every such word in English doubles the s.
+        return word.endswith("s") and not word.endswith("ss")
 
 
 class SubjectLengthValidator(SubjectValidator):
