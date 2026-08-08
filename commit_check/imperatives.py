@@ -42,7 +42,6 @@ IMPERATIVES = {
     "authenticate",
     "authorise",
     "authorize",
-    "auto",
     "automate",
     "avoid",
     "await",
@@ -302,7 +301,6 @@ IMPERATIVES = {
     "parameterise",
     "parameterize",
     "parse",
-    "partial",
     "pass",
     "pause",
     "perform",
@@ -439,7 +437,6 @@ IMPERATIVES = {
     "serve",
     "set",
     "settle",
-    "setup",
     "shard",
     "shorten",
     "show",
@@ -549,6 +546,12 @@ IMPERATIVES = {
 # gerund, and so would be misread by the morphology rule in
 # SubjectImperativeValidator. Short enough to enumerate, which is what lets
 # that rule work on shape instead of on a vocabulary of every English verb.
+#
+# Both groups are meant to be the whole family rather than a sample of it --
+# a half-enumerated closed set would put back exactly the "add my word"
+# treadmill this check was rebuilt to escape. Err towards including a word:
+# an entry that never comes up costs nothing, a missing one rejects someone
+# who wrote correct English.
 NON_IMPERATIVE_LOOKALIKES = {
     # -ed, but not a past tense
     "bleed",
@@ -556,6 +559,7 @@ NON_IMPERATIVE_LOOKALIKES = {
     "embed",
     "exceed",
     "feed",
+    "heed",
     "need",
     "proceed",
     "seed",
@@ -564,16 +568,22 @@ NON_IMPERATIVE_LOOKALIKES = {
     "speed",
     "spread",
     "succeed",
+    "wed",
+    "weed",
     # -ing, but not a gerund
     "bring",
     "cling",
+    "ding",
     "fling",
     "ping",
     "ring",
     "sing",
+    "sling",
     "spring",
     "sting",
     "string",
     "swing",
+    "wing",
     "wring",
+    "zing",
 }

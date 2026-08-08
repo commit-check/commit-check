@@ -2630,6 +2630,9 @@ class TestImperativeMorphology:
             "feat: bring back the flag",  # -ing, not a gerund
             "fix: string the parts together",
             "fix: ping the endpoint",
+            "chore: weed out the dead code",
+            "fix: heed the configured timeout",
+            "feat: sling the payload over the wire",
         ],
     )
     def test_lookalikes_are_not_mistaken_for_inflection(self, subject):
@@ -2646,6 +2649,9 @@ class TestImperativeMorphology:
             "fix: focus the search",  # -s, but the stem is not a verb
             "fix: status report is empty",  # noun-led
             "chore: deps bump",
+            # Stems that are not verbs at all, so their plurals are nouns.
+            "fix: partials are rendered twice",
+            "chore: setups differ between CI and local",
             "fix: always quote the path",  # adverb-led
             "fix: sometimes the cache is stale",
         ],
