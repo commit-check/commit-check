@@ -35,17 +35,60 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install nox
-        run: python -m pip install ".[dev]"
+      # From source, not from PyPI, and not through commit-check-action.
+      #
+      # The action installs a released commit-check, so running it here would
+      # check this pull request with the version before it — which is how #540
+      # had its own title rejected by the bug it was fixing. A self-test that
+      # cannot see the change under test is not a self-test.
+      - name: Install commit-check from this checkout
+        run: python -m pip install .
 
-      # The session installs this checkout and does the work, so the same
-      # command reproduces a CI failure locally. It runs commit-check from
-      # source rather than commit-check-action, which installs a release: #540
-      # had its own title rejected by the bug it was fixing, because the
-      # version under test was not the version doing the testing.
       - name: Check the commits, the title, the branch and the author
         env:
-          # Via the environment, never interpolated into a script: a pull
+          # Via the environment, never interpolated into the script: a pull
           # request title is attacker-controlled text.
           PR_TITLE: ${{ github.event.pull_request.title }}
-        run: nox -s commit-check
+        run: |
+          # `commit-check --message` on its own inspects HEAD, and on a
+          # pull_request checkout HEAD is the synthetic merge commit — which
+          # the engine skips, so the whole check would pass having validated
+          # nothing. Enumerate the real commits instead: HEAD^1 is the base
+          # tip, HEAD^2 is the branch tip, so HEAD^1..HEAD^2 is this PR.
+          if ! git rev-parse -q --verify 'HEAD^2' > /dev/null; then
+            echo "::error::HEAD is not a merge commit, so the pull request's" \
+                 "commits cannot be enumerated. Refusing to report a pass" \
+                 "without checking anything."
+            exit 1
+          fi
+
+          status=0
+
+          count=$(git rev-list --count 'HEAD^1..HEAD^2')
+          echo "::group::Commit messages ($count)"
+          index=0
+          while IFS= read -r -d '' message; do
+            index=$((index + 1))
+            echo "--- commit $index/$count"
+            printf '%s' "$message" | commit-check --message --no-banner || status=1
+          done < <(git log --pretty=format:'%B%x00' --reverse 'HEAD^1..HEAD^2')
+          echo "::endgroup::"
+
+          # The subject a squash merge will actually commit.
+          echo "::group::Pull request title"
+          printf '%s\n' "$PR_TITLE" | commit-check --message --no-banner || status=1
+          echo "::endgroup::"
+
+          # --branch resolves GITHUB_HEAD_REF when the checkout is detached,
+          # so these need no extra context.
+          #
+          # stdin is closed explicitly. Left open, commit-check blocks waiting
+          # to read a message even for checks that do not take one — verified
+          # by hand, it hangs until killed. These checks therefore see the
+          # author of HEAD, which is what commit-check-action reports today.
+          echo "::group::Branch and author"
+          commit-check --branch --author-name --author-email --no-banner \
+            < /dev/null || status=1
+          echo "::endgroup::"
+
+          exit "$status"
