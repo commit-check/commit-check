@@ -85,8 +85,14 @@ jobs:
 
           # --branch resolves GITHUB_HEAD_REF when the checkout is detached,
           # so these need no extra context.
+          #
+          # stdin is closed explicitly. Left open, commit-check blocks waiting
+          # to read a message even for checks that do not take one — verified
+          # by hand, it hangs until killed. These checks therefore see the
+          # author of HEAD, which is what commit-check-action reports today.
           echo "::group::Branch and author"
-          commit-check --branch --author-name --author-email --no-banner || status=1
+          commit-check --branch --author-name --author-email --no-banner \
+            < /dev/null || status=1
           echo "::endgroup::"
 
           exit "$status"
