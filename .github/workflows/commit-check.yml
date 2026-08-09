@@ -42,7 +42,11 @@ jobs:
       # had its own title rejected by the bug it was fixing. A self-test that
       # cannot see the change under test is not a self-test.
       - name: Install commit-check from this checkout
-        run: python -m pip install .
+        # --only-binary :all: matches main.yml and publish-package.yml, and is
+        # what #479 added to satisfy SonarCloud's unpinned-install rule.
+        run: |
+          python -m pip install --only-binary :all: --upgrade pip
+          python -m pip install --only-binary :all: .
 
       - name: Check the commits, the title, the branch and the author
         env:
