@@ -2,7 +2,6 @@ name: Commit Check
 
 permissions:
   contents: read
-  pull-requests: write # pr-comments writes back to the pull request
 
 on:
   # Pull requests only, deliberately.
@@ -31,15 +30,38 @@ jobs:
           fetch-depth: 0 # full history, so branch and rebase checks can resolve
           # Nothing after checkout needs authenticated git.
           persist-credentials: false
-      # The action rather than a nox session: this repository is what the
-      # action installs, so running it here is the project checking itself
-      # with the thing users actually run.
-      - uses: commit-check/commit-check-action@562a184b2b8e583e757b17eb385bc48370f44547 # v2.13.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          message: true
-          branch: true
-          author-name: true
-          author-email: true
-          pr-title: true # the subject a squash merge will commit
-          job-summary: true
-          pr-comments: true
+          python-version: '3.x'
+
+      # From source, not from PyPI, and not through commit-check-action.
+      #
+      # The action installs a released commit-check, so running it here would
+      # check this pull request with the version before it — which is how #540
+      # had its own title rejected by the bug it was fixing. A self-test that
+      # cannot see the change under test is not a self-test.
+      - name: Install commit-check from this checkout
+        run: python -m pip install .
+
+      - name: Check the title, the branch and the author
+        env:
+          # Via the environment, never interpolated into the script: a pull
+          # request title is attacker-controlled text.
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # The title, because a squash merge commits it as the subject. The
+          # branch's own commit messages are not checked: this repository
+          # squashes, so they never reach main. A local hook is where that
+          # feedback belongs — it arrives while the message is being written,
+          # not a CI round trip later.
+          #
+          # Not a bare `commit-check --message` either. That reads HEAD, which
+          # on a pull_request checkout is the synthetic merge commit, which the
+          # engine skips — so it would report a pass having read nothing.
+          printf '%s\n' "$PR_TITLE" | commit-check --message --no-banner
+
+          # stdin closed: left open, commit-check waits to read a message even
+          # for checks that do not take one, and the step hangs rather than
+          # fails. --branch resolves GITHUB_HEAD_REF on a detached checkout.
+          commit-check --branch --author-name --author-email --no-banner < /dev/null
