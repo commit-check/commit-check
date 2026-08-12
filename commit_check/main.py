@@ -22,10 +22,38 @@ class StdinReader:
     """Handles stdin reading with proper error handling."""
 
     @staticmethod
-    def read_piped_input() -> str | None:
+    def _has_pending_data(timeout: float) -> bool:
+        """Whether reading stdin would return promptly rather than block.
+
+        ``read()`` on a pipe that is open but has no writer about to close it
+        blocks forever. That is what stdin looks like under some CI runners
+        and process managers, so an unconditional read turns "nothing was
+        piped" into a hang — the step neither fails nor finishes.
+
+        ``select`` distinguishes the two: piped input is already in the pipe
+        buffer by the time this process is exec'd (and EOF, as with
+        ``< /dev/null``, counts as readable), while an idle pipe is not
+        readable and never will be. The timeout is margin, not a wait.
+        """
+        if sys.platform == "win32":  # pragma: no cover
+            # select() only works on sockets on Windows. Keep the historic
+            # blocking read there; the hang has only been observed on POSIX
+            # runners, and a wrong guess here would break piping instead.
+            return True
+        import select
+
+        try:
+            ready, _, _ = select.select([sys.stdin], [], [], timeout)
+        except (OSError, ValueError):
+            # No usable stdin descriptor at all: nothing to read.
+            return False
+        return bool(ready)
+
+    @classmethod
+    def read_piped_input(cls) -> str | None:
         """Read commit message content if piped, with proper error handling."""
         try:
-            if not sys.stdin.isatty():
+            if not sys.stdin.isatty() and cls._has_pending_data(timeout=0.1):
                 data = sys.stdin.read()
                 return data.strip() if data else None
         except (OSError, IOError):

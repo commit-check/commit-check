@@ -3,6 +3,7 @@ import subprocess
 import sys
 import pytest
 import tempfile
+import time
 import os
 from commit_check.main import (
     StdinReader,
@@ -12,6 +13,26 @@ from commit_check.main import (
 
 CMD = "commit-check"
 FEATURE_TOPIC_BRANCH = "feature/topic"
+
+
+@pytest.fixture(autouse=True)
+def _stdin_gate_open(request, monkeypatch):
+    """Force the stdin readiness gate open for tests that fake piped input.
+
+    Tests in this file simulate a pipe by mocking ``sys.stdin.read``. The
+    gate added to fix the idle-pipe hang consults ``select`` on the *real*
+    stdin, which under pytest is not readable — so those mocks would never
+    be reached. Opening the gate restores the semantics the mocks assume.
+
+    Tests that exercise the gate itself opt out via ``real_stdin_gate``.
+    """
+    if request.node.get_closest_marker("real_stdin_gate"):
+        yield
+        return
+    monkeypatch.setattr(
+        StdinReader, "_has_pending_data", staticmethod(lambda timeout=0.1: True)
+    )
+    yield
 
 
 class TestMain:
@@ -147,6 +168,51 @@ class TestStdinReader:
         mocker.patch("sys.stdin.read", side_effect=IOError("Input error"))
         result = reader.read_piped_input()
         assert result is None
+
+    @pytest.mark.real_stdin_gate
+    @pytest.mark.skipif(sys.platform == "win32", reason="select() needs POSIX")
+    def test_an_idle_open_pipe_returns_none_instead_of_hanging(self, monkeypatch):
+        """The bug this guards against was a hang, not a wrong value.
+
+        Under some CI runners stdin is a pipe that is open but that nothing
+        will ever write to or close. ``read()`` there blocks forever, which
+        in a workflow is a stuck step rather than a failed one.
+        """
+        read_fd, write_fd = os.pipe()
+        try:
+            with os.fdopen(read_fd, "r") as fake_stdin:
+                monkeypatch.setattr(sys, "stdin", fake_stdin)
+                start = time.monotonic()
+                result = StdinReader.read_piped_input()
+                elapsed = time.monotonic() - start
+            assert result is None
+            # ~0.1s select timeout; anything near a second means it blocked.
+            assert elapsed < 2
+        finally:
+            os.close(write_fd)
+
+    @pytest.mark.real_stdin_gate
+    @pytest.mark.skipif(sys.platform == "win32", reason="select() needs POSIX")
+    def test_piped_content_is_still_read(self, monkeypatch):
+        """Real piped input predates the exec, so the gate must let it through."""
+        read_fd, write_fd = os.pipe()
+        os.write(write_fd, b"feat: add a thing\n")
+        os.close(write_fd)
+        with os.fdopen(read_fd, "r") as fake_stdin:
+            monkeypatch.setattr(sys, "stdin", fake_stdin)
+            assert StdinReader.read_piped_input() == "feat: add a thing"
+
+    @pytest.mark.real_stdin_gate
+    @pytest.mark.skipif(sys.platform == "win32", reason="select() needs POSIX")
+    def test_dev_null_stdin_reads_as_nothing_promptly(self, monkeypatch):
+        """`< /dev/null` is immediate EOF: readable, empty, no hang."""
+        with open(os.devnull, "r") as fake_stdin:
+            monkeypatch.setattr(sys, "stdin", fake_stdin)
+            start = time.monotonic()
+            result = StdinReader.read_piped_input()
+            elapsed = time.monotonic() - start
+        assert result is None
+        assert elapsed < 2
 
 
 class TestMainFunctionEdgeCases:
