@@ -56,6 +56,13 @@ class ValidationContext:
     no_banner: bool = False
     compact: bool = False
     push_upstream_fallback: bool = False
+    # A git revision naming the commit under test. When set, message and
+    # author checks read that commit -- the author is the commit's author,
+    # never the local git config, because an existing commit's identity is
+    # a fact about the commit rather than about whoever is running the
+    # check. The CLI verifies the revision resolves before it gets here.
+    # Last on purpose: positional construction predates it.
+    rev: str | None = None
 
 
 @dataclass
@@ -152,11 +159,13 @@ class BaseValidator(ABC):
         """
         Determine if validation should be skipped.
 
-        Skip only when there is no stdin_text, no commit_file, and no commits.
+        Skip only when there is no stdin_text, no commit_file, no rev, and
+        no commits.
         """
         return (
             context.stdin_text is None
             and context.commit_file is None
+            and context.rev is None
             and not has_commits()
         )
 
@@ -176,6 +185,10 @@ class BaseValidator(ABC):
         (``get_commit_info("an")``), not the local git config which may
         belong to a different person.
         """
+        if context.rev is not None:
+            # An explicit revision names an existing commit; its author is a
+            # fact about that commit, so the config never enters into it.
+            return get_commit_info("an", context.rev)
         if context.stdin_text is not None or context.commit_file is not None:
             return get_git_config_value("user.name") or get_commit_info("an")
         return get_commit_info("an") or get_git_config_value("user.name")
@@ -194,7 +207,11 @@ class BaseValidator(ABC):
         genuinely empty, and rejecting that under allow_empty_commits = false
         is the verdict the rule exists to give.
         """
-        return context.stdin_text is not None or context.commit_file is not None
+        return (
+            context.stdin_text is not None
+            or context.commit_file is not None
+            or context.rev is not None
+        )
 
     @staticmethod
     def _get_commit_message(context: ValidationContext) -> str:
@@ -210,8 +227,12 @@ class BaseValidator(ABC):
                 pass
 
         # Fallback to git log
-        subject = get_commit_info("s")
-        body = get_commit_info("b")
+        if context.rev is not None:
+            subject = get_commit_info("s", context.rev)
+            body = get_commit_info("b", context.rev)
+        else:
+            subject = get_commit_info("s")
+            body = get_commit_info("b")
         return f"{subject}\n\n{body}".strip()
 
     def _author_in_ignore_list(self, context: ValidationContext) -> bool:
@@ -254,6 +275,8 @@ class BaseValidator(ABC):
                     return f.read()
             except (OSError, IOError):
                 pass
+        if context.rev is not None:
+            return get_commit_info("b", context.rev)
         return get_commit_info("b")
 
     def _should_skip_commit_validation(self, context: ValidationContext) -> bool:
@@ -269,6 +292,7 @@ class BaseValidator(ABC):
         return (
             context.stdin_text is None
             and context.commit_file is None
+            and context.rev is None
             and not has_commits()
         )
 
@@ -359,6 +383,8 @@ class SubjectValidator(BaseValidator):
             except FileNotFoundError:
                 pass
 
+        if context.rev is not None:
+            return get_commit_info("s", context.rev)
         return get_commit_info("s")
 
     def _validate_subject(self, _subject: str) -> ValidationResult:
@@ -370,9 +396,10 @@ class SubjectCapitalizationValidator(SubjectValidator):
     """Validates that subject starts with capital letter."""
 
     def _validate_subject(self, subject: str) -> ValidationResult:
-        # Skip merge commits
-        if subject.lower().startswith("merge"):
-            return ValidationResult.PASS
+        # A merge subject is machine-written; the rule declines to judge it.
+        # Git writes "Merge " exactly, so anything else is author prose.
+        if subject.startswith("Merge "):
+            return ValidationResult.SKIP
 
         # For conventional commits, check the description part after the colon
         import re
@@ -408,9 +435,11 @@ class SubjectImperativeValidator(SubjectValidator):
     _INFLECTED = ("ed", "ing")
 
     def _validate_subject(self, subject: str) -> ValidationResult:
-        # Skip merge commits and fixup commits
-        if subject.lower().startswith(("merge", "fixup!")):
-            return ValidationResult.PASS
+        # Merge and fixup subjects are machine-written; decline to judge them.
+        # Git writes "Merge " and "fixup! " exactly, so anything else is
+        # author prose.
+        if subject.startswith(("Merge ", "fixup! ")):
+            return ValidationResult.SKIP
 
         # Extract first word (ignore conventional commit prefixes)
         import re
@@ -461,9 +490,9 @@ class SubjectLengthValidator(SubjectValidator):
     """Validates subject line length constraints."""
 
     def _validate_subject(self, subject: str) -> ValidationResult:
-        # Skip merge commits for length checks
-        if subject.lower().startswith("merge"):
-            return ValidationResult.PASS
+        # A merge subject's length is git's doing, not the author's.
+        if subject.startswith("Merge "):
+            return ValidationResult.SKIP
 
         length = len(subject)
         constraint_value = self.rule.value
@@ -512,6 +541,13 @@ class AuthorValidator(BaseValidator):
             "author_name": "an",
             "author_email": "ae",
         }
+
+        # An explicit revision names an existing commit, whose identity is a
+        # fact about the commit: read it from the commit and never from the
+        # config, which describes whoever happens to be running the check.
+        if context.rev is not None:
+            format_str = git_log_map.get(self.rule.check, "")
+            return get_commit_info(format_str, context.rev) if format_str else ""
 
         # Try git config first (validates configured identity for new commits)
         config_key = git_config_map.get(self.rule.check, "")
@@ -863,7 +899,14 @@ class CommitTypeValidator(BaseValidator):
         # never run. A message the caller supplied goes to the rule even when
         # it is empty; an empty one from git is still nothing to check.
         if not message and not self._message_was_supplied(context):
-            return ValidationResult.PASS
+            # ignore_authors delivered its verdict above -- it judges the
+            # author, so an absent message is no reason to disown it, and a
+            # SKIP here would wrongly read as "author was bypassed".
+            return (
+                ValidationResult.PASS
+                if self.rule.check == "ignore_authors"
+                else ValidationResult.SKIP
+            )
 
         self._checked_value = message
 
@@ -1016,6 +1059,7 @@ class ValidationEngine:
     def validate_all(self, context: ValidationContext) -> ValidationResult:
         """Run all validations and return overall result."""
         results = []
+        skipped: list[str] = []
 
         for rule in self.rules:
             validator_class = self.VALIDATOR_MAP.get(rule.check)
@@ -1027,6 +1071,20 @@ class ValidationEngine:
             validator._compact = context.compact
             result = validator.validate(context)
             results.append(result)
+            if result == ValidationResult.SKIP:
+                skipped.append(rule.check.replace("_", "-"))
+
+        if skipped:
+            # A skipped check validated nothing, and a silent skip is
+            # indistinguishable from a pass — which is how a merge commit at
+            # HEAD once let a whole run report success having read nothing.
+            # One line, stderr, so scripts parsing stdout are unaffected.
+            import sys
+
+            print(
+                f"⊘ skipped (not validated): {', '.join(skipped)}",
+                file=sys.stderr,
+            )
 
         # Return FAIL if any validation failed
         return (

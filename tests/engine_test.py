@@ -705,13 +705,14 @@ class TestCommitTypeValidator:
         mock_commit_info.assert_not_called()
 
     def test_absent_message_still_skips_the_empty_commit_rule(self):
-        """A message git never supplied is nothing to check, not a failure."""
+        """A message git never supplied is nothing to check -- and now the
+        status says so, instead of dressing the non-verdict up as a pass."""
         rule = ValidationRule(check="allow_empty_commits", value=False)
         validator = CommitTypeValidator(rule)
         with patch("commit_check.engine.get_commit_info", return_value=""):
             with patch("commit_check.engine.has_commits", return_value=True):
                 result = validator.validate(ValidationContext(no_banner=True))
-        assert result == ValidationResult.PASS
+        assert result == ValidationResult.SKIP
 
     @pytest.mark.benchmark
     def test_commit_type_validator_merge_commits(self):
@@ -1452,6 +1453,90 @@ class TestValidationEngine:
 
         result = engine.validate_all(context)
         assert result == ValidationResult.PASS
+
+    def test_rev_resolves_the_author_from_that_commit(self):
+        """With a rev, the ignore-list identity is the commit's author."""
+        with patch(
+            "commit_check.engine.get_commit_info", return_value="Rev Author"
+        ) as info:
+            author = BaseValidator._resolve_current_author(
+                ValidationContext(rev="abc123")
+            )
+        assert author == "Rev Author"
+        info.assert_called_once_with("an", "abc123")
+
+    def test_rev_reads_the_body_from_that_commit(self):
+        """The body fallback follows the named revision, not HEAD."""
+        rule = ValidationRule(check="require_body", value=True)
+        validator = BodyValidator(rule)
+
+        def fake_info(fmt, sha="HEAD"):
+            assert sha == "abc123"
+            return "a body line" if fmt == "b" else "feat: subject"
+
+        with patch("commit_check.engine.get_commit_info", side_effect=fake_info):
+            with patch("commit_check.engine.has_commits", return_value=True):
+                result = validator.validate(ValidationContext(rev="abc123"))
+        assert result == ValidationResult.PASS
+
+    def test_rev_scans_that_commits_body_for_ai_attribution(self):
+        """The attribution scan follows the named revision, not HEAD."""
+        rule = ValidationRule(check="ai_attribution", value="forbid")
+        validator = AiAttributionValidator(rule)
+        validator._suppress_output = True
+
+        def fake_info(fmt, sha="HEAD"):
+            assert sha == "abc123"
+            return "feat: subject\n\nCo-Authored-By: Claude <noreply@anthropic.com>"
+
+        with patch("commit_check.engine.get_commit_info", side_effect=fake_info):
+            with patch("commit_check.engine.has_commits", return_value=True):
+                result = validator.validate(ValidationContext(rev="abc123"))
+        assert result == ValidationResult.FAIL
+
+    def test_capitalization_declines_to_judge_a_merge_subject(self):
+        rule = ValidationRule(check="subject_capitalized")
+        validator = SubjectCapitalizationValidator(rule)
+        context = ValidationContext(stdin_text="Merge branch 'x' into y")
+        assert validator.validate(context) == ValidationResult.SKIP
+
+    def test_capitalization_judges_a_subject_that_merely_mentions_merge(self):
+        """Only git's exact "Merge " prefix is machine-written; a subject
+        that happens to start with the word in lowercase is author prose."""
+        rule = ValidationRule(check="subject_capitalized")
+        validator = SubjectCapitalizationValidator(rule)
+        context = ValidationContext(stdin_text="merge the parser tables")
+        assert validator.validate(context) == ValidationResult.FAIL
+
+    def test_skipped_checks_are_named_on_stderr(self, capsys):
+        """A silent skip reads as a pass; the notice is what tells them apart.
+
+        This is the CI trap in miniature: HEAD is a merge commit, the
+        subject rules decline to judge it, and before the notice existed the
+        run reported success having validated nothing it was asked about.
+        """
+        rules = [
+            ValidationRule(check="subject_imperative"),
+            ValidationRule(check="subject_max_length", value=80),
+        ]
+        engine = ValidationEngine(rules)
+        context = ValidationContext(
+            stdin_text="Merge branch 'main' into topic", no_banner=True
+        )
+
+        assert engine.validate_all(context) == ValidationResult.PASS
+        err = capsys.readouterr().err
+        assert "skipped" in err
+        assert "subject-imperative" in err
+        assert "subject-max-length" in err
+
+    def test_no_notice_when_nothing_skipped(self, capsys):
+        rules = [ValidationRule(check="subject_max_length", value=80)]
+        engine = ValidationEngine(rules)
+        context = ValidationContext(stdin_text="feat: add a thing", no_banner=True)
+
+        assert engine.validate_all(context) == ValidationResult.PASS
+        assert "skipped" not in capsys.readouterr().err
 
     @pytest.mark.benchmark
     def test_validation_engine_unknown_validator_type(self):
@@ -2672,5 +2757,7 @@ class TestImperativeMorphology:
 
     @pytest.mark.benchmark
     def test_merge_and_fixup_subjects_still_bypass_the_rule(self):
-        assert self._verdict("Merge branch 'main' into topic") == ValidationResult.PASS
-        assert self._verdict("fixup! fixed the parser") == ValidationResult.PASS
+        """Bypassed, and reported as bypassed: a machine-written subject is
+        not judged, and SKIP keeps that distinct from having passed."""
+        assert self._verdict("Merge branch 'main' into topic") == ValidationResult.SKIP
+        assert self._verdict("fixup! fixed the parser") == ValidationResult.SKIP

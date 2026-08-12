@@ -80,4 +80,5 @@ omit = [
 # Silence PytestUnknownMarkWarning for custom marks used in tests
 markers = [
     "benchmark: performance-related tests (no-op marker in this project)",
+    "real_stdin_gate: opt out of the fixture that force-opens the stdin readiness gate",
 ]

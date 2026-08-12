@@ -3,6 +3,7 @@ import subprocess
 import sys
 import pytest
 import tempfile
+import time
 import os
 from commit_check.main import (
     StdinReader,
@@ -12,6 +13,26 @@ from commit_check.main import (
 
 CMD = "commit-check"
 FEATURE_TOPIC_BRANCH = "feature/topic"
+
+
+@pytest.fixture(autouse=True)
+def _stdin_gate_open(request, monkeypatch):
+    """Force the stdin readiness gate open for tests that fake piped input.
+
+    Tests in this file simulate a pipe by mocking ``sys.stdin.read``. The
+    gate added to fix the idle-pipe hang consults ``select`` on the *real*
+    stdin, which under pytest is not readable — so those mocks would never
+    be reached. Opening the gate restores the semantics the mocks assume.
+
+    Tests that exercise the gate itself opt out via ``real_stdin_gate``.
+    """
+    if request.node.get_closest_marker("real_stdin_gate"):
+        yield
+        return
+    monkeypatch.setattr(
+        StdinReader, "_has_pending_data", staticmethod(lambda timeout=0.1: True)
+    )
+    yield
 
 
 class TestMain:
@@ -147,6 +168,138 @@ class TestStdinReader:
         mocker.patch("sys.stdin.read", side_effect=IOError("Input error"))
         result = reader.read_piped_input()
         assert result is None
+
+    @pytest.mark.real_stdin_gate
+    @pytest.mark.skipif(sys.platform == "win32", reason="select() needs POSIX")
+    def test_an_idle_open_pipe_returns_none_instead_of_hanging(self, monkeypatch):
+        """The bug this guards against was a hang, not a wrong value.
+
+        Under some CI runners stdin is a pipe that is open but that nothing
+        will ever write to or close. ``read()`` there blocks forever, which
+        in a workflow is a stuck step rather than a failed one.
+        """
+        read_fd, write_fd = os.pipe()
+        try:
+            with os.fdopen(read_fd, "r") as fake_stdin:
+                monkeypatch.setattr(sys, "stdin", fake_stdin)
+                start = time.monotonic()
+                result = StdinReader.read_piped_input()
+                elapsed = time.monotonic() - start
+            assert result is None
+            # ~0.1s select timeout; anything near a second means it blocked.
+            assert elapsed < 2
+        finally:
+            os.close(write_fd)
+
+    @pytest.mark.real_stdin_gate
+    @pytest.mark.skipif(sys.platform == "win32", reason="select() needs POSIX")
+    def test_piped_content_is_still_read(self, monkeypatch):
+        """Real piped input predates the exec, so the gate must let it through."""
+        read_fd, write_fd = os.pipe()
+        os.write(write_fd, b"feat: add a thing\n")
+        os.close(write_fd)
+        with os.fdopen(read_fd, "r") as fake_stdin:
+            monkeypatch.setattr(sys, "stdin", fake_stdin)
+            assert StdinReader.read_piped_input() == "feat: add a thing"
+
+    @pytest.mark.real_stdin_gate
+    @pytest.mark.skipif(sys.platform == "win32", reason="select() needs POSIX")
+    def test_dev_null_stdin_reads_as_nothing_promptly(self, monkeypatch):
+        """`< /dev/null` is immediate EOF: readable, empty, no hang."""
+        with open(os.devnull, "r") as fake_stdin:
+            monkeypatch.setattr(sys, "stdin", fake_stdin)
+            start = time.monotonic()
+            result = StdinReader.read_piped_input()
+            elapsed = time.monotonic() - start
+        assert result is None
+        assert elapsed < 2
+
+
+class TestRevOption:
+    """--rev names the commit under test, end to end on a real repository."""
+
+    @pytest.fixture
+    def two_commit_repo(self, tmp_path, monkeypatch):
+        """A repo whose HEAD is fine and whose first commit is not.
+
+        The parent commit carries both a non-conventional message and a
+        deliberately malformed author, so checks that quietly read HEAD (or
+        the config) instead of the requested revision come out different.
+        """
+        subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+        monkeypatch.chdir(tmp_path)
+        git = ["git", "-C", str(tmp_path)]
+        subprocess.run(git + ["config", "user.name", "Good Author"], check=True)
+        subprocess.run(git + ["config", "user.email", "good@example.com"], check=True)
+        subprocess.run(
+            git
+            + [
+                "-c",
+                "user.name=bad",
+                "-c",
+                "user.email=nonsense",
+                "commit",
+                "-q",
+                "--allow-empty",
+                "-m",
+                "updated the parser",
+            ],
+            check=True,
+        )
+        subprocess.run(
+            git + ["commit", "-q", "--allow-empty", "-m", "feat: add a thing"],
+            check=True,
+        )
+        return tmp_path
+
+    def test_rev_checks_the_named_commits_message(self, two_commit_repo, monkeypatch):
+        """HEAD passes, HEAD^ fails: the verdict must follow --rev."""
+        monkeypatch.setattr("sys.argv", [CMD, "--message", "--rev", "HEAD"])
+        assert main() == 0
+        monkeypatch.setattr("sys.argv", [CMD, "--message", "--rev", "HEAD^"])
+        assert main() == 1
+
+    def test_rev_reads_the_commits_author_not_the_config(
+        self, two_commit_repo, monkeypatch
+    ):
+        """The config identity is valid here, so a pass would mean the
+        config was consulted -- the revision's own author must decide."""
+        monkeypatch.setattr("sys.argv", [CMD, "--author-email", "--rev", "HEAD^"])
+        assert main() == 1
+        monkeypatch.setattr("sys.argv", [CMD, "--author-email", "--rev", "HEAD"])
+        assert main() == 0
+
+    def test_rev_that_does_not_resolve_is_a_clear_early_error(
+        self, two_commit_repo, monkeypatch, capsys
+    ):
+        monkeypatch.setattr("sys.argv", [CMD, "--message", "--rev", "no-such-ref"])
+        assert main() == 1
+        assert "does not resolve" in capsys.readouterr().err
+
+    def test_rev_empty_string_is_rejected_not_ignored(
+        self, two_commit_repo, monkeypatch, capsys
+    ):
+        """An empty --rev must hit the same early error as a bad one, not
+        fall through to the engine where git's own failure leaks into the
+        checked value with a green exit."""
+        monkeypatch.setattr("sys.argv", [CMD, "--message", "--rev", ""])
+        assert main() == 1
+        assert "does not resolve" in capsys.readouterr().err
+
+    def test_rev_and_a_message_file_conflict(self, two_commit_repo, monkeypatch):
+        monkeypatch.setattr("sys.argv", [CMD, "--rev", "HEAD", "some-file.txt"])
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 2
+
+    def test_rev_works_in_json_mode(self, two_commit_repo, monkeypatch, capsys):
+        monkeypatch.setattr(
+            "sys.argv", [CMD, "--message", "--rev", "HEAD^", "--format", "json"]
+        )
+        assert main() == 1
+        payload = json.loads(capsys.readouterr().out)
+        values = [c.get("value", "") for c in payload["checks"]]
+        assert any("updated the parser" in v for v in values)
 
 
 class TestMainFunctionEdgeCases:
