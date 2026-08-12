@@ -397,7 +397,8 @@ class SubjectCapitalizationValidator(SubjectValidator):
 
     def _validate_subject(self, subject: str) -> ValidationResult:
         # A merge subject is machine-written; the rule declines to judge it.
-        if subject.lower().startswith("merge"):
+        # Git writes "Merge " exactly, so anything else is author prose.
+        if subject.startswith("Merge "):
             return ValidationResult.SKIP
 
         # For conventional commits, check the description part after the colon
@@ -435,7 +436,9 @@ class SubjectImperativeValidator(SubjectValidator):
 
     def _validate_subject(self, subject: str) -> ValidationResult:
         # Merge and fixup subjects are machine-written; decline to judge them.
-        if subject.lower().startswith(("merge", "fixup!")):
+        # Git writes "Merge " and "fixup! " exactly, so anything else is
+        # author prose.
+        if subject.startswith(("Merge ", "fixup! ")):
             return ValidationResult.SKIP
 
         # Extract first word (ignore conventional commit prefixes)
@@ -488,7 +491,7 @@ class SubjectLengthValidator(SubjectValidator):
 
     def _validate_subject(self, subject: str) -> ValidationResult:
         # A merge subject's length is git's doing, not the author's.
-        if subject.lower().startswith("merge"):
+        if subject.startswith("Merge "):
             return ValidationResult.SKIP
 
         length = len(subject)
@@ -1079,7 +1082,7 @@ class ValidationEngine:
             import sys
 
             print(
-                f"⊘ skipped (nothing validated): {', '.join(skipped)}",
+                f"⊘ skipped (not validated): {', '.join(skipped)}",
                 file=sys.stderr,
             )
 

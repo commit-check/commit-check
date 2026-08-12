@@ -1454,6 +1454,45 @@ class TestValidationEngine:
         result = engine.validate_all(context)
         assert result == ValidationResult.PASS
 
+    def test_rev_resolves_the_author_from_that_commit(self):
+        """With a rev, the ignore-list identity is the commit's author."""
+        with patch(
+            "commit_check.engine.get_commit_info", return_value="Rev Author"
+        ) as info:
+            author = BaseValidator._resolve_current_author(
+                ValidationContext(rev="abc123")
+            )
+        assert author == "Rev Author"
+        info.assert_called_once_with("an", "abc123")
+
+    def test_rev_reads_the_body_from_that_commit(self):
+        """The body fallback follows the named revision, not HEAD."""
+        rule = ValidationRule(check="require_body", value=True)
+        validator = BodyValidator(rule)
+
+        def fake_info(fmt, sha="HEAD"):
+            assert sha == "abc123"
+            return "a body line" if fmt == "b" else "feat: subject"
+
+        with patch("commit_check.engine.get_commit_info", side_effect=fake_info):
+            with patch("commit_check.engine.has_commits", return_value=True):
+                result = validator.validate(ValidationContext(rev="abc123"))
+        assert result == ValidationResult.PASS
+
+    def test_capitalization_declines_to_judge_a_merge_subject(self):
+        rule = ValidationRule(check="subject_capitalized")
+        validator = SubjectCapitalizationValidator(rule)
+        context = ValidationContext(stdin_text="Merge branch 'x' into y")
+        assert validator.validate(context) == ValidationResult.SKIP
+
+    def test_capitalization_judges_a_subject_that_merely_mentions_merge(self):
+        """Only git's exact "Merge " prefix is machine-written; a subject
+        that happens to start with the word in lowercase is author prose."""
+        rule = ValidationRule(check="subject_capitalized")
+        validator = SubjectCapitalizationValidator(rule)
+        context = ValidationContext(stdin_text="merge the parser tables")
+        assert validator.validate(context) == ValidationResult.FAIL
+
     def test_skipped_checks_are_named_on_stderr(self, capsys):
         """A silent skip reads as a pass; the notice is what tells them apart.
 

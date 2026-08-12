@@ -516,7 +516,7 @@ def main() -> int:
         if args.commit_msg_file:
             args.message = True
 
-        if args.rev:
+        if args.rev is not None:
             if args.commit_msg_file:
                 parser.error(
                     "--rev and a commit message file both name the "
@@ -559,7 +559,7 @@ def main() -> int:
         # Resolve validation context inputs. With --rev the commit itself is
         # the thing under test, so stdin is never consulted: piping and a
         # revision would name two different subjects for the same checks.
-        if args.rev:
+        if args.rev is not None:
             stdin_content, commit_file_path = None, None
         else:
             stdin_content, commit_file_path = _resolve_commit_message_source(

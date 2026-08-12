@@ -276,6 +276,16 @@ class TestRevOption:
         assert main() == 1
         assert "does not resolve" in capsys.readouterr().err
 
+    def test_rev_empty_string_is_rejected_not_ignored(
+        self, two_commit_repo, monkeypatch, capsys
+    ):
+        """An empty --rev must hit the same early error as a bad one, not
+        fall through to the engine where git's own failure leaks into the
+        checked value with a green exit."""
+        monkeypatch.setattr("sys.argv", [CMD, "--message", "--rev", ""])
+        assert main() == 1
+        assert "does not resolve" in capsys.readouterr().err
+
     def test_rev_and_a_message_file_conflict(self, two_commit_repo, monkeypatch):
         monkeypatch.setattr("sys.argv", [CMD, "--rev", "HEAD", "some-file.txt"])
         with pytest.raises(SystemExit) as excinfo:
