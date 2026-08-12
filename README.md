@@ -9,9 +9,61 @@
 [![CodeCov](https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT)](https://codecov.io/gh/commit-check/commit-check)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/commit-check/commit-check/badge)](https://api.securityscorecards.dev/projects/github.com/commit-check/commit-check)
 
+**One versioned policy for Git commit metadata — enforced in the terminal, in hooks, in CI, and on your AI agents.**
+
+Commit Check validates commit messages, branch names, author identity, signoff
+trailers, AI attribution, and push safety. The rules live in one TOML file in
+your repository; the CLI, pre-commit, GitHub Actions, and AI automation all
+enforce the same ones.
+
+This is what a pull request sees — every commit, the PR title, the branch and
+the author, each failed rule linked to its documentation:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/commit-check/commit-check/raw/main/assets/pr-comment-dark.png">
+  <img alt="Commit Check PR comment: one commit failing CC001 and CC003, listed against six passing checks with their checked values" src="https://github.com/commit-check/commit-check/raw/main/assets/pr-comment-light.png" width="760">
+</picture>
+
+## Quick Start
+
+**1. Run it once with zero configuration:**
+
+```bash
+pip install commit-check
+commit-check --message --branch
+```
+
+**2. Enforce it on every commit** (`.pre-commit-config.yaml`):
+
+```yaml
+repos:
+  - repo: https://github.com/commit-check/commit-check
+    rev: v2.14.0
+    hooks:
+      - id: check-message
+      - id: check-branch
+```
+
+**3. Enforce it on every pull request** (`.github/workflows/commit-check.yml`):
+
+```yaml
+- uses: commit-check/commit-check-action@v2
+  with:
+    message: true
+    branch: true
+    pr-title: true
+    job-summary: true
+    pr-comments: ${{ github.event_name == 'pull_request' }}
+```
+
+**4. Say so:**
+
+```text
+[![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white&color=%232c9ccd)](https://github.com/commit-check/commit-check)
+```
+
 ## Table of Contents
 
-- [Overview](#overview)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
 - [Configuration](#configuration)
@@ -30,48 +82,6 @@
 - [Versioning](#versioning)
 - [Have question or feedback?](#have-question-or-feedback)
 - [License](#license)
-
-## Overview
-
-**Commit Check** is a lightweight policy engine for Git commit metadata.
-
-It validates commit messages, branch names, author identity, signoff trailers,
-AI attribution policy, and push safety — using one versioned TOML policy across
-local hooks, CI, GitHub Actions, and AI automation.
-
-- **One policy file:** `cchk.toml`
-- **Multiple enforcement points:** CLI, pre-commit, CI / GitHub Actions
-- **Machine-readable output:** JSON + Python API for automation and AI agents
-
-![commit-check demo](https://github.com/commit-check/commit-check/raw/main/assets/demo.gif)
-
-<br>
-
-## Quick Start
-
-**1. Install and run with zero configuration:**
-
-```bash
-pip install commit-check
-commit-check --message --branch
-```
-
-**2. Add to your pre-commit hooks** (`.pre-commit-config.yaml`):
-
-```yaml
-repos:
-  - repo: https://github.com/commit-check/commit-check
-    rev: v2.12.2
-    hooks:
-      - id: check-message
-      - id: check-branch
-```
-
-**3. Add a badge to your repository:**
-
-```text
-[![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white&color=%232c9ccd)](https://github.com/commit-check/commit-check)
-```
 
 ## Installation
 
@@ -477,6 +487,10 @@ Available API functions:
 For detailed usage instructions including pre-commit hooks, CLI commands, and STDIN examples, see the [Usage Examples documentation](https://commit-check.com/example/).
 
 ## Examples
+
+What the CLI looks like in the terminal:
+
+![commit-check demo](https://github.com/commit-check/commit-check/raw/main/assets/demo.gif)
 
 ### Check Commit Message Failed
 
