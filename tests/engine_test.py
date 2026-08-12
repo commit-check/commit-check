@@ -705,13 +705,14 @@ class TestCommitTypeValidator:
         mock_commit_info.assert_not_called()
 
     def test_absent_message_still_skips_the_empty_commit_rule(self):
-        """A message git never supplied is nothing to check, not a failure."""
+        """A message git never supplied is nothing to check -- and now the
+        status says so, instead of dressing the non-verdict up as a pass."""
         rule = ValidationRule(check="allow_empty_commits", value=False)
         validator = CommitTypeValidator(rule)
         with patch("commit_check.engine.get_commit_info", return_value=""):
             with patch("commit_check.engine.has_commits", return_value=True):
                 result = validator.validate(ValidationContext(no_banner=True))
-        assert result == ValidationResult.PASS
+        assert result == ValidationResult.SKIP
 
     @pytest.mark.benchmark
     def test_commit_type_validator_merge_commits(self):
@@ -1452,6 +1453,36 @@ class TestValidationEngine:
 
         result = engine.validate_all(context)
         assert result == ValidationResult.PASS
+
+    def test_skipped_checks_are_named_on_stderr(self, capsys):
+        """A silent skip reads as a pass; the notice is what tells them apart.
+
+        This is the CI trap in miniature: HEAD is a merge commit, the
+        subject rules decline to judge it, and before the notice existed the
+        run reported success having validated nothing it was asked about.
+        """
+        rules = [
+            ValidationRule(check="subject_imperative"),
+            ValidationRule(check="subject_max_length", value=80),
+        ]
+        engine = ValidationEngine(rules)
+        context = ValidationContext(
+            stdin_text="Merge branch 'main' into topic", no_banner=True
+        )
+
+        assert engine.validate_all(context) == ValidationResult.PASS
+        err = capsys.readouterr().err
+        assert "skipped" in err
+        assert "subject-imperative" in err
+        assert "subject-max-length" in err
+
+    def test_no_notice_when_nothing_skipped(self, capsys):
+        rules = [ValidationRule(check="subject_max_length", value=80)]
+        engine = ValidationEngine(rules)
+        context = ValidationContext(stdin_text="feat: add a thing", no_banner=True)
+
+        assert engine.validate_all(context) == ValidationResult.PASS
+        assert "skipped" not in capsys.readouterr().err
 
     @pytest.mark.benchmark
     def test_validation_engine_unknown_validator_type(self):
@@ -2672,5 +2703,7 @@ class TestImperativeMorphology:
 
     @pytest.mark.benchmark
     def test_merge_and_fixup_subjects_still_bypass_the_rule(self):
-        assert self._verdict("Merge branch 'main' into topic") == ValidationResult.PASS
-        assert self._verdict("fixup! fixed the parser") == ValidationResult.PASS
+        """Bypassed, and reported as bypassed: a machine-written subject is
+        not judged, and SKIP keeps that distinct from having passed."""
+        assert self._verdict("Merge branch 'main' into topic") == ValidationResult.SKIP
+        assert self._verdict("fixup! fixed the parser") == ValidationResult.SKIP

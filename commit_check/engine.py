@@ -396,9 +396,9 @@ class SubjectCapitalizationValidator(SubjectValidator):
     """Validates that subject starts with capital letter."""
 
     def _validate_subject(self, subject: str) -> ValidationResult:
-        # Skip merge commits
+        # A merge subject is machine-written; the rule declines to judge it.
         if subject.lower().startswith("merge"):
-            return ValidationResult.PASS
+            return ValidationResult.SKIP
 
         # For conventional commits, check the description part after the colon
         import re
@@ -434,9 +434,9 @@ class SubjectImperativeValidator(SubjectValidator):
     _INFLECTED = ("ed", "ing")
 
     def _validate_subject(self, subject: str) -> ValidationResult:
-        # Skip merge commits and fixup commits
+        # Merge and fixup subjects are machine-written; decline to judge them.
         if subject.lower().startswith(("merge", "fixup!")):
-            return ValidationResult.PASS
+            return ValidationResult.SKIP
 
         # Extract first word (ignore conventional commit prefixes)
         import re
@@ -487,9 +487,9 @@ class SubjectLengthValidator(SubjectValidator):
     """Validates subject line length constraints."""
 
     def _validate_subject(self, subject: str) -> ValidationResult:
-        # Skip merge commits for length checks
+        # A merge subject's length is git's doing, not the author's.
         if subject.lower().startswith("merge"):
-            return ValidationResult.PASS
+            return ValidationResult.SKIP
 
         length = len(subject)
         constraint_value = self.rule.value
@@ -896,7 +896,14 @@ class CommitTypeValidator(BaseValidator):
         # never run. A message the caller supplied goes to the rule even when
         # it is empty; an empty one from git is still nothing to check.
         if not message and not self._message_was_supplied(context):
-            return ValidationResult.PASS
+            # ignore_authors delivered its verdict above -- it judges the
+            # author, so an absent message is no reason to disown it, and a
+            # SKIP here would wrongly read as "author was bypassed".
+            return (
+                ValidationResult.PASS
+                if self.rule.check == "ignore_authors"
+                else ValidationResult.SKIP
+            )
 
         self._checked_value = message
 
@@ -1049,6 +1056,7 @@ class ValidationEngine:
     def validate_all(self, context: ValidationContext) -> ValidationResult:
         """Run all validations and return overall result."""
         results = []
+        skipped: list[str] = []
 
         for rule in self.rules:
             validator_class = self.VALIDATOR_MAP.get(rule.check)
@@ -1060,6 +1068,20 @@ class ValidationEngine:
             validator._compact = context.compact
             result = validator.validate(context)
             results.append(result)
+            if result == ValidationResult.SKIP:
+                skipped.append(rule.check.replace("_", "-"))
+
+        if skipped:
+            # A skipped check validated nothing, and a silent skip is
+            # indistinguishable from a pass — which is how a merge commit at
+            # HEAD once let a whole run report success having read nothing.
+            # One line, stderr, so scripts parsing stdout are unaffected.
+            import sys
+
+            print(
+                f"⊘ skipped (nothing validated): {', '.join(skipped)}",
+                file=sys.stderr,
+            )
 
         # Return FAIL if any validation failed
         return (
