@@ -47,14 +47,38 @@ repos:
 **3. Enforce it on every pull request** (`.github/workflows/commit-check.yml`):
 
 ```yaml
-- uses: commit-check/commit-check-action@v2
-  with:
-    message: true
-    branch: true
-    pr-title: true
-    job-summary: true
-    pr-comments: ${{ github.event_name == 'pull_request' }}
+name: Commit Check
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write  # pr-comments needs this
+
+jobs:
+  commit-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: commit-check/commit-check-action@v2
+        with:
+          message: true
+          branch: true
+          author-name: true
+          author-email: true
+          pr-title: true
+          job-summary: true
+          pr-comments: true
 ```
+
+The comment in the screenshot above is what `pr-comments` posts. On pull
+requests from forks the token is read-only, so the comment is skipped —
+[the action's docs](https://github.com/commit-check/commit-check-action/blob/main/docs/fork-pr-comments.md)
+show a two-workflow setup that covers forks too. The author checks validate
+the checkout's resolved author, one scope per run.
 
 **4. Say so:**
 
