@@ -16,12 +16,13 @@ trailers, AI attribution, and push safety. The rules live in one TOML file in
 your repository; the CLI, pre-commit, GitHub Actions, and AI automation all
 enforce the same ones.
 
-This is what a pull request sees — every commit, the PR title, the branch and
-the author, each failed rule linked to its documentation:
+This is what a pull request sees when something slips — the offending value,
+each failed rule linked to its documentation, everything that passed folded
+away:
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://github.com/commit-check/commit-check/raw/main/assets/pr-comment-dark.png">
-  <img alt="Commit Check PR comment: one commit failing CC001 and CC003, listed against six passing checks with their checked values" src="https://github.com/commit-check/commit-check/raw/main/assets/pr-comment-light.png" width="760">
+  <img alt="Commit Check PR comment: a commit failing CC001 and CC003 and an author email failing CC102, each linked to its rule documentation" src="https://github.com/commit-check/commit-check/raw/main/assets/pr-comment-light.png" width="720">
 </picture>
 
 ## Quick Start
