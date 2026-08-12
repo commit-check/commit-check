@@ -1479,6 +1479,21 @@ class TestValidationEngine:
                 result = validator.validate(ValidationContext(rev="abc123"))
         assert result == ValidationResult.PASS
 
+    def test_rev_scans_that_commits_body_for_ai_attribution(self):
+        """The attribution scan follows the named revision, not HEAD."""
+        rule = ValidationRule(check="ai_attribution", value="forbid")
+        validator = AiAttributionValidator(rule)
+        validator._suppress_output = True
+
+        def fake_info(fmt, sha="HEAD"):
+            assert sha == "abc123"
+            return "feat: subject\n\nCo-Authored-By: Claude <noreply@anthropic.com>"
+
+        with patch("commit_check.engine.get_commit_info", side_effect=fake_info):
+            with patch("commit_check.engine.has_commits", return_value=True):
+                result = validator.validate(ValidationContext(rev="abc123"))
+        assert result == ValidationResult.FAIL
+
     def test_capitalization_declines_to_judge_a_merge_subject(self):
         rule = ValidationRule(check="subject_capitalized")
         validator = SubjectCapitalizationValidator(rule)
