@@ -215,6 +215,83 @@ class TestStdinReader:
         assert elapsed < 2
 
 
+class TestRevOption:
+    """--rev names the commit under test, end to end on a real repository."""
+
+    @pytest.fixture
+    def two_commit_repo(self, tmp_path, monkeypatch):
+        """A repo whose HEAD is fine and whose first commit is not.
+
+        The parent commit carries both a non-conventional message and a
+        deliberately malformed author, so checks that quietly read HEAD (or
+        the config) instead of the requested revision come out different.
+        """
+        subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+        monkeypatch.chdir(tmp_path)
+        git = ["git", "-C", str(tmp_path)]
+        subprocess.run(git + ["config", "user.name", "Good Author"], check=True)
+        subprocess.run(git + ["config", "user.email", "good@example.com"], check=True)
+        subprocess.run(
+            git
+            + [
+                "-c",
+                "user.name=bad",
+                "-c",
+                "user.email=nonsense",
+                "commit",
+                "-q",
+                "--allow-empty",
+                "-m",
+                "updated the parser",
+            ],
+            check=True,
+        )
+        subprocess.run(
+            git + ["commit", "-q", "--allow-empty", "-m", "feat: add a thing"],
+            check=True,
+        )
+        return tmp_path
+
+    def test_rev_checks_the_named_commits_message(self, two_commit_repo, monkeypatch):
+        """HEAD passes, HEAD^ fails: the verdict must follow --rev."""
+        monkeypatch.setattr("sys.argv", [CMD, "--message", "--rev", "HEAD"])
+        assert main() == 0
+        monkeypatch.setattr("sys.argv", [CMD, "--message", "--rev", "HEAD^"])
+        assert main() == 1
+
+    def test_rev_reads_the_commits_author_not_the_config(
+        self, two_commit_repo, monkeypatch
+    ):
+        """The config identity is valid here, so a pass would mean the
+        config was consulted -- the revision's own author must decide."""
+        monkeypatch.setattr("sys.argv", [CMD, "--author-email", "--rev", "HEAD^"])
+        assert main() == 1
+        monkeypatch.setattr("sys.argv", [CMD, "--author-email", "--rev", "HEAD"])
+        assert main() == 0
+
+    def test_rev_that_does_not_resolve_is_a_clear_early_error(
+        self, two_commit_repo, monkeypatch, capsys
+    ):
+        monkeypatch.setattr("sys.argv", [CMD, "--message", "--rev", "no-such-ref"])
+        assert main() == 1
+        assert "does not resolve" in capsys.readouterr().err
+
+    def test_rev_and_a_message_file_conflict(self, two_commit_repo, monkeypatch):
+        monkeypatch.setattr("sys.argv", [CMD, "--rev", "HEAD", "some-file.txt"])
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 2
+
+    def test_rev_works_in_json_mode(self, two_commit_repo, monkeypatch, capsys):
+        monkeypatch.setattr(
+            "sys.argv", [CMD, "--message", "--rev", "HEAD^", "--format", "json"]
+        )
+        assert main() == 1
+        payload = json.loads(capsys.readouterr().out)
+        values = [c.get("value", "") for c in payload["checks"]]
+        assert any("updated the parser" in v for v in values)
+
+
 class TestMainFunctionEdgeCases:
     """Test main function edge cases for better coverage."""
 

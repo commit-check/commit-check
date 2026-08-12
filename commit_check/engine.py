@@ -56,6 +56,13 @@ class ValidationContext:
     no_banner: bool = False
     compact: bool = False
     push_upstream_fallback: bool = False
+    # A git revision naming the commit under test. When set, message and
+    # author checks read that commit -- the author is the commit's author,
+    # never the local git config, because an existing commit's identity is
+    # a fact about the commit rather than about whoever is running the
+    # check. The CLI verifies the revision resolves before it gets here.
+    # Last on purpose: positional construction predates it.
+    rev: str | None = None
 
 
 @dataclass
@@ -152,11 +159,13 @@ class BaseValidator(ABC):
         """
         Determine if validation should be skipped.
 
-        Skip only when there is no stdin_text, no commit_file, and no commits.
+        Skip only when there is no stdin_text, no commit_file, no rev, and
+        no commits.
         """
         return (
             context.stdin_text is None
             and context.commit_file is None
+            and context.rev is None
             and not has_commits()
         )
 
@@ -176,6 +185,10 @@ class BaseValidator(ABC):
         (``get_commit_info("an")``), not the local git config which may
         belong to a different person.
         """
+        if context.rev is not None:
+            # An explicit revision names an existing commit; its author is a
+            # fact about that commit, so the config never enters into it.
+            return get_commit_info("an", context.rev)
         if context.stdin_text is not None or context.commit_file is not None:
             return get_git_config_value("user.name") or get_commit_info("an")
         return get_commit_info("an") or get_git_config_value("user.name")
@@ -194,7 +207,11 @@ class BaseValidator(ABC):
         genuinely empty, and rejecting that under allow_empty_commits = false
         is the verdict the rule exists to give.
         """
-        return context.stdin_text is not None or context.commit_file is not None
+        return (
+            context.stdin_text is not None
+            or context.commit_file is not None
+            or context.rev is not None
+        )
 
     @staticmethod
     def _get_commit_message(context: ValidationContext) -> str:
@@ -210,8 +227,12 @@ class BaseValidator(ABC):
                 pass
 
         # Fallback to git log
-        subject = get_commit_info("s")
-        body = get_commit_info("b")
+        if context.rev is not None:
+            subject = get_commit_info("s", context.rev)
+            body = get_commit_info("b", context.rev)
+        else:
+            subject = get_commit_info("s")
+            body = get_commit_info("b")
         return f"{subject}\n\n{body}".strip()
 
     def _author_in_ignore_list(self, context: ValidationContext) -> bool:
@@ -254,6 +275,8 @@ class BaseValidator(ABC):
                     return f.read()
             except (OSError, IOError):
                 pass
+        if context.rev is not None:
+            return get_commit_info("b", context.rev)
         return get_commit_info("b")
 
     def _should_skip_commit_validation(self, context: ValidationContext) -> bool:
@@ -269,6 +292,7 @@ class BaseValidator(ABC):
         return (
             context.stdin_text is None
             and context.commit_file is None
+            and context.rev is None
             and not has_commits()
         )
 
@@ -359,6 +383,8 @@ class SubjectValidator(BaseValidator):
             except FileNotFoundError:
                 pass
 
+        if context.rev is not None:
+            return get_commit_info("s", context.rev)
         return get_commit_info("s")
 
     def _validate_subject(self, _subject: str) -> ValidationResult:
@@ -512,6 +538,13 @@ class AuthorValidator(BaseValidator):
             "author_name": "an",
             "author_email": "ae",
         }
+
+        # An explicit revision names an existing commit, whose identity is a
+        # fact about the commit: read it from the commit and never from the
+        # config, which describes whoever happens to be running the check.
+        if context.rev is not None:
+            format_str = git_log_map.get(self.rule.check, "")
+            return get_commit_info(format_str, context.rev) if format_str else ""
 
         # Try git config first (validates configured identity for new commits)
         config_key = git_config_map.get(self.rule.check, "")
