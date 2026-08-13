@@ -44,7 +44,6 @@ local hooks, CI, GitHub Actions, and AI automation.
 - **Machine-readable output:** JSON + Python API for automation and AI agents
 
 ![commit-check demo](https://github.com/commit-check/commit-check/raw/main/assets/demo.gif)
-
 <br>
 
 ## Quick Start
