@@ -35,6 +35,26 @@ def _stdin_gate_open(request, monkeypatch):
     yield
 
 
+@pytest.fixture
+def pinned_author(mocker):
+    """Pin the identity the engine resolves, so no verdict comes from the checkout.
+
+    A message given on stdin or in a file describes a *prospective* commit, so
+    ``_resolve_current_author`` reads ``git config user.name`` and falls back to
+    the author of ``HEAD``. Both are ambient. A CI runner configures no identity,
+    so the fallback always wins there, and when ``HEAD`` happens to be a bot's
+    commit that name is in ``ignore_authors`` — every commit check skips, and a
+    test asserting ``pass`` sees ``skip`` instead.
+
+    That is not hypothetical: it turned ``main`` red the moment a dependabot
+    merge landed, having passed on every pull request before it. Any test that
+    supplies a message and asserts a verdict needs this, or it is really
+    asserting something about whoever committed last.
+    """
+    mocker.patch("commit_check.engine.get_git_config_value", return_value="test-author")
+    mocker.patch("commit_check.engine.get_commit_info", return_value="test-author")
+
+
 class TestMain:
     @pytest.mark.benchmark
     def test_help(self, capfd, monkeypatch):
@@ -693,7 +713,9 @@ class TestJsonFormat:
     """Tests for --format json machine-readable output."""
 
     @pytest.mark.benchmark
-    def test_json_format_valid_message_returns_pass(self, mocker, capsys, monkeypatch):
+    def test_json_format_valid_message_returns_pass(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
         """JSON output for a valid commit message has status=pass."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
@@ -709,7 +731,9 @@ class TestJsonFormat:
         assert all("check" in c and "status" in c for c in data["checks"])
 
     @pytest.mark.benchmark
-    def test_json_format_pass_reports_checked_value(self, mocker, capsys, monkeypatch):
+    def test_json_format_pass_reports_checked_value(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
         """JSON output reports the checked value even when the check passed."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
@@ -765,7 +789,7 @@ class TestJsonFormat:
         assert "\033[" not in out
 
     @pytest.mark.benchmark
-    def test_json_format_from_file(self, capsys, monkeypatch):
+    def test_json_format_from_file(self, capsys, monkeypatch, pinned_author):
         """JSON mode works when reading commit message from a file."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("fix: resolve null pointer in auth module")
@@ -782,7 +806,9 @@ class TestJsonFormat:
             os.unlink(tmp_path)
 
     @pytest.mark.benchmark
-    def test_json_format_exit_code_matches_status(self, mocker, capsys, monkeypatch):
+    def test_json_format_exit_code_matches_status(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
         """Exit code 1 when JSON status is fail, exit code 0 when pass."""
         # --- pass case ---
         mocker.patch("sys.stdin.isatty", return_value=False)
@@ -802,6 +828,36 @@ class TestJsonFormat:
         out, _ = capsys.readouterr()
         assert rc_fail == 1
         assert json.loads(out)["status"] == "fail"
+
+    @pytest.mark.benchmark
+    def test_json_format_skips_when_head_author_is_ignored(
+        self, mocker, capsys, monkeypatch
+    ):
+        """An unconfigured identity falls back to HEAD's author, ignore list and all.
+
+        The counterpart to ``pinned_author``: rather than let this behaviour
+        stay ambient — where it silently decides other tests' verdicts — it is
+        asserted here. With no ``user.name`` configured, as on a CI runner, the
+        author of ``HEAD`` decides, so a bot's merge commit skips every check
+        even though the message under test is a perfectly valid one.
+
+        Exit code stays 0: a skip is not a failure.
+        """
+        mocker.patch("commit_check.engine.get_git_config_value", return_value="")
+        mocker.patch(
+            "commit_check.engine.get_commit_info", return_value="dependabot[bot]"
+        )
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
+
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--format", "json"])
+        rc = main()
+
+        out, _ = capsys.readouterr()
+        data = json.loads(out)
+        assert rc == 0
+        assert data["status"] == "skip"
+        assert all(c["status"] == "skip" for c in data["checks"])
 
 
 class TestNoBanner:
