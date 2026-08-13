@@ -8,7 +8,7 @@ This file provides working guidelines for AI coding agents (e.g., GitHub Copilot
 
 ## Keep the README pinned to the released version
 
-**Do this on every change, whatever you came here to do.** It is not a release-time task — the README's pre-commit snippets are the first thing a new user copies, 
+**Do this on every change, whatever you came here to do.** It is not a release-time task — the README's pre-commit snippets are the first thing a new user copies,
 and a stale pin is invisible: the snippet keeps working, it just installs an older release than the README describes.
 
 1. **Find the latest released version.**
@@ -36,7 +36,7 @@ and a stale pin is invisible: the snippet keeps working, it just installs an old
 
 The one exception is a pull request that prepares an unpublished release: there the pins are written **ahead** of the tag, on purpose, and the release is published before the pull request merges.
 
-`.pre-commit-config.yaml` is a different case and is **not** covered by this rule. That pin is this repository running its own hooks, 
+`.pre-commit-config.yaml` is a different case and is **not** covered by this rule. That pin is this repository running its own hooks,
 and pre-commit resolves it against real tags when CI runs — so pointing it at a version that is not published yet breaks the build. Bump it only after the release exists.
 
 ## Git Rules
