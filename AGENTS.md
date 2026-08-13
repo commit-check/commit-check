@@ -24,7 +24,7 @@ and a stale pin is invisible: the snippet keeps working, it just installs an old
    Both have to be true before a version can be pinned: the **tag** must exist, because that is what pre-commit resolves `rev:` against,
    and **PyPI** must have the version, because that is what installs.
 
-3. **Check every pin in the README.**
+2. **Check every pin in the README.**
 
    ```bash
    grep -n "rev: v" README.md
@@ -32,7 +32,7 @@ and a stale pin is invisible: the snippet keeps working, it just installs an old
 
    Each one must name that version. Update any that do not, in the same pull request — do not open a follow-up issue for it.
 
-4. **Say so in the pull request description** when you moved them, so the bump is not a silent diff in an unrelated change.
+3. **Say so in the pull request description** when you moved them, so the bump is not a silent diff in an unrelated change.
 
 The one exception is a pull request that prepares an unpublished release: there the pins are written **ahead** of the tag, on purpose, and the release is published before the pull request merges.
 
