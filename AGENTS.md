@@ -8,7 +8,8 @@ This file provides working guidelines for AI coding agents (e.g., GitHub Copilot
 
 ## Keep the README pinned to the released version
 
-**Do this on every change, whatever you came here to do.** It is not a release-time task — the README's pre-commit snippets are the first thing a new user copies, and a stale pin is invisible: the snippet keeps working, it just installs an older release than the README describes. Nothing in the test suite reads these pins, so only this check catches them. They had fallen three releases behind before anyone noticed.
+**Do this on every change, whatever you came here to do.** It is not a release-time task — the README's pre-commit snippets are the first thing a new user copies, 
+and a stale pin is invisible: the snippet keeps working, it just installs an older release than the README describes.
 
 1. **Find the latest released version.**
 
@@ -16,11 +17,14 @@ This file provides working guidelines for AI coding agents (e.g., GitHub Copilot
    curl -s https://pypi.org/pypi/commit-check/json | python -c "import json,sys; print(json.load(sys.stdin)['info']['version'])"
    ```
 
-   The [releases page](https://github.com/commit-check/commit-check/releases) answers the same question, provided you read only **published** releases. A draft is not one, and you cannot tell by looking for a tag: a draft can be saved against a tag that already exists, and publishing to PyPI is a separate step from publishing the GitHub release. Read the published release, or ask PyPI as above.
+   The [releases page](https://github.com/commit-check/commit-check/releases) answers the same question, provided you read only **published** releases.
+   A draft is not one, and you cannot tell by looking for a tag: a draft can be saved against a tag that already exists, and publishing to PyPI is
+   a separate step from publishing the GitHub release. Read the published release, or ask PyPI as above.
 
-   Both have to be true before a version can be pinned: the **tag** must exist, because that is what pre-commit resolves `rev:` against, and **PyPI** must have the version, because that is what installs.
+   Both have to be true before a version can be pinned: the **tag** must exist, because that is what pre-commit resolves `rev:` against,
+   and **PyPI** must have the version, because that is what installs.
 
-2. **Check every pin in the README.**
+3. **Check every pin in the README.**
 
    ```bash
    grep -n "rev: v" README.md
@@ -28,11 +32,12 @@ This file provides working guidelines for AI coding agents (e.g., GitHub Copilot
 
    Each one must name that version. Update any that do not, in the same pull request — do not open a follow-up issue for it.
 
-3. **Say so in the pull request description** when you moved them, so the bump is not a silent diff in an unrelated change.
+4. **Say so in the pull request description** when you moved them, so the bump is not a silent diff in an unrelated change.
 
 The one exception is a pull request that prepares an unpublished release: there the pins are written **ahead** of the tag, on purpose, and the release is published before the pull request merges.
 
-`.pre-commit-config.yaml` is a different case and is **not** covered by this rule. That pin is this repository running its own hooks, and pre-commit resolves it against real tags when CI runs — so pointing it at a version that is not published yet breaks the build. Bump it only after the release exists.
+`.pre-commit-config.yaml` is a different case and is **not** covered by this rule. That pin is this repository running its own hooks, 
+and pre-commit resolves it against real tags when CI runs — so pointing it at a version that is not published yet breaks the build. Bump it only after the release exists.
 
 ## Git Rules
 
