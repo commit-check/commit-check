@@ -12,16 +12,18 @@ This file provides working guidelines for AI coding agents (e.g., GitHub Copilot
 
 1. **Find the latest released version.**
 
-   ```console
-   $ curl -s https://pypi.org/pypi/commit-check/json | python -c "import json,sys; print(json.load(sys.stdin)['info']['version'])"
+   ```bash
+   curl -s https://pypi.org/pypi/commit-check/json | python -c "import json,sys; print(json.load(sys.stdin)['info']['version'])"
    ```
 
-   The [releases page](https://github.com/commit-check/commit-check/releases) answers the same question. A **draft** release is not released — it has no tag and no package, so it is not the answer here.
+   The [releases page](https://github.com/commit-check/commit-check/releases) answers the same question, provided you read only **published** releases. A draft is not one, and you cannot tell by looking for a tag: a draft can be saved against a tag that already exists, and publishing to PyPI is a separate step from publishing the GitHub release. Read the published release, or ask PyPI as above.
+
+   Both have to be true before a version can be pinned: the **tag** must exist, because that is what pre-commit resolves `rev:` against, and **PyPI** must have the version, because that is what installs.
 
 2. **Check every pin in the README.**
 
-   ```console
-   $ grep -n "rev: v" README.md
+   ```bash
+   grep -n "rev: v" README.md
    ```
 
    Each one must name that version. Update any that do not, in the same pull request — do not open a follow-up issue for it.
