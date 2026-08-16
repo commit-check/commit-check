@@ -1,5 +1,8 @@
+import importlib
 import pytest
 import subprocess
+import commit_check
+from commit_check import supports_color
 from commit_check.util import (
     fetch_remote_ref,
     fetch_upstream_ref,
@@ -752,6 +755,80 @@ class TestUtil:
             assert lines[-1] == ""
             assert lines[-2].startswith("Docs: ")
             assert "" not in lines[:-1]
+
+    class TestColor:
+        """ANSI color belongs on a terminal, not in piped output.
+
+        A CI log or an agent harness reads the escape payload as noise, so the
+        color codes are dropped when ``stdout`` is not a terminal.
+        """
+
+        @pytest.mark.benchmark
+        def test_not_supported_when_piped(self, mocker):
+            mocker.patch.dict("os.environ", {}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=False)
+            assert supports_color() is False
+
+        @pytest.mark.benchmark
+        def test_forced_even_when_piped(self, mocker):
+            mocker.patch.dict("os.environ", {"FORCE_COLOR": "1"}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=False)
+            assert supports_color() is True
+
+        @pytest.mark.benchmark
+        def test_force_zero_turns_color_off(self, mocker):
+            """Setting it to 0 must not read as "set, therefore on"."""
+            mocker.patch.dict("os.environ", {"FORCE_COLOR": "0"}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=True)
+            assert supports_color() is False
+
+        @pytest.mark.benchmark
+        def test_force_empty_falls_through_to_detection(self, mocker):
+            mocker.patch.dict("os.environ", {"FORCE_COLOR": ""}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=False)
+            assert supports_color() is False
+
+        @pytest.mark.benchmark
+        def test_dumb_term_turns_color_off(self, mocker):
+            mocker.patch.dict("os.environ", {"TERM": "dumb"}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=True)
+            assert supports_color() is False
+
+        @pytest.mark.benchmark
+        def test_empty_term_turns_color_off(self, mocker):
+            """``TERM=`` is a deliberate "no terminal" signal, like ``dumb``."""
+            mocker.patch.dict("os.environ", {"TERM": ""}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=True)
+            assert supports_color() is False
+
+        @pytest.mark.benchmark
+        def test_unset_term_still_allows_color_on_a_tty(self, mocker):
+            """An absent TERM is not a refusal — the terminal may still render."""
+            mocker.patch.dict("os.environ", {}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=True)
+            assert supports_color() is True
+
+        @pytest.mark.benchmark
+        def test_constants_empty_when_color_off(self, mocker):
+            """The constants are pre-emptied when stdout cannot render color."""
+            mocker.patch.dict("os.environ", {"TERM": "dumb"}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=True)
+            importlib.reload(commit_check)
+            assert commit_check.RED == ""
+            assert commit_check.GREEN == ""
+            assert commit_check.YELLOW == ""
+            assert commit_check.RESET_COLOR == ""
+
+        @pytest.mark.benchmark
+        def test_constants_set_when_color_on(self, mocker):
+            """FORCE_COLOR=1 keeps the raw escape codes in place."""
+            mocker.patch.dict("os.environ", {"FORCE_COLOR": "1"}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=False)
+            importlib.reload(commit_check)
+            assert commit_check.RED == "\033[91m"
+            assert commit_check.GREEN == "\033[92m"
+            assert commit_check.YELLOW == "\033[93m"
+            assert commit_check.RESET_COLOR == "\033[0m"
 
     class TestPrintSuggestion:
         @pytest.mark.benchmark
