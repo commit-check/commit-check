@@ -60,7 +60,7 @@ commit-check --message --branch
 ```yaml
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.15.0
+    rev: v2.15.1
     hooks:
       - id: check-message
       - id: check-branch
@@ -195,7 +195,7 @@ commit-check --message
 # In pre-commit hooks (.pre-commit-config.yaml)
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.15.0
+    rev: v2.15.1
     hooks:
       - id: check-message
         args:
@@ -225,7 +225,7 @@ commit-check --no-force-push
 # In pre-commit hooks (.pre-commit-config.yaml)
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.15.0
+    rev: v2.15.1
     hooks:
       - id: check-no-force-push
         stages: [pre-push]
