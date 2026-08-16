@@ -22,8 +22,11 @@ def supports_color() -> bool:
     agent harness), where the escape sequences are noise, so this errs towards
     saying no when ``stdout`` is not a terminal.
 
-    ``FORCE_COLOR`` overrides the detection in both directions: ``0`` turns
+    ``FORCE_COLOR`` overrides everything else, in both directions: ``0`` turns
     color off even on a terminal, any other value turns it on even when piped.
+    ``NO_COLOR`` set to any non-empty value turns color off, per the
+    convention at https://no-color.org — it is what users export globally, so
+    it outranks detection but yields to an explicit force.
 
     An empty ``TERM`` is the same "no terminal type" signal as ``dumb``: the
     user has deliberately said there are no terminfo capabilities, so emit
@@ -33,6 +36,8 @@ def supports_color() -> bool:
     forced = os.environ.get("FORCE_COLOR")
     if forced:
         return forced != "0"
+    if os.environ.get("NO_COLOR"):
+        return False
     if not sys.stdout.isatty():
         return False
     if os.environ.get("TERM") in ("", "dumb"):
@@ -41,10 +46,11 @@ def supports_color() -> bool:
 
 
 # ANSI color codes used for CLI output, empty when stdout cannot render color.
-RED = "\033[91m" if supports_color() else ""
-GREEN = "\033[92m" if supports_color() else ""
-YELLOW = "\033[93m" if supports_color() else ""
-RESET_COLOR = "\033[0m" if supports_color() else ""
+_colored = supports_color()
+RED = "\033[91m" if _colored else ""
+GREEN = "\033[92m" if _colored else ""
+YELLOW = "\033[93m" if _colored else ""
+RESET_COLOR = "\033[0m" if _colored else ""
 
 # Follow conventional commits
 DEFAULT_COMMIT_TYPES = [

@@ -1,4 +1,6 @@
 import importlib
+import os
+import sys
 import pytest
 import subprocess
 import commit_check
@@ -763,11 +765,47 @@ class TestUtil:
         color codes are dropped when ``stdout`` is not a terminal.
         """
 
+        @pytest.fixture
+        def restored_module(self):
+            """Re-derive the module constants after a test that reloads.
+
+            A reload recomputes ``commit_check.RED`` and friends under the
+            test's patched environment, and nothing else puts them back: the
+            last reload's values would leak into every test that runs
+            afterwards. Listed before ``mocker`` in the signature so this
+            teardown runs after the environment patches are undone.
+            """
+            yield
+            importlib.reload(commit_check)
+
         @pytest.mark.benchmark
         def test_not_supported_when_piped(self, mocker):
             mocker.patch.dict("os.environ", {}, clear=True)
             mocker.patch("sys.stdout.isatty", return_value=False)
             assert supports_color() is False
+
+        @pytest.mark.benchmark
+        def test_no_color_turns_color_off_on_a_tty(self, mocker):
+            """NO_COLOR is what users export globally (https://no-color.org)."""
+            mocker.patch.dict("os.environ", {"NO_COLOR": "1"}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=True)
+            assert supports_color() is False
+
+        @pytest.mark.benchmark
+        def test_no_color_empty_falls_through_to_detection(self, mocker):
+            """The convention counts only a non-empty value as set."""
+            mocker.patch.dict("os.environ", {"NO_COLOR": ""}, clear=True)
+            mocker.patch("sys.stdout.isatty", return_value=True)
+            assert supports_color() is True
+
+        @pytest.mark.benchmark
+        def test_force_color_outranks_no_color(self, mocker):
+            """An explicit force wins over the global opt-out."""
+            mocker.patch.dict(
+                "os.environ", {"NO_COLOR": "1", "FORCE_COLOR": "1"}, clear=True
+            )
+            mocker.patch("sys.stdout.isatty", return_value=False)
+            assert supports_color() is True
 
         @pytest.mark.benchmark
         def test_forced_even_when_piped(self, mocker):
@@ -809,7 +847,7 @@ class TestUtil:
             assert supports_color() is True
 
         @pytest.mark.benchmark
-        def test_constants_empty_when_color_off(self, mocker):
+        def test_constants_empty_when_color_off(self, restored_module, mocker):
             """The constants are pre-emptied when stdout cannot render color."""
             mocker.patch.dict("os.environ", {"TERM": "dumb"}, clear=True)
             mocker.patch("sys.stdout.isatty", return_value=True)
@@ -820,7 +858,7 @@ class TestUtil:
             assert commit_check.RESET_COLOR == ""
 
         @pytest.mark.benchmark
-        def test_constants_set_when_color_on(self, mocker):
+        def test_constants_set_when_color_on(self, restored_module, mocker):
             """FORCE_COLOR=1 keeps the raw escape codes in place."""
             mocker.patch.dict("os.environ", {"FORCE_COLOR": "1"}, clear=True)
             mocker.patch("sys.stdout.isatty", return_value=False)
@@ -829,6 +867,75 @@ class TestUtil:
             assert commit_check.GREEN == "\033[92m"
             assert commit_check.YELLOW == "\033[93m"
             assert commit_check.RESET_COLOR == "\033[0m"
+
+        # Not benchmarked: these spawn an interpreter, and their cost is the
+        # process, not the code under test.
+
+        def test_the_decision_reaches_printed_output(self):
+            """FORCE_COLOR=1 must colour what the print path emits.
+
+            The reload tests above stop at the module constants, but the print
+            functions in ``commit_check.util`` hold their own copies, bound
+            once at import. Only a fresh interpreter exercises that hand-off,
+            so this is the test that fails if the decision stops reaching the
+            output a user sees.
+            """
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-c",
+                    "from commit_check.util import print_error_message;"
+                    "print_error_message('message', 'err', 'value', rule_id='CC001')",
+                ],
+                capture_output=True,
+                encoding="utf-8",
+                env={**os.environ, "FORCE_COLOR": "1"},
+            )
+            assert result.returncode == 0, result.stderr
+            assert "\033[91m" in result.stdout
+
+        #: Child program that pretends its stdout is a terminal before the
+        #: import, so terminal detection says yes and the environment becomes
+        #: the deciding factor. A plain pipe would disable color on its own
+        #: and mask whether NO_COLOR handling exists at all.
+        _TTY_CHILD = (
+            "import sys, types;"
+            "out = sys.stdout;"
+            "sys.stdout = types.SimpleNamespace("
+            "write=out.write, flush=out.flush, isatty=lambda: True);"
+            "from commit_check.util import print_error_message;"
+            "print_error_message('message', 'err', 'value', rule_id='CC001')"
+        )
+
+        def test_no_color_reaches_printed_output(self):
+            """NO_COLOR must be what decides, not the pipe.
+
+            Two identical runs, differing only in ``NO_COLOR``. The first
+            proves the pretend-TTY works — it must come out colored, or the
+            second assertion would pass even with the NO_COLOR handling
+            deleted.
+            """
+            env = {**os.environ, "TERM": "xterm"}
+            env.pop("FORCE_COLOR", None)
+            env.pop("NO_COLOR", None)
+
+            colored = subprocess.run(
+                [sys.executable, "-c", self._TTY_CHILD],
+                capture_output=True,
+                encoding="utf-8",
+                env=env,
+            )
+            assert colored.returncode == 0, colored.stderr
+            assert "\033[" in colored.stdout
+
+            plain = subprocess.run(
+                [sys.executable, "-c", self._TTY_CHILD],
+                capture_output=True,
+                encoding="utf-8",
+                env={**env, "NO_COLOR": "1"},
+            )
+            assert plain.returncode == 0, plain.stderr
+            assert "\033[" not in plain.stdout
 
     class TestPrintSuggestion:
         @pytest.mark.benchmark
