@@ -6,17 +6,45 @@ Exports:
         __version__ (package version)
 """
 
+import os
+import sys
 from importlib.metadata import version, PackageNotFoundError
 
 # Exit codes used across the package
 PASS = 0
 FAIL = 1
 
-# ANSI color codes used for CLI output
-RED = "\033[91m"
-GREEN = "\033[92m"
-YELLOW = "\033[93m"
-RESET_COLOR = "\033[0m"
+
+def supports_color() -> bool:
+    """Whether the terminal renders ANSI color.
+
+    A piped or redirected stream is read as plain text (a CI log, a file, an
+    agent harness), where the escape sequences are noise, so this errs towards
+    saying no when ``stdout`` is not a terminal.
+
+    ``FORCE_COLOR`` overrides the detection in both directions: ``0`` turns
+    color off even on a terminal, any other value turns it on even when piped.
+
+    An empty ``TERM`` is the same "no terminal type" signal as ``dumb``: the
+    user has deliberately said there are no terminfo capabilities, so emit
+    plain text. An *unset* ``TERM`` is different — it just means nobody set
+    it, and a real terminal is still likely color-capable.
+    """
+    forced = os.environ.get("FORCE_COLOR")
+    if forced:
+        return forced != "0"
+    if not sys.stdout.isatty():
+        return False
+    if os.environ.get("TERM") in ("", "dumb"):
+        return False
+    return True
+
+
+# ANSI color codes used for CLI output, empty when stdout cannot render color.
+RED = "\033[91m" if supports_color() else ""
+GREEN = "\033[92m" if supports_color() else ""
+YELLOW = "\033[93m" if supports_color() else ""
+RESET_COLOR = "\033[0m" if supports_color() else ""
 
 # Follow conventional commits
 DEFAULT_COMMIT_TYPES = [
