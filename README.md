@@ -3,7 +3,7 @@
 [![CI](https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg)](https://github.com/commit-check/commit-check/actions/workflows/main.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=commit-check_commit-check)
 [![PyPI](https://img.shields.io/pypi/v/commit-check?logo=python&logoColor=white&color=%232c9ccd)](https://pypi.org/project/commit-check/)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/commit-check?color=%232c9ccd)](https://pypi.org/project/commit-check/)
+[![PyPI Downloads](https://static.pepy.tech/badge/commit-check/month?color=%232c9ccd)](https://pepy.tech/projects/commit-check)
 [![Python Versions](https://img.shields.io/pypi/pyversions/commit-check?logo=python&logoColor=white)](https://pypi.org/project/commit-check/)
 [![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white&color=%232c9ccd)](https://github.com/commit-check/commit-check)
 [![CodeCov](https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT)](https://codecov.io/gh/commit-check/commit-check)
