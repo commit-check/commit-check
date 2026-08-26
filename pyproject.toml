@@ -46,7 +46,7 @@ tracker = "https://github.com/commit-check/commit-check/issues"
 #     https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
 
 [project.optional-dependencies]
-dev = ['nox==2026.8.10']
+dev = ['nox==2026.8.17']
 test = ['coverage', 'pytest', 'pytest-mock', 'pytest-codspeed']
 ci = ['twine==7.0.0']
 
