@@ -1169,11 +1169,155 @@ class TestGetCommitFiles:
 
     @pytest.mark.benchmark
     def test_ls_tree_failure_yields_no_files(self, mocker):
-        """A failing size lookup drops the batch instead of inventing data."""
+        """A failing size lookup reports nothing rather than a partial set."""
         diff = mocker.Mock(returncode=0, stdout="a.txt\0", stderr="")
         tree = mocker.Mock(returncode=128, stdout="", stderr="fatal: bad object")
         mocker.patch("commit_check.util.subprocess.run", side_effect=[diff, tree])
         assert get_commit_files() == []
+
+    @pytest.mark.benchmark
+    def test_partial_batch_failure_reports_nothing(self, mocker):
+        """One failed batch must not shrink the set the rules then pass on."""
+        diff = mocker.Mock(returncode=0, stdout="a.txt\0", stderr="")
+        ok = mocker.Mock(
+            returncode=0, stdout="100644 blob abc     5\ta.txt\0", stderr=""
+        )
+        bad = mocker.Mock(returncode=128, stdout="", stderr="fatal")
+        mocker.patch("commit_check.util.subprocess.run", side_effect=[diff, ok, bad])
+        mocker.patch(
+            "commit_check.util._pathspec_batches",
+            return_value=[[":(top,literal)a.txt"], [":(top,literal)b.txt"]],
+        )
+        assert get_commit_files() == []
+
+    @pytest.mark.benchmark
+    def test_unrunnable_command_line_reports_nothing(self, mocker):
+        """An OSError (Windows arg limits) is not an accidental pass."""
+        diff = mocker.Mock(returncode=0, stdout="a.txt\0", stderr="")
+        mocker.patch(
+            "commit_check.util.subprocess.run",
+            side_effect=[diff, OSError("arg list too long")],
+        )
+        assert get_commit_files() == []
+
+    # No benchmark mark: real-git tests are not safe under CodSpeed re-runs.
+    def test_runs_from_a_subdirectory(self, tmp_path, monkeypatch):
+        """Paths are repo-relative wherever commit-check is invoked from.
+
+        ls-tree reads pathspecs relative to the cwd, so without an anchored
+        pathspec every rule would find no files -- and pass -- in a commit
+        that fails at the repository root.
+        """
+        self._repo(tmp_path)
+        sub = tmp_path / "sub" / "deep"
+        sub.mkdir(parents=True)
+        (sub / "nested.txt").write_bytes(b"x" * 7)
+        (tmp_path / "top.txt").write_bytes(b"y" * 5)
+        self._git(tmp_path, "add", "-A")
+        self._git(tmp_path, "commit", "-qm", "feat: add files")
+
+        monkeypatch.chdir(tmp_path)
+        from_root = dict(get_commit_files())
+        monkeypatch.chdir(sub)
+        from_sub = dict(get_commit_files())
+
+        assert from_root == {"sub/deep/nested.txt": 7, "top.txt": 5}
+        assert from_sub == from_root
+
+    # No benchmark mark: real-git test, see above.
+    def test_merge_commit_reports_what_it_brings_in(self, tmp_path, monkeypatch):
+        """A merge is diffed against its first parent, not treated as empty.
+
+        diff-tree prints nothing for a merge by default, which would let a
+        prohibited file arrive through a merge unexamined -- exactly the
+        commit CI checks on a pull request.
+        """
+        self._repo(tmp_path)
+        (tmp_path / "base.txt").write_text("base")
+        self._git(tmp_path, "add", "-A")
+        self._git(tmp_path, "commit", "-qm", "chore: base")
+        self._git(tmp_path, "checkout", "-qb", "feature")
+        (tmp_path / "leaked.pem").write_text("KEY")
+        self._git(tmp_path, "add", "-A")
+        self._git(tmp_path, "commit", "-qm", "feat: add key")
+        self._git(tmp_path, "checkout", "-q", "-")
+        self._git(tmp_path, "merge", "-q", "--no-ff", "feature", "-m", "chore: merge")
+
+        monkeypatch.chdir(tmp_path)
+        assert dict(get_commit_files()) == {"leaked.pem": 3}
+
+
+class TestPathspecBatches:
+    @pytest.mark.benchmark
+    def test_paths_are_anchored_and_literal(self):
+        from commit_check.util import _pathspec_batches
+
+        assert _pathspec_batches(["a[1].txt"]) == [[":(top,literal)a[1].txt"]]
+
+    @pytest.mark.benchmark
+    def test_batches_are_capped_by_count(self):
+        from commit_check.util import _pathspec_batches
+
+        batches = _pathspec_batches([f"f{i}.txt" for i in range(1200)])
+        assert [len(b) for b in batches] == [500, 500, 200]
+
+    @pytest.mark.benchmark
+    def test_long_paths_split_before_the_count_cap(self):
+        """A few huge paths must not build a command line git cannot run."""
+        from commit_check.util import _pathspec_batches, _LS_TREE_ARG_BUDGET
+
+        batches = _pathspec_batches(["x" * 4000 for _ in range(20)])
+        assert len(batches) > 1
+        assert all(
+            sum(len(spec) + 1 for spec in b) <= _LS_TREE_ARG_BUDGET + 4020
+            for b in batches
+        )
+
+
+class TestGetPushCommits:
+    @staticmethod
+    def _git(tmp_path, *args):
+        result = subprocess.run(
+            ["git", *args], cwd=tmp_path, capture_output=True, encoding="utf-8"
+        )
+        assert result.returncode == 0, result.stderr
+        return result.stdout.strip()
+
+    # No benchmark mark: real-git test, see above.
+    def test_range_covers_every_pushed_commit(self, tmp_path, monkeypatch):
+        from commit_check.util import get_push_commits
+
+        self._git(tmp_path, "init", "-q", "-b", "main")
+        self._git(tmp_path, "config", "user.name", "T")
+        self._git(tmp_path, "config", "user.email", "t@example.com")
+        (tmp_path / "base.txt").write_text("base")
+        self._git(tmp_path, "add", "-A")
+        self._git(tmp_path, "commit", "-qm", "chore: base")
+        remote = self._git(tmp_path, "rev-parse", "HEAD")
+        (tmp_path / "a.txt").write_text("a")
+        self._git(tmp_path, "add", "-A")
+        self._git(tmp_path, "commit", "-qm", "feat: a")
+        (tmp_path / "b.txt").write_text("b")
+        self._git(tmp_path, "add", "-A")
+        self._git(tmp_path, "commit", "-qm", "feat: b")
+        local = self._git(tmp_path, "rev-parse", "HEAD")
+
+        monkeypatch.chdir(tmp_path)
+        commits = get_push_commits(local, remote)
+        assert len(commits) == 2
+        assert local in commits
+        assert remote not in commits
+
+    @pytest.mark.benchmark
+    def test_unresolvable_range_falls_back_to_the_tip(self, mocker):
+        """A range this clone cannot compute still leaves the tip worth checking."""
+        from commit_check.util import get_push_commits
+
+        mocker.patch(
+            "commit_check.util.subprocess.run",
+            return_value=mocker.Mock(returncode=128, stdout="", stderr="fatal"),
+        )
+        assert get_push_commits("deadbeef", "cafebabe") == ["deadbeef"]
 
 
 class TestParseSizeOverflow:

@@ -2888,6 +2888,73 @@ class TestTagValidator:
 
 
 class TestFilesValidator:
+    @patch("commit_check.engine.get_push_commits")
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_pre_push_checks_the_whole_pushed_range(self, mock_files, mock_range):
+        """Every commit in the push is checked, not just the ref's tip.
+
+        A file added by an earlier commit of a multi-commit push would
+        otherwise sail through, which is most of what the hook is for.
+        """
+        mock_range.return_value = ["tip", "earlier"]
+        mock_files.side_effect = lambda rev: {
+            "tip": [("small.txt", 3)],
+            "earlier": [("leaked.pem", 10)],
+        }[rev]
+        rule = ValidationRule(check="file_pattern", value=["*.pem"])
+        validator = FilesValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(
+            stdin_text="refs/heads/main aaa refs/heads/main bbb"
+        )
+        assert validator.validate(context) == ValidationResult.FAIL
+        assert validator._checked_value == "leaked.pem (pattern *.pem)"
+        mock_range.assert_called_once_with("aaa", "bbb")
+
+    @patch("commit_check.engine.get_push_commits")
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_pushed_tags_are_not_re_validated(self, mock_files, mock_range):
+        """A tag names history already pushed; CC401 polices tag names."""
+        rule = ValidationRule(check="file_pattern", value=["*.pem"])
+        validator = FilesValidator(rule)
+        context = ValidationContext(
+            stdin_text="refs/tags/v1.0.0 aaa refs/tags/v1.0.0 bbb"
+        )
+        assert validator.validate(context) == ValidationResult.SKIP
+        mock_range.assert_not_called()
+        mock_files.assert_not_called()
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_files_are_read_once_per_revision(self, mock_files):
+        """The three file rules share one lookup instead of tripling it."""
+        mock_files.return_value = [("a.txt", 10)]
+        context = ValidationContext()
+        for check, value in (
+            ("file_size", 1024),
+            ("file_pattern", ["*.pem"]),
+            ("path_length", 250),
+        ):
+            FilesValidator(ValidationRule(check=check, value=value)).validate(context)
+        assert mock_files.call_count == 1
+
+    @patch("commit_check.engine.get_push_commits")
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_a_file_touched_twice_is_one_offender(self, mock_files, mock_range):
+        mock_range.return_value = ["tip", "earlier"]
+        mock_files.return_value = [("big.bin", 5 * 1024**2)]
+        rule = ValidationRule(check="file_size", value=1024)
+        validator = FilesValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(
+            stdin_text="refs/heads/main aaa refs/heads/main bbb"
+        )
+        assert validator.validate(context) == ValidationResult.FAIL
+        assert validator._checked_value == "big.bin (5 MB)"
+
     @patch("commit_check.engine.get_commit_files")
     @pytest.mark.benchmark
     def test_file_size_within_limit_passes(self, mock_files):

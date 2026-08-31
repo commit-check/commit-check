@@ -18,6 +18,7 @@ from commit_check.util import (
     get_git_config_value,
     get_branch_name,
     get_commit_files,
+    get_push_commits,
     get_git_remotes,
     get_tags_at,
     format_size,
@@ -66,6 +67,12 @@ class ValidationContext:
     # check. The CLI verifies the revision resolves before it gets here.
     # Last on purpose: positional construction predates it.
     rev: str | None = None
+    # Per-run memo of get_commit_files() keyed by revision. The three file
+    # rules each get their own validator, so without this they would re-run
+    # the same git plumbing over the same commits three times.
+    files_cache: dict[str, list[tuple[str, int]]] = field(
+        default_factory=dict, repr=False, compare=False
+    )
 
 
 @dataclass
@@ -682,40 +689,61 @@ class FilesValidator(BaseValidator):
 
     @staticmethod
     def _push_revs_from_stdin(text: str) -> list[str] | None:
-        """Extract the pushed commit shas from pre-push hook input.
+        """Extract the commits a pre-push hook is being asked to approve.
 
         A native pre-push hook receives ``<local ref> <sha> <remote ref>
-        <sha>`` lines naming what is actually being pushed; validating HEAD
-        there would check the wrong commit whenever another ref is pushed.
-        Deletions (all-zero local sha) remove content rather than adding
-        it. Input of any other shape is not push metadata and returns
-        ``None``, so the validator falls back to the revision under test.
+        <sha>`` lines naming what is being pushed; validating HEAD there
+        would check the wrong commit whenever another ref is pushed. Both
+        ends of each line matter: a push usually carries several commits,
+        and checking only the tip would wave through a file added by any
+        earlier commit in the same push.
+
+        Skipped are deletions (an all-zero local sha removes content rather
+        than adding it) and tag refs — a tag names history that was already
+        pushed and checked, so re-diffing it would reject ``git push
+        --follow-tags`` over a file committed long before. Tag *names* are
+        CC401's business.
+
+        Input of any other shape is not push metadata and returns ``None``,
+        so the validator falls back to the revision under test.
         """
         lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
         push_lines = [ln for ln in lines if len(ln.split()) == 4 and "refs/" in ln]
         if not push_lines or len(push_lines) != len(lines):
             return None
-        revs = []
+        revs: list[str] = []
         for ln in push_lines:
-            _, local_sha, _, _ = ln.split()
-            if set(local_sha) == {"0"}:
+            local_ref, local_sha, _remote_ref, remote_sha = ln.split()
+            if set(local_sha) == {"0"} or local_ref.startswith("refs/tags/"):
                 continue
-            revs.append(local_sha)
+            revs.extend(get_push_commits(local_sha, remote_sha))
         return list(dict.fromkeys(revs))
+
+    def _files_for_rev(self, context: ValidationContext, rev: str):
+        """Files touched by *rev*, computed once per run and shared."""
+        if rev not in context.files_cache:
+            context.files_cache[rev] = get_commit_files(rev)
+        return context.files_cache[rev]
 
     def validate(self, context: ValidationContext) -> ValidationResult:
         revs = None
         if context.stdin_text is not None:
             revs = self._push_revs_from_stdin(context.stdin_text)
             if revs is not None and not revs:
-                # A push carrying only deletions adds nothing to police.
+                # A push carrying only deletions, tags, or commits the
+                # remote already has adds nothing to police.
                 return ValidationResult.SKIP
         if revs is None:
             revs = [context.rev or "HEAD"]
 
-        files = []
+        # A file touched by several commits in one push is one offender.
+        files: list[tuple[str, int]] = []
+        seen: set[tuple[str, int]] = set()
         for rev in revs:
-            files.extend(get_commit_files(rev))
+            for item in self._files_for_rev(context, rev):
+                if item not in seen:
+                    seen.add(item)
+                    files.append(item)
         if not files:
             return ValidationResult.SKIP
 

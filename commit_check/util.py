@@ -158,6 +158,45 @@ def format_size(size: int) -> str:
     return f"{size} B"
 
 
+#: Cap on the characters of pathspec arguments handed to one ``git ls-tree``.
+#: Windows refuses a command line over 32 KiB, and a batch that overflows
+#: would drop the files it carried from the checked set.
+_LS_TREE_ARG_BUDGET = 24_000
+
+#: Cap on the number of pathspecs in one batch, independent of their length.
+_LS_TREE_BATCH = 500
+
+
+def _pathspec_batches(paths: list[str]) -> list[list[str]]:
+    """Group paths into ``git ls-tree`` pathspec batches.
+
+    Batches are bounded by both count and total length: a commit can touch
+    more files than one command line holds, and a few very long paths can
+    overflow it well before the count cap.
+
+    ``:(top,literal)`` keeps each path a literal path anchored at the
+    repository root — literal because a file name may contain glob
+    characters, top because pathspecs are otherwise read relative to the
+    current directory, which would match nothing when commit-check runs
+    from a subdirectory.
+    """
+    batches: list[list[str]] = []
+    batch: list[str] = []
+    budget = 0
+    for path in paths:
+        spec = f":(top,literal){path}"
+        if batch and (
+            len(batch) >= _LS_TREE_BATCH or budget + len(spec) > _LS_TREE_ARG_BUDGET
+        ):
+            batches.append(batch)
+            batch, budget = [], 0
+        batch.append(spec)
+        budget += len(spec) + 1
+    if batch:
+        batches.append(batch)
+    return batches
+
+
 def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
     """List the files a commit touches, with their sizes at that commit.
 
@@ -165,9 +204,14 @@ def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
     are non-blob entries such as submodules. Sizes are the blob sizes as of
     the commit, not whatever the working tree holds now.
 
+    For a merge commit the files are those the merge brings onto the branch
+    it lands on (the diff against its first parent). Without that a merge
+    would report no files at all, and a prohibited file arriving through a
+    merge — the moment CI checks a pull request — would pass unexamined.
+
     :param rev: Revision whose changed files to list, ``HEAD`` by default.
     :returns: ``(path, size_in_bytes)`` pairs, empty when the revision does
-        not resolve or touches nothing.
+        not resolve, touches nothing, or cannot be measured.
     """
     diff = subprocess.run(
         [
@@ -176,6 +220,10 @@ def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
             "--no-commit-id",
             "--name-only",
             "--root",
+            # Diff merges against their first parent instead of emitting
+            # nothing for them.
+            "-m",
+            "--first-parent",
             "--diff-filter=d",
             "-r",
             "-z",
@@ -192,20 +240,24 @@ def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
         return []
 
     files: list[tuple[str, int]] = []
-    # Batch the paths: a commit can touch more files than one command line
-    # holds.
-    for start in range(0, len(paths), 500):
-        # :(literal) keeps a path containing glob characters a path, not a
-        # pathspec pattern.
-        batch = [f":(literal){p}" for p in paths[start : start + 500]]
-        tree = subprocess.run(
-            ["git", "ls-tree", "-r", "-l", "-z", rev, "--", *batch],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            encoding="utf-8",
-        )
+    for batch in _pathspec_batches(paths):
+        try:
+            tree = subprocess.run(
+                ["git", "ls-tree", "-r", "-l", "-z", "--full-tree", rev, "--", *batch],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                encoding="utf-8",
+            )
+        except OSError:
+            # An unrunnable command line (length limits, missing git) leaves
+            # this batch unmeasured; see below for why that ends the lookup.
+            return []
         if tree.returncode != 0:
-            continue
+            # A partial result would under-report: the rules would pass on
+            # the files that were measured while the rest went unchecked.
+            # Report nothing instead, which the validators surface as a skip
+            # ("not validated") rather than a silent pass.
+            return []
         for entry in tree.stdout.split("\0"):
             if "\t" not in entry:
                 continue
@@ -215,6 +267,36 @@ def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
             if len(fields) == 4 and fields[1] == "blob" and fields[3].isdigit():
                 files.append((path, int(fields[3])))
     return files
+
+
+def get_push_commits(local_sha: str, remote_sha: str) -> list[str]:
+    """List the commits a push introduces, newest first.
+
+    A pre-push hook is told both ends of what is being pushed. Checking only
+    the tip would let anything committed earlier in the same push through,
+    so the range the remote does not have yet is what gets checked.
+
+    :param local_sha: The sha being pushed.
+    :param remote_sha: What the remote currently has, all zeroes for a new ref.
+    :returns: The commit shas in the pushed range; the tip alone if the range
+        cannot be computed.
+    """
+    if set(remote_sha) == {"0"}:
+        # A new ref carries every commit the remote cannot already reach.
+        args = [local_sha, "--not", "--remotes"]
+    else:
+        args = [f"{remote_sha}..{local_sha}"]
+    result = subprocess.run(
+        ["git", "rev-list", *args],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    if result.returncode != 0:
+        # An unresolvable range (a remote sha this clone lacks, say) still
+        # leaves the tip worth checking.
+        return [local_sha]
+    return [line for line in result.stdout.split() if line]
 
 
 def get_upstream_branch() -> str:

@@ -296,7 +296,8 @@ commit-check --files --rev abc1234
 
 ```yaml
 # In pre-commit hooks (.pre-commit-config.yaml): a native git pre-push hook
-# feeds the pushed refs on stdin, and each pushed tip is validated
+# feeds the pushed refs on stdin, and every commit the push adds is validated
+# (tag pushes are left to check-tag, which polices tag names)
 repos:
   - repo: https://github.com/commit-check/commit-check
     rev: v2.15.1

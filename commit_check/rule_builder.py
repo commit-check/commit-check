@@ -1,6 +1,7 @@
 """Rule builder that creates validation rules from config and catalog."""
 
 from __future__ import annotations
+import sys
 from typing import Any
 from dataclasses import dataclass
 from commit_check.rules_catalog import (
@@ -137,6 +138,12 @@ class RuleBuilder:
             "file_pattern": self._build_file_pattern_rule,
             "path_length": self._build_path_length_rule,
         }
+        #: The [files] key each rule reads, for reporting unusable values.
+        settings = {
+            "file_size": "max_size",
+            "file_pattern": "prohibited_patterns",
+            "path_length": "max_path_length",
+        }
 
         rules = []
         for catalog_entry in FILES_RULES:
@@ -144,6 +151,18 @@ class RuleBuilder:
             rule = builder(catalog_entry, files_config) if builder else None
             if rule:
                 rules.append(rule)
+                continue
+            # A value that was set but could not be used disables its rule.
+            # Staying quiet would leave a policy the author believes is in
+            # force silently absent, so name the setting and its value.
+            key = settings.get(catalog_entry.check)
+            configured = files_config.get(key) if key else None
+            if configured:
+                print(
+                    f"⊘ [files] {key} = {configured!r} is not usable; "
+                    f"{catalog_entry.rule_id} {catalog_entry.name} is disabled",
+                    file=sys.stderr,
+                )
         return rules
 
     @staticmethod

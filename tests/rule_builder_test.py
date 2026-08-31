@@ -556,6 +556,30 @@ class TestTagRules:
 
 class TestFilesRules:
     @pytest.mark.benchmark
+    def test_unusable_max_size_is_reported(self, capsys):
+        """A rejected value must not disable its rule in silence.
+
+        The "nothing configured" hint only fires when no file rule builds at
+        all, so a bad max_size alongside a good pattern list would otherwise
+        leave the size cap absent without a word.
+        """
+        builder = RuleBuilder(
+            {"files": {"max_size": "5M", "prohibited_patterns": ["*.pem"]}}
+        )
+        rules = builder.build_all_rules()
+        checks = [rule.check for rule in rules]
+        assert "file_size" not in checks
+        assert "file_pattern" in checks
+        err = capsys.readouterr().err
+        assert "max_size" in err and "5M" in err and "CC302" in err
+
+    @pytest.mark.benchmark
+    def test_unset_values_are_not_reported(self, capsys):
+        """Silence is right for a section that simply does not opt in."""
+        RuleBuilder({"files": {"max_size": "", "max_path_length": 0}}).build_all_rules()
+        assert capsys.readouterr().err == ""
+
+    @pytest.mark.benchmark
     def test_files_rules_off_by_default(self):
         """No [files] config, no file rules — all three are opt-in."""
         rules = RuleBuilder({}).build_all_rules()
