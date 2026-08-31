@@ -264,7 +264,7 @@ repos:
 ```
 
 > [!NOTE]
-> The `check-tag` hook ships in the first release after v2.16.0 — bump `rev`
+> The `check-tag` hook ships in the first release from v2.16.0 — bump `rev`
 > to that release once it is published.
 
 ### Check Committed Files
