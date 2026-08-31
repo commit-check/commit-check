@@ -571,7 +571,9 @@ class TestFilesRules:
         assert "file_size" not in checks
         assert "file_pattern" in checks
         err = capsys.readouterr().err
-        assert "max_size" in err and "5M" in err and "CC302" in err
+        assert "max_size" in err
+        assert "5M" in err
+        assert "CC302" in err
 
     @pytest.mark.benchmark
     def test_non_table_files_section_is_reported(self, capsys):
@@ -581,7 +583,8 @@ class TestFilesRules:
             r for r in rules if r.check in ("file_size", "file_pattern", "path_length")
         ]
         err = capsys.readouterr().err
-        assert "must be a table" in err and "garbage" in err
+        assert "must be a table" in err
+        assert "garbage" in err
 
     @pytest.mark.benchmark
     def test_unset_values_are_not_reported(self, capsys):
