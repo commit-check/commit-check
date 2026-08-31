@@ -131,58 +131,73 @@ class RuleBuilder:
         non-table section, an unparsable size, a non-list pattern set)
         disable the rule rather than failing every commit.
         """
+        files_config = self.files_config if isinstance(self.files_config, dict) else {}
+        builders = {
+            "file_size": self._build_file_size_rule,
+            "file_pattern": self._build_file_pattern_rule,
+            "path_length": self._build_path_length_rule,
+        }
+
+        rules = []
+        for catalog_entry in FILES_RULES:
+            builder = builders.get(catalog_entry.check)
+            rule = builder(catalog_entry, files_config) if builder else None
+            if rule:
+                rules.append(rule)
+        return rules
+
+    @staticmethod
+    def _build_file_size_rule(
+        catalog_entry: RuleCatalogEntry, files_config: dict[str, Any]
+    ) -> ValidationRule | None:
+        """Build the file size rule when max_size parses to a usable limit."""
         from commit_check.util import format_size, parse_size
 
-        files_config = self.files_config if isinstance(self.files_config, dict) else {}
-        rules = []
+        max_size = parse_size(files_config.get("max_size"))
+        if max_size is None:
+            return None
+        rendered = format_size(max_size)
+        return ValidationRule(
+            check=catalog_entry.check,
+            error=(catalog_entry.error or "").format(max_size=rendered),
+            suggest=(catalog_entry.suggest or "").format(max_size=rendered),
+            value=max_size,
+        )
 
-        for catalog_entry in FILES_RULES:
-            if catalog_entry.check == "file_size":
-                max_size = parse_size(files_config.get("max_size"))
-                if max_size is None:
-                    continue
-                rendered = format_size(max_size)
-                rules.append(
-                    ValidationRule(
-                        check=catalog_entry.check,
-                        error=(catalog_entry.error or "").format(max_size=rendered),
-                        suggest=(catalog_entry.suggest or "").format(max_size=rendered),
-                        value=max_size,
-                    )
-                )
-            elif catalog_entry.check == "file_pattern":
-                raw = files_config.get("prohibited_patterns")
-                patterns = (
-                    [p for p in raw if isinstance(p, str) and p.strip()]
-                    if isinstance(raw, list)
-                    else []
-                )
-                if not patterns:
-                    continue
-                rules.append(
-                    ValidationRule(
-                        check=catalog_entry.check,
-                        error=catalog_entry.error,
-                        suggest=catalog_entry.suggest,
-                        value=patterns,
-                    )
-                )
-            elif catalog_entry.check == "path_length":
-                max_len = files_config.get("max_path_length")
-                if isinstance(max_len, bool) or not isinstance(max_len, int):
-                    continue
-                if max_len <= 0:
-                    continue
-                rules.append(
-                    ValidationRule(
-                        check=catalog_entry.check,
-                        error=(catalog_entry.error or "").format(max_len=max_len),
-                        suggest=(catalog_entry.suggest or "").format(max_len=max_len),
-                        value=max_len,
-                    )
-                )
+    @staticmethod
+    def _build_file_pattern_rule(
+        catalog_entry: RuleCatalogEntry, files_config: dict[str, Any]
+    ) -> ValidationRule | None:
+        """Build the prohibited-pattern rule from the usable list entries."""
+        raw = files_config.get("prohibited_patterns")
+        patterns = (
+            [p for p in raw if isinstance(p, str) and p.strip()]
+            if isinstance(raw, list)
+            else []
+        )
+        if not patterns:
+            return None
+        return ValidationRule(
+            check=catalog_entry.check,
+            error=catalog_entry.error,
+            suggest=catalog_entry.suggest,
+            value=patterns,
+        )
 
-        return rules
+    @staticmethod
+    def _build_path_length_rule(
+        catalog_entry: RuleCatalogEntry, files_config: dict[str, Any]
+    ) -> ValidationRule | None:
+        """Build the path length rule when max_path_length is a positive int."""
+        max_len = files_config.get("max_path_length")
+        if isinstance(max_len, bool) or not isinstance(max_len, int) or max_len <= 0:
+            return None
+        return ValidationRule(
+            check=catalog_entry.check,
+            error=(catalog_entry.error or "").format(max_len=max_len),
+            suggest=(catalog_entry.suggest or "").format(max_len=max_len),
+            value=max_len,
+        )
 
     def _build_tag_rules(self) -> list[ValidationRule]:
         """Build tag-related validation rules.

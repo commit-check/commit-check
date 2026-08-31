@@ -680,8 +680,42 @@ class FilesValidator(BaseValidator):
     (or an unresolvable revision) is a skip.
     """
 
+    @staticmethod
+    def _push_revs_from_stdin(text: str) -> list[str] | None:
+        """Extract the pushed commit shas from pre-push hook input.
+
+        A native pre-push hook receives ``<local ref> <sha> <remote ref>
+        <sha>`` lines naming what is actually being pushed; validating HEAD
+        there would check the wrong commit whenever another ref is pushed.
+        Deletions (all-zero local sha) remove content rather than adding
+        it. Input of any other shape is not push metadata and returns
+        ``None``, so the validator falls back to the revision under test.
+        """
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        push_lines = [ln for ln in lines if len(ln.split()) == 4 and "refs/" in ln]
+        if not push_lines or len(push_lines) != len(lines):
+            return None
+        revs = []
+        for ln in push_lines:
+            _, local_sha, _, _ = ln.split()
+            if set(local_sha) == {"0"}:
+                continue
+            revs.append(local_sha)
+        return list(dict.fromkeys(revs))
+
     def validate(self, context: ValidationContext) -> ValidationResult:
-        files = get_commit_files(context.rev or "HEAD")
+        revs = None
+        if context.stdin_text is not None:
+            revs = self._push_revs_from_stdin(context.stdin_text)
+            if revs is not None and not revs:
+                # A push carrying only deletions adds nothing to police.
+                return ValidationResult.SKIP
+        if revs is None:
+            revs = [context.rev or "HEAD"]
+
+        files = []
+        for rev in revs:
+            files.extend(get_commit_files(rev))
         if not files:
             return ValidationResult.SKIP
 

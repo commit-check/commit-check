@@ -142,7 +142,7 @@ def parse_size(value) -> int | None:
         number, factor = text, 1
     try:
         size = int(float(number) * factor)
-    except ValueError:
+    except (ValueError, OverflowError):
         return None
     return size if size > 0 else None
 

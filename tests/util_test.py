@@ -1171,3 +1171,12 @@ class TestGetCommitFiles:
         tree = mocker.Mock(returncode=128, stdout="", stderr="fatal: bad object")
         mocker.patch("commit_check.util.subprocess.run", side_effect=[diff, tree])
         assert get_commit_files() == []
+
+
+class TestParseSizeOverflow:
+    @pytest.mark.benchmark
+    def test_infinite_sizes_are_unusable(self):
+        """inf-like values disable the rule instead of aborting the run."""
+        assert parse_size("inf") is None
+        assert parse_size("1e999MB") is None
+        assert parse_size("nan") is None

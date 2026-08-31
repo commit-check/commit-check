@@ -294,6 +294,21 @@ commit-check --files
 commit-check --files --rev abc1234
 ```
 
+```yaml
+# In pre-commit hooks (.pre-commit-config.yaml): a native git pre-push hook
+# feeds the pushed refs on stdin, and each pushed tip is validated
+repos:
+  - repo: https://github.com/commit-check/commit-check
+    rev: v2.15.1
+    hooks:
+      - id: check-files
+        stages: [pre-push]
+```
+
+> [!NOTE]
+> Like `check-tag`, the `check-files` hook ships in the first release after
+> v2.15.1 — bump `rev` to that release once it is published.
+
 A commit that only deletes files is reported as skipped — removing a file
 adds nothing to police. Content scanning (entropy, token detection) is
 deliberately out of scope: pair these checks with a scanner like gitleaks

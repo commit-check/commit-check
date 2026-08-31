@@ -2988,3 +2988,51 @@ class TestFilesValidator:
         rule = ValidationRule(check="not_a_files_check", value=1)
         validator = FilesValidator(rule)
         assert validator.validate(ValidationContext()) == ValidationResult.PASS
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_pre_push_stdin_validates_the_pushed_sha(self, mock_files):
+        """Pushing another local ref checks that ref's tip, not HEAD."""
+        mock_files.return_value = [("a.txt", 10)]
+        rule = ValidationRule(check="file_size", value=1024)
+        validator = FilesValidator(rule)
+        stdin = "refs/heads/topic abc123 refs/heads/topic def456\n"
+        result = validator.validate(ValidationContext(stdin_text=stdin))
+        assert result == ValidationResult.PASS
+        mock_files.assert_called_once_with("abc123")
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_pre_push_stdin_validates_every_pushed_ref(self, mock_files):
+        """A push of several refs checks each pushed tip."""
+        mock_files.return_value = [("a.txt", 10)]
+        rule = ValidationRule(check="file_size", value=1024)
+        validator = FilesValidator(rule)
+        stdin = (
+            "refs/heads/one aaa111 refs/heads/one bbb222\n"
+            "refs/heads/two ccc333 refs/heads/two ddd444\n"
+        )
+        validator.validate(ValidationContext(stdin_text=stdin))
+        assert [c.args[0] for c in mock_files.call_args_list] == ["aaa111", "ccc333"]
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_pre_push_deletion_only_skips(self, mock_files):
+        """Deleting a ref removes content rather than adding it."""
+        rule = ValidationRule(check="file_size", value=1024)
+        validator = FilesValidator(rule)
+        zero = "0" * 40
+        stdin = f"(delete) {zero} refs/heads/gone abc123\n"
+        result = validator.validate(ValidationContext(stdin_text=stdin))
+        assert result == ValidationResult.SKIP
+        mock_files.assert_not_called()
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_non_push_stdin_falls_back_to_rev(self, mock_files):
+        """Stdin meant for another check does not redirect the files check."""
+        mock_files.return_value = [("a.txt", 10)]
+        rule = ValidationRule(check="file_size", value=1024)
+        validator = FilesValidator(rule)
+        validator.validate(ValidationContext(stdin_text="feature/branch-name"))
+        mock_files.assert_called_once_with("HEAD")
