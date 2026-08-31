@@ -2915,16 +2915,36 @@ class TestFilesValidator:
     @patch("commit_check.engine.get_push_commits")
     @patch("commit_check.engine.get_commit_files")
     @pytest.mark.benchmark
-    def test_pushed_tags_are_not_re_validated(self, mock_files, mock_range):
-        """A tag names history already pushed; CC401 polices tag names."""
+    def test_tag_on_pushed_history_adds_nothing(self, mock_files, mock_range):
+        """A tag over commits the remote has resolves to an empty range."""
+        mock_range.return_value = []
         rule = ValidationRule(check="file_pattern", value=["*.pem"])
         validator = FilesValidator(rule)
         context = ValidationContext(
             stdin_text="refs/tags/v1.0.0 aaa refs/tags/v1.0.0 bbb"
         )
         assert validator.validate(context) == ValidationResult.SKIP
-        mock_range.assert_not_called()
         mock_files.assert_not_called()
+
+    @patch("commit_check.engine.get_push_commits")
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_tag_carrying_a_new_commit_is_checked(self, mock_files, mock_range):
+        """A tag can be the only thing carrying a commit to the remote.
+
+        Skipping tag refs outright let a prohibited file reach the remote
+        whenever no pushed branch contained its commit.
+        """
+        mock_range.return_value = ["tagged"]
+        mock_files.return_value = [("leaked.pem", 12)]
+        rule = ValidationRule(check="file_pattern", value=["*.pem"])
+        validator = FilesValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(
+            stdin_text="refs/tags/v1.0.0 aaa refs/tags/v1.0.0 bbb"
+        )
+        assert validator.validate(context) == ValidationResult.FAIL
+        assert validator._checked_value == "leaked.pem (pattern *.pem)"
 
     @patch("commit_check.engine.get_commit_files")
     @pytest.mark.benchmark

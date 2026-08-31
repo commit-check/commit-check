@@ -698,11 +698,16 @@ class FilesValidator(BaseValidator):
         and checking only the tip would wave through a file added by any
         earlier commit in the same push.
 
-        Skipped are deletions (an all-zero local sha removes content rather
-        than adding it) and tag refs — a tag names history that was already
-        pushed and checked, so re-diffing it would reject ``git push
-        --follow-tags`` over a file committed long before. Tag *names* are
-        CC401's business.
+        Deletions are skipped: an all-zero local sha removes content rather
+        than adding it.
+
+        Tags go through the same range as branches rather than being
+        skipped. What matters is not whether a ref is a tag but whether it
+        carries commits the remote lacks: a tag on already-pushed history
+        resolves to an empty range, so ``git push --follow-tags`` is not
+        rejected over a file committed long before, while a tag that is the
+        only thing carrying a commit to the remote still gets that commit
+        checked. Tag *names* remain CC401's business.
 
         Input of any other shape is not push metadata and returns ``None``,
         so the validator falls back to the revision under test.
@@ -713,8 +718,8 @@ class FilesValidator(BaseValidator):
             return None
         revs: list[str] = []
         for ln in push_lines:
-            local_ref, local_sha, _remote_ref, remote_sha = ln.split()
-            if set(local_sha) == {"0"} or local_ref.startswith("refs/tags/"):
+            _local_ref, local_sha, _remote_ref, remote_sha = ln.split()
+            if set(local_sha) == {"0"}:
                 continue
             revs.extend(get_push_commits(local_sha, remote_sha))
         return list(dict.fromkeys(revs))
