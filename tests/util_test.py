@@ -6,6 +6,7 @@ import subprocess
 import commit_check
 from commit_check import supports_color
 from commit_check.util import (
+    get_push_commits,
     get_tags_at,
     get_commit_files,
     parse_size,
@@ -1304,6 +1305,38 @@ class TestGetPushCommits:
         assert len(commits) == 2
         assert local in commits
         assert remote not in commits
+
+    # No benchmark mark: real-git test, see above.
+    def test_new_branch_excludes_what_the_remote_already_has(
+        self, tmp_path, monkeypatch
+    ):
+        """Pushing a new branch checks its own commits, not all of history.
+
+        A new ref arrives with an all-zero remote sha, so the range has to
+        come from what the remote cannot already reach -- otherwise the
+        first push of a branch would re-police every ancestor commit.
+        """
+        remote = tmp_path / "remote.git"
+        _run_git(tmp_path, "init", "-q", "--bare", str(remote))
+        work = tmp_path / "work"
+        work.mkdir()
+        _run_git(work, "init", "-q", "-b", "main")
+        _run_git(work, "config", "user.name", "T")
+        _run_git(work, "config", "user.email", "t@example.com")
+        _run_git(work, "remote", "add", "origin", str(remote))
+        (work / "base.txt").write_text("base")
+        _run_git(work, "add", "-A")
+        _run_git(work, "commit", "-qm", "chore: base")
+        _run_git(work, "push", "-q", "origin", "main")
+
+        _run_git(work, "checkout", "-qb", "feature")
+        (work / "new.txt").write_text("new")
+        _run_git(work, "add", "-A")
+        _run_git(work, "commit", "-qm", "feat: new")
+        tip = _run_git(work, "rev-parse", "HEAD")
+
+        monkeypatch.chdir(work)
+        assert get_push_commits(tip, "0" * 40) == [tip]
 
     @pytest.mark.benchmark
     def test_unresolvable_range_falls_back_to_the_tip(self, mocker):
