@@ -95,6 +95,11 @@ def get_default_config() -> dict[str, Any]:
         "tag": {
             "regex": DEFAULT_TAG_REGEX,
         },
+        "files": {
+            "max_size": "",
+            "prohibited_patterns": [],
+            "max_path_length": 0,
+        },
     }
 
 
@@ -141,6 +146,10 @@ class ConfigMerger:
         "CCHK_ALLOW_FORCE_PUSH": ("push", "allow_force_push", parse_bool),
         # Tag section
         "CCHK_TAG_REGEX": ("tag", "regex", str),
+        # Files section
+        "CCHK_FILES_MAX_SIZE": ("files", "max_size", str),
+        "CCHK_FILES_PROHIBITED_PATTERNS": ("files", "prohibited_patterns", parse_list),
+        "CCHK_FILES_MAX_PATH_LENGTH": ("files", "max_path_length", parse_int),
     }
 
     # Mapping of CLI argument names to config keys
@@ -173,12 +182,22 @@ class ConfigMerger:
         "allow_force_push": ("push", "allow_force_push"),
         # Tag section
         "tag_regex": ("tag", "regex"),
+        # Files section
+        "files_max_size": ("files", "max_size"),
+        "files_prohibited_patterns": ("files", "prohibited_patterns"),
+        "files_max_path_length": ("files", "max_path_length"),
     }
 
     @staticmethod
     def parse_env_vars() -> dict[str, Any]:
         """Parse environment variables with CCHK_ prefix into config dict."""
-        config: dict[str, Any] = {"commit": {}, "branch": {}, "push": {}, "tag": {}}
+        config: dict[str, Any] = {
+            "commit": {},
+            "branch": {},
+            "push": {},
+            "tag": {},
+            "files": {},
+        }
 
         for env_var, (section, key, parser) in ConfigMerger.ENV_VAR_MAPPING.items():
             value = os.environ.get(env_var)
@@ -197,7 +216,13 @@ class ConfigMerger:
     @staticmethod
     def parse_cli_args(args: argparse.Namespace) -> dict[str, Any]:
         """Parse CLI arguments into config dict."""
-        config: dict[str, Any] = {"commit": {}, "branch": {}, "push": {}, "tag": {}}
+        config: dict[str, Any] = {
+            "commit": {},
+            "branch": {},
+            "push": {},
+            "tag": {},
+            "files": {},
+        }
 
         for arg_name, (section, key) in ConfigMerger.CLI_ARG_MAPPING.items():
             if hasattr(args, arg_name):

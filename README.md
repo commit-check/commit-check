@@ -267,6 +267,55 @@ repos:
 > The `check-tag` hook ships in the first release after v2.15.1 — bump `rev`
 > to that release once it is published.
 
+### Check Committed Files
+
+Use `--files` to police metadata about the files a commit touches — never
+their contents. Three independent, opt-in limits live in the `[files]`
+config section: a size cap, prohibited path patterns, and a path-length
+cap. GitHub's own push rules do this only on Team and Enterprise plans;
+here it works on every plan and every forge.
+
+```toml
+[files]
+# Reject files larger than this (bytes, or with a KB/MB/GB suffix)
+max_size = "5MB"
+
+# Reject paths matching any fnmatch pattern; a bare pattern like *.pem
+# also matches the file name at any depth
+# Patterns are case-sensitive on every platform, like git pathspecs
+prohibited_patterns = ["*.pem", "*.key", ".env", "id_rsa*"]
+
+# Reject paths longer than this many characters
+max_path_length = 250
+```
+
+```bash
+# Validate the commit at HEAD, or any commit via --rev
+commit-check --files
+commit-check --files --rev abc1234
+```
+
+```yaml
+# In pre-commit hooks (.pre-commit-config.yaml): a native git pre-push hook
+# feeds the pushed refs on stdin, and every commit the push adds is validated
+# (a tag on already-pushed history adds nothing, so it is skipped)
+repos:
+  - repo: https://github.com/commit-check/commit-check
+    rev: v2.15.1
+    hooks:
+      - id: check-files
+        stages: [pre-push]
+```
+
+> [!NOTE]
+> Like `check-tag`, the `check-files` hook ships in the first release after
+> v2.15.1 — bump `rev` to that release once it is published.
+
+A commit that only deletes files is reported as skipped — removing a file
+adds nothing to police. Content scanning (entropy, token detection) is
+deliberately out of scope: pair these checks with a scanner like gitleaks
+if you need it.
+
 ## AI-Native Usage
 
 Commit Check is designed to be consumed by AI agents, LLM toolchains, and
@@ -589,6 +638,7 @@ reflects a DIY approach rather than built-in product features.
 | Conventional Commits enforcement | ✅ | ✅ | Partial | Partial[^4] | DIY |
 | Branch naming validation | ✅ | ❌ | ✅ | ✅[^4] | DIY |
 | Tag naming validation | ✅ | ❌ | ❌ | ✅[^4] | DIY |
+| File size / path restrictions | ✅ | ❌ | ❌ | ✅[^5] | DIY |
 | Force push blocking | ✅ | ❌ | ❌ | ✅ | DIY |
 | Author name / email validation | ✅ | ❌ | ✅ | ✅[^4] | DIY |
 | Signed-off-by trailer enforcement | ✅ | Partial[^1] | ❌ | ❌ | DIY |

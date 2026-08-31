@@ -1,12 +1,14 @@
 """Rule builder that creates validation rules from config and catalog."""
 
 from __future__ import annotations
+import sys
 from typing import Any
 from dataclasses import dataclass
 from commit_check.rules_catalog import (
     COMMIT_RULES,
     BRANCH_RULES,
     PUSH_RULES,
+    FILES_RULES,
     TAG_RULES,
     RULES_BY_CHECK,
     RuleCatalogEntry,
@@ -77,6 +79,7 @@ class RuleBuilder:
         self.branch_config = config.get("branch", {})
         self.push_config = config.get("push", {})
         self.tag_config = config.get("tag", {})
+        self.files_config = config.get("files", {})
 
     def build_all_rules(self) -> list[ValidationRule]:
         """Build all validation rules from config."""
@@ -84,6 +87,7 @@ class RuleBuilder:
         rules.extend(self._build_commit_rules())
         rules.extend(self._build_branch_rules())
         rules.extend(self._build_push_rules())
+        rules.extend(self._build_files_rules())
         rules.extend(self._build_tag_rules())
         return rules
 
@@ -119,6 +123,112 @@ class RuleBuilder:
                 rules.append(rule)
 
         return rules
+
+    def _build_files_rules(self) -> list[ValidationRule]:
+        """Build file-metadata validation rules.
+
+        All three are off by default: each rule exists only when its
+        [files] setting carries a usable value, and malformed values (a
+        non-table section, an unparsable size, a non-list pattern set)
+        disable the rule rather than failing every commit.
+        """
+        if isinstance(self.files_config, dict):
+            files_config = self.files_config
+        else:
+            # A scalar [files] carries no settings to read, so every rule
+            # below would report "not configured" — say what is actually
+            # wrong instead of letting the section disappear silently.
+            if self.files_config:
+                print(
+                    f"⊘ [files] must be a table, got {self.files_config!r}; "
+                    "the file rules are disabled",
+                    file=sys.stderr,
+                )
+            files_config = {}
+        builders = {
+            "file_size": self._build_file_size_rule,
+            "file_pattern": self._build_file_pattern_rule,
+            "path_length": self._build_path_length_rule,
+        }
+        #: The [files] key each rule reads, for reporting unusable values.
+        settings = {
+            "file_size": "max_size",
+            "file_pattern": "prohibited_patterns",
+            "path_length": "max_path_length",
+        }
+
+        rules = []
+        for catalog_entry in FILES_RULES:
+            builder = builders.get(catalog_entry.check)
+            rule = builder(catalog_entry, files_config) if builder else None
+            if rule:
+                rules.append(rule)
+                continue
+            # A value that was set but could not be used disables its rule.
+            # Staying quiet would leave a policy the author believes is in
+            # force silently absent, so name the setting and its value.
+            key = settings.get(catalog_entry.check)
+            configured = files_config.get(key) if key else None
+            if configured:
+                print(
+                    f"⊘ [files] {key} = {configured!r} is not usable; "
+                    f"{catalog_entry.rule_id} {catalog_entry.name} is disabled",
+                    file=sys.stderr,
+                )
+        return rules
+
+    @staticmethod
+    def _build_file_size_rule(
+        catalog_entry: RuleCatalogEntry, files_config: dict[str, Any]
+    ) -> ValidationRule | None:
+        """Build the file size rule when max_size parses to a usable limit."""
+        from commit_check.util import format_size, parse_size
+
+        max_size = parse_size(files_config.get("max_size"))
+        if max_size is None:
+            return None
+        rendered = format_size(max_size)
+        return ValidationRule(
+            check=catalog_entry.check,
+            error=(catalog_entry.error or "").format(max_size=rendered),
+            suggest=(catalog_entry.suggest or "").format(max_size=rendered),
+            value=max_size,
+        )
+
+    @staticmethod
+    def _build_file_pattern_rule(
+        catalog_entry: RuleCatalogEntry, files_config: dict[str, Any]
+    ) -> ValidationRule | None:
+        """Build the prohibited-pattern rule from the usable list entries."""
+        raw = files_config.get("prohibited_patterns")
+        patterns = (
+            [p for p in raw if isinstance(p, str) and p.strip()]
+            if isinstance(raw, list)
+            else []
+        )
+        if not patterns:
+            return None
+        return ValidationRule(
+            check=catalog_entry.check,
+            error=catalog_entry.error,
+            suggest=catalog_entry.suggest,
+            value=patterns,
+        )
+
+    @staticmethod
+    def _build_path_length_rule(
+        catalog_entry: RuleCatalogEntry, files_config: dict[str, Any]
+    ) -> ValidationRule | None:
+        """Build the path length rule when max_path_length is a positive int."""
+        max_len = files_config.get("max_path_length")
+        if isinstance(max_len, bool) or not isinstance(max_len, int) or max_len <= 0:
+            return None
+        return ValidationRule(
+            check=catalog_entry.check,
+            error=(catalog_entry.error or "").format(max_len=max_len),
+            suggest=(catalog_entry.suggest or "").format(max_len=max_len),
+            value=max_len,
+        )
 
     def _build_tag_rules(self) -> list[ValidationRule]:
         """Build tag-related validation rules.

@@ -552,3 +552,107 @@ class TestTagRules:
         builder = RuleBuilder({"tag": {"regex": 123}})
         tag_rule = next(r for r in builder.build_all_rules() if r.check == "tag")
         assert tag_rule.regex == DEFAULT_TAG_REGEX
+
+
+class TestFilesRules:
+    @pytest.mark.benchmark
+    def test_unusable_max_size_is_reported(self, capsys):
+        """A rejected value must not disable its rule in silence.
+
+        The "nothing configured" hint only fires when no file rule builds at
+        all, so a bad max_size alongside a good pattern list would otherwise
+        leave the size cap absent without a word.
+        """
+        builder = RuleBuilder(
+            {"files": {"max_size": "5M", "prohibited_patterns": ["*.pem"]}}
+        )
+        rules = builder.build_all_rules()
+        checks = [rule.check for rule in rules]
+        assert "file_size" not in checks
+        assert "file_pattern" in checks
+        err = capsys.readouterr().err
+        assert "max_size" in err
+        assert "5M" in err
+        assert "CC302" in err
+
+    @pytest.mark.benchmark
+    def test_non_table_files_section_is_reported(self, capsys):
+        """A scalar [files] must not vanish into an empty section in silence."""
+        rules = RuleBuilder({"files": "garbage"}).build_all_rules()
+        assert not [
+            r for r in rules if r.check in ("file_size", "file_pattern", "path_length")
+        ]
+        err = capsys.readouterr().err
+        assert "must be a table" in err
+        assert "garbage" in err
+
+    @pytest.mark.benchmark
+    def test_unset_values_are_not_reported(self, capsys):
+        """Silence is right for a section that simply does not opt in."""
+        RuleBuilder({"files": {"max_size": "", "max_path_length": 0}}).build_all_rules()
+        assert capsys.readouterr().err == ""
+
+    @pytest.mark.benchmark
+    def test_files_rules_off_by_default(self):
+        """No [files] config, no file rules — all three are opt-in."""
+        rules = RuleBuilder({}).build_all_rules()
+        assert not [
+            r for r in rules if r.check in ("file_size", "file_pattern", "path_length")
+        ]
+
+    @pytest.mark.benchmark
+    def test_files_rules_built_from_config(self):
+        builder = RuleBuilder(
+            {
+                "files": {
+                    "max_size": "5MB",
+                    "prohibited_patterns": ["*.pem", ".env"],
+                    "max_path_length": 200,
+                }
+            }
+        )
+        rules = {r.check: r for r in builder.build_all_rules()}
+
+        assert rules["file_size"].rule_id == "CC302"
+        assert rules["file_size"].value == 5 * 1024**2
+        assert "5 MB" in rules["file_size"].error
+        assert rules["file_pattern"].rule_id == "CC303"
+        assert rules["file_pattern"].value == ["*.pem", ".env"]
+        assert rules["path_length"].rule_id == "CC304"
+        assert rules["path_length"].value == 200
+        assert "200" in rules["path_length"].error
+
+    @pytest.mark.benchmark
+    def test_files_rules_built_independently(self):
+        """Each setting stands alone — configuring one enables only that one."""
+        rules = RuleBuilder({"files": {"max_size": 1024}}).build_all_rules()
+        checks = [
+            r.check
+            for r in rules
+            if r.check in ("file_size", "file_pattern", "path_length")
+        ]
+        assert checks == ["file_size"]
+
+    @pytest.mark.benchmark
+    def test_files_rules_malformed_values_disable(self):
+        """Unusable values disable a rule rather than failing every commit."""
+        builder = RuleBuilder(
+            {
+                "files": {
+                    "max_size": "not-a-size",
+                    "prohibited_patterns": "not-a-list",
+                    "max_path_length": True,
+                }
+            }
+        )
+        rules = builder.build_all_rules()
+        assert not [
+            r for r in rules if r.check in ("file_size", "file_pattern", "path_length")
+        ]
+
+    @pytest.mark.benchmark
+    def test_files_non_mapping_section_disables(self):
+        rules = RuleBuilder({"files": "garbage"}).build_all_rules()
+        assert not [
+            r for r in rules if r.check in ("file_size", "file_pattern", "path_length")
+        ]

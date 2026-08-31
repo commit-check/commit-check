@@ -10,7 +10,7 @@ ID ranges
 ``CC0xx``  Commit message rules
 ``CC1xx``  Author (name / email) rules
 ``CC2xx``  Branch rules
-``CC3xx``  Push rules
+``CC3xx``  Push and file rules
 ``CC4xx``  Tag rules
 =========  ==================================
 
@@ -189,6 +189,32 @@ PUSH_RULES = [
     ),
 ]
 
+# File rules: metadata about the files a commit touches (path, size) —
+# deliberately never their contents.
+FILES_RULES = [
+    RuleCatalogEntry(
+        rule_id="CC302",
+        check="file_size",
+        regex=None,
+        error="File exceeds the maximum size of {max_size}",
+        suggest="Keep files under {max_size}, or store large assets outside git (e.g. Git LFS); raise max_size in the [files] config section if the limit is wrong",
+    ),
+    RuleCatalogEntry(
+        rule_id="CC303",
+        check="file_pattern",
+        regex=None,
+        error="File path matches a prohibited pattern",
+        suggest="Remove the file from the commit (secrets already committed need their credentials rotated), or adjust prohibited_patterns in the [files] config section",
+    ),
+    RuleCatalogEntry(
+        rule_id="CC304",
+        check="path_length",
+        regex=None,
+        error="File path exceeds {max_len} characters",
+        suggest="Shorten the path to {max_len} characters or fewer",
+    ),
+]
+
 # Branch rules
 BRANCH_RULES = [
     RuleCatalogEntry(
@@ -228,7 +254,7 @@ TAG_RULES = [
 #: All catalog entries that represent a user-facing, documented rule.
 ALL_RULES = [
     entry
-    for entry in (*COMMIT_RULES, *BRANCH_RULES, *PUSH_RULES, *TAG_RULES)
+    for entry in (*COMMIT_RULES, *BRANCH_RULES, *PUSH_RULES, *FILES_RULES, *TAG_RULES)
     if entry.rule_id is not None
 ]
 

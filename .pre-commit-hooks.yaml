@@ -44,3 +44,12 @@
   pass_filenames: false
   always_run: true
   language: python
+- id: check-files
+  name: check committed files
+  description: ensures committed files respect size, path pattern and path length policies
+  entry: commit-check
+  args: [--files]
+  stages: [pre-push]
+  pass_filenames: false
+  always_run: true
+  language: python

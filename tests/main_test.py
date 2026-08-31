@@ -1240,3 +1240,94 @@ class TestTagFlag:
         args = _get_parser().parse_args(["-t", "--tag-regex", r"^rel-\d+$"])
         config = ConfigMerger.parse_cli_args(args)
         assert config["tag"]["regex"] == r"^rel-\d+$"
+
+
+class TestFilesFlag:
+    """Tests for the -f/--files check type."""
+
+    def test_files_flag_in_help(self, capfd, monkeypatch):
+        monkeypatch.setattr("sys.argv", [CMD, "--help"])
+        with pytest.raises(SystemExit):
+            main()
+        out, _ = capfd.readouterr()
+        assert "--files" in out
+        assert "--files-max-size" in out
+        assert "--files-prohibited-patterns" in out
+        assert "--files-max-path-length" in out
+
+    def test_files_in_requested_checks(self):
+        from commit_check.main import _get_parser, _get_requested_checks
+
+        args = _get_parser().parse_args(["-f"])
+        assert _get_requested_checks(args) == [
+            "file_size",
+            "file_pattern",
+            "path_length",
+        ]
+
+    def test_files_cli_options_reach_config(self):
+        from commit_check.main import _get_parser
+        from commit_check.config_merger import ConfigMerger
+
+        args = _get_parser().parse_args(
+            [
+                "-f",
+                "--files-max-size",
+                "5MB",
+                "--files-prohibited-patterns",
+                "*.pem,.env",
+                "--files-max-path-length",
+                "200",
+            ]
+        )
+        config = ConfigMerger.parse_cli_args(args)
+        assert config["files"] == {
+            "max_size": "5MB",
+            "prohibited_patterns": ["*.pem", ".env"],
+            "max_path_length": 200,
+        }
+
+    def test_files_unconfigured_prints_hint(self, capfd, monkeypatch, tmp_path):
+        """--files with an empty [files] section says so instead of passing silently."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.argv", [CMD, "--files"])
+        assert main() == 0
+        _, err = capfd.readouterr()
+        assert "nothing is configured in the [files] section" in err
+
+    def test_files_pre_commit_env_validates_pushed_sha(
+        self, mocker, monkeypatch, tmp_path, capfd
+    ):
+        """Under the pre-commit framework --files checks the pushed sha, not HEAD."""
+        git = lambda *a: subprocess.run(  # noqa: E731
+            ["git", *a], cwd=tmp_path, capture_output=True, encoding="utf-8"
+        )
+        git("init", "-q")
+        git("config", "user.name", "T")
+        git("config", "user.email", "t@example.com")
+        (tmp_path / "cchk.toml").write_text('[files]\nmax_size = "1KB"\n')
+        git("add", "cchk.toml")
+        git("commit", "-qm", "feat: config")
+        (tmp_path / "big.bin").write_bytes(b"x" * 4096)
+        git("add", "big.bin")
+        git("commit", "-qm", "feat: big file")
+        pushed = git("rev-parse", "HEAD").stdout.strip()
+        git("rm", "-q", "big.bin")
+        git("commit", "-qm", "chore: remove big file")
+
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.argv", [CMD, "--files"])
+        # The framework consumed git's stdin; only the environment remains.
+        mocker.patch.object(StdinReader, "read_piped_input", return_value=None)
+        monkeypatch.setenv("PRE_COMMIT_LOCAL_BRANCH", "refs/heads/topic")
+        monkeypatch.setenv("PRE_COMMIT_REMOTE_BRANCH", "refs/heads/topic")
+        monkeypatch.setenv("PRE_COMMIT_TO_REF", pushed)
+        monkeypatch.setenv("PRE_COMMIT_FROM_REF", "a" * 40)
+        monkeypatch.delenv("PRE_COMMIT_REMOTE_NAME", raising=False)
+        monkeypatch.delenv("PRE_COMMIT_REMOTE_URL", raising=False)
+
+        # HEAD only deletes the file, so a HEAD check would skip; failing
+        # proves the pushed sha was validated.
+        assert main() == 1
+        out, _ = capfd.readouterr()
+        assert "big.bin" in out

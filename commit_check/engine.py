@@ -17,8 +17,11 @@ from commit_check.util import (
     get_commit_info,
     get_git_config_value,
     get_branch_name,
+    get_commit_files,
+    get_push_commits,
     get_git_remotes,
     get_tags_at,
+    format_size,
     get_upstream_branch,
     get_upstream_remote_sha,
     has_commits,
@@ -64,6 +67,12 @@ class ValidationContext:
     # check. The CLI verifies the revision resolves before it gets here.
     # Last on purpose: positional construction predates it.
     rev: str | None = None
+    # Per-run memo of get_commit_files() keyed by revision. The three file
+    # rules each get their own validator, so without this they would re-run
+    # the same git plumbing over the same commits three times.
+    files_cache: dict[str, list[tuple[str, int]]] = field(
+        default_factory=dict, repr=False, compare=False
+    )
 
 
 @dataclass
@@ -668,6 +677,166 @@ class TagValidator(BaseValidator):
         return ValidationResult.PASS
 
 
+class FilesValidator(BaseValidator):
+    """Validates metadata about the files a commit touches.
+
+    One class serves the three file rules — size limit, prohibited path
+    patterns, path length — branching on the rule's check name. Only the
+    paths and sizes recorded in the commit are read, never file contents:
+    content scanning is a different tool's job. A commit touching no files
+    (or an unresolvable revision) is a skip.
+    """
+
+    @staticmethod
+    def _push_revs_from_stdin(text: str) -> list[str] | None:
+        """Extract the commits a pre-push hook is being asked to approve.
+
+        A native pre-push hook receives ``<local ref> <sha> <remote ref>
+        <sha>`` lines naming what is being pushed; validating HEAD there
+        would check the wrong commit whenever another ref is pushed. Both
+        ends of each line matter: a push usually carries several commits,
+        and checking only the tip would wave through a file added by any
+        earlier commit in the same push.
+
+        Deletions are skipped: an all-zero local sha removes content rather
+        than adding it.
+
+        Tags go through the same range as branches rather than being
+        skipped. What matters is not whether a ref is a tag but whether it
+        carries commits the remote lacks: a tag on already-pushed history
+        resolves to an empty range, so ``git push --follow-tags`` is not
+        rejected over a file committed long before, while a tag that is the
+        only thing carrying a commit to the remote still gets that commit
+        checked. Tag *names* remain CC401's business.
+
+        Input of any other shape is not push metadata and returns ``None``,
+        so the validator falls back to the revision under test.
+        """
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        push_lines = [ln for ln in lines if len(ln.split()) == 4 and "refs/" in ln]
+        if not push_lines or len(push_lines) != len(lines):
+            return None
+        revs: list[str] = []
+        for ln in push_lines:
+            _local_ref, local_sha, _remote_ref, remote_sha = ln.split()
+            if set(local_sha) == {"0"}:
+                continue
+            revs.extend(get_push_commits(local_sha, remote_sha))
+        return list(dict.fromkeys(revs))
+
+    def _files_for_rev(
+        self, context: ValidationContext, rev: str
+    ) -> list[tuple[str, int]]:
+        """Files touched by *rev*, computed once per run and shared."""
+        if rev not in context.files_cache:
+            context.files_cache[rev] = get_commit_files(rev)
+        return context.files_cache[rev]
+
+    def _revs_to_check(self, context: ValidationContext) -> list[str] | None:
+        """Revisions this run should police.
+
+        ``None`` means the push carried nothing to police — only deletions,
+        or commits the remote already has — which the caller reports as a
+        skip rather than a pass.
+        """
+        if context.stdin_text is not None:
+            revs = self._push_revs_from_stdin(context.stdin_text)
+            if revs is not None:
+                return revs or None
+        return [context.rev or "HEAD"]
+
+    def _collect_files(
+        self, context: ValidationContext, revs: list[str]
+    ) -> list[tuple[str, int]]:
+        """Files across *revs*, each one counted once.
+
+        A file touched by several commits of the same push is one offender,
+        not one per commit.
+        """
+        files: list[tuple[str, int]] = []
+        seen: set[tuple[str, int]] = set()
+        for rev in revs:
+            for item in self._files_for_rev(context, rev):
+                if item not in seen:
+                    seen.add(item)
+                    files.append(item)
+        return files
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        revs = self._revs_to_check(context)
+        if revs is None:
+            return ValidationResult.SKIP
+
+        files = self._collect_files(context, revs)
+        if not files:
+            return ValidationResult.SKIP
+
+        self._checked_value = f"{len(files)} file(s)"
+
+        if self.rule.check == "file_size":
+            return self._validate_sizes(files)
+        if self.rule.check == "file_pattern":
+            return self._validate_patterns(files)
+        if self.rule.check == "path_length":
+            return self._validate_path_lengths(files)
+        return ValidationResult.PASS
+
+    def _fail(self, offenders: list[str]) -> ValidationResult:
+        """Report the first offender, with a count when there are more."""
+        value = offenders[0]
+        if len(offenders) > 1:
+            value += f" (+{len(offenders) - 1} more)"
+        self._checked_value = value
+        self._print_failure(value)
+        return ValidationResult.FAIL
+
+    def _validate_sizes(self, files: list[tuple[str, int]]) -> ValidationResult:
+        limit = self.rule.value
+        offenders = [
+            f"{path} ({format_size(size)})" for path, size in files if size > limit
+        ]
+        if offenders:
+            return self._fail(offenders)
+        return ValidationResult.PASS
+
+    def _validate_patterns(self, files: list[tuple[str, int]]) -> ValidationResult:
+        # fnmatch() folds case through os.path.normcase, which would make
+        # "*.pem" catch KEY.PEM on Windows and miss it everywhere else --
+        # one config, two policies. fnmatchcase() is the same on every
+        # platform, and case-sensitive is what git pathspecs already are.
+        from fnmatch import fnmatchcase
+
+        patterns = self.rule.value or []
+        offenders = []
+        for path, _ in files:
+            basename = path.rsplit("/", 1)[-1]
+            hit = next(
+                (
+                    pattern
+                    for pattern in patterns
+                    # A bare pattern like *.pem should catch the file at any
+                    # depth, so the basename is matched alongside the full
+                    # path.
+                    if fnmatchcase(path, pattern) or fnmatchcase(basename, pattern)
+                ),
+                None,
+            )
+            if hit:
+                offenders.append(f"{path} (pattern {hit})")
+        if offenders:
+            return self._fail(offenders)
+        return ValidationResult.PASS
+
+    def _validate_path_lengths(self, files: list[tuple[str, int]]) -> ValidationResult:
+        limit = self.rule.value
+        offenders = [
+            f"{path} ({len(path)} characters)" for path, _ in files if len(path) > limit
+        ]
+        if offenders:
+            return self._fail(offenders)
+        return ValidationResult.PASS
+
+
 class MergeBaseValidator(BaseValidator):
     """Validates merge base ancestry."""
 
@@ -1114,6 +1283,9 @@ class ValidationEngine:
         "no_force_push": ForcePushValidator,
         "ai_attribution": AiAttributionValidator,
         "tag": TagValidator,
+        "file_size": FilesValidator,
+        "file_pattern": FilesValidator,
+        "path_length": FilesValidator,
     }
 
     def __init__(self, rules: list[ValidationRule]):

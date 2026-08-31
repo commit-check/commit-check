@@ -109,6 +109,219 @@ def get_tags_at(rev: str = "HEAD") -> list[str]:
     return tags
 
 
+_SIZE_UNITS = {"B": 1, "KB": 1024, "MB": 1024**2, "GB": 1024**3}
+
+
+def parse_size(value) -> int | None:
+    """Parse a human file size into bytes.
+
+    Accepts an ``int`` (bytes) or a string with an optional binary unit
+    suffix — ``"5MB"``, ``"500 KB"``, ``"1gb"``, ``"12345"`` — where
+    ``KB``/``MB``/``GB`` are powers of 1024.
+
+    :param value: The configured size.
+    :returns: The size in bytes, or ``None`` when the value is empty,
+        non-positive, or not a size at all — an unusable limit disables the
+        rule rather than failing every file.
+    """
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value > 0 else None
+    if not isinstance(value, str):
+        return None
+
+    text = value.strip().upper().replace(" ", "")
+    if not text:
+        return None
+    for suffix, factor in sorted(_SIZE_UNITS.items(), key=lambda kv: -len(kv[0])):
+        if text.endswith(suffix):
+            number = text[: -len(suffix)]
+            break
+    else:
+        number, factor = text, 1
+    try:
+        size = int(float(number) * factor)
+    except (ValueError, OverflowError):
+        return None
+    return size if size > 0 else None
+
+
+def format_size(size: int) -> str:
+    """Render a byte count with the largest fitting binary unit."""
+    for suffix in ("GB", "MB", "KB"):
+        factor = _SIZE_UNITS[suffix]
+        if size >= factor:
+            value = size / factor
+            text = f"{value:.1f}".rstrip("0").rstrip(".")
+            return f"{text} {suffix}"
+    return f"{size} B"
+
+
+#: Cap on the characters of pathspec arguments handed to one ``git ls-tree``.
+#: Windows refuses a command line over 32 KiB, and a batch that overflows
+#: would drop the files it carried from the checked set.
+_LS_TREE_ARG_BUDGET = 24_000
+
+#: Cap on the number of pathspecs in one batch, independent of their length.
+_LS_TREE_BATCH = 500
+
+
+def _pathspec_batches(paths: list[str]) -> list[list[str]]:
+    """Group paths into ``git ls-tree`` pathspec batches.
+
+    Batches are bounded by both count and total length: a commit can touch
+    more files than one command line holds, and a few very long paths can
+    overflow it well before the count cap.
+
+    ``:(top,literal)`` keeps each path a literal path anchored at the
+    repository root — literal because a file name may contain glob
+    characters, top because pathspecs are otherwise read relative to the
+    current directory, which would match nothing when commit-check runs
+    from a subdirectory.
+    """
+    batches: list[list[str]] = []
+    batch: list[str] = []
+    budget = 0
+    for path in paths:
+        spec = f":(top,literal){path}"
+        if batch and (
+            len(batch) >= _LS_TREE_BATCH or budget + len(spec) > _LS_TREE_ARG_BUDGET
+        ):
+            batches.append(batch)
+            batch, budget = [], 0
+        batch.append(spec)
+        budget += len(spec) + 1
+    if batch:
+        batches.append(batch)
+    return batches
+
+
+def _blob_sizes(output: str) -> list[tuple[str, int]]:
+    """Parse ``git ls-tree -l -z`` output into ``(path, size)`` pairs.
+
+    Non-blob entries such as submodules carry ``-`` where a size belongs
+    and are left out.
+    """
+    files: list[tuple[str, int]] = []
+    for entry in output.split("\0"):
+        if "\t" not in entry:
+            continue
+        header, path = entry.split("\t", 1)
+        # <mode> <type> <sha> <size>
+        fields = header.split()
+        if len(fields) == 4 and fields[1] == "blob" and fields[3].isdigit():
+            files.append((path, int(fields[3])))
+    return files
+
+
+def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
+    """List the files a commit touches, with their sizes at that commit.
+
+    Deletions are excluded — removing a file adds nothing to police — and so
+    are non-blob entries such as submodules. Sizes are the blob sizes as of
+    the commit, not whatever the working tree holds now.
+
+    For a merge commit the files are those the merge brings onto the branch
+    it lands on: the diff against its first parent. A merge is diffed
+    explicitly against that parent rather than with ``-m``, which emits a
+    diff per parent — that would both repeat a path and drag in files the
+    *other* parent already carried, failing a merge over a file it never
+    introduced.
+
+    :param rev: Revision whose changed files to list, ``HEAD`` by default.
+    :returns: ``(path, size_in_bytes)`` pairs, empty when the revision does
+        not resolve, touches nothing, or cannot be measured.
+    """
+    # "<sha> <parent>..." — names the first parent and says whether there is
+    # one, in a single call that also rejects an unresolvable revision.
+    lineage = subprocess.run(
+        ["git", "rev-list", "--parents", "-n", "1", rev],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    if lineage.returncode != 0:
+        return []
+    parents = lineage.stdout.split()[1:]
+    # A root commit has nothing to diff against, so --root compares it to
+    # the empty tree; anything else is a two-tree diff against parent one.
+    scope = ["--root", rev] if not parents else [parents[0], rev]
+
+    diff = subprocess.run(
+        [
+            "git",
+            "diff-tree",
+            "--no-commit-id",
+            "--name-only",
+            "--diff-filter=d",
+            "-r",
+            "-z",
+            *scope,
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    if diff.returncode != 0:
+        return []
+    paths = [p for p in diff.stdout.split("\0") if p]
+    if not paths:
+        return []
+
+    files: list[tuple[str, int]] = []
+    for batch in _pathspec_batches(paths):
+        try:
+            tree = subprocess.run(
+                ["git", "ls-tree", "-r", "-l", "-z", "--full-tree", rev, "--", *batch],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                encoding="utf-8",
+            )
+        except OSError:
+            # An unrunnable command line (length limits, missing git) leaves
+            # this batch unmeasured; see below for why that ends the lookup.
+            return []
+        if tree.returncode != 0:
+            # A partial result would under-report: the rules would pass on
+            # the files that were measured while the rest went unchecked.
+            # Report nothing instead, which the validators surface as a skip
+            # ("not validated") rather than a silent pass.
+            return []
+        files.extend(_blob_sizes(tree.stdout))
+    return files
+
+
+def get_push_commits(local_sha: str, remote_sha: str) -> list[str]:
+    """List the commits a push introduces, newest first.
+
+    A pre-push hook is told both ends of what is being pushed. Checking only
+    the tip would let anything committed earlier in the same push through,
+    so the range the remote does not have yet is what gets checked.
+
+    :param local_sha: The sha being pushed.
+    :param remote_sha: What the remote currently has, all zeroes for a new ref.
+    :returns: The commit shas in the pushed range; the tip alone if the range
+        cannot be computed.
+    """
+    if set(remote_sha) == {"0"}:
+        # A new ref carries every commit the remote cannot already reach.
+        args = [local_sha, "--not", "--remotes"]
+    else:
+        args = [f"{remote_sha}..{local_sha}"]
+    result = subprocess.run(
+        ["git", "rev-list", *args],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    if result.returncode != 0:
+        # An unresolvable range (a remote sha this clone lacks, say) still
+        # leaves the tip worth checking.
+        return [local_sha]
+    return [line for line in result.stdout.split() if line]
+
+
 def get_upstream_branch() -> str:
     """Return the configured upstream ref for the current branch.
 
