@@ -308,7 +308,7 @@ repos:
 ```
 
 > [!NOTE]
-> Like `check-tag`, the `check-files` hook ships in the first release after
+> Like `check-tag`, the `check-files` hook ships in the first release from
 > v2.16.0 — bump `rev` to that release once it is published.
 
 A commit that only deletes files is reported as skipped — removing a file
