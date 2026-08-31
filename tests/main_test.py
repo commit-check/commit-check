@@ -1294,3 +1294,40 @@ class TestFilesFlag:
         assert main() == 0
         _, err = capfd.readouterr()
         assert "nothing is configured in the [files] section" in err
+
+    def test_files_pre_commit_env_validates_pushed_sha(
+        self, mocker, monkeypatch, tmp_path, capfd
+    ):
+        """Under the pre-commit framework --files checks the pushed sha, not HEAD."""
+        git = lambda *a: subprocess.run(  # noqa: E731
+            ["git", *a], cwd=tmp_path, capture_output=True, encoding="utf-8"
+        )
+        git("init", "-q")
+        git("config", "user.name", "T")
+        git("config", "user.email", "t@example.com")
+        (tmp_path / "cchk.toml").write_text('[files]\nmax_size = "1KB"\n')
+        git("add", "cchk.toml")
+        git("commit", "-qm", "feat: config")
+        (tmp_path / "big.bin").write_bytes(b"x" * 4096)
+        git("add", "big.bin")
+        git("commit", "-qm", "feat: big file")
+        pushed = git("rev-parse", "HEAD").stdout.strip()
+        git("rm", "-q", "big.bin")
+        git("commit", "-qm", "chore: remove big file")
+
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.argv", [CMD, "--files"])
+        # The framework consumed git's stdin; only the environment remains.
+        mocker.patch.object(StdinReader, "read_piped_input", return_value=None)
+        monkeypatch.setenv("PRE_COMMIT_LOCAL_BRANCH", "refs/heads/topic")
+        monkeypatch.setenv("PRE_COMMIT_REMOTE_BRANCH", "refs/heads/topic")
+        monkeypatch.setenv("PRE_COMMIT_TO_REF", pushed)
+        monkeypatch.setenv("PRE_COMMIT_FROM_REF", "a" * 40)
+        monkeypatch.delenv("PRE_COMMIT_REMOTE_NAME", raising=False)
+        monkeypatch.delenv("PRE_COMMIT_REMOTE_URL", raising=False)
+
+        # HEAD only deletes the file, so a HEAD check would skip; failing
+        # proves the pushed sha was validated.
+        assert main() == 1
+        out, _ = capfd.readouterr()
+        assert "big.bin" in out

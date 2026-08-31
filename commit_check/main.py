@@ -502,13 +502,23 @@ def _resolve_stdin_for_non_message(
 ) -> str | None:
     """Resolve stdin content for non-message validation types."""
     has_non_message_check = any(
-        [args.branch, args.tag, args.author_name, args.author_email, args.no_force_push]
+        [
+            args.branch,
+            args.tag,
+            args.files,
+            args.author_name,
+            args.author_email,
+            args.no_force_push,
+        ]
     )
     if not has_non_message_check:
         return None
 
     stdin_content = stdin_reader.read_piped_input()
-    if args.no_force_push and stdin_content is None:
+    # Both push-shaped checks need the pre-push ref lines. Under the
+    # pre-commit framework git's native stdin is consumed, so the same data
+    # is rebuilt from the PRE_COMMIT_* environment.
+    if (args.no_force_push or args.files) and stdin_content is None:
         return _build_pre_commit_push_input()
     return stdin_content
 
