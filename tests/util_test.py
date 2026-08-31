@@ -35,6 +35,9 @@ from unittest.mock import MagicMock
 # String constants used across tests
 REFS_HEADS_MAIN = "refs/heads/main"
 USER_NAME_CONFIG = "user.name"
+USER_EMAIL_CONFIG = "user.email"
+TEST_EMAIL = "t@example.com"
+BASE_COMMIT_MSG = "chore: base"
 
 
 class TestUtil:
@@ -1116,13 +1119,24 @@ def _run_git(tmp_path, *args):
     return result.stdout.strip()
 
 
+def _init_git_repo(path, *init_args):
+    """Initialise a repo at *path* with an identity commits can be made under."""
+    _run_git(path, "init", "-q", *init_args)
+    _run_git(path, "config", USER_NAME_CONFIG, "T")
+    _run_git(path, "config", USER_EMAIL_CONFIG, TEST_EMAIL)
+
+
+def _commit_all(path, message):
+    """Stage everything under *path* and commit it."""
+    _run_git(path, "add", "-A")
+    _run_git(path, "commit", "-qm", message)
+
+
 class TestGetCommitFiles:
     _git = staticmethod(_run_git)
 
     def _repo(self, tmp_path):
-        self._git(tmp_path, "init", "-q")
-        self._git(tmp_path, "config", "user.name", "T")
-        self._git(tmp_path, "config", "user.email", "t@example.com")
+        _init_git_repo(tmp_path)
 
     # No benchmark mark: CodSpeed executes marked tests more than once against
     # the same tmp_path, and this test's mkdir/commit sequence only works on a
@@ -1285,12 +1299,9 @@ class TestGetPushCommits:
     def test_range_covers_every_pushed_commit(self, tmp_path, monkeypatch):
         from commit_check.util import get_push_commits
 
-        self._git(tmp_path, "init", "-q", "-b", "main")
-        self._git(tmp_path, "config", "user.name", "T")
-        self._git(tmp_path, "config", "user.email", "t@example.com")
+        _init_git_repo(tmp_path, "-b", "main")
         (tmp_path / "base.txt").write_text("base")
-        self._git(tmp_path, "add", "-A")
-        self._git(tmp_path, "commit", "-qm", "chore: base")
+        _commit_all(tmp_path, BASE_COMMIT_MSG)
         remote = self._git(tmp_path, "rev-parse", "HEAD")
         (tmp_path / "a.txt").write_text("a")
         self._git(tmp_path, "add", "-A")
@@ -1320,13 +1331,10 @@ class TestGetPushCommits:
         _run_git(tmp_path, "init", "-q", "--bare", str(remote))
         work = tmp_path / "work"
         work.mkdir()
-        _run_git(work, "init", "-q", "-b", "main")
-        _run_git(work, "config", "user.name", "T")
-        _run_git(work, "config", "user.email", "t@example.com")
+        _init_git_repo(work, "-b", "main")
         _run_git(work, "remote", "add", "origin", str(remote))
         (work / "base.txt").write_text("base")
-        _run_git(work, "add", "-A")
-        _run_git(work, "commit", "-qm", "chore: base")
+        _commit_all(work, BASE_COMMIT_MSG)
         _run_git(work, "push", "-q", "origin", "main")
 
         _run_git(work, "checkout", "-qb", "feature")
