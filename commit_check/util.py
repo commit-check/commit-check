@@ -74,6 +74,41 @@ def get_branch_name() -> str:
     return branch_name.strip()
 
 
+def get_tags_at(rev: str = "HEAD") -> list[str]:
+    """List the tags pointing at a revision.
+
+    :param rev: Revision whose tags to list, ``HEAD`` by default.
+    :returns: Tag names pointing at the revision, oldest first. When the
+        repository has none there but the run is a GitHub Actions tag build
+        (``GITHUB_REF_TYPE=tag``) checking that build's own revision, the
+        pushed tag name from ``GITHUB_REF_NAME`` stands in — a shallow or
+        partial checkout may not carry the tag ref even though the workflow
+        was triggered by it.
+    """
+    # Run git directly: cmd_output() returns stderr text on a nonzero exit,
+    # and a git diagnostic must not be parsed as a tag name.
+    result = subprocess.run(
+        ["git", "tag", "--points-at", rev],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    output = result.stdout if result.returncode == 0 else ""
+
+    tags = [line.strip() for line in output.splitlines() if line.strip()]
+    if (
+        not tags
+        and os.getenv("GITHUB_REF_TYPE") == "tag"
+        # Only the workflow's own revision may borrow the event's tag name:
+        # with --rev at another commit the pushed tag says nothing about it.
+        and rev in ("HEAD", os.getenv("GITHUB_SHA"))
+    ):
+        ref_name = os.getenv("GITHUB_REF_NAME", "").strip()
+        if ref_name:
+            tags = [ref_name]
+    return tags
+
+
 def get_upstream_branch() -> str:
     """Return the configured upstream ref for the current branch.
 

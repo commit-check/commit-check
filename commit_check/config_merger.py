@@ -14,6 +14,7 @@ from commit_check import (
     DEFAULT_BOOLEAN_RULES,
     DEFAULT_PUSH_RULES,
     DEFAULT_AI_ATTRIBUTION,
+    DEFAULT_TAG_REGEX,
 )
 
 
@@ -91,6 +92,9 @@ def get_default_config() -> dict[str, Any]:
         "push": {
             "allow_force_push": DEFAULT_PUSH_RULES["allow_force_push"],
         },
+        "tag": {
+            "regex": DEFAULT_TAG_REGEX,
+        },
     }
 
 
@@ -135,6 +139,8 @@ class ConfigMerger:
         "CCHK_BRANCH_IGNORE_AUTHORS": ("branch", "ignore_authors", parse_list),
         # Push section
         "CCHK_ALLOW_FORCE_PUSH": ("push", "allow_force_push", parse_bool),
+        # Tag section
+        "CCHK_TAG_REGEX": ("tag", "regex", str),
     }
 
     # Mapping of CLI argument names to config keys
@@ -165,12 +171,14 @@ class ConfigMerger:
         "branch_ignore_authors": ("branch", "ignore_authors"),
         # Push section
         "allow_force_push": ("push", "allow_force_push"),
+        # Tag section
+        "tag_regex": ("tag", "regex"),
     }
 
     @staticmethod
     def parse_env_vars() -> dict[str, Any]:
         """Parse environment variables with CCHK_ prefix into config dict."""
-        config: dict[str, Any] = {"commit": {}, "branch": {}, "push": {}}
+        config: dict[str, Any] = {"commit": {}, "branch": {}, "push": {}, "tag": {}}
 
         for env_var, (section, key, parser) in ConfigMerger.ENV_VAR_MAPPING.items():
             value = os.environ.get(env_var)
@@ -189,7 +197,7 @@ class ConfigMerger:
     @staticmethod
     def parse_cli_args(args: argparse.Namespace) -> dict[str, Any]:
         """Parse CLI arguments into config dict."""
-        config: dict[str, Any] = {"commit": {}, "branch": {}, "push": {}}
+        config: dict[str, Any] = {"commit": {}, "branch": {}, "push": {}, "tag": {}}
 
         for arg_name, (section, key) in ConfigMerger.CLI_ARG_MAPPING.items():
             if hasattr(args, arg_name):

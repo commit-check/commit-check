@@ -18,6 +18,7 @@ from commit_check.util import (
     get_git_config_value,
     get_branch_name,
     get_git_remotes,
+    get_tags_at,
     get_upstream_branch,
     get_upstream_remote_sha,
     has_commits,
@@ -606,6 +607,67 @@ class BranchValidator(BaseValidator):
         return ValidationResult.FAIL
 
 
+class TagValidator(BaseValidator):
+    """Validates tag names.
+
+    Checks every tag pointing at the revision under test (``--rev``, or
+    ``HEAD``). A commit with no tag is a skip, not a failure: the rule
+    validates how tags are named, and the absence of one is not a naming
+    violation. Piped input (or an API-supplied value) names the tags to check
+    directly, one per line, without consulting git.
+    """
+
+    @staticmethod
+    def _tags_from_stdin(text: str) -> list[str]:
+        """Extract tag names from piped input.
+
+        Two shapes arrive here: bare tag names (API callers, ``echo v1 |``),
+        and the four-field ``<local ref> <sha> <remote ref> <sha>`` lines a
+        pre-push hook receives. For push lines the tags under push are the
+        ``refs/tags/*`` refs — a push carrying no tag ref yields nothing to
+        validate, and a deletion (all-zero local sha) removes a tag rather
+        than naming a new one, so neither can fail the check.
+        """
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        push_lines = [ln for ln in lines if len(ln.split()) == 4 and "refs/" in ln]
+        if push_lines and len(push_lines) == len(lines):
+            tags = []
+            for ln in push_lines:
+                local_ref, local_sha, remote_ref, _ = ln.split()
+                if set(local_sha) == {"0"}:
+                    continue
+                for ref in (local_ref, remote_ref):
+                    if ref.startswith("refs/tags/"):
+                        tags.append(ref.removeprefix("refs/tags/"))
+                        break
+            return list(dict.fromkeys(tags))
+        return lines
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        if context.stdin_text is not None:
+            tags = self._tags_from_stdin(context.stdin_text)
+        else:
+            tags = get_tags_at(context.rev or "HEAD")
+
+        if not tags:
+            return ValidationResult.SKIP
+
+        self._checked_value = ", ".join(tags)
+
+        if not self.rule.regex:
+            return ValidationResult.PASS
+
+        import re
+
+        for tag in tags:
+            if not re.match(self.rule.regex, tag):
+                self._checked_value = tag
+                self._print_failure(tag)
+                return ValidationResult.FAIL
+
+        return ValidationResult.PASS
+
+
 class MergeBaseValidator(BaseValidator):
     """Validates merge base ancestry."""
 
@@ -1051,6 +1113,7 @@ class ValidationEngine:
         "ignore_authors": CommitTypeValidator,
         "no_force_push": ForcePushValidator,
         "ai_attribution": AiAttributionValidator,
+        "tag": TagValidator,
     }
 
     def __init__(self, rules: list[ValidationRule]):

@@ -5,6 +5,7 @@ from unittest.mock import patch
 from commit_check.api import (
     validate_message,
     validate_branch,
+    validate_tag,
     validate_author,
     validate_all,
     validate_push,
@@ -473,3 +474,49 @@ class TestSkippedStatus:
 
         assert result["status"] == "skip"
         assert {c["status"] for c in result["checks"]} == {"skip"}
+
+
+class TestValidateTag:
+    """Tests for validate_tag()."""
+
+    @pytest.mark.benchmark
+    def test_semver_tag_passes(self):
+        result = validate_tag("v1.2.3")
+        assert result["status"] == "pass"
+
+    @pytest.mark.benchmark
+    def test_bare_semver_tag_passes(self):
+        result = validate_tag("1.2.3")
+        assert result["status"] == "pass"
+
+    @pytest.mark.benchmark
+    def test_non_semver_tag_fails(self):
+        result = validate_tag("release-candidate")
+        assert result["status"] == "fail"
+        failed = [c for c in result["checks"] if c["status"] == "fail"]
+        assert failed[0]["rule_id"] == "CC401"
+
+    @pytest.mark.benchmark
+    def test_custom_pattern(self):
+        cfg = {"tag": {"regex": r"^rel-\d+$"}}
+        assert validate_tag("rel-7", config=cfg)["status"] == "pass"
+        assert validate_tag("v1.2.3", config=cfg)["status"] == "fail"
+
+    @pytest.mark.benchmark
+    def test_multiline_tags(self):
+        assert validate_tag("v1.0.0\nv1.0.1")["status"] == "pass"
+        assert validate_tag("v1.0.0\nbad_tag")["status"] == "fail"
+
+    @pytest.mark.benchmark
+    def test_no_output(self, capfd):
+        """validate_tag must not print anything."""
+        validate_tag("bad_tag_name")
+        out, err = capfd.readouterr()
+        assert out == ""
+        assert err == ""
+
+    @pytest.mark.benchmark
+    def test_empty_string_skips_instead_of_reading_git(self):
+        """An explicit empty string names an empty tag list, not HEAD."""
+        result = validate_tag("")
+        assert result["status"] == "skip"

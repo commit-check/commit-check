@@ -11,6 +11,7 @@ ID ranges
 ``CC1xx``  Author (name / email) rules
 ``CC2xx``  Branch rules
 ``CC3xx``  Push rules
+``CC4xx``  Tag rules
 =========  ==================================
 
 Internal bookkeeping entries that never produce a diagnostic (such as
@@ -213,10 +214,21 @@ BRANCH_RULES = [
     ),
 ]
 
+# Tag rules
+TAG_RULES = [
+    RuleCatalogEntry(
+        rule_id="CC401",
+        check="tag",
+        regex=None,  # Provided by config, defaulting to SemVer with optional v
+        error="The tag name does not match the required pattern",
+        suggest="Use a SemVer tag like v1.2.3, or set a custom pattern via regex in the [tag] config section",
+    ),
+]
+
 #: All catalog entries that represent a user-facing, documented rule.
 ALL_RULES = [
     entry
-    for entry in (*COMMIT_RULES, *BRANCH_RULES, *PUSH_RULES)
+    for entry in (*COMMIT_RULES, *BRANCH_RULES, *PUSH_RULES, *TAG_RULES)
     if entry.rule_id is not None
 ]
 

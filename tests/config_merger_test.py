@@ -377,3 +377,23 @@ subject_max_length = 200
         args = argparse.Namespace()
         with pytest.raises(FileNotFoundError):
             ConfigMerger.from_all_sources(args, str(tmp_path / "nonexistent.toml"))
+
+
+class TestTagConfig:
+    """Tests for the [tag] section across config sources."""
+
+    @pytest.mark.benchmark
+    def test_default_config_has_tag_regex(self):
+        from commit_check import DEFAULT_TAG_REGEX
+        from commit_check.config_merger import get_default_config
+
+        config = get_default_config()
+        assert config["tag"]["regex"] == DEFAULT_TAG_REGEX
+
+    @pytest.mark.benchmark
+    def test_env_var_tag_regex(self, monkeypatch):
+        from commit_check.config_merger import ConfigMerger
+
+        monkeypatch.setenv("CCHK_TAG_REGEX", r"^rel-\d+$")
+        config = ConfigMerger.parse_env_vars()
+        assert config["tag"]["regex"] == r"^rel-\d+$"

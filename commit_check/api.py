@@ -7,7 +7,7 @@ forward to an LLM.
 
 Typical usage::
 
-    from commit_check.api import validate_message, validate_branch, validate_author
+    from commit_check.api import validate_message, validate_branch, validate_tag, validate_author
 
     result = validate_message("feat: add streaming support")
     if result["status"] == "fail":
@@ -173,6 +173,41 @@ def validate_branch(
         config=cfg,
     )
     return _run_checks(["branch", "merge_base"], context, cfg)
+
+
+def validate_tag(
+    tag: str | None = None,
+    *,
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Validate a tag name.
+
+    :param tag: Tag name to validate. Multiple tags can be passed one per
+        line. If *None*, the tags pointing at ``HEAD`` are used (via
+        ``git tag --points-at``); a commit with no tag reports ``"skip"``.
+    :param config: Optional configuration override dict. The pattern comes
+        from ``config["tag"]["regex"]`` and defaults to SemVer with an
+        optional leading ``v`` (``v1.2.3`` or ``1.2.3``).
+    :returns: A dict with ``"status"`` and ``"checks"``.
+
+    Example::
+
+        >>> from commit_check.api import validate_tag
+        >>> validate_tag("v1.2.3")["status"]
+        'pass'
+        >>> validate_tag("release-candidate")["status"]
+        'fail'
+    """
+    cfg = _merge_config(config)
+    # Pass the tag via stdin_text so TagValidator picks it up without calling
+    # git. Only None falls back to git: an explicit empty string names an
+    # empty tag list, which skips rather than reading HEAD behind the
+    # caller's back.
+    context = ValidationContext(
+        stdin_text=tag.strip() if tag is not None else None,
+        config=cfg,
+    )
+    return _run_checks(["tag"], context, cfg)
 
 
 def validate_push(

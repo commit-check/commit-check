@@ -1203,3 +1203,40 @@ class TestReconfigureIO:
         assert sys.stdout.encoding.upper() == "UTF-8"
         assert sys.stderr.encoding.upper() == "UTF-8"
         assert sys.stdin.encoding.upper() == "UTF-8"
+
+
+class TestTagFlag:
+    """Tests for the -t/--tag check type."""
+
+    def test_tag_flag_in_help(self, capfd, monkeypatch):
+        """The --tag flag and its option group appear in help output."""
+        monkeypatch.setattr("sys.argv", [CMD, "--help"])
+        with pytest.raises(SystemExit):
+            main()
+        out, _ = capfd.readouterr()
+        assert "--tag" in out
+        assert "--tag-regex" in out
+        assert "tag(s) pointing at HEAD" in out
+
+    def test_tag_in_requested_checks(self):
+        """-t requests exactly the tag check."""
+        from commit_check.main import _get_parser, _get_requested_checks
+
+        args = _get_parser().parse_args(["-t"])
+        assert _get_requested_checks(args) == ["tag"]
+
+    def test_tag_combines_with_branch(self):
+        """-b -t requests branch, merge_base and tag checks."""
+        from commit_check.main import _get_parser, _get_requested_checks
+
+        args = _get_parser().parse_args(["-b", "-t"])
+        assert _get_requested_checks(args) == ["branch", "merge_base", "tag"]
+
+    def test_tag_regex_reaches_config(self):
+        """--tag-regex overrides the [tag] section pattern."""
+        from commit_check.main import _get_parser
+        from commit_check.config_merger import ConfigMerger
+
+        args = _get_parser().parse_args(["-t", "--tag-regex", r"^rel-\d+$"])
+        config = ConfigMerger.parse_cli_args(args)
+        assert config["tag"]["regex"] == r"^rel-\d+$"

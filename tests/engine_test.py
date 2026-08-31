@@ -12,6 +12,7 @@ from commit_check.engine import (
     ValidationEngine,
     CommitMessageValidator,
     BranchValidator,
+    TagValidator,
     AuthorValidator,
     CommitTypeValidator,
     SubjectImperativeValidator,
@@ -2761,3 +2762,125 @@ class TestImperativeMorphology:
         not judged, and SKIP keeps that distinct from having passed."""
         assert self._verdict("Merge branch 'main' into topic") == ValidationResult.SKIP
         assert self._verdict("fixup! fixed the parser") == ValidationResult.SKIP
+
+
+class TestTagValidator:
+    @patch("commit_check.engine.get_tags_at")
+    @pytest.mark.benchmark
+    def test_tag_validator_valid_tag(self, mock_get_tags_at):
+        """A tag matching the pattern passes."""
+        mock_get_tags_at.return_value = ["v1.2.3"]
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        result = validator.validate(ValidationContext())
+        assert result == ValidationResult.PASS
+        assert validator._checked_value == "v1.2.3"
+
+    @patch("commit_check.engine.get_tags_at")
+    @pytest.mark.benchmark
+    def test_tag_validator_invalid_tag(self, mock_get_tags_at):
+        """A tag violating the pattern fails."""
+        mock_get_tags_at.return_value = ["release-candidate"]
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        validator._suppress_output = True
+        result = validator.validate(ValidationContext())
+        assert result == ValidationResult.FAIL
+        assert validator._checked_value == "release-candidate"
+
+    @patch("commit_check.engine.get_tags_at")
+    @pytest.mark.benchmark
+    def test_tag_validator_no_tags_skips(self, mock_get_tags_at):
+        """A commit with no tag is a skip, not a failure."""
+        mock_get_tags_at.return_value = []
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        result = validator.validate(ValidationContext())
+        assert result == ValidationResult.SKIP
+
+    @patch("commit_check.engine.get_tags_at")
+    @pytest.mark.benchmark
+    def test_tag_validator_multiple_tags_one_bad_fails(self, mock_get_tags_at):
+        """Every tag pointing at the commit is validated."""
+        mock_get_tags_at.return_value = ["v1.2.3", "bad_tag"]
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        validator._suppress_output = True
+        result = validator.validate(ValidationContext())
+        assert result == ValidationResult.FAIL
+        assert validator._checked_value == "bad_tag"
+
+    @patch("commit_check.engine.get_tags_at")
+    @pytest.mark.benchmark
+    def test_tag_validator_uses_rev(self, mock_get_tags_at):
+        """--rev names the revision whose tags are read."""
+        mock_get_tags_at.return_value = ["v1.2.3"]
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        validator.validate(ValidationContext(rev="abc123"))
+        mock_get_tags_at.assert_called_once_with("abc123")
+
+    @pytest.mark.benchmark
+    def test_tag_validator_stdin_bypasses_git(self):
+        """Piped input names the tags directly, without consulting git."""
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        result = validator.validate(ValidationContext(stdin_text="v9.9.9"))
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_tag_validator_stdin_multiline(self):
+        """Multiple piped tags are validated one per line."""
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        validator._suppress_output = True
+        result = validator.validate(ValidationContext(stdin_text="v1.0.0\nnope\n"))
+        assert result == ValidationResult.FAIL
+
+    @patch("commit_check.engine.get_tags_at")
+    @pytest.mark.benchmark
+    def test_tag_validator_no_regex_passes(self, mock_get_tags_at):
+        """An empty pattern deliberately disables the match."""
+        mock_get_tags_at.return_value = ["anything_goes"]
+        rule = ValidationRule(check="tag", regex=None)
+        validator = TagValidator(rule)
+        result = validator.validate(ValidationContext())
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    def test_tag_validator_pre_push_lines_extract_tag_refs(self):
+        """Pre-push stdin lines name the pushed tags, not literal tag names."""
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        stdin = "refs/tags/v1.2.3 abc123 refs/tags/v1.2.3 def456\n"
+        result = validator.validate(ValidationContext(stdin_text=stdin))
+        assert result == ValidationResult.PASS
+        assert validator._checked_value == "v1.2.3"
+
+    @pytest.mark.benchmark
+    def test_tag_validator_pre_push_bad_tag_fails(self):
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        validator._suppress_output = True
+        stdin = "refs/tags/bad_tag abc123 refs/tags/bad_tag def456\n"
+        result = validator.validate(ValidationContext(stdin_text=stdin))
+        assert result == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    def test_tag_validator_pre_push_branch_only_skips(self):
+        """A push carrying no tag refs has nothing to validate."""
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        stdin = "refs/heads/main abc123 refs/heads/main def456\n"
+        result = validator.validate(ValidationContext(stdin_text=stdin))
+        assert result == ValidationResult.SKIP
+
+    @pytest.mark.benchmark
+    def test_tag_validator_pre_push_tag_deletion_skips(self):
+        """Deleting a tag removes a name rather than creating one."""
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        zero = "0" * 40
+        stdin = f"(delete) {zero} refs/tags/bad_tag def456\n"
+        result = validator.validate(ValidationContext(stdin_text=stdin))
+        assert result == ValidationResult.SKIP

@@ -35,3 +35,12 @@
   pass_filenames: false
   always_run: true
   language: python
+- id: check-tag
+  name: check tag name
+  description: ensures pushed tag names match regex
+  entry: commit-check
+  args: [--tag]
+  stages: [pre-push]
+  pass_filenames: false
+  always_run: true
+  language: python
