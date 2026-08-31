@@ -263,10 +263,6 @@ repos:
         stages: [pre-push]
 ```
 
-> [!NOTE]
-> The `check-tag` hook ships in the first release from v2.16.0 — bump `rev`
-> to that release once it is published.
-
 ### Check Committed Files
 
 Use `--files` to police metadata about the files a commit touches — never
@@ -306,10 +302,6 @@ repos:
       - id: check-files
         stages: [pre-push]
 ```
-
-> [!NOTE]
-> Like `check-tag`, the `check-files` hook ships in the first release from
-> v2.16.0 — bump `rev` to that release once it is published.
 
 A commit that only deletes files is reported as skipped — removing a file
 adds nothing to police. Content scanning (entropy, token detection) is
