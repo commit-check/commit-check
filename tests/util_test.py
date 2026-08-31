@@ -1120,7 +1120,9 @@ class TestGetCommitFiles:
         self._git(tmp_path, "config", "user.name", "T")
         self._git(tmp_path, "config", "user.email", "t@example.com")
 
-    @pytest.mark.benchmark
+    # No benchmark mark: CodSpeed executes marked tests more than once against
+    # the same tmp_path, and this test's mkdir/commit sequence only works on a
+    # fresh directory.
     def test_lists_touched_files_with_sizes(self, tmp_path, monkeypatch):
         self._repo(tmp_path)
         (tmp_path / "small.txt").write_text("hi")
@@ -1144,7 +1146,8 @@ class TestGetCommitFiles:
         monkeypatch.chdir(tmp_path)
         assert get_commit_files() == []
 
-    @pytest.mark.benchmark
+    # No benchmark mark: a second execution has nothing new to commit, so the
+    # helper's returncode assertion would fail under CodSpeed's re-runs.
     def test_rev_names_the_commit(self, tmp_path, monkeypatch):
         self._repo(tmp_path)
         (tmp_path / "first.txt").write_text("1")
