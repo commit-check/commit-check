@@ -1197,6 +1197,14 @@ class TestGetCommitFiles:
         assert get_commit_files() == []
 
     @pytest.mark.benchmark
+    def test_diff_failure_after_lineage_reports_nothing(self, mocker):
+        """A revision can resolve and still fail to diff (a damaged object)."""
+        lineage = mocker.Mock(returncode=0, stdout="sha parent\n", stderr="")
+        diff = mocker.Mock(returncode=128, stdout="", stderr="fatal: bad object")
+        mocker.patch("commit_check.util.subprocess.run", side_effect=[lineage, diff])
+        assert get_commit_files() == []
+
+    @pytest.mark.benchmark
     def test_partial_batch_failure_reports_nothing(self, mocker):
         """One failed batch must not shrink the set the rules then pass on."""
         lineage = mocker.Mock(returncode=0, stdout="sha parent\n", stderr="")
