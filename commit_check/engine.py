@@ -719,7 +719,9 @@ class FilesValidator(BaseValidator):
             revs.extend(get_push_commits(local_sha, remote_sha))
         return list(dict.fromkeys(revs))
 
-    def _files_for_rev(self, context: ValidationContext, rev: str):
+    def _files_for_rev(
+        self, context: ValidationContext, rev: str
+    ) -> list[tuple[str, int]]:
         """Files touched by *rev*, computed once per run and shared."""
         if rev not in context.files_cache:
             context.files_cache[rev] = get_commit_files(rev)

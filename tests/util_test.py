@@ -1106,14 +1106,17 @@ class TestFormatSize:
         assert format_size(int(2.5 * 1024**3)) == "2.5 GB"
 
 
+def _run_git(tmp_path, *args):
+    """Run git in *tmp_path*, failing the test on a non-zero exit."""
+    result = subprocess.run(
+        ["git", *args], cwd=tmp_path, capture_output=True, encoding="utf-8"
+    )
+    assert result.returncode == 0, result.stderr
+    return result.stdout.strip()
+
+
 class TestGetCommitFiles:
-    @staticmethod
-    def _git(tmp_path, *args):
-        result = subprocess.run(
-            ["git", *args], cwd=tmp_path, capture_output=True, encoding="utf-8"
-        )
-        assert result.returncode == 0, result.stderr
-        return result.stdout.strip()
+    _git = staticmethod(_run_git)
 
     def _repo(self, tmp_path):
         self._git(tmp_path, "init", "-q")
@@ -1275,13 +1278,7 @@ class TestPathspecBatches:
 
 
 class TestGetPushCommits:
-    @staticmethod
-    def _git(tmp_path, *args):
-        result = subprocess.run(
-            ["git", *args], cwd=tmp_path, capture_output=True, encoding="utf-8"
-        )
-        assert result.returncode == 0, result.stderr
-        return result.stdout.strip()
+    _git = staticmethod(_run_git)
 
     # No benchmark mark: real-git test, see above.
     def test_range_covers_every_pushed_commit(self, tmp_path, monkeypatch):

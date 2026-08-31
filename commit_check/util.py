@@ -197,6 +197,24 @@ def _pathspec_batches(paths: list[str]) -> list[list[str]]:
     return batches
 
 
+def _blob_sizes(output: str) -> list[tuple[str, int]]:
+    """Parse ``git ls-tree -l -z`` output into ``(path, size)`` pairs.
+
+    Non-blob entries such as submodules carry ``-`` where a size belongs
+    and are left out.
+    """
+    files: list[tuple[str, int]] = []
+    for entry in output.split("\0"):
+        if "\t" not in entry:
+            continue
+        header, path = entry.split("\t", 1)
+        # <mode> <type> <sha> <size>
+        fields = header.split()
+        if len(fields) == 4 and fields[1] == "blob" and fields[3].isdigit():
+            files.append((path, int(fields[3])))
+    return files
+
+
 def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
     """List the files a commit touches, with their sizes at that commit.
 
@@ -258,14 +276,7 @@ def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
             # Report nothing instead, which the validators surface as a skip
             # ("not validated") rather than a silent pass.
             return []
-        for entry in tree.stdout.split("\0"):
-            if "\t" not in entry:
-                continue
-            header, path = entry.split("\t", 1)
-            fields = header.split()
-            # <mode> <type> <sha> <size>; size is "-" for non-blob entries.
-            if len(fields) == 4 and fields[1] == "blob" and fields[3].isdigit():
-                files.append((path, int(fields[3])))
+        files.extend(_blob_sizes(tree.stdout))
     return files
 
 
