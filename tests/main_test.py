@@ -1286,3 +1286,11 @@ class TestFilesFlag:
             "prohibited_patterns": ["*.pem", ".env"],
             "max_path_length": 200,
         }
+
+    def test_files_unconfigured_prints_hint(self, capfd, monkeypatch, tmp_path):
+        """--files with an empty [files] section says so instead of passing silently."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.argv", [CMD, "--files"])
+        assert main() == 0
+        _, err = capfd.readouterr()
+        assert "nothing is configured in the [files] section" in err

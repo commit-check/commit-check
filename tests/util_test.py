@@ -1163,3 +1163,11 @@ class TestGetCommitFiles:
         self._repo(tmp_path)
         monkeypatch.chdir(tmp_path)
         assert get_commit_files("doesnotexist") == []
+
+    @pytest.mark.benchmark
+    def test_ls_tree_failure_yields_no_files(self, mocker):
+        """A failing size lookup drops the batch instead of inventing data."""
+        diff = mocker.Mock(returncode=0, stdout="a.txt\0", stderr="")
+        tree = mocker.Mock(returncode=128, stdout="", stderr="fatal: bad object")
+        mocker.patch("commit_check.util.subprocess.run", side_effect=[diff, tree])
+        assert get_commit_files() == []

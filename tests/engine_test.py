@@ -2971,3 +2971,20 @@ class TestFilesValidator:
         validator = FilesValidator(rule)
         validator.validate(ValidationContext(rev="abc123"))
         mock_files.assert_called_once_with("abc123")
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_path_length_within_limit_passes(self, mock_files):
+        mock_files.return_value = [("short/path.txt", 10)]
+        rule = ValidationRule(check="path_length", value=40)
+        validator = FilesValidator(rule)
+        assert validator.validate(ValidationContext()) == ValidationResult.PASS
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_unknown_check_name_passes_defensively(self, mock_files):
+        """A rule this validator does not know cannot fail a commit."""
+        mock_files.return_value = [("a.txt", 10)]
+        rule = ValidationRule(check="not_a_files_check", value=1)
+        validator = FilesValidator(rule)
+        assert validator.validate(ValidationContext()) == ValidationResult.PASS
