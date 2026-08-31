@@ -574,6 +574,16 @@ class TestFilesRules:
         assert "max_size" in err and "5M" in err and "CC302" in err
 
     @pytest.mark.benchmark
+    def test_non_table_files_section_is_reported(self, capsys):
+        """A scalar [files] must not vanish into an empty section in silence."""
+        rules = RuleBuilder({"files": "garbage"}).build_all_rules()
+        assert not [
+            r for r in rules if r.check in ("file_size", "file_pattern", "path_length")
+        ]
+        err = capsys.readouterr().err
+        assert "must be a table" in err and "garbage" in err
+
+    @pytest.mark.benchmark
     def test_unset_values_are_not_reported(self, capsys):
         """Silence is right for a section that simply does not opt in."""
         RuleBuilder({"files": {"max_size": "", "max_path_length": 0}}).build_all_rules()

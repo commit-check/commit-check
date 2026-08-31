@@ -132,7 +132,19 @@ class RuleBuilder:
         non-table section, an unparsable size, a non-list pattern set)
         disable the rule rather than failing every commit.
         """
-        files_config = self.files_config if isinstance(self.files_config, dict) else {}
+        if isinstance(self.files_config, dict):
+            files_config = self.files_config
+        else:
+            # A scalar [files] carries no settings to read, so every rule
+            # below would report "not configured" — say what is actually
+            # wrong instead of letting the section disappear silently.
+            if self.files_config:
+                print(
+                    f"⊘ [files] must be a table, got {self.files_config!r}; "
+                    "the file rules are disabled",
+                    file=sys.stderr,
+                )
+            files_config = {}
         builders = {
             "file_size": self._build_file_size_rule,
             "file_pattern": self._build_file_pattern_rule,

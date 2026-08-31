@@ -732,18 +732,27 @@ class FilesValidator(BaseValidator):
             context.files_cache[rev] = get_commit_files(rev)
         return context.files_cache[rev]
 
-    def validate(self, context: ValidationContext) -> ValidationResult:
-        revs = None
+    def _revs_to_check(self, context: ValidationContext) -> list[str] | None:
+        """Revisions this run should police.
+
+        ``None`` means the push carried nothing to police — only deletions,
+        or commits the remote already has — which the caller reports as a
+        skip rather than a pass.
+        """
         if context.stdin_text is not None:
             revs = self._push_revs_from_stdin(context.stdin_text)
-            if revs is not None and not revs:
-                # A push carrying only deletions, tags, or commits the
-                # remote already has adds nothing to police.
-                return ValidationResult.SKIP
-        if revs is None:
-            revs = [context.rev or "HEAD"]
+            if revs is not None:
+                return revs or None
+        return [context.rev or "HEAD"]
 
-        # A file touched by several commits in one push is one offender.
+    def _collect_files(
+        self, context: ValidationContext, revs: list[str]
+    ) -> list[tuple[str, int]]:
+        """Files across *revs*, each one counted once.
+
+        A file touched by several commits of the same push is one offender,
+        not one per commit.
+        """
         files: list[tuple[str, int]] = []
         seen: set[tuple[str, int]] = set()
         for rev in revs:
@@ -751,6 +760,14 @@ class FilesValidator(BaseValidator):
                 if item not in seen:
                     seen.add(item)
                     files.append(item)
+        return files
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        revs = self._revs_to_check(context)
+        if revs is None:
+            return ValidationResult.SKIP
+
+        files = self._collect_files(context, revs)
         if not files:
             return ValidationResult.SKIP
 

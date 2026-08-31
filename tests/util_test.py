@@ -1286,10 +1286,21 @@ class TestPathspecBatches:
 
         batches = _pathspec_batches(["x" * 4000 for _ in range(20)])
         assert len(batches) > 1
+        # A batch may only pass the budget when it holds a single pathspec,
+        # which cannot be split any further.
         assert all(
-            sum(len(spec) + 1 for spec in b) <= _LS_TREE_ARG_BUDGET + 4020
+            sum(len(spec) + 1 for spec in b) <= _LS_TREE_ARG_BUDGET or len(b) == 1
             for b in batches
         )
+
+    @pytest.mark.benchmark
+    def test_one_oversized_path_is_its_own_batch(self):
+        from commit_check.util import _pathspec_batches, _LS_TREE_ARG_BUDGET
+
+        batches = _pathspec_batches(
+            ["a.txt", "x" * (_LS_TREE_ARG_BUDGET + 10), "b.txt"]
+        )
+        assert [len(b) for b in batches] == [1, 1, 1]
 
 
 class TestGetPushCommits:
