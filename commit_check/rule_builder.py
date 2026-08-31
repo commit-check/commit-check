@@ -7,6 +7,7 @@ from commit_check.rules_catalog import (
     COMMIT_RULES,
     BRANCH_RULES,
     PUSH_RULES,
+    TAG_RULES,
     RULES_BY_CHECK,
     RuleCatalogEntry,
 )
@@ -17,6 +18,7 @@ from commit_check import (
     DEFAULT_BOOLEAN_RULES,
     DEFAULT_PUSH_RULES,
     DEFAULT_AI_ATTRIBUTION,
+    DEFAULT_TAG_REGEX,
 )
 
 
@@ -74,6 +76,7 @@ class RuleBuilder:
         self.commit_config = config.get("commit", {})
         self.branch_config = config.get("branch", {})
         self.push_config = config.get("push", {})
+        self.tag_config = config.get("tag", {})
 
     def build_all_rules(self) -> list[ValidationRule]:
         """Build all validation rules from config."""
@@ -81,6 +84,7 @@ class RuleBuilder:
         rules.extend(self._build_commit_rules())
         rules.extend(self._build_branch_rules())
         rules.extend(self._build_push_rules())
+        rules.extend(self._build_tag_rules())
         return rules
 
     def _build_commit_rules(self) -> list[ValidationRule]:
@@ -113,6 +117,31 @@ class RuleBuilder:
             rule = self._build_push_rule(catalog_entry)
             if rule:
                 rules.append(rule)
+
+        return rules
+
+    def _build_tag_rules(self) -> list[ValidationRule]:
+        """Build tag-related validation rules.
+
+        The tag rule is always built — like every check it only runs when
+        requested (``--tag``). An empty ``regex`` in the ``[tag]`` section
+        deliberately disables the pattern match.
+        """
+        rules = []
+
+        for catalog_entry in TAG_RULES:
+            if catalog_entry.check == "tag":
+                regex = self.tag_config.get("regex", DEFAULT_TAG_REGEX)
+                if isinstance(regex, str):
+                    regex = regex.strip()
+                rules.append(
+                    ValidationRule(
+                        check=catalog_entry.check,
+                        regex=regex or None,
+                        error=catalog_entry.error,
+                        suggest=catalog_entry.suggest,
+                    )
+                )
 
         return rules
 

@@ -6,6 +6,7 @@ import subprocess
 import commit_check
 from commit_check import supports_color
 from commit_check.util import (
+    get_tags_at,
     fetch_remote_ref,
     fetch_upstream_ref,
     get_branch_name,
@@ -989,3 +990,62 @@ class TestGetGitConfigValue:
         mocker.patch("commit_check.util.cmd_output", return_value="alice@example.com\n")
         result = get_git_config_value("user.email")
         assert result == "alice@example.com"
+
+
+class TestGetTagsAt:
+    @pytest.mark.benchmark
+    def test_get_tags_at_lists_tags(self, mocker):
+        m_cmd_output = mocker.patch(
+            "commit_check.util.cmd_output", return_value="v1.0.0\nv1.0.1\n"
+        )
+        retval = get_tags_at()
+        assert m_cmd_output.call_args[0][0] == ["git", "tag", "--points-at", "HEAD"]
+        assert retval == ["v1.0.0", "v1.0.1"]
+
+    @pytest.mark.benchmark
+    def test_get_tags_at_passes_rev(self, mocker):
+        m_cmd_output = mocker.patch(
+            "commit_check.util.cmd_output", return_value="v2.0.0\n"
+        )
+        retval = get_tags_at("abc123")
+        assert m_cmd_output.call_args[0][0] == ["git", "tag", "--points-at", "abc123"]
+        assert retval == ["v2.0.0"]
+
+    @pytest.mark.benchmark
+    def test_get_tags_at_no_tags(self, mocker, monkeypatch):
+        monkeypatch.delenv("GITHUB_REF_TYPE", raising=False)
+        mocker.patch("commit_check.util.cmd_output", return_value="")
+        assert get_tags_at() == []
+
+    @pytest.mark.benchmark
+    def test_get_tags_at_git_error(self, mocker, monkeypatch):
+        monkeypatch.delenv("GITHUB_REF_TYPE", raising=False)
+        mocker.patch(
+            "commit_check.util.cmd_output",
+            side_effect=CalledProcessError(returncode=128, cmd="git tag"),
+        )
+        assert get_tags_at() == []
+
+    @pytest.mark.benchmark
+    def test_get_tags_at_github_actions_tag_fallback(self, mocker, monkeypatch):
+        """A tag build's ref name stands in when the local repo has no tag ref."""
+        mocker.patch("commit_check.util.cmd_output", return_value="")
+        monkeypatch.setenv("GITHUB_REF_TYPE", "tag")
+        monkeypatch.setenv("GITHUB_REF_NAME", "v3.0.0")
+        assert get_tags_at() == ["v3.0.0"]
+
+    @pytest.mark.benchmark
+    def test_get_tags_at_env_ignored_for_branch_builds(self, mocker, monkeypatch):
+        """A branch build's ref name is not a tag and must not stand in."""
+        mocker.patch("commit_check.util.cmd_output", return_value="")
+        monkeypatch.setenv("GITHUB_REF_TYPE", "branch")
+        monkeypatch.setenv("GITHUB_REF_NAME", "main")
+        assert get_tags_at() == []
+
+    @pytest.mark.benchmark
+    def test_get_tags_at_local_tags_outrank_env(self, mocker, monkeypatch):
+        """Real local tags win over the environment fallback."""
+        mocker.patch("commit_check.util.cmd_output", return_value="v1.0.0\n")
+        monkeypatch.setenv("GITHUB_REF_TYPE", "tag")
+        monkeypatch.setenv("GITHUB_REF_NAME", "v9.9.9")
+        assert get_tags_at() == ["v1.0.0"]

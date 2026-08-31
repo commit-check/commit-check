@@ -74,6 +74,30 @@ def get_branch_name() -> str:
     return branch_name.strip()
 
 
+def get_tags_at(rev: str = "HEAD") -> list[str]:
+    """List the tags pointing at a revision.
+
+    :param rev: Revision whose tags to list, ``HEAD`` by default.
+    :returns: Tag names pointing at the revision, oldest first. When the
+        repository has none there but the run is a GitHub Actions tag build
+        (``GITHUB_REF_TYPE=tag``), the pushed tag name from ``GITHUB_REF_NAME``
+        stands in — a shallow or partial checkout may not carry the tag ref
+        even though the workflow was triggered by it.
+    """
+    try:
+        commands = ["git", "tag", "--points-at", rev]
+        output = cmd_output(commands)
+    except CalledProcessError:
+        output = ""
+
+    tags = [line.strip() for line in output.splitlines() if line.strip()]
+    if not tags and os.getenv("GITHUB_REF_TYPE") == "tag":
+        ref_name = os.getenv("GITHUB_REF_NAME", "").strip()
+        if ref_name:
+            tags = [ref_name]
+    return tags
+
+
 def get_upstream_branch() -> str:
     """Return the configured upstream ref for the current branch.
 

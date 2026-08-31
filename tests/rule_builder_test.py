@@ -472,3 +472,51 @@ class TestLengthRuleMessages:
         assert "{" not in (rule.error or "")
         assert "{" not in (rule.suggest or "")
         assert "40" in (rule.suggest or "")
+
+
+class TestTagRules:
+    @pytest.mark.benchmark
+    def test_tag_rule_built_with_default_regex(self):
+        """With no [tag] config the rule carries the SemVer default."""
+        from commit_check import DEFAULT_TAG_REGEX
+
+        builder = RuleBuilder({})
+        rules = builder.build_all_rules()
+        tag_rules = [r for r in rules if r.check == "tag"]
+        assert len(tag_rules) == 1
+        assert tag_rules[0].regex == DEFAULT_TAG_REGEX
+        assert tag_rules[0].rule_id == "CC401"
+        assert tag_rules[0].docs_url == "https://commit-check.com/rules/#cc401"
+
+    @pytest.mark.benchmark
+    def test_tag_rule_custom_regex(self):
+        """A [tag] regex in config replaces the default."""
+        builder = RuleBuilder({"tag": {"regex": r"^rel-\d+$"}})
+        rules = builder.build_all_rules()
+        tag_rule = next(r for r in rules if r.check == "tag")
+        assert tag_rule.regex == r"^rel-\d+$"
+
+    @pytest.mark.benchmark
+    def test_tag_rule_empty_regex_disables_pattern(self):
+        """An empty regex deliberately disables the pattern match."""
+        builder = RuleBuilder({"tag": {"regex": ""}})
+        rules = builder.build_all_rules()
+        tag_rule = next(r for r in rules if r.check == "tag")
+        assert tag_rule.regex is None
+
+    @pytest.mark.benchmark
+    def test_default_tag_regex_accepts_semver_forms(self):
+        """The default accepts v-prefixed and bare SemVer, with suffixes."""
+        import re
+        from commit_check import DEFAULT_TAG_REGEX
+
+        for good in [
+            "v1.2.3",
+            "1.2.3",
+            "v1.2.3-rc.1",
+            "v1.2.3+build.5",
+            "v10.20.30-beta.2+exp.sha.5114f85",
+        ]:
+            assert re.match(DEFAULT_TAG_REGEX, good), good
+        for bad in ["release", "v1.2", "v1.2.3-", "v1.2.3+", "va.b.c", "v1.2.3 "]:
+            assert not re.match(DEFAULT_TAG_REGEX, bad), bad

@@ -95,6 +95,12 @@ DEFAULT_BRANCH_TYPES = [
 # Additional allowed branch names (e.g., develop, staging)
 DEFAULT_BRANCH_NAMES: list[str] = []
 
+# Tag naming default: SemVer, with an optional leading "v" (v1.2.3 or 1.2.3),
+# allowing pre-release and build-metadata suffixes (v1.2.3-rc.1+build.5).
+DEFAULT_TAG_REGEX = (
+    r"^v?\d+\.\d+\.\d+(-[0-9A-Za-z][0-9A-Za-z.\-]*)?(\+[0-9A-Za-z][0-9A-Za-z.\-]*)?$"
+)
+
 # Push-related defaults
 DEFAULT_PUSH_RULES = {
     "allow_force_push": True,

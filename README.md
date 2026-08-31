@@ -236,6 +236,33 @@ repos:
 > push has already been started, and standard `git push` output does not carry
 > the pre-push ref metadata that `commit-check` uses.
 
+### Check Tag Names
+
+Use `--tag` to validate the name of every tag pointing at `HEAD` (or at
+`--rev`). The default pattern accepts SemVer with an optional leading `v`
+(`v1.2.3` or `1.2.3`, pre-release and build suffixes included); set
+`regex` in the `[tag]` config section or pass `--tag-regex` to change it.
+A commit with no tag is reported as skipped, not failed.
+
+```bash
+# Validate the tag(s) at HEAD, e.g. in a CI job triggered by a tag push
+commit-check --tag
+
+# Enforce a custom scheme
+commit-check --tag --tag-regex '^v\d+\.\d+\.\d+$'
+```
+
+```yaml
+# In pre-commit hooks (.pre-commit-config.yaml): validates the tag names
+# a push carries, from the pre-push ref metadata on stdin
+repos:
+  - repo: https://github.com/commit-check/commit-check
+    rev: v2.15.1
+    hooks:
+      - id: check-tag
+        stages: [pre-push]
+```
+
 ## AI-Native Usage
 
 Commit Check is designed to be consumed by AI agents, LLM toolchains, and
@@ -557,6 +584,7 @@ reflects a DIY approach rather than built-in product features.
 |---------|-------------|------------|------|-----------------|-------------|
 | Conventional Commits enforcement | ✅ | ✅ | Partial | Partial[^4] | DIY |
 | Branch naming validation | ✅ | ❌ | ✅ | ✅[^4] | DIY |
+| Tag naming validation | ✅ | ❌ | ❌ | ✅[^4] | DIY |
 | Force push blocking | ✅ | ❌ | ❌ | ✅ | DIY |
 | Author name / email validation | ✅ | ❌ | ✅ | ✅[^4] | DIY |
 | Signed-off-by trailer enforcement | ✅ | Partial[^1] | ❌ | ❌ | DIY |

@@ -169,6 +169,15 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     check_group.add_argument(
+        "-t",
+        "--tag",
+        help="check the name of the tag(s) pointing at HEAD (or --rev); "
+        "a commit with no tag is reported as skipped",
+        action="store_true",
+        required=False,
+    )
+
+    check_group.add_argument(
         "-n",
         "--author-name",
         help="check git author name",
@@ -411,6 +420,20 @@ def _get_parser() -> argparse.ArgumentParser:
         help="comma-separated list of authors to ignore for branch checks",
     )
 
+    # Tag configuration options
+    tag_group = parser.add_argument_group(
+        "tag options", "Configuration options for --tag validation"
+    )
+
+    tag_group.add_argument(
+        "--tag-regex",
+        type=str,
+        default=None,
+        metavar="REGEX",
+        help="pattern tag names must match (default: SemVer with an optional "
+        "leading v, e.g. v1.2.3); an empty value disables the pattern match",
+    )
+
     return parser
 
 
@@ -437,7 +460,7 @@ def _resolve_stdin_for_non_message(
 ) -> str | None:
     """Resolve stdin content for non-message validation types."""
     has_non_message_check = any(
-        [args.branch, args.author_name, args.author_email, args.no_force_push]
+        [args.branch, args.tag, args.author_name, args.author_email, args.no_force_push]
     )
     if not has_non_message_check:
         return None
@@ -472,6 +495,8 @@ def _get_requested_checks(args: argparse.Namespace) -> list[str]:
         )
     if args.branch:
         requested_checks.extend(["branch", "merge_base"])
+    if args.tag:
+        requested_checks.append("tag")
     if args.author_name:
         requested_checks.append("author_name")
     if args.author_email:
