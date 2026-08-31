@@ -129,11 +129,15 @@ class RuleBuilder:
         """
         rules = []
 
+        # Malformed config (a non-table [tag], a non-string regex) falls back
+        # to the defaults instead of surfacing as an AttributeError or a
+        # TypeError from re.match deep inside the validator.
+        tag_config = self.tag_config if isinstance(self.tag_config, dict) else {}
+
         for catalog_entry in TAG_RULES:
             if catalog_entry.check == "tag":
-                regex = self.tag_config.get("regex", DEFAULT_TAG_REGEX)
-                if isinstance(regex, str):
-                    regex = regex.strip()
+                regex = tag_config.get("regex", DEFAULT_TAG_REGEX)
+                regex = regex.strip() if isinstance(regex, str) else DEFAULT_TAG_REGEX
                 rules.append(
                     ValidationRule(
                         check=catalog_entry.check,

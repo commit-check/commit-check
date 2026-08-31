@@ -263,6 +263,10 @@ repos:
         stages: [pre-push]
 ```
 
+> [!NOTE]
+> The `check-tag` hook ships in the first release after v2.15.1 — bump `rev`
+> to that release once it is published.
+
 ## AI-Native Usage
 
 Commit Check is designed to be consumed by AI agents, LLM toolchains, and

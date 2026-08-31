@@ -993,43 +993,51 @@ class TestGetGitConfigValue:
 
 
 class TestGetTagsAt:
+    @staticmethod
+    def _git_result(mocker, returncode, stdout):
+        return mocker.patch(
+            "commit_check.util.subprocess.run",
+            return_value=mocker.Mock(returncode=returncode, stdout=stdout, stderr=""),
+        )
+
     @pytest.mark.benchmark
     def test_get_tags_at_lists_tags(self, mocker):
-        m_cmd_output = mocker.patch(
-            "commit_check.util.cmd_output", return_value="v1.0.0\nv1.0.1\n"
-        )
+        m_run = self._git_result(mocker, 0, "v1.0.0\nv1.0.1\n")
         retval = get_tags_at()
-        assert m_cmd_output.call_args[0][0] == ["git", "tag", "--points-at", "HEAD"]
+        assert m_run.call_args[0][0] == ["git", "tag", "--points-at", "HEAD"]
         assert retval == ["v1.0.0", "v1.0.1"]
 
     @pytest.mark.benchmark
     def test_get_tags_at_passes_rev(self, mocker):
-        m_cmd_output = mocker.patch(
-            "commit_check.util.cmd_output", return_value="v2.0.0\n"
-        )
+        m_run = self._git_result(mocker, 0, "v2.0.0\n")
         retval = get_tags_at("abc123")
-        assert m_cmd_output.call_args[0][0] == ["git", "tag", "--points-at", "abc123"]
+        assert m_run.call_args[0][0] == ["git", "tag", "--points-at", "abc123"]
         assert retval == ["v2.0.0"]
 
     @pytest.mark.benchmark
     def test_get_tags_at_no_tags(self, mocker, monkeypatch):
         monkeypatch.delenv("GITHUB_REF_TYPE", raising=False)
-        mocker.patch("commit_check.util.cmd_output", return_value="")
+        self._git_result(mocker, 0, "")
         assert get_tags_at() == []
 
     @pytest.mark.benchmark
-    def test_get_tags_at_git_error(self, mocker, monkeypatch):
+    def test_get_tags_at_git_error_is_not_a_tag(self, mocker, monkeypatch):
+        """A git diagnostic on nonzero exit must not be parsed as a tag name."""
         monkeypatch.delenv("GITHUB_REF_TYPE", raising=False)
         mocker.patch(
-            "commit_check.util.cmd_output",
-            side_effect=CalledProcessError(returncode=128, cmd="git tag"),
+            "commit_check.util.subprocess.run",
+            return_value=mocker.Mock(
+                returncode=128,
+                stdout="",
+                stderr="fatal: bad revision 'HEAD'",
+            ),
         )
         assert get_tags_at() == []
 
     @pytest.mark.benchmark
     def test_get_tags_at_github_actions_tag_fallback(self, mocker, monkeypatch):
         """A tag build's ref name stands in when the local repo has no tag ref."""
-        mocker.patch("commit_check.util.cmd_output", return_value="")
+        self._git_result(mocker, 0, "")
         monkeypatch.setenv("GITHUB_REF_TYPE", "tag")
         monkeypatch.setenv("GITHUB_REF_NAME", "v3.0.0")
         assert get_tags_at() == ["v3.0.0"]
@@ -1037,15 +1045,33 @@ class TestGetTagsAt:
     @pytest.mark.benchmark
     def test_get_tags_at_env_ignored_for_branch_builds(self, mocker, monkeypatch):
         """A branch build's ref name is not a tag and must not stand in."""
-        mocker.patch("commit_check.util.cmd_output", return_value="")
+        self._git_result(mocker, 0, "")
         monkeypatch.setenv("GITHUB_REF_TYPE", "branch")
         monkeypatch.setenv("GITHUB_REF_NAME", "main")
         assert get_tags_at() == []
 
     @pytest.mark.benchmark
+    def test_get_tags_at_env_ignored_for_other_rev(self, mocker, monkeypatch):
+        """--rev at another commit must not borrow the event's tag name."""
+        self._git_result(mocker, 0, "")
+        monkeypatch.setenv("GITHUB_REF_TYPE", "tag")
+        monkeypatch.setenv("GITHUB_REF_NAME", "v3.0.0")
+        monkeypatch.setenv("GITHUB_SHA", "workflowsha")
+        assert get_tags_at("othersha") == []
+
+    @pytest.mark.benchmark
+    def test_get_tags_at_env_applies_to_workflow_sha(self, mocker, monkeypatch):
+        """The workflow's own revision may borrow the event's tag name."""
+        self._git_result(mocker, 0, "")
+        monkeypatch.setenv("GITHUB_REF_TYPE", "tag")
+        monkeypatch.setenv("GITHUB_REF_NAME", "v3.0.0")
+        monkeypatch.setenv("GITHUB_SHA", "workflowsha")
+        assert get_tags_at("workflowsha") == ["v3.0.0"]
+
+    @pytest.mark.benchmark
     def test_get_tags_at_local_tags_outrank_env(self, mocker, monkeypatch):
         """Real local tags win over the environment fallback."""
-        mocker.patch("commit_check.util.cmd_output", return_value="v1.0.0\n")
+        self._git_result(mocker, 0, "v1.0.0\n")
         monkeypatch.setenv("GITHUB_REF_TYPE", "tag")
         monkeypatch.setenv("GITHUB_REF_NAME", "v9.9.9")
         assert get_tags_at() == ["v1.0.0"]

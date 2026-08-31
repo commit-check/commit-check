@@ -97,8 +97,13 @@ DEFAULT_BRANCH_NAMES: list[str] = []
 
 # Tag naming default: SemVer, with an optional leading "v" (v1.2.3 or 1.2.3),
 # allowing pre-release and build-metadata suffixes (v1.2.3-rc.1+build.5).
+# The body is the official semver.org pattern, which also rejects leading
+# zeroes in version-core numbers and numeric pre-release identifiers.
 DEFAULT_TAG_REGEX = (
-    r"^v?\d+\.\d+\.\d+(-[0-9A-Za-z][0-9A-Za-z.\-]*)?(\+[0-9A-Za-z][0-9A-Za-z.\-]*)?$"
+    r"^v?(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
+    r"(?:-(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)"
+    r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?"
+    r"(?:\+[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*)?$"
 )
 
 # Push-related defaults

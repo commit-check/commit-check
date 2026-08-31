@@ -200,9 +200,11 @@ def validate_tag(
     """
     cfg = _merge_config(config)
     # Pass the tag via stdin_text so TagValidator picks it up without calling
-    # git. When tag is None the validator will fall back to git itself.
+    # git. Only None falls back to git: an explicit empty string names an
+    # empty tag list, which skips rather than reading HEAD behind the
+    # caller's back.
     context = ValidationContext(
-        stdin_text=tag.strip() if tag else None,
+        stdin_text=tag.strip() if tag is not None else None,
         config=cfg,
     )
     return _run_checks(["tag"], context, cfg)

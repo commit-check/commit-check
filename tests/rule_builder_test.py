@@ -513,10 +513,42 @@ class TestTagRules:
         for good in [
             "v1.2.3",
             "1.2.3",
+            "v0.1.0",
             "v1.2.3-rc.1",
+            "v1.2.3-0",
             "v1.2.3+build.5",
             "v10.20.30-beta.2+exp.sha.5114f85",
         ]:
             assert re.match(DEFAULT_TAG_REGEX, good), good
-        for bad in ["release", "v1.2", "v1.2.3-", "v1.2.3+", "va.b.c", "v1.2.3 "]:
+        # Leading zeroes in version-core numbers and numeric pre-release
+        # identifiers are forbidden by SemVer.
+        for bad in [
+            "release",
+            "v1.2",
+            "v1.2.3-",
+            "v1.2.3+",
+            "va.b.c",
+            "v1.2.3 ",
+            "v01.2.3",
+            "v1.02.3",
+            "v1.2.3-01",
+        ]:
             assert not re.match(DEFAULT_TAG_REGEX, bad), bad
+
+    @pytest.mark.benchmark
+    def test_tag_rule_non_mapping_section_falls_back(self):
+        """A malformed non-table [tag] value falls back to defaults."""
+        from commit_check import DEFAULT_TAG_REGEX
+
+        builder = RuleBuilder({"tag": "not-a-table"})
+        tag_rule = next(r for r in builder.build_all_rules() if r.check == "tag")
+        assert tag_rule.regex == DEFAULT_TAG_REGEX
+
+    @pytest.mark.benchmark
+    def test_tag_rule_non_string_regex_falls_back(self):
+        """A non-string regex value falls back to the default pattern."""
+        from commit_check import DEFAULT_TAG_REGEX
+
+        builder = RuleBuilder({"tag": {"regex": 123}})
+        tag_rule = next(r for r in builder.build_all_rules() if r.check == "tag")
+        assert tag_rule.regex == DEFAULT_TAG_REGEX

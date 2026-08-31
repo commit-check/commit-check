@@ -514,3 +514,9 @@ class TestValidateTag:
         out, err = capfd.readouterr()
         assert out == ""
         assert err == ""
+
+    @pytest.mark.benchmark
+    def test_empty_string_skips_instead_of_reading_git(self):
+        """An explicit empty string names an empty tag list, not HEAD."""
+        result = validate_tag("")
+        assert result["status"] == "skip"
