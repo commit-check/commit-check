@@ -1135,8 +1135,8 @@ def _commit_all(path, message):
 class TestGetCommitFiles:
     _git = staticmethod(_run_git)
 
-    def _repo(self, tmp_path):
-        _init_git_repo(tmp_path)
+    def _repo(self, tmp_path, *init_args):
+        _init_git_repo(tmp_path, *init_args)
 
     # No benchmark mark: CodSpeed executes marked tests more than once against
     # the same tmp_path, and this test's mkdir/commit sequence only works on a
@@ -1188,20 +1188,26 @@ class TestGetCommitFiles:
     @pytest.mark.benchmark
     def test_ls_tree_failure_yields_no_files(self, mocker):
         """A failing size lookup reports nothing rather than a partial set."""
+        lineage = mocker.Mock(returncode=0, stdout="sha parent\n", stderr="")
         diff = mocker.Mock(returncode=0, stdout="a.txt\0", stderr="")
         tree = mocker.Mock(returncode=128, stdout="", stderr="fatal: bad object")
-        mocker.patch("commit_check.util.subprocess.run", side_effect=[diff, tree])
+        mocker.patch(
+            "commit_check.util.subprocess.run", side_effect=[lineage, diff, tree]
+        )
         assert get_commit_files() == []
 
     @pytest.mark.benchmark
     def test_partial_batch_failure_reports_nothing(self, mocker):
         """One failed batch must not shrink the set the rules then pass on."""
+        lineage = mocker.Mock(returncode=0, stdout="sha parent\n", stderr="")
         diff = mocker.Mock(returncode=0, stdout="a.txt\0", stderr="")
         ok = mocker.Mock(
             returncode=0, stdout="100644 blob abc     5\ta.txt\0", stderr=""
         )
         bad = mocker.Mock(returncode=128, stdout="", stderr="fatal")
-        mocker.patch("commit_check.util.subprocess.run", side_effect=[diff, ok, bad])
+        mocker.patch(
+            "commit_check.util.subprocess.run", side_effect=[lineage, diff, ok, bad]
+        )
         mocker.patch(
             "commit_check.util._pathspec_batches",
             return_value=[[":(top,literal)a.txt"], [":(top,literal)b.txt"]],
@@ -1211,10 +1217,11 @@ class TestGetCommitFiles:
     @pytest.mark.benchmark
     def test_unrunnable_command_line_reports_nothing(self, mocker):
         """An OSError (Windows arg limits) is not an accidental pass."""
+        lineage = mocker.Mock(returncode=0, stdout="sha parent\n", stderr="")
         diff = mocker.Mock(returncode=0, stdout="a.txt\0", stderr="")
         mocker.patch(
             "commit_check.util.subprocess.run",
-            side_effect=[diff, OSError("arg list too long")],
+            side_effect=[lineage, diff, OSError("arg list too long")],
         )
         assert get_commit_files() == []
 
@@ -1263,6 +1270,34 @@ class TestGetCommitFiles:
 
         monkeypatch.chdir(tmp_path)
         assert dict(get_commit_files()) == {"leaked.pem": 3}
+
+    # No benchmark mark: real-git test, see above.
+    def test_merge_excludes_what_the_other_parent_carried(self, tmp_path, monkeypatch):
+        """A merge is judged on what it brings in, not on the other side.
+
+        Diffing a merge against every parent (``-m``) reports files the
+        second parent already carried, so a merge would fail over a file it
+        never introduced -- and repeat any path both parents touched.
+        """
+        self._repo(tmp_path, "-b", "main")
+        (tmp_path / "shared.txt").write_text("1")
+        _commit_all(tmp_path, BASE_COMMIT_MSG)
+        self._git(tmp_path, "checkout", "-qb", "feature")
+        (tmp_path / "shared.txt").write_text("2")
+        _commit_all(tmp_path, "feat: edit shared")
+        self._git(tmp_path, "checkout", "-q", "main")
+        # main gains a file the feature branch never saw
+        (tmp_path / "already-on-main.bin").write_bytes(b"x" * 9000)
+        _commit_all(tmp_path, "feat: main only")
+        self._git(tmp_path, "merge", "--no-commit", "feature")
+        (tmp_path / "shared.txt").write_text("3")
+        _commit_all(tmp_path, "chore: merge feature")
+
+        monkeypatch.chdir(tmp_path)
+        files = get_commit_files()
+        paths = [path for path, _ in files]
+        assert paths == ["shared.txt"]
+        assert len(paths) == len(set(paths))
 
 
 class TestPathspecBatches:

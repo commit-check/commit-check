@@ -800,7 +800,11 @@ class FilesValidator(BaseValidator):
         return ValidationResult.PASS
 
     def _validate_patterns(self, files: list[tuple[str, int]]) -> ValidationResult:
-        from fnmatch import fnmatch
+        # fnmatch() folds case through os.path.normcase, which would make
+        # "*.pem" catch KEY.PEM on Windows and miss it everywhere else --
+        # one config, two policies. fnmatchcase() is the same on every
+        # platform, and case-sensitive is what git pathspecs already are.
+        from fnmatch import fnmatchcase
 
         patterns = self.rule.value or []
         offenders = []
@@ -813,7 +817,7 @@ class FilesValidator(BaseValidator):
                     # A bare pattern like *.pem should catch the file at any
                     # depth, so the basename is matched alongside the full
                     # path.
-                    if fnmatch(path, pattern) or fnmatch(basename, pattern)
+                    if fnmatchcase(path, pattern) or fnmatchcase(basename, pattern)
                 ),
                 None,
             )

@@ -223,29 +223,41 @@ def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
     the commit, not whatever the working tree holds now.
 
     For a merge commit the files are those the merge brings onto the branch
-    it lands on (the diff against its first parent). Without that a merge
-    would report no files at all, and a prohibited file arriving through a
-    merge — the moment CI checks a pull request — would pass unexamined.
+    it lands on: the diff against its first parent. A merge is diffed
+    explicitly against that parent rather than with ``-m``, which emits a
+    diff per parent — that would both repeat a path and drag in files the
+    *other* parent already carried, failing a merge over a file it never
+    introduced.
 
     :param rev: Revision whose changed files to list, ``HEAD`` by default.
     :returns: ``(path, size_in_bytes)`` pairs, empty when the revision does
         not resolve, touches nothing, or cannot be measured.
     """
+    # "<sha> <parent>..." — names the first parent and says whether there is
+    # one, in a single call that also rejects an unresolvable revision.
+    lineage = subprocess.run(
+        ["git", "rev-list", "--parents", "-n", "1", rev],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    if lineage.returncode != 0:
+        return []
+    parents = lineage.stdout.split()[1:]
+    # A root commit has nothing to diff against, so --root compares it to
+    # the empty tree; anything else is a two-tree diff against parent one.
+    scope = ["--root", rev] if not parents else [parents[0], rev]
+
     diff = subprocess.run(
         [
             "git",
             "diff-tree",
             "--no-commit-id",
             "--name-only",
-            "--root",
-            # Diff merges against their first parent instead of emitting
-            # nothing for them.
-            "-m",
-            "--first-parent",
             "--diff-filter=d",
             "-r",
             "-z",
-            rev,
+            *scope,
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

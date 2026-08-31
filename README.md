@@ -282,6 +282,7 @@ max_size = "5MB"
 
 # Reject paths matching any fnmatch pattern; a bare pattern like *.pem
 # also matches the file name at any depth
+# Patterns are case-sensitive on every platform, like git pathspecs
 prohibited_patterns = ["*.pem", "*.key", ".env", "id_rsa*"]
 
 # Reject paths longer than this many characters

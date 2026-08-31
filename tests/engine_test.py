@@ -2977,6 +2977,20 @@ class TestFilesValidator:
 
     @patch("commit_check.engine.get_commit_files")
     @pytest.mark.benchmark
+    def test_pattern_matching_is_case_sensitive_everywhere(self, mock_files):
+        """One config must not mean two policies across platforms.
+
+        fnmatch() folds case via os.path.normcase, so the same rule would
+        catch KEY.PEM on Windows and miss it on Linux.
+        """
+        mock_files.return_value = [("secrets/KEY.PEM", 10)]
+        rule = ValidationRule(check="file_pattern", value=["*.pem"])
+        validator = FilesValidator(rule)
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext()) == ValidationResult.PASS
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
     def test_file_size_within_limit_passes(self, mock_files):
         mock_files.return_value = [("a.txt", 100), ("b.bin", 900)]
         rule = ValidationRule(check="file_size", value=1024)
