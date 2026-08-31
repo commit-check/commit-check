@@ -60,7 +60,7 @@ commit-check --message --branch
 ```yaml
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.15.1
+    rev: v2.16.0
     hooks:
       - id: check-message
       - id: check-branch
@@ -195,7 +195,7 @@ commit-check --message
 # In pre-commit hooks (.pre-commit-config.yaml)
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.15.1
+    rev: v2.16.0
     hooks:
       - id: check-message
         args:
@@ -225,7 +225,7 @@ commit-check --no-force-push
 # In pre-commit hooks (.pre-commit-config.yaml)
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.15.1
+    rev: v2.16.0
     hooks:
       - id: check-no-force-push
         stages: [pre-push]
@@ -257,14 +257,14 @@ commit-check --tag --tag-regex '^v\d+\.\d+\.\d+$'
 # a push carries, from the pre-push ref metadata on stdin
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.15.1
+    rev: v2.16.0
     hooks:
       - id: check-tag
         stages: [pre-push]
 ```
 
 > [!NOTE]
-> The `check-tag` hook ships in the first release after v2.15.1 — bump `rev`
+> The `check-tag` hook ships in the first release after v2.16.0 — bump `rev`
 > to that release once it is published.
 
 ### Check Committed Files
@@ -301,7 +301,7 @@ commit-check --files --rev abc1234
 # (a tag on already-pushed history adds nothing, so it is skipped)
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.15.1
+    rev: v2.16.0
     hooks:
       - id: check-files
         stages: [pre-push]
@@ -309,7 +309,7 @@ repos:
 
 > [!NOTE]
 > Like `check-tag`, the `check-files` hook ships in the first release after
-> v2.15.1 — bump `rev` to that release once it is published.
+> v2.16.0 — bump `rev` to that release once it is published.
 
 A commit that only deletes files is reported as skipped — removing a file
 adds nothing to police. Content scanning (entropy, token detection) is
