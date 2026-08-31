@@ -1240,3 +1240,49 @@ class TestTagFlag:
         args = _get_parser().parse_args(["-t", "--tag-regex", r"^rel-\d+$"])
         config = ConfigMerger.parse_cli_args(args)
         assert config["tag"]["regex"] == r"^rel-\d+$"
+
+
+class TestFilesFlag:
+    """Tests for the -f/--files check type."""
+
+    def test_files_flag_in_help(self, capfd, monkeypatch):
+        monkeypatch.setattr("sys.argv", [CMD, "--help"])
+        with pytest.raises(SystemExit):
+            main()
+        out, _ = capfd.readouterr()
+        assert "--files" in out
+        assert "--files-max-size" in out
+        assert "--files-prohibited-patterns" in out
+        assert "--files-max-path-length" in out
+
+    def test_files_in_requested_checks(self):
+        from commit_check.main import _get_parser, _get_requested_checks
+
+        args = _get_parser().parse_args(["-f"])
+        assert _get_requested_checks(args) == [
+            "file_size",
+            "file_pattern",
+            "path_length",
+        ]
+
+    def test_files_cli_options_reach_config(self):
+        from commit_check.main import _get_parser
+        from commit_check.config_merger import ConfigMerger
+
+        args = _get_parser().parse_args(
+            [
+                "-f",
+                "--files-max-size",
+                "5MB",
+                "--files-prohibited-patterns",
+                "*.pem,.env",
+                "--files-max-path-length",
+                "200",
+            ]
+        )
+        config = ConfigMerger.parse_cli_args(args)
+        assert config["files"] == {
+            "max_size": "5MB",
+            "prohibited_patterns": ["*.pem", ".env"],
+            "max_path_length": 200,
+        }

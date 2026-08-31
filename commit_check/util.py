@@ -109,6 +109,114 @@ def get_tags_at(rev: str = "HEAD") -> list[str]:
     return tags
 
 
+_SIZE_UNITS = {"B": 1, "KB": 1024, "MB": 1024**2, "GB": 1024**3}
+
+
+def parse_size(value) -> int | None:
+    """Parse a human file size into bytes.
+
+    Accepts an ``int`` (bytes) or a string with an optional binary unit
+    suffix — ``"5MB"``, ``"500 KB"``, ``"1gb"``, ``"12345"`` — where
+    ``KB``/``MB``/``GB`` are powers of 1024.
+
+    :param value: The configured size.
+    :returns: The size in bytes, or ``None`` when the value is empty,
+        non-positive, or not a size at all — an unusable limit disables the
+        rule rather than failing every file.
+    """
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value > 0 else None
+    if not isinstance(value, str):
+        return None
+
+    text = value.strip().upper().replace(" ", "")
+    if not text:
+        return None
+    for suffix, factor in sorted(_SIZE_UNITS.items(), key=lambda kv: -len(kv[0])):
+        if text.endswith(suffix):
+            number = text[: -len(suffix)]
+            break
+    else:
+        number, factor = text, 1
+    try:
+        size = int(float(number) * factor)
+    except ValueError:
+        return None
+    return size if size > 0 else None
+
+
+def format_size(size: int) -> str:
+    """Render a byte count with the largest fitting binary unit."""
+    for suffix in ("GB", "MB", "KB"):
+        factor = _SIZE_UNITS[suffix]
+        if size >= factor:
+            value = size / factor
+            text = f"{value:.1f}".rstrip("0").rstrip(".")
+            return f"{text} {suffix}"
+    return f"{size} B"
+
+
+def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
+    """List the files a commit touches, with their sizes at that commit.
+
+    Deletions are excluded — removing a file adds nothing to police — and so
+    are non-blob entries such as submodules. Sizes are the blob sizes as of
+    the commit, not whatever the working tree holds now.
+
+    :param rev: Revision whose changed files to list, ``HEAD`` by default.
+    :returns: ``(path, size_in_bytes)`` pairs, empty when the revision does
+        not resolve or touches nothing.
+    """
+    diff = subprocess.run(
+        [
+            "git",
+            "diff-tree",
+            "--no-commit-id",
+            "--name-only",
+            "--root",
+            "--diff-filter=d",
+            "-r",
+            "-z",
+            rev,
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    if diff.returncode != 0:
+        return []
+    paths = [p for p in diff.stdout.split("\0") if p]
+    if not paths:
+        return []
+
+    files: list[tuple[str, int]] = []
+    # Batch the paths: a commit can touch more files than one command line
+    # holds.
+    for start in range(0, len(paths), 500):
+        # :(literal) keeps a path containing glob characters a path, not a
+        # pathspec pattern.
+        batch = [f":(literal){p}" for p in paths[start : start + 500]]
+        tree = subprocess.run(
+            ["git", "ls-tree", "-r", "-l", "-z", rev, "--", *batch],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+        )
+        if tree.returncode != 0:
+            continue
+        for entry in tree.stdout.split("\0"):
+            if "\t" not in entry:
+                continue
+            header, path = entry.split("\t", 1)
+            fields = header.split()
+            # <mode> <type> <sha> <size>; size is "-" for non-blob entries.
+            if len(fields) == 4 and fields[1] == "blob" and fields[3].isdigit():
+                files.append((path, int(fields[3])))
+    return files
+
+
 def get_upstream_branch() -> str:
     """Return the configured upstream ref for the current branch.
 

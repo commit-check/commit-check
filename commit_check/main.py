@@ -178,6 +178,16 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     check_group.add_argument(
+        "-f",
+        "--files",
+        help="check the files the commit at HEAD (or --rev) touches: size "
+        "limit, prohibited path patterns, path length (all off until "
+        "configured in the [files] config section)",
+        action="store_true",
+        required=False,
+    )
+
+    check_group.add_argument(
         "-n",
         "--author-name",
         help="check git author name",
@@ -434,6 +444,38 @@ def _get_parser() -> argparse.ArgumentParser:
         "leading v, e.g. v1.2.3); an empty value disables the pattern match",
     )
 
+    # Files configuration options
+    files_group = parser.add_argument_group(
+        "files options", "Configuration options for --files validation"
+    )
+
+    files_group.add_argument(
+        "--files-max-size",
+        type=str,
+        default=None,
+        metavar="SIZE",
+        help="maximum size for a committed file, in bytes or with a unit "
+        "suffix (e.g. 5MB, 500KB)",
+    )
+
+    files_group.add_argument(
+        "--files-prohibited-patterns",
+        type=parse_list,
+        default=None,
+        metavar="LIST",
+        help="comma-separated fnmatch patterns committed paths must not "
+        "match (e.g. *.pem,.env,id_rsa*); a bare pattern also matches "
+        "the file name at any depth",
+    )
+
+    files_group.add_argument(
+        "--files-max-path-length",
+        type=int,
+        default=None,
+        metavar="INT",
+        help="maximum number of characters in a committed file path",
+    )
+
     return parser
 
 
@@ -497,6 +539,8 @@ def _get_requested_checks(args: argparse.Namespace) -> list[str]:
         requested_checks.extend(["branch", "merge_base"])
     if args.tag:
         requested_checks.append("tag")
+    if args.files:
+        requested_checks.extend(["file_size", "file_pattern", "path_length"])
     if args.author_name:
         requested_checks.append("author_name")
     if args.author_email:
@@ -579,6 +623,19 @@ def main() -> int:
 
         # Filter rules to only include requested checks
         filtered_rules = [rule for rule in all_rules if rule.check in requested_checks]
+
+        # The files rules exist only when configured, so --files with an
+        # empty [files] section would silently validate nothing — say so
+        # instead of letting the quiet pass read as a verdict.
+        if args.files and not any(
+            rule.check in ("file_size", "file_pattern", "path_length")
+            for rule in filtered_rules
+        ):
+            print(
+                "⊘ --files requested but nothing is configured in the [files] section",
+                file=sys.stderr,
+            )
+
         engine = ValidationEngine(filtered_rules)
 
         # Resolve validation context inputs. With --rev the commit itself is

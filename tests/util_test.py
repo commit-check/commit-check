@@ -7,6 +7,9 @@ import commit_check
 from commit_check import supports_color
 from commit_check.util import (
     get_tags_at,
+    get_commit_files,
+    parse_size,
+    format_size,
     fetch_remote_ref,
     fetch_upstream_ref,
     get_branch_name,
@@ -1075,3 +1078,88 @@ class TestGetTagsAt:
         monkeypatch.setenv("GITHUB_REF_TYPE", "tag")
         monkeypatch.setenv("GITHUB_REF_NAME", "v9.9.9")
         assert get_tags_at() == ["v1.0.0"]
+
+
+class TestParseSize:
+    @pytest.mark.benchmark
+    def test_parse_size_accepts_common_forms(self):
+        assert parse_size("5MB") == 5 * 1024**2
+        assert parse_size("500 KB") == 500 * 1024
+        assert parse_size("1gb") == 1024**3
+        assert parse_size("12345") == 12345
+        assert parse_size("1.5MB") == int(1.5 * 1024**2)
+        assert parse_size(4096) == 4096
+
+    @pytest.mark.benchmark
+    def test_parse_size_rejects_unusable_values(self):
+        """An unusable limit disables the rule rather than failing every file."""
+        for bad in ["", "  ", "abc", "MB", None, [], 0, -5, True, 1.5]:
+            assert parse_size(bad) is None, bad
+
+
+class TestFormatSize:
+    @pytest.mark.benchmark
+    def test_format_size_picks_largest_fitting_unit(self):
+        assert format_size(200) == "200 B"
+        assert format_size(1536) == "1.5 KB"
+        assert format_size(5 * 1024**2) == "5 MB"
+        assert format_size(int(2.5 * 1024**3)) == "2.5 GB"
+
+
+class TestGetCommitFiles:
+    @staticmethod
+    def _git(tmp_path, *args):
+        result = subprocess.run(
+            ["git", *args], cwd=tmp_path, capture_output=True, encoding="utf-8"
+        )
+        assert result.returncode == 0, result.stderr
+        return result.stdout.strip()
+
+    def _repo(self, tmp_path):
+        self._git(tmp_path, "init", "-q")
+        self._git(tmp_path, "config", "user.name", "T")
+        self._git(tmp_path, "config", "user.email", "t@example.com")
+
+    @pytest.mark.benchmark
+    def test_lists_touched_files_with_sizes(self, tmp_path, monkeypatch):
+        self._repo(tmp_path)
+        (tmp_path / "small.txt").write_text("hi")
+        sub = tmp_path / "dir"
+        sub.mkdir()
+        (sub / "bigger.bin").write_bytes(b"x" * 2048)
+        self._git(tmp_path, "add", "-A")
+        self._git(tmp_path, "commit", "-qm", "feat: add files")
+        monkeypatch.chdir(tmp_path)
+        files = dict(get_commit_files())
+        assert files == {"small.txt": 2, "dir/bigger.bin": 2048}
+
+    @pytest.mark.benchmark
+    def test_deletions_are_excluded(self, tmp_path, monkeypatch):
+        self._repo(tmp_path)
+        (tmp_path / "doomed.txt").write_text("x")
+        self._git(tmp_path, "add", "-A")
+        self._git(tmp_path, "commit", "-qm", "feat: add")
+        self._git(tmp_path, "rm", "-q", "doomed.txt")
+        self._git(tmp_path, "commit", "-qm", "chore: remove")
+        monkeypatch.chdir(tmp_path)
+        assert get_commit_files() == []
+
+    @pytest.mark.benchmark
+    def test_rev_names_the_commit(self, tmp_path, monkeypatch):
+        self._repo(tmp_path)
+        (tmp_path / "first.txt").write_text("1")
+        self._git(tmp_path, "add", "-A")
+        self._git(tmp_path, "commit", "-qm", "feat: first")
+        first = self._git(tmp_path, "rev-parse", "HEAD")
+        (tmp_path / "second.txt").write_text("22")
+        self._git(tmp_path, "add", "-A")
+        self._git(tmp_path, "commit", "-qm", "feat: second")
+        monkeypatch.chdir(tmp_path)
+        assert dict(get_commit_files(first)) == {"first.txt": 1}
+        assert dict(get_commit_files()) == {"second.txt": 2}
+
+    @pytest.mark.benchmark
+    def test_unresolvable_rev_is_empty(self, tmp_path, monkeypatch):
+        self._repo(tmp_path)
+        monkeypatch.chdir(tmp_path)
+        assert get_commit_files("doesnotexist") == []

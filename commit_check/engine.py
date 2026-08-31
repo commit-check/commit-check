@@ -17,8 +17,10 @@ from commit_check.util import (
     get_commit_info,
     get_git_config_value,
     get_branch_name,
+    get_commit_files,
     get_git_remotes,
     get_tags_at,
+    format_size,
     get_upstream_branch,
     get_upstream_remote_sha,
     has_commits,
@@ -668,6 +670,83 @@ class TagValidator(BaseValidator):
         return ValidationResult.PASS
 
 
+class FilesValidator(BaseValidator):
+    """Validates metadata about the files a commit touches.
+
+    One class serves the three file rules — size limit, prohibited path
+    patterns, path length — branching on the rule's check name. Only the
+    paths and sizes recorded in the commit are read, never file contents:
+    content scanning is a different tool's job. A commit touching no files
+    (or an unresolvable revision) is a skip.
+    """
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        files = get_commit_files(context.rev or "HEAD")
+        if not files:
+            return ValidationResult.SKIP
+
+        self._checked_value = f"{len(files)} file(s)"
+
+        if self.rule.check == "file_size":
+            return self._validate_sizes(files)
+        if self.rule.check == "file_pattern":
+            return self._validate_patterns(files)
+        if self.rule.check == "path_length":
+            return self._validate_path_lengths(files)
+        return ValidationResult.PASS
+
+    def _fail(self, offenders: list[str]) -> ValidationResult:
+        """Report the first offender, with a count when there are more."""
+        value = offenders[0]
+        if len(offenders) > 1:
+            value += f" (+{len(offenders) - 1} more)"
+        self._checked_value = value
+        self._print_failure(value)
+        return ValidationResult.FAIL
+
+    def _validate_sizes(self, files: list[tuple[str, int]]) -> ValidationResult:
+        limit = self.rule.value
+        offenders = [
+            f"{path} ({format_size(size)})" for path, size in files if size > limit
+        ]
+        if offenders:
+            return self._fail(offenders)
+        return ValidationResult.PASS
+
+    def _validate_patterns(self, files: list[tuple[str, int]]) -> ValidationResult:
+        from fnmatch import fnmatch
+
+        patterns = self.rule.value or []
+        offenders = []
+        for path, _ in files:
+            basename = path.rsplit("/", 1)[-1]
+            hit = next(
+                (
+                    pattern
+                    for pattern in patterns
+                    # A bare pattern like *.pem should catch the file at any
+                    # depth, so the basename is matched alongside the full
+                    # path.
+                    if fnmatch(path, pattern) or fnmatch(basename, pattern)
+                ),
+                None,
+            )
+            if hit:
+                offenders.append(f"{path} (pattern {hit})")
+        if offenders:
+            return self._fail(offenders)
+        return ValidationResult.PASS
+
+    def _validate_path_lengths(self, files: list[tuple[str, int]]) -> ValidationResult:
+        limit = self.rule.value
+        offenders = [
+            f"{path} ({len(path)} characters)" for path, _ in files if len(path) > limit
+        ]
+        if offenders:
+            return self._fail(offenders)
+        return ValidationResult.PASS
+
+
 class MergeBaseValidator(BaseValidator):
     """Validates merge base ancestry."""
 
@@ -1114,6 +1193,9 @@ class ValidationEngine:
         "no_force_push": ForcePushValidator,
         "ai_attribution": AiAttributionValidator,
         "tag": TagValidator,
+        "file_size": FilesValidator,
+        "file_pattern": FilesValidator,
+        "path_length": FilesValidator,
     }
 
     def __init__(self, rules: list[ValidationRule]):

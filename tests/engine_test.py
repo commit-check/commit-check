@@ -13,6 +13,7 @@ from commit_check.engine import (
     CommitMessageValidator,
     BranchValidator,
     TagValidator,
+    FilesValidator,
     AuthorValidator,
     CommitTypeValidator,
     SubjectImperativeValidator,
@@ -2884,3 +2885,89 @@ class TestTagValidator:
         stdin = f"(delete) {zero} refs/tags/bad_tag def456\n"
         result = validator.validate(ValidationContext(stdin_text=stdin))
         assert result == ValidationResult.SKIP
+
+
+class TestFilesValidator:
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_file_size_within_limit_passes(self, mock_files):
+        mock_files.return_value = [("a.txt", 100), ("b.bin", 900)]
+        rule = ValidationRule(check="file_size", value=1024)
+        validator = FilesValidator(rule)
+        assert validator.validate(ValidationContext()) == ValidationResult.PASS
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_file_size_over_limit_fails_naming_the_file(self, mock_files):
+        mock_files.return_value = [("a.txt", 100), ("big.bin", 5 * 1024**2)]
+        rule = ValidationRule(check="file_size", value=1024)
+        validator = FilesValidator(rule)
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext()) == ValidationResult.FAIL
+        assert validator._checked_value == "big.bin (5 MB)"
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_file_size_counts_extra_offenders(self, mock_files):
+        mock_files.return_value = [("a.bin", 2048), ("b.bin", 4096), ("c.bin", 8192)]
+        rule = ValidationRule(check="file_size", value=1024)
+        validator = FilesValidator(rule)
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext()) == ValidationResult.FAIL
+        assert validator._checked_value == "a.bin (2 KB) (+2 more)"
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_file_pattern_matches_basename_at_any_depth(self, mock_files):
+        mock_files.return_value = [("secrets/server.pem", 10)]
+        rule = ValidationRule(check="file_pattern", value=["*.pem"])
+        validator = FilesValidator(rule)
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext()) == ValidationResult.FAIL
+        assert validator._checked_value == "secrets/server.pem (pattern *.pem)"
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_file_pattern_matches_full_path(self, mock_files):
+        mock_files.return_value = [("secrets/token.txt", 10)]
+        rule = ValidationRule(check="file_pattern", value=["secrets/*"])
+        validator = FilesValidator(rule)
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext()) == ValidationResult.FAIL
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_file_pattern_clean_commit_passes(self, mock_files):
+        mock_files.return_value = [("src/app.py", 10), ("README.md", 5)]
+        rule = ValidationRule(check="file_pattern", value=["*.pem", ".env"])
+        validator = FilesValidator(rule)
+        assert validator.validate(ValidationContext()) == ValidationResult.PASS
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_path_length_over_limit_fails(self, mock_files):
+        long_path = "a/" * 30 + "file.txt"
+        mock_files.return_value = [(long_path, 10)]
+        rule = ValidationRule(check="path_length", value=40)
+        validator = FilesValidator(rule)
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext()) == ValidationResult.FAIL
+        assert f"({len(long_path)} characters)" in validator._checked_value
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_no_touched_files_skips(self, mock_files):
+        """A deletion-only commit or unresolvable revision has nothing to police."""
+        mock_files.return_value = []
+        rule = ValidationRule(check="file_size", value=1024)
+        validator = FilesValidator(rule)
+        assert validator.validate(ValidationContext()) == ValidationResult.SKIP
+
+    @patch("commit_check.engine.get_commit_files")
+    @pytest.mark.benchmark
+    def test_rev_is_forwarded(self, mock_files):
+        mock_files.return_value = [("a.txt", 1)]
+        rule = ValidationRule(check="file_size", value=1024)
+        validator = FilesValidator(rule)
+        validator.validate(ValidationContext(rev="abc123"))
+        mock_files.assert_called_once_with("abc123")

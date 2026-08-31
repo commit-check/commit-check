@@ -397,3 +397,32 @@ class TestTagConfig:
         monkeypatch.setenv("CCHK_TAG_REGEX", r"^rel-\d+$")
         config = ConfigMerger.parse_env_vars()
         assert config["tag"]["regex"] == r"^rel-\d+$"
+
+
+class TestFilesConfig:
+    """Tests for the [files] section across config sources."""
+
+    @pytest.mark.benchmark
+    def test_default_config_has_files_section_off(self):
+        from commit_check.config_merger import get_default_config
+
+        config = get_default_config()
+        assert config["files"] == {
+            "max_size": "",
+            "prohibited_patterns": [],
+            "max_path_length": 0,
+        }
+
+    @pytest.mark.benchmark
+    def test_env_vars_reach_files_section(self, monkeypatch):
+        from commit_check.config_merger import ConfigMerger
+
+        monkeypatch.setenv("CCHK_FILES_MAX_SIZE", "5MB")
+        monkeypatch.setenv("CCHK_FILES_PROHIBITED_PATTERNS", "*.pem,.env")
+        monkeypatch.setenv("CCHK_FILES_MAX_PATH_LENGTH", "200")
+        config = ConfigMerger.parse_env_vars()
+        assert config["files"] == {
+            "max_size": "5MB",
+            "prohibited_patterns": ["*.pem", ".env"],
+            "max_path_length": 200,
+        }

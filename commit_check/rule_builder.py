@@ -7,6 +7,7 @@ from commit_check.rules_catalog import (
     COMMIT_RULES,
     BRANCH_RULES,
     PUSH_RULES,
+    FILES_RULES,
     TAG_RULES,
     RULES_BY_CHECK,
     RuleCatalogEntry,
@@ -77,6 +78,7 @@ class RuleBuilder:
         self.branch_config = config.get("branch", {})
         self.push_config = config.get("push", {})
         self.tag_config = config.get("tag", {})
+        self.files_config = config.get("files", {})
 
     def build_all_rules(self) -> list[ValidationRule]:
         """Build all validation rules from config."""
@@ -84,6 +86,7 @@ class RuleBuilder:
         rules.extend(self._build_commit_rules())
         rules.extend(self._build_branch_rules())
         rules.extend(self._build_push_rules())
+        rules.extend(self._build_files_rules())
         rules.extend(self._build_tag_rules())
         return rules
 
@@ -117,6 +120,67 @@ class RuleBuilder:
             rule = self._build_push_rule(catalog_entry)
             if rule:
                 rules.append(rule)
+
+        return rules
+
+    def _build_files_rules(self) -> list[ValidationRule]:
+        """Build file-metadata validation rules.
+
+        All three are off by default: each rule exists only when its
+        [files] setting carries a usable value, and malformed values (a
+        non-table section, an unparsable size, a non-list pattern set)
+        disable the rule rather than failing every commit.
+        """
+        from commit_check.util import format_size, parse_size
+
+        files_config = self.files_config if isinstance(self.files_config, dict) else {}
+        rules = []
+
+        for catalog_entry in FILES_RULES:
+            if catalog_entry.check == "file_size":
+                max_size = parse_size(files_config.get("max_size"))
+                if max_size is None:
+                    continue
+                rendered = format_size(max_size)
+                rules.append(
+                    ValidationRule(
+                        check=catalog_entry.check,
+                        error=(catalog_entry.error or "").format(max_size=rendered),
+                        suggest=(catalog_entry.suggest or "").format(max_size=rendered),
+                        value=max_size,
+                    )
+                )
+            elif catalog_entry.check == "file_pattern":
+                raw = files_config.get("prohibited_patterns")
+                patterns = (
+                    [p for p in raw if isinstance(p, str) and p.strip()]
+                    if isinstance(raw, list)
+                    else []
+                )
+                if not patterns:
+                    continue
+                rules.append(
+                    ValidationRule(
+                        check=catalog_entry.check,
+                        error=catalog_entry.error,
+                        suggest=catalog_entry.suggest,
+                        value=patterns,
+                    )
+                )
+            elif catalog_entry.check == "path_length":
+                max_len = files_config.get("max_path_length")
+                if isinstance(max_len, bool) or not isinstance(max_len, int):
+                    continue
+                if max_len <= 0:
+                    continue
+                rules.append(
+                    ValidationRule(
+                        check=catalog_entry.check,
+                        error=(catalog_entry.error or "").format(max_len=max_len),
+                        suggest=(catalog_entry.suggest or "").format(max_len=max_len),
+                        value=max_len,
+                    )
+                )
 
         return rules
 
