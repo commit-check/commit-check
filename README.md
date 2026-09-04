@@ -37,10 +37,10 @@
 
 It validates commit messages, branch names, author identity, signoff trailers,
 AI attribution policy, and push safety — using one versioned TOML policy across
-local hooks, CI, GitHub Actions, and AI automation.
+local hooks, CI, GitHub Actions, the hosted GitHub App, and AI automation.
 
 - **One policy file:** `cchk.toml`
-- **Multiple enforcement points:** CLI, pre-commit, CI / GitHub Actions
+- **Multiple enforcement points:** CLI, pre-commit, CI / GitHub Actions, or the [Commit Check GitHub App](https://github.com/marketplace/commit-check) with no workflow file
 - **Machine-readable output:** JSON + Python API for automation and AI agents
 
 ![commit-check demo](https://github.com/commit-check/commit-check/raw/main/assets/demo.gif)
