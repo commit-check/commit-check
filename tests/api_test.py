@@ -520,3 +520,26 @@ class TestValidateTag:
         """An explicit empty string names an empty tag list, not HEAD."""
         result = validate_tag("")
         assert result["status"] == "skip"
+
+
+class TestWarnLevelInTheApi:
+    def test_warned_rule_does_not_fail_the_message(self):
+        from commit_check.api import validate_message
+
+        result = validate_message(
+            "feat: added x",
+            config={
+                "warn": ["subject_imperative"],
+                "commit": {"subject_imperative": True},
+            },
+        )
+        assert result["status"] == "pass"
+        assert result["warnings"] == 1
+        by_check = {c["check"]: c["status"] for c in result["checks"]}
+        assert by_check["subject_imperative"] == "warn"
+
+    def test_every_result_carries_a_warnings_count(self):
+        from commit_check.api import validate_message
+
+        result = validate_message("feat: add x")
+        assert result["warnings"] == 0

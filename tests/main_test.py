@@ -1331,3 +1331,57 @@ class TestFilesFlag:
         assert main() == 1
         out, _ = capfd.readouterr()
         assert "big.bin" in out
+
+
+class TestWarnLevel:
+    """``warn = [...]`` in the config reports a rule without failing the run."""
+
+    def _config(self, tmp_path):
+        cfg = tmp_path / "cchk.toml"
+        cfg.write_text(
+            'warn = ["subject_imperative"]\n\n[commit]\nsubject_imperative = true\n'
+        )
+        return str(cfg)
+
+    def test_json_reports_the_warning_and_exits_zero(
+        self, mocker, capsys, monkeypatch, tmp_path, pinned_author
+    ):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: added x\n")
+        monkeypatch.setattr(
+            "sys.argv",
+            [CMD, "-m", "--format", "json", "--config", self._config(tmp_path)],
+        )
+        rc = main()
+        data = json.loads(capsys.readouterr().out)
+        assert rc == 0
+        assert data["status"] == "pass"
+        assert data["warnings"] == 1
+        by_check = {c["check"]: c for c in data["checks"]}
+        assert by_check["subject_imperative"]["status"] == "warn"
+        assert by_check["subject_imperative"]["error"]
+
+    def test_text_mode_exits_zero_with_a_notice(
+        self, mocker, capsys, monkeypatch, tmp_path, pinned_author
+    ):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: added x\n")
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--config", self._config(tmp_path)])
+        rc = main()
+        out, err = capsys.readouterr()
+        assert rc == 0
+        assert "subject-imperative check warning ==> feat: added x" in out
+        assert "Commit rejected" not in out
+        assert "⚠ warnings (not enforced): subject-imperative" in err
+
+    def test_unknown_warn_name_is_a_config_error(
+        self, mocker, capsys, monkeypatch, tmp_path
+    ):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add x\n")
+        cfg = tmp_path / "cchk.toml"
+        cfg.write_text('warn = ["branchh"]\n')
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--config", str(cfg)])
+        rc = main()
+        assert rc == 1
+        assert "unknown rule 'branchh'" in capsys.readouterr().err

@@ -1446,3 +1446,39 @@ class TestIdentityLookups:
         assert get_commit_author_identity("abc") == ("Jane Doe", "jane@example.com")
         assert "--pretty=format:%an%x1f%ae" in cmd.call_args[0][0]
         assert cmd.call_args[0][0][-1] == "abc"
+
+
+class TestPrintFailureWarnSeverity:
+    def check(self):
+        return {
+            "check": "branch",
+            "rule_id": "CC201",
+            "error": "Bad branch",
+            "suggest": "Rename it",
+            "docs_url": "https://commit-check.com/rules/#cc201",
+            "severity": "warn",
+        }
+
+    def test_warning_block_has_no_banner_and_says_so(self, capfd, monkeypatch):
+        from commit_check.util import _print_failure, print_error_header
+
+        monkeypatch.setattr(print_error_header, "has_been_called", False)
+        monkeypatch.setenv("FORCE_HYPERLINK", "0")
+        _print_failure(self.check(), "Feature/x")
+        out = capfd.readouterr().out
+        assert "Commit rejected" not in out
+        assert "branch check warning ==> " in out
+        assert "check failed" not in out
+        assert "Suggest: " in out
+        assert "Docs: https://commit-check.com/rules/#cc201" in out
+        assert (
+            "This rule is set to warn in the config; it does not fail the run." in out
+        )
+        # And the banner is still owed to the next real failure.
+        assert print_error_header.has_been_called is False
+
+    def test_compact_warning_is_labelled_warn(self, capfd):
+        from commit_check.util import _print_failure
+
+        _print_failure(self.check(), "Feature/x", compact=True)
+        assert capfd.readouterr().out == "[WARN] CC201 branch: Feature/x\n"

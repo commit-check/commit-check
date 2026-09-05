@@ -20,10 +20,11 @@ Return-value schema (all functions)::
 
     {
         "status": "pass" | "fail" | "skip",
+        "warnings": <number of checks with status "warn">,
         "checks": [
             {
                 "check":   "<rule name>",
-                "status":  "pass" | "fail" | "skip",
+                "status":  "pass" | "fail" | "warn" | "skip",
                 "value":   "<actual value that was checked>",
                 "error":   "<error description>",
                 "suggest": "<how to fix>",
@@ -52,6 +53,7 @@ from commit_check.engine import (
     CheckOutcome,
     ValidationContext,
     ValidationEngine,
+    count_warnings,
     overall_status,
 )
 from commit_check.rule_builder import RuleBuilder
@@ -67,6 +69,7 @@ def _build_result(outcomes: list[CheckOutcome]) -> dict[str, Any]:
     public return-value dict."""
     return {
         "status": overall_status(o.status for o in outcomes),
+        "warnings": count_warnings(o.status for o in outcomes),
         "checks": [o.to_dict() for o in outcomes],
     }
 
@@ -115,7 +118,8 @@ def validate_message(
         If *None*, built-in defaults are used.  You can pass a partial dict to
         override only the keys you care about, e.g.
         ``{"commit": {"allow_commit_types": ["feat", "fix"]}}``.
-    :returns: A dict with ``"status"`` (``"pass"``/``"fail"``) and ``"checks"``
+    :returns: A dict with ``"status"`` (``"pass"``/``"fail"``/``"skip"``), a
+        ``"warnings"`` count and ``"checks"``
         (list of per-rule outcomes).
 
     Example::
@@ -156,7 +160,7 @@ def validate_branch(
     :param branch: Branch name to validate.  If *None*, the current git branch
         is used (via ``git branch --show-current``).
     :param config: Optional configuration override dict.
-    :returns: A dict with ``"status"`` and ``"checks"``.
+    :returns: A dict with ``"status"``, a ``"warnings"`` count and ``"checks"``.
 
     Example::
 
@@ -189,7 +193,7 @@ def validate_tag(
     :param config: Optional configuration override dict. The pattern comes
         from ``config["tag"]["regex"]`` and defaults to SemVer with an
         optional leading ``v`` (``v1.2.3`` or ``1.2.3``).
-    :returns: A dict with ``"status"`` and ``"checks"``.
+    :returns: A dict with ``"status"``, a ``"warnings"`` count and ``"checks"``.
 
     Example::
 
@@ -222,9 +226,11 @@ def validate_push(
         pre-push hook: ``<local ref> <local sha1> <remote ref> <remote sha1>``,
         one entry per line.  If *None*, the check is skipped (returns pass).
     :param config: Optional configuration override dict.  The push check is
-        always enabled when calling this function; force pushes detected here
-        will always return ``"fail"``.
-    :returns: A dict with ``"status"`` (``"pass"``/``"fail"``) and ``"checks"``.
+        always enabled when calling this function; a detected force push fails
+        the result unless ``no_force_push`` is listed under ``warn``, in which
+        case the check reports ``"warn"`` and the result passes.
+    :returns: A dict with ``"status"`` (``"pass"``/``"fail"``/``"skip"``), a
+        ``"warnings"`` count and ``"checks"``.
 
     Example::
 
@@ -256,7 +262,7 @@ def validate_author(
     :param email: Author email to validate.  If *None*, the value from
         ``git config user.email`` is used.
     :param config: Optional configuration override dict.
-    :returns: A dict with ``"status"`` and ``"checks"``.
+    :returns: A dict with ``"status"``, a ``"warnings"`` count and ``"checks"``.
 
     Example::
 
@@ -292,7 +298,11 @@ def validate_author(
         # Shared reducer, not a local "fail or else pass": a combined call
         # in which every nested check skipped is still a skip.
         overall = overall_status(c["status"] for c in all_checks)
-        return {"status": overall, "checks": all_checks}
+        return {
+            "status": overall,
+            "warnings": count_warnings(c["status"] for c in all_checks),
+            "checks": all_checks,
+        }
 
     stdin = None
     if name is not None:
@@ -322,8 +332,8 @@ def validate_all(
     :param author_name: Author name to validate, or *None* to skip.
     :param author_email: Author email to validate, or *None* to skip.
     :param config: Optional configuration override dict.
-    :returns: A dict with ``"status"`` and ``"checks"`` combining all requested
-        validations.
+    :returns: A dict with ``"status"``, a ``"warnings"`` count and ``"checks"``
+        combining all requested validations.
 
     Example::
 
@@ -350,4 +360,8 @@ def validate_all(
         all_checks.extend(author_result["checks"])
 
     overall = overall_status(c["status"] for c in all_checks)
-    return {"status": overall, "checks": all_checks}
+    return {
+        "status": overall,
+        "warnings": count_warnings(c["status"] for c in all_checks),
+        "checks": all_checks,
+    }

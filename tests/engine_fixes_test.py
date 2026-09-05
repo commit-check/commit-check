@@ -2,7 +2,13 @@
 
 from unittest.mock import patch
 
-from commit_check.engine import ValidationContext, ValidationEngine
+from commit_check.engine import (
+    ValidationContext,
+    ValidationEngine,
+    ValidationResult,
+    count_warnings,
+    overall_status,
+)
 from commit_check.rule_builder import RuleBuilder, ValidationRule
 
 CONVENTIONAL = (
@@ -260,3 +266,70 @@ class TestBuiltRulesCarryAllowedTypes:
         # "docs" is not allowed here, so it is not a near-miss of anything.
         out = failed(message_rules, stdin_text="Docs: add x")
         assert out.fix == ""
+
+
+class TestWarnSeverityInTheEngine:
+    """A rule listed under ``warn`` is reported like a failure and counted like a pass."""
+
+    def rules(self):
+        return [
+            ValidationRule(
+                check="message", regex=CONVENTIONAL, error="e1", suggest="s1"
+            ),
+            ValidationRule(
+                check="subject_imperative",
+                error="Not imperative",
+                suggest="Use the imperative",
+                severity="warn",
+            ),
+        ]
+
+    def test_detailed_outcome_is_warn_not_fail(self):
+        outcomes = ValidationEngine(self.rules()).validate_all_detailed(
+            ValidationContext(stdin_text="feat: added x")
+        )
+        by_check = {o.check: o for o in outcomes}
+        assert by_check["message"].status == "pass"
+        assert by_check["subject_imperative"].status == "warn"
+        # The finding keeps its full detail; only the verdict changes.
+        assert by_check["subject_imperative"].error == "Not imperative"
+        assert by_check["subject_imperative"].suggest == "Use the imperative"
+        assert overall_status(o.status for o in outcomes) == "pass"
+        assert count_warnings(o.status for o in outcomes) == 1
+
+    def test_a_real_failure_still_fails_alongside_a_warning(self):
+        outcomes = ValidationEngine(self.rules()).validate_all_detailed(
+            ValidationContext(stdin_text="added x")
+        )
+        assert {o.check: o.status for o in outcomes} == {
+            "message": "fail",
+            "subject_imperative": "warn",
+        }
+        assert overall_status(o.status for o in outcomes) == "fail"
+
+    def test_text_mode_passes_and_names_the_warning_on_stderr(self, capsys):
+        result = ValidationEngine(self.rules()).validate_all(
+            ValidationContext(stdin_text="feat: added x", no_banner=True)
+        )
+        out, err = capsys.readouterr()
+        assert result == ValidationResult.PASS
+        assert "subject-imperative check warning ==> feat: added x" in out
+        assert "does not fail the run" in out
+        assert "Commit rejected" not in out
+        assert "⚠ warnings (not enforced): subject-imperative" in err
+
+    def test_text_mode_still_fails_on_an_enforced_rule(self, capsys):
+        result = ValidationEngine(self.rules()).validate_all(
+            ValidationContext(stdin_text="added x", no_banner=True)
+        )
+        out, _ = capsys.readouterr()
+        assert result == ValidationResult.FAIL
+        assert "message check failed ==> added x" in out
+        assert "subject-imperative check warning ==> added x" in out
+
+    def test_overall_status_only_counts_failures(self):
+        assert overall_status(["warn", "pass"]) == "pass"
+        assert overall_status(["warn", "skip"]) == "pass"
+        assert overall_status(["warn", "fail"]) == "fail"
+        assert overall_status(["skip", "skip"]) == "skip"
+        assert count_warnings(["warn", "warn", "fail"]) == 2
