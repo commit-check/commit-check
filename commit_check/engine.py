@@ -1,6 +1,7 @@
 """Clean validation engine following SOLID principles."""
 
 from __future__ import annotations
+import shlex
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -453,21 +454,30 @@ class SubjectCapitalizationValidator(SubjectValidator):
         if subject.startswith("Merge "):
             return ValidationResult.SKIP
 
-        # For conventional commits, check the description part after the colon
+        if self._is_capitalized(subject):
+            return ValidationResult.PASS
+
+        # The corrected subject has to pass this same check, or it is no fix.
+        fix = fix_subject_case(subject, capitalize=True)
+        if fix and not self._is_capitalized(fix):
+            fix = None
+        self._print_failure(subject, fix=fix)
+        return ValidationResult.FAIL
+
+    @staticmethod
+    def _is_capitalized(subject: str) -> bool:
+        """Whether the description starts upper-case, after any Conventional Commits prefix.
+
+        Only a prefix that ends in a colon is a type. Without one, the first
+        word is the description itself, so "Add feature" is judged on its
+        "A" and not on the "f" that follows, and "Update" alone is judged at
+        all.
+        """
         import re
 
-        match = re.match(r"^(?:\w+(?:\([^)]*\))?[!:]?\s*)(.*)", subject)
-        if match:
-            description = match.group(1).strip()
-            if description and description[0].isupper():
-                return ValidationResult.PASS
-        else:
-            # For non-conventional commits, check the first character
-            if subject and subject[0].isupper():
-                return ValidationResult.PASS
-
-        self._print_failure(subject, fix=fix_subject_case(subject, capitalize=True))
-        return ValidationResult.FAIL
+        match = re.match(r"^\w+(?:\([^)]*\))?!?:\s*(.*)", subject)
+        description = match.group(1).strip() if match else subject
+        return bool(description) and description[0].isupper()
 
 
 class SubjectImperativeValidator(SubjectValidator):
@@ -658,7 +668,9 @@ class BranchValidator(BaseValidator):
         fix = suggest = None
         if fixed and re.match(self.rule.regex, fixed):
             fix = fixed
-            suggest = f'Rename the branch to "{fixed}" (git branch -m {fixed})'
+            suggest = (
+                f'Rename the branch to "{fixed}" (git branch -m {shlex.quote(fixed)})'
+            )
         self._print_failure(branch_name, fix=fix, suggest=suggest)
         return ValidationResult.FAIL
 

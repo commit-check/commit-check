@@ -85,6 +85,23 @@ class TestSubjectCapitalizationFix:
         assert out.fix == "feat: Add x"
         assert out.suggest == 'Use "feat: Add x"'
 
+    def test_plain_subject_is_capitalised_and_the_fix_passes_the_rule(self):
+        rule = ValidationRule(
+            check="subject_capitalized",
+            error="Lowercase subject",
+            suggest="Capitalise the subject",
+        )
+        out = failed([rule], stdin_text="add x")
+        assert out.fix == "Add x"
+        # The offered fix must itself satisfy the rule.
+        engine = ValidationEngine([rule])
+        assert (
+            engine.validate_all_detailed(ValidationContext(stdin_text=out.fix))[
+                0
+            ].status
+            == "pass"
+        )
+
 
 class TestWipFix:
     def test_marker_is_dropped(self):
@@ -170,6 +187,11 @@ class TestBranchFix:
             out.suggest
             == 'Rename the branch to "feature/login" (git branch -m feature/login)'
         )
+
+    def test_rename_command_quotes_shell_metacharacters(self):
+        out = failed([self.rule()], stdin_text="Feature/$(whoami)")
+        assert out.fix == "feature/$(whoami)"
+        assert out.suggest.endswith("(git branch -m 'feature/$(whoami)')")
 
     def test_unrelated_prefix_keeps_generic_suggestion(self):
         out = failed([self.rule()], stdin_text="stuff/login")

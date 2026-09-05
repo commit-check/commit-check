@@ -421,16 +421,23 @@ echo "Fix: add streaming support" | commit-check -m --format json
 
 ```json
 {
-  "rule_id": "CC001",
-  "check": "message",
   "status": "fail",
-  "value": "Fix: add streaming support",
-  "error": "The commit message should follow Conventional Commits. See https://www.conventionalcommits.org",
-  "suggest": "Use \"fix: add streaming support\"",
-  "fix": "fix: add streaming support",
-  "docs_url": "https://commit-check.com/rules/#cc001"
+  "checks": [
+    {
+      "rule_id": "CC001",
+      "check": "message",
+      "status": "fail",
+      "value": "Fix: add streaming support",
+      "error": "The commit message should follow Conventional Commits. See https://www.conventionalcommits.org",
+      "suggest": "Use \"fix: add streaming support\"",
+      "fix": "fix: add streaming support",
+      "docs_url": "https://commit-check.com/rules/#cc001"
+    }
+  ]
 }
 ```
+
+(The passing checks are omitted from this example.)
 
 ### Quieter Human-Readable Output
 

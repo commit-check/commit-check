@@ -1502,6 +1502,29 @@ class TestValidationEngine:
         context = ValidationContext(stdin_text="Merge branch 'x' into y")
         assert validator.validate(context) == ValidationResult.SKIP
 
+    @pytest.mark.parametrize(
+        "subject, expected",
+        [
+            ("Add feature", ValidationResult.PASS),
+            ("Update", ValidationResult.PASS),
+            ("add Feature", ValidationResult.FAIL),
+            ("feat(api)!: Drop legacy", ValidationResult.PASS),
+            ("feat(api)!: drop legacy", ValidationResult.FAIL),
+        ],
+    )
+    def test_capitalization_reads_a_plain_subject_from_its_first_word(
+        self, subject, expected
+    ):
+        """Without a colon there is no type: the first word is the description.
+
+        Treating any first word as a type judged "Add feature" on the "f" of
+        "feature" and let "add Feature" through."""
+        rule = ValidationRule(check="subject_capitalized")
+        validator = SubjectCapitalizationValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(stdin_text=subject)
+        assert validator.validate(context) == expected
+
     def test_capitalization_judges_a_subject_that_merely_mentions_merge(self):
         """Only git's exact "Merge " prefix is machine-written; a subject
         that happens to start with the word in lowercase is author prose."""
