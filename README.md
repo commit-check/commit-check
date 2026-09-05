@@ -334,6 +334,7 @@ echo "feat: add streaming support" | commit-check -m --format json
       "value": "feat: add streaming support",
       "error": "",
       "suggest": "",
+      "fix": "",
       "docs_url": "https://commit-check.com/rules/#cc001"
     },
     {
@@ -343,6 +344,7 @@ echo "feat: add streaming support" | commit-check -m --format json
       "value": "feat: add streaming support",
       "error": "",
       "suggest": "",
+      "fix": "",
       "docs_url": "https://commit-check.com/rules/#cc004"
     },
     {
@@ -352,6 +354,7 @@ echo "feat: add streaming support" | commit-check -m --format json
       "value": "feat: add streaming support",
       "error": "",
       "suggest": "",
+      "fix": "",
       "docs_url": "https://commit-check.com/rules/#cc005"
     }
   ]
@@ -376,6 +379,7 @@ echo "wip bad commit" | commit-check -m --format json
       "value": "wip bad commit",
       "error": "The commit message should follow Conventional Commits. See https://www.conventionalcommits.org",
       "suggest": "Use <type>(<scope>): <description>, where <type> is one of: feat, fix, docs, style, refactor, test, chore, perf, build, ci",
+      "fix": "",
       "docs_url": "https://commit-check.com/rules/#cc001"
     },
     {
@@ -385,6 +389,7 @@ echo "wip bad commit" | commit-check -m --format json
       "value": "wip bad commit",
       "error": "",
       "suggest": "",
+      "fix": "",
       "docs_url": "https://commit-check.com/rules/#cc004"
     },
     {
@@ -394,9 +399,36 @@ echo "wip bad commit" | commit-check -m --format json
       "value": "wip bad commit",
       "error": "",
       "suggest": "",
+      "fix": "",
       "docs_url": "https://commit-check.com/rules/#cc005"
     }
   ]
+}
+```
+
+When the correction is mechanical, `fix` carries the corrected value and
+`suggest` names it, so an agent (or a person) can apply it without
+interpreting anything: a type written `Fix` or misspelt `feta`, a missing
+colon, a lowercase description under `subject_capitalized`, a `WIP:` marker,
+a missing `Signed-off-by` trailer, a branch typed `Feature/x`, or AI
+attribution lines under `ai_attribution = "forbid"`. Anything that takes a
+judgment, such as choosing a type for a bare subject or shortening a long one,
+leaves `fix` empty and `suggest` generic.
+
+```bash
+echo "Fix: add streaming support" | commit-check -m --format json
+```
+
+```json
+{
+  "rule_id": "CC001",
+  "check": "message",
+  "status": "fail",
+  "value": "Fix: add streaming support",
+  "error": "The commit message should follow Conventional Commits. See https://www.conventionalcommits.org",
+  "suggest": "Use \"fix: add streaming support\"",
+  "fix": "fix: add streaming support",
+  "docs_url": "https://commit-check.com/rules/#cc001"
 }
 ```
 
@@ -481,6 +513,7 @@ print(result["status"])          # "fail" — 'docs' not in allowed types
             "value":    "<actual value that was checked>",
             "error":    "<human-readable error description>",
             "suggest":  "<how to fix>",
+            "fix":      "<the corrected value, when it is unambiguous; else empty>",
             "docs_url": "<link to the rule's documentation>",
         },
         # ... one entry per active rule
@@ -514,6 +547,7 @@ echo "chore(deps): bump commit-check" | CCHK_IGNORE_AUTHORS="dependabot[bot]" co
       "value": "",
       "error": "",
       "suggest": "",
+      "fix": "",
       "docs_url": "https://commit-check.com/rules/#cc001"
     },
     {
@@ -523,6 +557,7 @@ echo "chore(deps): bump commit-check" | CCHK_IGNORE_AUTHORS="dependabot[bot]" co
       "value": "",
       "error": "",
       "suggest": "",
+      "fix": "",
       "docs_url": "https://commit-check.com/rules/#cc004"
     },
     {
@@ -532,6 +567,7 @@ echo "chore(deps): bump commit-check" | CCHK_IGNORE_AUTHORS="dependabot[bot]" co
       "value": "",
       "error": "",
       "suggest": "",
+      "fix": "",
       "docs_url": "https://commit-check.com/rules/#cc005"
     }
   ]

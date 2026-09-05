@@ -27,6 +27,7 @@ Return-value schema (all functions)::
                 "value":   "<actual value that was checked>",
                 "error":   "<error description>",
                 "suggest": "<how to fix>",
+                "fix":     "<the corrected value when the fix is unambiguous; else empty>",
             },
             ...
         ]

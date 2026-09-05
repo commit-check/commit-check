@@ -29,6 +29,14 @@ from commit_check.util import (
     git_rev_parse_verify,
 )
 from commit_check.imperatives import IMPERATIVES, NON_IMPERATIVE_LOOKALIKES
+from commit_check.fixes import (
+    fix_branch_type,
+    fix_conventional_header,
+    fix_subject_case,
+    fix_wip,
+    signoff_trailer,
+    strip_lines_containing,
+)
 
 
 class ValidationResult(IntEnum):
@@ -96,6 +104,10 @@ class CheckOutcome:
     value: str = ""
     error: str = ""
     suggest: str = ""
+    # The corrected value when the fix is unambiguous (a type's case, a WIP
+    # marker, a missing trailer); empty when fixing it takes a judgment the
+    # tool should not make. Consumers can offer it as a one-step correction.
+    fix: str = ""
     rule_id: str = ""
     docs_url: str = ""
 
@@ -108,6 +120,7 @@ class CheckOutcome:
             "value": self.value,
             "error": self.error,
             "suggest": self.suggest,
+            "fix": self.fix,
             "docs_url": self.docs_url,
         }
 
@@ -320,16 +333,32 @@ class BaseValidator(ABC):
                 return True
         return context.stdin_text is None and not has_commits()
 
-    def _print_failure(self, actual_value: str, regex_or_constraint: str = "") -> None:
-        """Record and (unless suppressed) print a standardised failure message."""
+    def _print_failure(
+        self,
+        actual_value: str,
+        regex_or_constraint: str = "",
+        *,
+        fix: str | None = None,
+        suggest: str | None = None,
+    ) -> None:
+        """Record and (unless suppressed) print a standardised failure message.
+
+        ``fix`` is the corrected value when the validator can name it without
+        guessing; it replaces the rule's generic suggestion with a concrete
+        one (``suggest`` overrides the wording) and travels to structured
+        consumers as its own field.
+        """
         rule_dict = self.rule.to_dict()
+        if fix or suggest:
+            rule_dict["suggest"] = suggest or f'Use "{fix}"'
 
         # Always store structured failure details for programmatic consumers.
         self._last_failure = {
             "check": self.rule.check,
             "value": actual_value,
             "error": self.rule.error or "",
-            "suggest": self.rule.suggest or "",
+            "suggest": rule_dict.get("suggest") or self.rule.suggest or "",
+            "fix": fix or "",
         }
 
         if not self._suppress_output:
@@ -361,7 +390,20 @@ class CommitMessageValidator(BaseValidator):
         if self.rule.regex and re.match(self.rule.regex, message):
             return ValidationResult.PASS
 
-        self._print_failure(message)
+        # Name the correction only when it is mechanical: a type's case or a
+        # one-letter slip, a colon that went missing. The corrected header
+        # has to satisfy the rule itself, or it is no fix at all.
+        subject, newline, rest = message.partition("\n")
+        fixed_subject = fix_conventional_header(subject, self.rule.allowed)
+        fix = suggest = None
+        if (
+            fixed_subject
+            and self.rule.regex
+            and re.match(self.rule.regex, fixed_subject)
+        ):
+            fix = fixed_subject + newline + rest
+            suggest = f'Use "{fixed_subject}"'
+        self._print_failure(message, fix=fix, suggest=suggest)
         return ValidationResult.FAIL
 
 
@@ -424,7 +466,7 @@ class SubjectCapitalizationValidator(SubjectValidator):
             if subject and subject[0].isupper():
                 return ValidationResult.PASS
 
-        self._print_failure(subject)
+        self._print_failure(subject, fix=fix_subject_case(subject, capitalize=True))
         return ValidationResult.FAIL
 
 
@@ -612,7 +654,12 @@ class BranchValidator(BaseValidator):
         if re.match(self.rule.regex, branch_name):
             return ValidationResult.PASS
 
-        self._print_failure(branch_name)
+        fixed = fix_branch_type(branch_name, self.rule.allowed)
+        fix = suggest = None
+        if fixed and re.match(self.rule.regex, fixed):
+            fix = fixed
+            suggest = f'Rename the branch to "{fixed}" (git branch -m {fixed})'
+        self._print_failure(branch_name, fix=fix, suggest=suggest)
         return ValidationResult.FAIL
 
 
@@ -953,8 +1000,30 @@ class SignoffValidator(BaseValidator):
         if self.rule.regex and re.search(self.rule.regex, message):
             return ValidationResult.PASS
 
-        self._print_failure(message)
+        trailer = signoff_trailer(*self._resolve_author_identity(context))
+        fix = suggest = None
+        if trailer:
+            fix = f"{message.rstrip()}\n\n{trailer}"
+            suggest = f'Add the trailer "{trailer}" (git commit --signoff, or --amend --signoff for an existing commit)'
+        self._print_failure(message, fix=fix, suggest=suggest)
         return ValidationResult.FAIL
+
+    @staticmethod
+    def _resolve_author_identity(context: ValidationContext) -> tuple[str, str]:
+        """The (name, email) the sign-off would carry, by the same modes as the author."""
+        if context.rev is not None:
+            return get_commit_info("an", context.rev), get_commit_info(
+                "ae", context.rev
+            )
+        if context.stdin_text is not None or context.commit_file is not None:
+            return (
+                get_git_config_value("user.name") or get_commit_info("an"),
+                get_git_config_value("user.email") or get_commit_info("ae"),
+            )
+        return (
+            get_commit_info("an") or get_git_config_value("user.name"),
+            get_commit_info("ae") or get_git_config_value("user.email"),
+        )
 
 
 class BodyValidator(BaseValidator):
@@ -1145,7 +1214,12 @@ class CommitTypeValidator(BaseValidator):
         is_allowed = self._is_commit_type_allowed(message)
 
         if not is_allowed:
-            self._print_failure(message)
+            fix = suggest = None
+            if self.rule.check == "allow_wip_commits":
+                fix = fix_wip(message)
+                if fix:
+                    suggest = f'Drop the WIP marker: "{fix.splitlines()[0]}"'
+            self._print_failure(message, fix=fix, suggest=suggest)
             return ValidationResult.FAIL
 
         return ValidationResult.PASS
@@ -1228,20 +1302,31 @@ class AiAttributionValidator(BaseValidator):
             return ValidationResult.PASS
 
         tools = {s["tool"] for s in signatures}
+        fix = strip_lines_containing(
+            message, [s.get("matched_text", "") for s in signatures]
+        )
         self._record_failure(
             value=", ".join(sorted(tools)),
             error=f"AI-assisted commit is forbidden — detected tools: {', '.join(sorted(tools))}",
-            suggest="This project forbids AI-assisted commits. Remove AI trailers and re-commit.",
+            suggest=(
+                "This project forbids AI-assisted commits. Remove the AI trailer lines and re-commit."
+                if fix
+                else "This project forbids AI-assisted commits. Remove AI trailers and re-commit."
+            ),
+            fix=fix,
         )
         return ValidationResult.FAIL
 
-    def _record_failure(self, value: str, error: str, suggest: str) -> None:
+    def _record_failure(
+        self, value: str, error: str, suggest: str, fix: str | None = None
+    ) -> None:
         """Record a failure with dynamic error/suggest messages."""
         self._last_failure = {
             "check": self.rule.check,
             "value": value,
             "error": error,
             "suggest": suggest,
+            "fix": fix or "",
         }
         if not self._suppress_output:
             # Pass dynamic messages to the printer by creating a dict with
@@ -1364,6 +1449,7 @@ class ValidationEngine:
                         value=failure.get("value", ""),
                         error=failure.get("error", ""),
                         suggest=failure.get("suggest", ""),
+                        fix=failure.get("fix", ""),
                         rule_id=rule.rule_id or "",
                         docs_url=rule.docs_url or "",
                     )
