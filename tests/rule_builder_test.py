@@ -663,7 +663,8 @@ class TestWarnSeverity:
 
     def test_rules_are_errors_by_default(self):
         rules = RuleBuilder({"commit": {}, "branch": {}}).build_all_rules()
-        assert rules and all(r.severity == "error" for r in rules)
+        assert rules
+        assert all(r.severity == "error" for r in rules)
 
     def test_named_check_becomes_a_warning(self):
         rules = RuleBuilder({"warn": ["branch"], "branch": {}}).build_all_rules()
@@ -673,7 +674,10 @@ class TestWarnSeverity:
 
     def test_check_name_is_accepted_in_any_case(self):
         rules = RuleBuilder(
-            {"warn": ["BRANCH", " Subject_Max_Length "]}
+            {
+                "warn": ["BRANCH", " Subject_Max_Length "],
+                "commit": {"subject_max_length": 72},
+            }
         ).build_all_rules()
         by_check = {r.check: r.severity for r in rules}
         assert by_check["branch"] == "warn"
@@ -690,7 +694,8 @@ class TestWarnSeverity:
     def test_none_means_no_warnings(self):
         # A config assembled in Python may carry an explicit None; TOML cannot.
         rules = RuleBuilder({"warn": None}).build_all_rules()
-        assert rules and all(r.severity == "error" for r in rules)
+        assert rules
+        assert all(r.severity == "error" for r in rules)
 
     def test_single_name_may_be_given_as_a_string(self):
         rules = RuleBuilder({"warn": "branch"}).build_all_rules()
