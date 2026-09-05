@@ -26,7 +26,12 @@ def _transposed(a: str, b: str) -> bool:
     if len(a) != len(b) or a == b:
         return False
     diff = [i for i, (x, y) in enumerate(zip(a, b)) if x != y]
-    return len(diff) == 2 and diff[1] == diff[0] + 1 and a[diff[0]] == b[diff[1]] and a[diff[1]] == b[diff[0]]
+    return (
+        len(diff) == 2
+        and diff[1] == diff[0] + 1
+        and a[diff[0]] == b[diff[1]]
+        and a[diff[1]] == b[diff[0]]
+    )
 
 
 def _closest(word: str, allowed: list[str]) -> str | None:
@@ -48,7 +53,9 @@ def _closest(word: str, allowed: list[str]) -> str | None:
     return close[0] if close else None
 
 
-def fix_conventional_header(subject: str, allowed_types: list[str] | None) -> str | None:
+def fix_conventional_header(
+    subject: str, allowed_types: list[str] | None
+) -> str | None:
     """A corrected Conventional Commits header, or None when it takes a guess.
 
     Fixes the type's case and small misspellings, a missing colon after a

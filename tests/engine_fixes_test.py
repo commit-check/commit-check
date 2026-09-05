@@ -5,7 +5,9 @@ from unittest.mock import patch
 from commit_check.engine import ValidationContext, ValidationEngine
 from commit_check.rule_builder import RuleBuilder, ValidationRule
 
-CONVENTIONAL = r"^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(.+\))?!?: \S.*"
+CONVENTIONAL = (
+    r"^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(.+\))?!?: \S.*"
+)
 TYPES = [
     "build",
     "chore",
@@ -22,7 +24,9 @@ TYPES = [
 
 
 def failed(rules, **context):
-    outcomes = ValidationEngine(rules).validate_all_detailed(ValidationContext(**context))
+    outcomes = ValidationEngine(rules).validate_all_detailed(
+        ValidationContext(**context)
+    )
     fails = [o for o in outcomes if o.status == "fail"]
     assert len(fails) == 1, outcomes
     return fails[0]
@@ -118,7 +122,10 @@ class TestSignoffFix:
     @patch("commit_check.engine.get_commit_info", return_value="")
     @patch("commit_check.engine.get_git_config_value")
     def test_trailer_uses_local_identity_for_pending_message(self, config, _info):
-        config.side_effect = {"user.name": "Jane Doe", "user.email": "jane@example.com"}.get
+        config.side_effect = {
+            "user.name": "Jane Doe",
+            "user.email": "jane@example.com",
+        }.get
         out = failed([self.rule()], stdin_text="feat: add x")
         assert out.fix == "feat: add x\n\nSigned-off-by: Jane Doe <jane@example.com>"
         assert out.suggest == (
@@ -159,7 +166,10 @@ class TestBranchFix:
     def test_type_case_is_corrected(self):
         out = failed([self.rule()], stdin_text="Feature/login")
         assert out.fix == "feature/login"
-        assert out.suggest == 'Rename the branch to "feature/login" (git branch -m feature/login)'
+        assert (
+            out.suggest
+            == 'Rename the branch to "feature/login" (git branch -m feature/login)'
+        )
 
     def test_unrelated_prefix_keeps_generic_suggestion(self):
         out = failed([self.rule()], stdin_text="stuff/login")
@@ -198,7 +208,9 @@ class TestBuiltRulesCarryAllowedTypes:
         assert out.rule_id == "CC001"
 
     def test_custom_types_drive_the_fix(self):
-        rules = RuleBuilder({"commit": {"allow_commit_types": ["feat", "fix"]}}).build_all_rules()
+        rules = RuleBuilder(
+            {"commit": {"allow_commit_types": ["feat", "fix"]}}
+        ).build_all_rules()
         message_rules = [r for r in rules if r.check == "message"]
         # "docs" is not allowed here, so it is not a near-miss of anything.
         out = failed(message_rules, stdin_text="Docs: add x")

@@ -139,15 +139,22 @@ class TestFixBranchType:
 
 class TestStripLinesContaining:
     def test_drops_matching_lines_only(self):
-        message = "feat: init\n\nSome body\n\nCo-authored-by: Claude <noreply@anthropic.com>"
+        message = (
+            "feat: init\n\nSome body\n\nCo-authored-by: Claude <noreply@anthropic.com>"
+        )
         assert (
-            strip_lines_containing(message, ["Co-authored-by: Claude <noreply@anthropic.com>"])
+            strip_lines_containing(
+                message, ["Co-authored-by: Claude <noreply@anthropic.com>"]
+            )
             == "feat: init\n\nSome body"
         )
 
     def test_partial_fragment_matches_its_line(self):
         message = "feat: init\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)"
-        assert strip_lines_containing(message, ["🤖 Generated with [Claude"]) == "feat: init"
+        assert (
+            strip_lines_containing(message, ["🤖 Generated with [Claude"])
+            == "feat: init"
+        )
 
     def test_no_match_no_fix(self):
         assert strip_lines_containing("feat: init", ["Co-authored-by: Claude"]) is None
@@ -155,4 +162,7 @@ class TestStripLinesContaining:
         assert strip_lines_containing("feat: init", [""]) is None
 
     def test_nothing_left_is_no_fix(self):
-        assert strip_lines_containing("Co-authored-by: Claude", ["Co-authored-by: Claude"]) is None
+        assert (
+            strip_lines_containing("Co-authored-by: Claude", ["Co-authored-by: Claude"])
+            is None
+        )
