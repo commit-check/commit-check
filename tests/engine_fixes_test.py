@@ -85,6 +85,20 @@ class TestSubjectCapitalizationFix:
         assert out.fix == "feat: Add x"
         assert out.suggest == 'Use "feat: Add x"'
 
+    def test_a_fix_that_would_still_fail_is_withheld(self):
+        """The helper and the validator agree today; the guard is for the day they drift."""
+        rule = ValidationRule(
+            check="subject_capitalized",
+            error="Lowercase subject",
+            suggest="Capitalise the subject",
+        )
+        with patch(
+            "commit_check.engine.fix_subject_case", return_value="still lowercase"
+        ):
+            out = failed([rule], stdin_text="add x")
+        assert out.fix == ""
+        assert out.suggest == "Capitalise the subject"
+
     def test_plain_subject_is_capitalised_and_the_fix_passes_the_rule(self):
         rule = ValidationRule(
             check="subject_capitalized",
