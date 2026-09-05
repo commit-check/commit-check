@@ -3,6 +3,7 @@ import os
 import sys
 import pytest
 import subprocess
+from unittest.mock import patch
 import commit_check
 from commit_check import supports_color
 from commit_check.util import (
@@ -1419,3 +1420,29 @@ class TestParseSizeOverflow:
         assert parse_size("inf") is None
         assert parse_size("1e999MB") is None
         assert parse_size("nan") is None
+
+
+class TestIdentityLookups:
+    """Both identity helpers ask git exactly once."""
+
+    @patch("commit_check.util.cmd_output")
+    def test_git_user_identity_parses_both_keys(self, cmd):
+        from commit_check.util import get_git_user_identity
+
+        cmd.return_value = "user.name Jane Doe\nuser.email jane@example.com\n"
+        assert get_git_user_identity() == ("Jane Doe", "jane@example.com")
+        cmd.assert_called_once()
+
+    @patch("commit_check.util.cmd_output", return_value="user.email jane@example.com\n")
+    def test_git_user_identity_leaves_missing_parts_blank(self, _cmd):
+        from commit_check.util import get_git_user_identity
+
+        assert get_git_user_identity() == ("", "jane@example.com")
+
+    @patch("commit_check.util.cmd_output", return_value="Jane Doe\x1fjane@example.com")
+    def test_commit_author_identity_splits_the_record(self, cmd):
+        from commit_check.util import get_commit_author_identity
+
+        assert get_commit_author_identity("abc") == ("Jane Doe", "jane@example.com")
+        assert "--pretty=format:%an%x1f%ae" in cmd.call_args[0][0]
+        assert cmd.call_args[0][0][-1] == "abc"

@@ -15,7 +15,9 @@ from commit_check.ai_signatures import (
 from commit_check.util import (
     fetch_remote_ref,
     fetch_upstream_ref,
+    get_commit_author_identity,
     get_commit_info,
+    get_git_user_identity,
     get_git_config_value,
     get_branch_name,
     get_commit_files,
@@ -1022,20 +1024,24 @@ class SignoffValidator(BaseValidator):
 
     @staticmethod
     def _resolve_author_identity(context: ValidationContext) -> tuple[str, str]:
-        """The (name, email) the sign-off would carry, by the same modes as the author."""
+        """The (name, email) the sign-off would carry, by the same modes as the author.
+
+        This runs only on a failure, but a hook still waits on it, so each
+        mode asks git once and falls back to a second call only when the
+        first left a part blank.
+        """
         if context.rev is not None:
-            return get_commit_info("an", context.rev), get_commit_info(
-                "ae", context.rev
-            )
-        if context.stdin_text is not None or context.commit_file is not None:
-            return (
-                get_git_config_value("user.name") or get_commit_info("an"),
-                get_git_config_value("user.email") or get_commit_info("ae"),
-            )
-        return (
-            get_commit_info("an") or get_git_config_value("user.name"),
-            get_commit_info("ae") or get_git_config_value("user.email"),
+            return get_commit_author_identity(context.rev)
+        pending = context.stdin_text is not None or context.commit_file is not None
+        name, email = (
+            get_git_user_identity() if pending else get_commit_author_identity()
         )
+        if not name or not email:
+            fallback_name, fallback_email = (
+                get_commit_author_identity() if pending else get_git_user_identity()
+            )
+            name, email = name or fallback_name, email or fallback_email
+        return name, email
 
 
 class BodyValidator(BaseValidator):

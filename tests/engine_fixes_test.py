@@ -150,35 +150,44 @@ class TestSignoffFix:
             suggest="Run git commit --signoff",
         )
 
-    @patch("commit_check.engine.get_commit_info", return_value="")
-    @patch("commit_check.engine.get_git_config_value")
-    def test_trailer_uses_local_identity_for_pending_message(self, config, _info):
-        config.side_effect = {
-            "user.name": "Jane Doe",
-            "user.email": "jane@example.com",
-        }.get
+    @patch("commit_check.engine.get_commit_author_identity")
+    @patch("commit_check.engine.get_git_user_identity")
+    def test_trailer_uses_local_identity_for_pending_message(self, config, commit):
+        config.return_value = ("Jane Doe", "jane@example.com")
         out = failed([self.rule()], stdin_text="feat: add x")
         assert out.fix == "feat: add x\n\nSigned-off-by: Jane Doe <jane@example.com>"
         assert out.suggest == (
             'Add the trailer "Signed-off-by: Jane Doe <jane@example.com>" '
             "(git commit --signoff, or --amend --signoff for an existing commit)"
         )
+        # One git call is enough when the config is complete.
+        config.assert_called_once()
+        commit.assert_not_called()
 
-    @patch("commit_check.engine.get_git_config_value", return_value="")
+    @patch("commit_check.engine.get_commit_author_identity")
+    @patch("commit_check.engine.get_git_user_identity")
+    def test_missing_config_part_falls_back_to_the_last_commit(self, config, commit):
+        config.return_value = ("Jane Doe", "")
+        commit.return_value = ("Old Name", "jane@example.com")
+        out = failed([self.rule()], stdin_text="feat: add x")
+        assert out.fix.endswith("Signed-off-by: Jane Doe <jane@example.com>")
+
+    @patch("commit_check.engine.get_git_user_identity")
+    @patch("commit_check.engine.get_commit_author_identity")
     @patch("commit_check.engine.get_commit_info")
-    def test_trailer_uses_commit_author_for_a_revision(self, info, _config):
-        info.side_effect = lambda fmt, rev=None: {
-            "s": "feat: add x",
-            "b": "",
-            "an": "Rev Author",
-            "ae": "rev@example.com",
-        }.get(fmt, "")
+    def test_trailer_uses_commit_author_for_a_revision(self, info, commit, config):
+        info.side_effect = lambda fmt, rev=None: {"s": "feat: add x", "b": ""}.get(
+            fmt, ""
+        )
+        commit.return_value = ("Rev Author", "rev@example.com")
         out = failed([self.rule()], rev="abc123")
         assert out.fix.endswith("Signed-off-by: Rev Author <rev@example.com>")
+        commit.assert_called_once_with("abc123")
+        config.assert_not_called()
 
-    @patch("commit_check.engine.get_commit_info", return_value="")
-    @patch("commit_check.engine.get_git_config_value", return_value="")
-    def test_unknown_identity_keeps_generic_suggestion(self, _config, _info):
+    @patch("commit_check.engine.get_commit_author_identity", return_value=("", ""))
+    @patch("commit_check.engine.get_git_user_identity", return_value=("", ""))
+    def test_unknown_identity_keeps_generic_suggestion(self, _config, _commit):
         out = failed([self.rule()], stdin_text="feat: add x")
         assert out.fix == ""
         assert out.suggest == "Run git commit --signoff"

@@ -46,10 +46,13 @@ def _closest(word: str, allowed: list[str]) -> str | None:
         return lowered
     if len(lowered) < 3:
         return None
-    for candidate in allowed:
+    # A near-miss is within a letter of its target; anything else is a
+    # different word, and there is no point measuring how different.
+    near = [c for c in allowed if abs(len(c) - len(lowered)) <= 1]
+    for candidate in near:
         if _transposed(lowered, candidate):
             return candidate
-    close = difflib.get_close_matches(lowered, allowed, n=1, cutoff=0.8)
+    close = difflib.get_close_matches(lowered, near, n=1, cutoff=0.8)
     return close[0] if close else None
 
 

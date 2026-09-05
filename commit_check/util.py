@@ -501,6 +501,29 @@ def get_git_config_value(key: str) -> str:
         return ""
 
 
+def get_git_user_identity() -> tuple[str, str]:
+    """The configured ``user.name`` and ``user.email``, in one git call.
+
+    Either part is an empty string when it is not set.
+    """
+    try:
+        output = cmd_output(["git", "config", "--get-regexp", r"^user\.(name|email)$"])
+    except CalledProcessError:
+        return "", ""
+    identity = {"user.name": "", "user.email": ""}
+    for line in output.splitlines():
+        key, _, value = line.partition(" ")
+        if key in identity:
+            identity[key] = value.strip()
+    return identity["user.name"], identity["user.email"]
+
+
+def get_commit_author_identity(sha: str = "HEAD") -> tuple[str, str]:
+    """The author name and email of a commit, in one git call."""
+    name, _, email = get_commit_info("an%x1f%ae", sha).partition("\x1f")
+    return name.strip(), email.strip()
+
+
 def git_merge_base(target_branch: str, current_branch: str) -> int:
     """Check ancestors for a given commit.
     :param target_branch: target branch
