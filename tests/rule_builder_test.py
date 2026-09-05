@@ -679,6 +679,11 @@ class TestWarnSeverity:
         assert by_check["branch"].severity == "warn"
         assert by_check["subject_imperative"].severity == "warn"
 
+    def test_none_means_no_warnings(self):
+        # A config assembled in Python may carry an explicit None; TOML cannot.
+        rules = RuleBuilder({"warn": None}).build_all_rules()
+        assert rules and all(r.severity == "error" for r in rules)
+
     def test_single_name_may_be_given_as_a_string(self):
         rules = RuleBuilder({"warn": "branch"}).build_all_rules()
         assert {r.check: r.severity for r in rules}["branch"] == "warn"
