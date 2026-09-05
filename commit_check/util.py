@@ -20,15 +20,22 @@ def _print_failure(
     no_banner: bool = False,
     compact: bool = False,
 ) -> None:
-    """Print a standardized failure message."""
+    """Print a standardized failure message.
+
+    A rule whose ``severity`` is ``"warn"`` prints the same block with the
+    word ``warning`` in place of ``failed``, no rejection banner, and one
+    closing line saying the run is not failed by it.
+    """
     rule_id = check.get("rule_id", "")
+    warn = check.get("severity") == "warn"
     if compact:
         compact_value = actual.splitlines()[0] if actual else actual
         name = display_name(check["check"])
         label = f"{rule_id} {name}" if rule_id else name
-        print(f"[FAIL] {label}: {compact_value}")
+        print(f"[{'WARN' if warn else 'FAIL'}] {label}: {compact_value}")
         return
-    if not no_banner and not print_error_header.has_been_called:
+    # The banner announces a rejected commit; a warning rejects nothing.
+    if not warn and not no_banner and not print_error_header.has_been_called:
         print_error_header()
     docs_url = check.get("docs_url", "") or ""
     print_error_message(
@@ -37,6 +44,7 @@ def _print_failure(
         actual,
         rule_id=rule_id,
         docs_url=docs_url,
+        warn=warn,
     )
     if check.get("suggest"):
         print_suggestion(check["suggest"])
@@ -45,6 +53,8 @@ def _print_failure(
     # way the reader gets the address at all, so it stays.
     if docs_url and not (rule_id and supports_hyperlinks()):
         print(f"Docs: {docs_url}")
+    if warn:
+        print("This rule is set to warn in the config; it does not fail the run.")
     # Blank line closes the whole block, rather than splitting it before the
     # documentation link.
     print()
@@ -641,6 +651,7 @@ def print_error_message(
     reason: str,
     rule_id: str = "",
     docs_url: str = "",
+    warn: bool = False,
 ) -> None:
     """Print error message.
 
@@ -650,6 +661,8 @@ def print_error_message(
     :param rule_id: stable rule ID, e.g. ``CC003`` (omitted when empty)
     :param docs_url: the rule's documentation, linked from the ID when the
         terminal supports it
+    :param warn: the rule is reported, not enforced: say ``warning`` rather
+        than ``failed``, and colour the value as a caution, not an error
 
     :returns: Give error messages to user
     """
@@ -658,8 +671,9 @@ def print_error_message(
     if rule_id and docs_url and supports_hyperlinks():
         label = hyperlink(rule_id, docs_url)
     prefix = f"{YELLOW}{label}{RESET_COLOR} " if rule_id else ""
+    verdict, colour = ("warning", YELLOW) if warn else ("failed", RED)
     print(
-        f"{prefix}{YELLOW}{name}{RESET_COLOR} check failed ==> {RED}{reason}{RESET_COLOR}"
+        f"{prefix}{YELLOW}{name}{RESET_COLOR} check {verdict} ==> {colour}{reason}{RESET_COLOR}"
     )
     if error:
         print(error)

@@ -97,9 +97,11 @@ class CheckOutcome:
 
     check: str
     # "pass" (the rule ran and was satisfied), "fail" (the rule ran and was
-    # not), or "skip" (the rule never ran — ignored author, or nothing to
-    # check). A skip is not a pass: it means the policy was bypassed, and
-    # collapsing the two lets a run that validated nothing report success.
+    # not), "warn" (the rule was not satisfied but is listed under ``warn``
+    # in the config, so it is reported and does not fail the run), or "skip"
+    # (the rule never ran — ignored author, or nothing to check). A skip is
+    # not a pass: it means the policy was bypassed, and collapsing the two
+    # lets a run that validated nothing report success.
     status: str
     # The concrete value that was checked (subject, branch, author, ...),
     # populated on both pass and fail so consumers can report what was
@@ -143,7 +145,9 @@ def overall_status(statuses: Iterable[str]) -> str:
     after the skip status existed.
 
     ``"skip"`` requires that *every* check skipped: a single real verdict
-    means something was actually validated. Only ``"fail"`` is an error.
+    means something was actually validated. Only ``"fail"`` is an error: a
+    ``"warn"`` is a verdict the config asked to report without enforcing,
+    so a run whose only findings are warnings passes.
     """
     seen = list(statuses)
     if any(s == "fail" for s in seen):
@@ -151,6 +155,11 @@ def overall_status(statuses: Iterable[str]) -> str:
     if seen and all(s == "skip" for s in seen):
         return "skip"
     return "pass"
+
+
+def count_warnings(statuses: Iterable[str]) -> int:
+    """How many checks were reported as warnings rather than failures."""
+    return sum(1 for s in statuses if s == "warn")
 
 
 class BaseValidator(ABC):
@@ -1396,8 +1405,9 @@ class ValidationEngine:
 
     def validate_all(self, context: ValidationContext) -> ValidationResult:
         """Run all validations and return overall result."""
-        results = []
+        failed = False
         skipped: list[str] = []
+        warned: list[str] = []
 
         for rule in self.rules:
             validator_class = self.VALIDATOR_MAP.get(rule.check)
@@ -1408,9 +1418,13 @@ class ValidationEngine:
             validator._no_banner = context.no_banner
             validator._compact = context.compact
             result = validator.validate(context)
-            results.append(result)
             if result == ValidationResult.SKIP:
                 skipped.append(rule.check.replace("_", "-"))
+            elif result == ValidationResult.FAIL:
+                if rule.severity == "warn":
+                    warned.append(rule.check.replace("_", "-"))
+                else:
+                    failed = True
 
         if skipped:
             # A skipped check validated nothing, and a silent skip is
@@ -1424,12 +1438,19 @@ class ValidationEngine:
                 file=sys.stderr,
             )
 
-        # Return FAIL if any validation failed
-        return (
-            ValidationResult.FAIL
-            if ValidationResult.FAIL in results
-            else ValidationResult.PASS
-        )
+        if warned:
+            # A warning was printed in full above; this one line says why the
+            # run still passes, so a hook that exits 0 after red-looking output
+            # is not mistaken for a broken hook.
+            import sys
+
+            print(
+                f"⚠ warnings (not enforced): {', '.join(warned)}",
+                file=sys.stderr,
+            )
+
+        # Only an enforced rule fails the run; a warning is reported and done.
+        return ValidationResult.FAIL if failed else ValidationResult.PASS
 
     def validate_all_detailed(self, context: ValidationContext) -> list[CheckOutcome]:
         """Run all validations and return structured :class:`CheckOutcome` objects.
@@ -1463,7 +1484,7 @@ class ValidationEngine:
                 outcomes.append(
                     CheckOutcome(
                         check=rule.check,
-                        status="fail",
+                        status="warn" if rule.severity == "warn" else "fail",
                         value=failure.get("value", ""),
                         error=failure.get("error", ""),
                         suggest=failure.get("suggest", ""),

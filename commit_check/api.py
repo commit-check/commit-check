@@ -20,10 +20,11 @@ Return-value schema (all functions)::
 
     {
         "status": "pass" | "fail" | "skip",
+        "warnings": <number of checks with status "warn">,
         "checks": [
             {
                 "check":   "<rule name>",
-                "status":  "pass" | "fail" | "skip",
+                "status":  "pass" | "fail" | "warn" | "skip",
                 "value":   "<actual value that was checked>",
                 "error":   "<error description>",
                 "suggest": "<how to fix>",
@@ -52,6 +53,7 @@ from commit_check.engine import (
     CheckOutcome,
     ValidationContext,
     ValidationEngine,
+    count_warnings,
     overall_status,
 )
 from commit_check.rule_builder import RuleBuilder
@@ -67,6 +69,7 @@ def _build_result(outcomes: list[CheckOutcome]) -> dict[str, Any]:
     public return-value dict."""
     return {
         "status": overall_status(o.status for o in outcomes),
+        "warnings": count_warnings(o.status for o in outcomes),
         "checks": [o.to_dict() for o in outcomes],
     }
 
@@ -292,7 +295,11 @@ def validate_author(
         # Shared reducer, not a local "fail or else pass": a combined call
         # in which every nested check skipped is still a skip.
         overall = overall_status(c["status"] for c in all_checks)
-        return {"status": overall, "checks": all_checks}
+        return {
+            "status": overall,
+            "warnings": count_warnings(c["status"] for c in all_checks),
+            "checks": all_checks,
+        }
 
     stdin = None
     if name is not None:
@@ -350,4 +357,8 @@ def validate_all(
         all_checks.extend(author_result["checks"])
 
     overall = overall_status(c["status"] for c in all_checks)
-    return {"status": overall, "checks": all_checks}
+    return {
+        "status": overall,
+        "warnings": count_warnings(c["status"] for c in all_checks),
+        "checks": all_checks,
+    }

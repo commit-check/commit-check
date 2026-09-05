@@ -656,3 +656,44 @@ class TestFilesRules:
         assert not [
             r for r in rules if r.check in ("file_size", "file_pattern", "path_length")
         ]
+
+
+class TestWarnSeverity:
+    """The top-level ``warn`` list demotes named rules to warnings."""
+
+    def test_rules_are_errors_by_default(self):
+        rules = RuleBuilder({"commit": {}, "branch": {}}).build_all_rules()
+        assert rules and all(r.severity == "error" for r in rules)
+
+    def test_named_check_becomes_a_warning(self):
+        rules = RuleBuilder({"warn": ["branch"], "branch": {}}).build_all_rules()
+        by_check = {r.check: r for r in rules}
+        assert by_check["branch"].severity == "warn"
+        assert by_check["message"].severity == "error"
+
+    def test_rule_id_is_accepted_in_any_case(self):
+        rules = RuleBuilder(
+            {"warn": ["cc201", "CC003"], "commit": {"subject_imperative": True}}
+        ).build_all_rules()
+        by_check = {r.check: r for r in rules}
+        assert by_check["branch"].severity == "warn"
+        assert by_check["subject_imperative"].severity == "warn"
+
+    def test_single_name_may_be_given_as_a_string(self):
+        rules = RuleBuilder({"warn": "branch"}).build_all_rules()
+        assert {r.check: r.severity for r in rules}["branch"] == "warn"
+
+    def test_unknown_name_is_refused_with_the_known_rules(self):
+        with pytest.raises(ValueError, match="unknown rule 'branchh'.*\\bbranch\\b"):
+            RuleBuilder({"warn": ["branchh"]})
+
+    def test_non_list_is_refused(self):
+        with pytest.raises(ValueError, match="must be a list"):
+            RuleBuilder({"warn": {"branch": True}})
+
+    def test_to_dict_carries_severity(self):
+        assert ValidationRule(check="branch").to_dict()["severity"] == "error"
+        assert (
+            ValidationRule(check="branch", severity="warn").to_dict()["severity"]
+            == "warn"
+        )

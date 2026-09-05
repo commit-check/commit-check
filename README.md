@@ -108,6 +108,10 @@ Commit Check can be configured in three ways (in order of priority):
 To customize the behavior, create a configuration file named `cchk.toml` or `commit-check.toml` in your repository's root directory or in the `.github` folder, e.g., [`cchk.toml`](https://github.com/commit-check/commit-check/blob/main/cchk.toml) or `.github/cchk.toml`.
 
 ```toml
+# Rules to report without enforcing: they print in full, never fail the run.
+# Name a check or its rule ID. See "Report a rule without enforcing it" below.
+warn = ["branch"]
+
 [commit]
 # https://www.conventionalcommits.org
 conventional_commits = true
@@ -155,6 +159,24 @@ allow_branch_types = [
 > so editors like VS Code (via [Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml)),
 > PyCharm, and IntelliJ provide autocompletion, validation, and documentation
 > tooltips for `cchk.toml` out of the box — no manual schema path configuration needed.
+
+### Report a rule without enforcing it
+
+A rule is normally on or off. `warn` gives it a third setting: run, report
+the finding in full, and never fail the run. Name a check or its rule ID:
+
+```toml
+warn = ["branch", "CC003"]
+```
+
+A warned rule prints the same block as a failure with `warning` in place of
+`failed`, no rejection banner, and one closing line saying the run is not
+failed by it. The exit code counts only enforced rules, and in `--format json`
+the check's `status` is `warn`, the top-level `status` stays `pass`, and
+`warnings` counts them. This is how a team adopts a rule gradually: turn it on
+as a warning, watch what it catches, then drop it from `warn` when the history
+is clean. A name that matches no rule is a configuration error, so a typo
+cannot leave a rule silently enforced.
 
 ### Organization-Level Configuration (inherit_from)
 
@@ -326,6 +348,7 @@ echo "feat: add streaming support" | commit-check -m --format json
 ```json
 {
   "status": "pass",
+  "warnings": 0,
   "checks": [
     {
       "rule_id": "CC001",
@@ -371,6 +394,7 @@ echo "wip bad commit" | commit-check -m --format json
 ```json
 {
   "status": "fail",
+  "warnings": 0,
   "checks": [
     {
       "rule_id": "CC001",
@@ -422,6 +446,7 @@ echo "Fix: add streaming support" | commit-check -m --format json
 ```json
 {
   "status": "fail",
+  "warnings": 0,
   "checks": [
     {
       "rule_id": "CC001",
@@ -512,11 +537,12 @@ print(result["status"])          # "fail" — 'docs' not in allowed types
 ```python
 {
     "status": "pass" | "fail" | "skip",
+    "warnings": <number of checks with status "warn">,
     "checks": [
         {
             "rule_id":  "<rule identifier, e.g. CC001>",
             "check":    "<rule name>",
-            "status":   "pass" | "fail" | "skip",
+            "status":   "pass" | "fail" | "warn" | "skip",
             "value":    "<actual value that was checked>",
             "error":    "<human-readable error description>",
             "suggest":  "<how to fix>",
@@ -528,8 +554,10 @@ print(result["status"])          # "fail" — 'docs' not in allowed types
 }
 ```
 
-`skip` means the rule never ran — the author matched `ignore_authors`, or
-there was nothing to check. It is deliberately not `pass`: a skipped rule
+`warn` means the rule was not satisfied but is listed under `warn` in the
+config: the finding is reported and does not fail the run, and `warnings`
+counts these. `skip` means the rule never ran — the author matched
+`ignore_authors`, or there was nothing to check. It is deliberately not `pass`: a skipped rule
 validated nothing, so reporting it as a pass makes a bypassed policy
 indistinguishable from an enforced one. A skipped check carries no `value`,
 since nothing was examined.
@@ -546,6 +574,7 @@ echo "chore(deps): bump commit-check" | CCHK_IGNORE_AUTHORS="dependabot[bot]" co
 ```json
 {
   "status": "skip",
+  "warnings": 0,
   "checks": [
     {
       "rule_id": "CC001",

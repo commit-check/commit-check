@@ -13,6 +13,7 @@ from commit_check.engine import (
     ValidationContext,
     ValidationResult,
     CheckOutcome,
+    count_warnings,
     overall_status,
 )
 from . import __version__
@@ -569,6 +570,7 @@ def _run_json_output(engine: ValidationEngine, context: ValidationContext) -> in
         json.dumps(
             {
                 "status": overall,
+                "warnings": count_warnings(o.status for o in outcomes),
                 "checks": [o.to_dict() for o in outcomes],
             },
             indent=2,

@@ -3,7 +3,7 @@
 from __future__ import annotations
 import sys
 from typing import Any
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from commit_check.rules_catalog import (
     COMMIT_RULES,
     BRANCH_RULES,
@@ -35,6 +35,9 @@ class ValidationRule:
     value: Any = None
     allowed: list[str] | None = None
     ignored: list[str] | None = None
+    # "error" fails the run; "warn" is reported in full but never fails it.
+    # Set from the top-level ``warn`` list in the config.
+    severity: str = "error"
 
     @property
     def rule_id(self) -> str | None:
@@ -55,6 +58,7 @@ class ValidationRule:
             "regex": self.regex or "",
             "error": self.error or "",
             "suggest": self.suggest or "",
+            "severity": self.severity,
         }
         if self.rule_id:
             result["rule_id"] = self.rule_id
@@ -80,6 +84,7 @@ class RuleBuilder:
         self.push_config = config.get("push", {})
         self.tag_config = config.get("tag", {})
         self.files_config = config.get("files", {})
+        self.warn_checks = self._resolve_warn_list(config.get("warn", []))
 
     def build_all_rules(self) -> list[ValidationRule]:
         """Build all validation rules from config."""
@@ -89,7 +94,45 @@ class RuleBuilder:
         rules.extend(self._build_push_rules())
         rules.extend(self._build_files_rules())
         rules.extend(self._build_tag_rules())
-        return rules
+        return [
+            replace(rule, severity="warn") if rule.check in self.warn_checks else rule
+            for rule in rules
+        ]
+
+    @staticmethod
+    def _resolve_warn_list(names: Any) -> frozenset[str]:
+        """The checks the top-level ``warn`` list demotes to warnings.
+
+        Entries name a check (``branch``) or a rule ID (``CC201``). A name
+        nothing matches is refused rather than ignored: a typo that silently
+        left the rule enforcing would be discovered by whoever it blocked.
+        """
+        if names is None:
+            return frozenset()
+        if isinstance(names, str):
+            names = [names]
+        if not isinstance(names, list) or not all(isinstance(n, str) for n in names):
+            raise ValueError(
+                'warn must be a list of rule names, e.g. warn = ["branch"]'
+            )
+        by_id = {
+            entry.rule_id.lower(): entry.check
+            for entry in RULES_BY_CHECK.values()
+            if entry.rule_id
+        }
+        resolved = set()
+        for name in names:
+            key = name.strip()
+            if key in RULES_BY_CHECK:
+                resolved.add(key)
+            elif key.lower() in by_id:
+                resolved.add(by_id[key.lower()])
+            else:
+                known = ", ".join(sorted(RULES_BY_CHECK))
+                raise ValueError(
+                    f"warn names an unknown rule {name!r}. Known rules: {known}"
+                )
+        return frozenset(resolved)
 
     def _build_commit_rules(self) -> list[ValidationRule]:
         """Build commit-related validation rules."""
