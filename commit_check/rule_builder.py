@@ -103,8 +103,8 @@ class RuleBuilder:
     def _resolve_warn_list(names: Any) -> frozenset[str]:
         """The checks the top-level ``warn`` list demotes to warnings.
 
-        Entries name a check (``branch``) or a rule ID (``CC201``). A name
-        nothing matches is refused rather than ignored: a typo that silently
+        Entries name a check (``branch``) or a rule ID (``CC201``), in any
+        case. A name nothing matches is refused rather than ignored: a typo that silently
         left the rule enforcing would be discovered by whoever it blocked.
         """
         if names is None:
@@ -115,6 +115,7 @@ class RuleBuilder:
             raise ValueError(
                 'warn must be a list of rule names, e.g. warn = ["branch"]'
             )
+        by_check = {check.lower(): check for check in RULES_BY_CHECK}
         by_id = {
             entry.rule_id.lower(): entry.check
             for entry in RULES_BY_CHECK.values()
@@ -122,11 +123,11 @@ class RuleBuilder:
         }
         resolved = set()
         for name in names:
-            key = name.strip()
-            if key in RULES_BY_CHECK:
-                resolved.add(key)
-            elif key.lower() in by_id:
-                resolved.add(by_id[key.lower()])
+            key = name.strip().lower()
+            if key in by_check:
+                resolved.add(by_check[key])
+            elif key in by_id:
+                resolved.add(by_id[key])
             else:
                 known = ", ".join(sorted(RULES_BY_CHECK))
                 raise ValueError(

@@ -118,7 +118,8 @@ def validate_message(
         If *None*, built-in defaults are used.  You can pass a partial dict to
         override only the keys you care about, e.g.
         ``{"commit": {"allow_commit_types": ["feat", "fix"]}}``.
-    :returns: A dict with ``"status"`` (``"pass"``/``"fail"``) and ``"checks"``
+    :returns: A dict with ``"status"`` (``"pass"``/``"fail"``/``"skip"``), a
+        ``"warnings"`` count and ``"checks"``
         (list of per-rule outcomes).
 
     Example::
@@ -159,7 +160,7 @@ def validate_branch(
     :param branch: Branch name to validate.  If *None*, the current git branch
         is used (via ``git branch --show-current``).
     :param config: Optional configuration override dict.
-    :returns: A dict with ``"status"`` and ``"checks"``.
+    :returns: A dict with ``"status"``, a ``"warnings"`` count and ``"checks"``.
 
     Example::
 
@@ -192,7 +193,7 @@ def validate_tag(
     :param config: Optional configuration override dict. The pattern comes
         from ``config["tag"]["regex"]`` and defaults to SemVer with an
         optional leading ``v`` (``v1.2.3`` or ``1.2.3``).
-    :returns: A dict with ``"status"`` and ``"checks"``.
+    :returns: A dict with ``"status"``, a ``"warnings"`` count and ``"checks"``.
 
     Example::
 
@@ -225,9 +226,11 @@ def validate_push(
         pre-push hook: ``<local ref> <local sha1> <remote ref> <remote sha1>``,
         one entry per line.  If *None*, the check is skipped (returns pass).
     :param config: Optional configuration override dict.  The push check is
-        always enabled when calling this function; force pushes detected here
-        will always return ``"fail"``.
-    :returns: A dict with ``"status"`` (``"pass"``/``"fail"``) and ``"checks"``.
+        always enabled when calling this function; a detected force push fails
+        the result unless ``no_force_push`` is listed under ``warn``, in which
+        case the check reports ``"warn"`` and the result passes.
+    :returns: A dict with ``"status"`` (``"pass"``/``"fail"``/``"skip"``), a
+        ``"warnings"`` count and ``"checks"``.
 
     Example::
 
@@ -259,7 +262,7 @@ def validate_author(
     :param email: Author email to validate.  If *None*, the value from
         ``git config user.email`` is used.
     :param config: Optional configuration override dict.
-    :returns: A dict with ``"status"`` and ``"checks"``.
+    :returns: A dict with ``"status"``, a ``"warnings"`` count and ``"checks"``.
 
     Example::
 
@@ -329,8 +332,8 @@ def validate_all(
     :param author_name: Author name to validate, or *None* to skip.
     :param author_email: Author email to validate, or *None* to skip.
     :param config: Optional configuration override dict.
-    :returns: A dict with ``"status"`` and ``"checks"`` combining all requested
-        validations.
+    :returns: A dict with ``"status"``, a ``"warnings"`` count and ``"checks"``
+        combining all requested validations.
 
     Example::
 

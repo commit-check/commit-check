@@ -171,9 +171,10 @@ warn = ["branch", "CC003"]
 
 A warned rule prints the same block as a failure with `warning` in place of
 `failed`, no rejection banner, and one closing line saying the run is not
-failed by it. The exit code counts only enforced rules, and in `--format json`
-the check's `status` is `warn`, the top-level `status` stays `pass`, and
-`warnings` counts them. This is how a team adopts a rule gradually: turn it on
+failed by it; with `--compact` it is one `[WARN]` line. The exit code counts
+only enforced rules, and in `--format json` the check's `status` is `warn`, the
+top-level `status` stays `pass`, and `warnings` counts them. This is how a team
+adopts a rule gradually: turn it on
 as a warning, watch what it catches, then drop it from `warn` when the history
 is clean. A name that matches no rule is a configuration error, so a typo
 cannot leave a rule silently enforced.

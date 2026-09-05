@@ -671,6 +671,14 @@ class TestWarnSeverity:
         assert by_check["branch"].severity == "warn"
         assert by_check["message"].severity == "error"
 
+    def test_check_name_is_accepted_in_any_case(self):
+        rules = RuleBuilder(
+            {"warn": ["BRANCH", " Subject_Max_Length "]}
+        ).build_all_rules()
+        by_check = {r.check: r.severity for r in rules}
+        assert by_check["branch"] == "warn"
+        assert by_check["subject_max_length"] == "warn"
+
     def test_rule_id_is_accepted_in_any_case(self):
         rules = RuleBuilder(
             {"warn": ["cc201", "CC003"], "commit": {"subject_imperative": True}}
