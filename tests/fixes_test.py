@@ -124,7 +124,7 @@ class TestSignoffTrailer:
 class TestFixBranchType:
     def test_case_and_spelling(self):
         assert fix_branch_type("Feature/login", TYPES + ["feature"]) == "feature/login"
-        assert fix_branch_type("featre/login", ["feature", "bugfix"]) == "feature/login"
+        assert fix_branch_type("bugfx/login", ["feature", "bugfix"]) == "bugfix/login"
 
     def test_no_slash_no_fix(self):
         assert fix_branch_type("login", ["feature"]) is None
