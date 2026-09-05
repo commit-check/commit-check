@@ -506,10 +506,8 @@ def get_git_user_identity() -> tuple[str, str]:
 
     Either part is an empty string when it is not set.
     """
-    try:
-        output = cmd_output(["git", "config", "--get-regexp", r"^user\.(name|email)$"])
-    except CalledProcessError:
-        return "", ""
+    # cmd_output never raises; an unset key yields an empty output.
+    output = cmd_output(["git", "config", "--get-regexp", r"^user\.(name|email)$"])
     identity = {"user.name": "", "user.email": ""}
     for line in output.splitlines():
         key, _, value = line.partition(" ")
