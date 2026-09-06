@@ -87,7 +87,30 @@ class _HttpsOnlyRedirectHandler(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-_opener = urllib.request.build_opener(_HttpsOnlyRedirectHandler())
+class _LazyOpener:
+    """The HTTPS-only opener, built on first use.
+
+    ``build_opener`` is not free, and most runs never fetch a parent config
+    at all, so the cost is paid only by the run that does.
+    """
+
+    def __init__(self) -> None:
+        self._opener: urllib.request.OpenerDirector | None = None
+
+    @property
+    def handlers(self) -> list[urllib.request.BaseHandler]:
+        return list(getattr(self._get(), "handlers"))
+
+    def _get(self) -> urllib.request.OpenerDirector:
+        if self._opener is None:
+            self._opener = urllib.request.build_opener(_HttpsOnlyRedirectHandler())
+        return self._opener
+
+    def open(self, url: str, timeout: float = 10):  # type: ignore[no-untyped-def]
+        return self._get().open(url, timeout=timeout)
+
+
+_opener = _LazyOpener()
 
 
 def _load_from_url(url: str) -> dict[str, Any]:
