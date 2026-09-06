@@ -578,6 +578,22 @@ def _get_requested_checks(args: argparse.Namespace) -> list[str]:
     return requested_checks
 
 
+#: (flag, the checks it requests, what to say when none of them was built).
+_UNCONFIGURED_HINTS = (
+    (
+        "files",
+        ("file_size", "file_pattern", "path_length"),
+        "--files requested but nothing is configured in the [files] section",
+    ),
+    (
+        "branch",
+        ("branch", "merge_base"),
+        "--branch requested but no branch rules are configured "
+        "(conventional_branch = false and no require_rebase_target)",
+    ),
+)
+
+
 def _run_json_output(engine: ValidationEngine, context: ValidationContext) -> int:
     """Run validation and print JSON output."""
     outcomes: list[CheckOutcome] = engine.validate_all_detailed(context)
@@ -657,17 +673,14 @@ def main() -> int:
         # Filter rules to only include requested checks
         filtered_rules = [rule for rule in all_rules if rule.check in requested_checks]
 
-        # The files rules exist only when configured, so --files with an
-        # empty [files] section would silently validate nothing — say so
-        # instead of letting the quiet pass read as a verdict.
-        if args.files and not any(
-            rule.check in ("file_size", "file_pattern", "path_length")
-            for rule in filtered_rules
-        ):
-            print(
-                "⊘ --files requested but nothing is configured in the [files] section",
-                file=sys.stderr,
-            )
+        # Some rules exist only when configured, so a flag whose every rule
+        # the config switched off would silently validate nothing — say so
+        # instead of letting the quiet pass read as a verdict. (--tag always
+        # builds its rule, and the author flags always build theirs.)
+        built_checks = {rule.check for rule in filtered_rules}
+        for requested, checks, hint in _UNCONFIGURED_HINTS:
+            if getattr(args, requested) and built_checks.isdisjoint(checks):
+                print(f"⊘ {hint}", file=sys.stderr)
 
         engine = ValidationEngine(filtered_rules)
 

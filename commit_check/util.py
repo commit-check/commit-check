@@ -11,6 +11,7 @@ import subprocess
 import sys
 from subprocess import CalledProcessError
 from commit_check import RED, GREEN, YELLOW, RESET_COLOR
+from collections.abc import Iterable
 from commit_check.rules_catalog import display_name
 
 
@@ -34,9 +35,9 @@ def _print_failure(
         label = f"{rule_id} {name}" if rule_id else name
         print(f"[{'WARN' if warn else 'FAIL'}] {label}: {compact_value}")
         return
-    # The banner announces a rejected commit; a warning rejects nothing.
+    # The banner announces a rejection; a warning rejects nothing.
     if not warn and not no_banner and not print_error_header.has_been_called:
-        print_error_header()
+        print_error_header(rejection_headline([check["check"]]))
     docs_url = check.get("docs_url", "") or ""
     print_error_message(
         check["check"],
@@ -583,12 +584,41 @@ def track_print_call(func):
     return wrapper
 
 
-@track_print_call
-def print_error_header():
-    """Print error message.
-    :returns: Print error head to user
+#: What the banner says was rejected, by the check that failed. A check not
+#: listed here is about the commit itself: its message, its author, the files
+#: it touches.
+_REJECTED_SUBJECTS = {
+    "branch": "Branch",
+    "merge_base": "Branch",
+    "tag": "Tag",
+    "no_force_push": "Push",
+}
+
+#: Width of the banner's ASCII art; the text lines are padded to match it.
+_BANNER_WIDTH = 66
+
+
+def rejection_headline(checks: Iterable[str]) -> str:
+    """The banner's first line, naming what the failing *checks* rejected.
+
+    A developer who pushed a badly named branch reads "Commit rejected" and
+    goes looking at their commit, so the line names the branch, tag or push
+    when that is what failed. When the failures span more than one of those
+    it names none of them rather than the wrong one.
     """
-    print("Commit rejected by Commit-Check.                                  ")
+    subjects = {_REJECTED_SUBJECTS.get(check, "Commit") for check in checks}
+    if len(subjects) == 1:
+        return f"{subjects.pop()} rejected by Commit-Check."
+    return "Checks failed - rejected by Commit-Check."
+
+
+@track_print_call
+def print_error_header(headline: str = "Commit rejected by Commit-Check.") -> None:
+    """Print the rejection banner: *headline*, then the ASCII art.
+
+    :param headline: the first line, from :func:`rejection_headline`
+    """
+    print(headline.ljust(_BANNER_WIDTH))
     print("                                                                  ")
     print(r"  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)  ")
     print(r"   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \   ")
@@ -598,8 +628,6 @@ def print_error_header():
     print(r" _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._ ")
     print(r"(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)")
     print(r" `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´ ")
-    print("                                                                  ")
-    print("Commit rejected.                                                  ")
     print("                                                                  ")
 
 

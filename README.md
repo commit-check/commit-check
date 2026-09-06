@@ -675,8 +675,6 @@ Commit rejected by Commit-Check.
 (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
 
-Commit rejected.
-
 CC001 message check failed ==> test commit message check
 The commit message should follow Conventional Commits. See https://www.conventionalcommits.org
 Suggest: Use <type>(<scope>): <description>, where <type> is one of: feat, fix, docs, style, refactor, test, chore, perf, build, ci
@@ -686,7 +684,7 @@ Docs: https://commit-check.com/rules/#cc001
 ### Check Branch Naming Failed
 
 ```text
-Commit rejected by Commit-Check.
+Branch rejected by Commit-Check.
 
   (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)
    / ._. \      / ._. \      / ._. \      / ._. \      / ._. \
@@ -696,8 +694,6 @@ Commit rejected by Commit-Check.
  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._
 (.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)
  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´
-
-Commit rejected.
 
 CC201 branch check failed ==> test-branch
 The branch should follow Conventional Branch. See https://conventionalbranch.org

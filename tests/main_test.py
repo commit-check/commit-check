@@ -1392,7 +1392,134 @@ class TestFilesFlag:
         monkeypatch.setattr("sys.argv", [CMD, "--files"])
         assert main() == 0
         _, err = capfd.readouterr()
-        assert "nothing is configured in the [files] section" in err
+        assert (
+            "⊘ --files requested but nothing is configured in the [files] section"
+            in err
+        )
+
+
+class TestBranchUnconfigured:
+    """--branch with every branch rule switched off says so, like --files does."""
+
+    HINT = (
+        "⊘ --branch requested but no branch rules are configured "
+        "(conventional_branch = false and no require_rebase_target)"
+    )
+
+    def test_no_branch_rules_prints_hint_and_passes(self, capfd, monkeypatch, tmp_path):
+        """Before, this run validated nothing and said nothing: in CI it was
+        indistinguishable from a real pass."""
+        cfg = tmp_path / "cchk.toml"
+        cfg.write_text("[branch]\nconventional_branch = false\n")
+        monkeypatch.setattr("sys.argv", [CMD, "--branch", "--config", str(cfg)])
+        assert main() == 0
+        out, err = capfd.readouterr()
+        assert self.HINT in err
+        assert out == ""
+
+    def test_a_built_branch_rule_silences_the_hint(self, mocker, capfd, monkeypatch):
+        mocker.patch(
+            "subprocess.run",
+            return_value=type(
+                "MockResult", (), {"stdout": "feature/test-branch", "returncode": 0}
+            )(),
+        )
+        monkeypatch.setattr("sys.argv", [CMD, "--branch"])
+        assert main() == 0
+        _, err = capfd.readouterr()
+        assert "--branch requested" not in err
+
+
+class TestBannerHeadline:
+    """The banner's first line names what was rejected."""
+
+    def test_bad_branch_is_a_branch_rejection(
+        self, mocker, capsys, monkeypatch, tmp_path
+    ):
+        # A terminal on stdin, so the name comes from git and not from a pipe;
+        # an explicit config, so the checkout's own cchk.toml (which turns
+        # conventional branches off) does not decide the verdict.
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        mocker.patch(
+            "subprocess.run",
+            return_value=type(
+                "MockResult", (), {"stdout": "my_bad_branch", "returncode": 0}
+            )(),
+        )
+        cfg = tmp_path / "cchk.toml"
+        cfg.write_text("[branch]\nconventional_branch = true\n")
+        monkeypatch.setattr("sys.argv", [CMD, "--branch", "--config", str(cfg)])
+        assert main() == 1
+        out, _ = capsys.readouterr()
+        assert out.startswith("Branch rejected by Commit-Check.")
+        assert out.count("rejected") == 1
+        assert "CC201 branch check failed ==> my_bad_branch" in out
+
+    def test_bad_message_is_a_commit_rejection(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="bad commit\n")
+        monkeypatch.setattr("sys.argv", [CMD, "-m"])
+        assert main() == 1
+        out, _ = capsys.readouterr()
+        assert out.startswith("Commit rejected by Commit-Check.")
+        assert out.count("rejected") == 1
+
+
+class TestDynamicWordingInJson:
+    """The measured or configured facts reach the JSON error/suggest fields."""
+
+    def _run(self, mocker, monkeypatch, capsys, tmp_path, toml, message):
+        cfg = tmp_path / "cchk.toml"
+        cfg.write_text(toml)
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=message)
+        monkeypatch.setattr(
+            "sys.argv", [CMD, "-m", "--config", str(cfg), "--format", "json"]
+        )
+        rc = main()
+        data = json.loads(capsys.readouterr().out)
+        assert rc == 1
+        return {c["check"]: c for c in data["checks"] if c["status"] == "fail"}
+
+    def test_custom_message_pattern_is_named(
+        self, mocker, monkeypatch, capsys, tmp_path, pinned_author
+    ):
+        failed = self._run(
+            mocker,
+            monkeypatch,
+            capsys,
+            tmp_path,
+            '[commit]\nmessage_pattern = "^JIRA-\\\\d+: .+"\n',
+            "fix login bug\n",
+        )
+        assert failed["message"]["error"] == (
+            r"The commit message does not match the required pattern: ^JIRA-\d+: .+"
+        )
+        assert failed["message"]["suggest"] == (
+            r"Write the message so that it matches ^JIRA-\d+: .+ "
+            "(set by message_pattern in the [commit] config)"
+        )
+        assert "Conventional Commits" not in failed["message"]["error"]
+
+    def test_subject_length_is_measured(
+        self, mocker, monkeypatch, capsys, tmp_path, pinned_author
+    ):
+        failed = self._run(
+            mocker,
+            monkeypatch,
+            capsys,
+            tmp_path,
+            "[commit]\nsubject_max_length = 20\n",
+            "feat: this subject is definitely longer than twenty characters\n",
+        )
+        assert failed["subject_max_length"]["error"] == (
+            "Subject is 62 characters; it must be at most 20 characters"
+        )
+        assert failed["subject_max_length"]["suggest"] == (
+            "Shorten the subject by 42 characters, to 20 or fewer"
+        )
 
     def test_files_pre_commit_env_validates_pushed_sha(
         self, mocker, monkeypatch, tmp_path, capfd

@@ -293,8 +293,34 @@ class TestRuleBuilder:
         rule = builder._build_conventional_commit_rule(catalog_entry)
         assert rule is not None
         assert rule.regex == r"^PROJ-\d+: .+"
-        assert rule.error == BAD_FORMAT_ERROR
-        assert "required pattern" in rule.suggest
+        # The pattern is the one fact that fixes the message, so both lines
+        # name it, and neither repeats the catalog's Conventional Commits text.
+        assert rule.error == (
+            r"The commit message does not match the required pattern: ^PROJ-\d+: .+"
+        )
+        assert rule.suggest == (
+            r"Write the message so that it matches ^PROJ-\d+: .+ "
+            "(set by message_pattern in the [commit] config)"
+        )
+        assert BAD_FORMAT_ERROR not in rule.error
+
+    @pytest.mark.benchmark
+    def test_message_pattern_rule_links_to_no_spec(self):
+        """A custom pattern replaces Conventional Commits, so the failure must
+        not hyperlink to conventionalcommits.org the way CC001 normally does."""
+        custom = RuleBuilder(
+            {"commit": {"message_pattern": r"^JIRA-\d+: .+"}}
+        ).build_all_rules()
+        rule = next(r for r in custom if r.check == "message")
+        assert rule.rule_id == "CC001"
+        assert rule.spec_name is None and rule.spec_url is None
+        assert "spec_name" not in rule.to_dict()
+        assert "spec_url" not in rule.to_dict()
+
+        conventional = RuleBuilder({}).build_all_rules()
+        rule = next(r for r in conventional if r.check == "message")
+        assert rule.to_dict()["spec_name"] == "Conventional Commits"
+        assert rule.to_dict()["spec_url"] == "https://www.conventionalcommits.org"
 
     @pytest.mark.benchmark
     def test_message_pattern_overrides_conventional_commits(self):

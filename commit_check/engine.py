@@ -167,14 +167,19 @@ class BaseValidator(ABC):
 
     def __init__(self, rule: ValidationRule):
         self.rule = rule
-        # Set to True by ValidationEngine.validate_all_detailed() to suppress
-        # human-readable terminal output while still collecting failure details.
+        # Set to True by the engine to suppress human-readable terminal
+        # output while still collecting failure details: validate_all_detailed
+        # never prints, validate_all prints the collected blocks itself once
+        # every rule has run.
         self._suppress_output: bool = False
-        # Set by ValidationEngine.validate_all() from ValidationContext flags.
+        # Used by _print_failure() when this validator prints for itself.
         self._no_banner: bool = False
         self._compact: bool = False
         # Populated by _print_failure() on every failure, regardless of mode.
         self._last_failure: dict[str, str] | None = None
+        # The failure blocks as the printer takes them, (rule dict, value),
+        # kept so the engine can print them after the banner.
+        self._failure_blocks: list[tuple[dict, str]] = []
         # Populated by subclasses on every validation (pass or fail) with the
         # concrete value that was checked (subject, branch, author, ...), so
         # structured consumers (--format json, validate_all_detailed) can
@@ -189,20 +194,6 @@ class BaseValidator(ABC):
     def validate(self, context: ValidationContext) -> ValidationResult:
         """Perform validation and return result."""
         pass
-
-    def _should_skip_validation(self, context: ValidationContext) -> bool:
-        """
-        Determine if validation should be skipped.
-
-        Skip only when there is no stdin_text, no commit_file, no rev, and
-        no commits.
-        """
-        return (
-            context.stdin_text is None
-            and context.commit_file is None
-            and context.rev is None
-            and not has_commits()
-        )
 
     @staticmethod
     def _resolve_current_author(context: ValidationContext) -> str:
@@ -348,12 +339,16 @@ class BaseValidator(ABC):
     def _print_failure(
         self,
         actual_value: str,
-        regex_or_constraint: str = "",
         *,
+        error: str | None = None,
         fix: str | None = None,
         suggest: str | None = None,
     ) -> None:
         """Record and (unless suppressed) print a standardised failure message.
+
+        ``error`` replaces the rule's static explanation when the validator
+        knows more than the rule does at build time: the measured length, the
+        tools it detected, whether the message under test is a commit yet.
 
         ``fix`` is the corrected value when the validator can name it without
         guessing; it replaces the rule's generic suggestion with a concrete
@@ -361,6 +356,8 @@ class BaseValidator(ABC):
         consumers as its own field.
         """
         rule_dict = self.rule.to_dict()
+        if error is not None:
+            rule_dict["error"] = error
         if fix or suggest:
             rule_dict["suggest"] = suggest or f'Use "{fix}"'
 
@@ -368,10 +365,11 @@ class BaseValidator(ABC):
         self._last_failure = {
             "check": self.rule.check,
             "value": actual_value,
-            "error": self.rule.error or "",
+            "error": rule_dict["error"],
             "suggest": rule_dict.get("suggest") or self.rule.suggest or "",
             "fix": fix or "",
         }
+        self._failure_blocks.append((rule_dict, actual_value))
 
         if not self._suppress_output:
             from commit_check.util import _print_failure
@@ -559,6 +557,11 @@ class SubjectImperativeValidator(SubjectValidator):
         return any(stem in IMPERATIVES for stem in stems)
 
 
+def _characters(count: int) -> str:
+    """``count`` with its unit, singular or plural as the number demands."""
+    return f"{count} character{'' if count == 1 else 's'}"
+
+
 class SubjectLengthValidator(SubjectValidator):
     """Validates subject line length constraints."""
 
@@ -568,16 +571,25 @@ class SubjectLengthValidator(SubjectValidator):
             return ValidationResult.SKIP
 
         length = len(subject)
-        constraint_value = self.rule.value
+        limit = self.rule.value
 
         if (
-            (self.rule.check == "subject_max_length" and length <= constraint_value)
-            or (self.rule.check == "subject_min_length" and length >= constraint_value)
+            (self.rule.check == "subject_max_length" and length <= limit)
+            or (self.rule.check == "subject_min_length" and length >= limit)
             or self.rule.check not in ["subject_max_length", "subject_min_length"]
         ):
             return ValidationResult.PASS
 
-        self._print_failure(subject, f"length={length}, constraint={constraint_value}")
+        # "At most 20" states the rule; the measured length says how far off
+        # the subject is, and the difference is what decides between trimming
+        # a word and rewriting the line.
+        if self.rule.check == "subject_max_length":
+            error = f"Subject is {_characters(length)}; it must be at most {_characters(limit)}"
+            suggest = f"Shorten the subject by {_characters(length - limit)}, to {limit} or fewer"
+        else:
+            error = f"Subject is {_characters(length)}; it must be at least {_characters(limit)}"
+            suggest = f"Write a subject of at least {_characters(limit)} ({limit - length} more)"
+        self._print_failure(subject, error=error, suggest=suggest)
         return ValidationResult.FAIL
 
 
@@ -644,7 +656,7 @@ class AuthorValidator(BaseValidator):
             return ValidationResult.FAIL
 
         if self.rule.allowed and author_value not in self.rule.allowed:
-            self._print_failure(author_value, f"allowed={sorted(self.rule.allowed)}")
+            self._print_failure(author_value)
             return ValidationResult.FAIL
 
         if self.rule.ignored and author_value in self.rule.ignored:
@@ -948,7 +960,7 @@ class MergeBaseValidator(BaseValidator):
         if result == 0:
             return ValidationResult.PASS
 
-        self._print_failure(current_branch, f"target={target_branch}")
+        self._print_failure(current_branch)
         return ValidationResult.FAIL
 
     def _find_target_branch(self, pattern: str) -> str | None:
@@ -1023,16 +1035,29 @@ class SignoffValidator(BaseValidator):
         if self.rule.regex and re.search(self.rule.regex, message):
             return ValidationResult.PASS
 
+        # In a commit-msg hook "the latest commit" is the previous one, which
+        # does carry a sign-off, so name what was actually read: the message
+        # under test, or the commit it came from.
+        error = (
+            "Signed-off-by trailer not found in the commit message"
+            if self._is_pending_message(context)
+            else "Signed-off-by trailer not found in the latest commit"
+        )
         trailer = signoff_trailer(*self._resolve_author_identity(context))
         fix = suggest = None
         if trailer:
             fix = f"{message.rstrip()}\n\n{trailer}"
             suggest = f'Add the trailer "{trailer}" (git commit --signoff, or --amend --signoff for an existing commit)'
-        self._print_failure(message, fix=fix, suggest=suggest)
+        self._print_failure(message, error=error, fix=fix, suggest=suggest)
         return ValidationResult.FAIL
 
     @staticmethod
-    def _resolve_author_identity(context: ValidationContext) -> tuple[str, str]:
+    def _is_pending_message(context: ValidationContext) -> bool:
+        """Whether the message describes a commit that does not exist yet."""
+        return context.stdin_text is not None or context.commit_file is not None
+
+    @classmethod
+    def _resolve_author_identity(cls, context: ValidationContext) -> tuple[str, str]:
         """The (name, email) the sign-off would carry, by the same modes as the author.
 
         This runs only on a failure, but a hook still waits on it, so each
@@ -1041,7 +1066,7 @@ class SignoffValidator(BaseValidator):
         """
         if context.rev is not None:
             return get_commit_author_identity(context.rev)
-        pending = context.stdin_text is not None or context.commit_file is not None
+        pending = cls._is_pending_message(context)
         name, email = (
             get_git_user_identity() if pending else get_commit_author_identity()
         )
@@ -1332,8 +1357,8 @@ class AiAttributionValidator(BaseValidator):
         fix = strip_lines_containing(
             message, [s.get("matched_text", "") for s in signatures]
         )
-        self._record_failure(
-            value=", ".join(sorted(tools)),
+        self._print_failure(
+            ", ".join(sorted(tools)),
             error=f"AI-assisted commit is forbidden — detected tools: {', '.join(sorted(tools))}",
             suggest=(
                 "This project forbids AI-assisted commits. Remove the AI trailer lines and re-commit."
@@ -1343,32 +1368,6 @@ class AiAttributionValidator(BaseValidator):
             fix=fix,
         )
         return ValidationResult.FAIL
-
-    def _record_failure(
-        self, value: str, error: str, suggest: str, fix: str | None = None
-    ) -> None:
-        """Record a failure with dynamic error/suggest messages."""
-        self._last_failure = {
-            "check": self.rule.check,
-            "value": value,
-            "error": error,
-            "suggest": suggest,
-            "fix": fix or "",
-        }
-        if not self._suppress_output:
-            # Pass dynamic messages to the printer by creating a dict with
-            # the live error/suggest instead of the catalog templates.
-            rule_dict = self.rule.to_dict()
-            rule_dict["error"] = error
-            rule_dict["suggest"] = suggest
-            from commit_check.util import _print_failure
-
-            _print_failure(
-                rule_dict,
-                value,
-                no_banner=self._no_banner,
-                compact=self._compact,
-            )
 
 
 class ValidationEngine:
@@ -1404,10 +1403,17 @@ class ValidationEngine:
         self.rules = rules
 
     def validate_all(self, context: ValidationContext) -> ValidationResult:
-        """Run all validations and return overall result."""
-        failed = False
+        """Run all validations, print the findings, and return the overall result.
+
+        The failure blocks are printed once every rule has run, not as each
+        rule fails: the banner above them names what was rejected, and that
+        is only known once it is clear whether the failures are all about the
+        commit, all about the branch, or spread across both.
+        """
+        failed: list[str] = []
         skipped: list[str] = []
         warned: list[str] = []
+        blocks: list[tuple[dict, str]] = []
 
         for rule in self.rules:
             validator_class = self.VALIDATOR_MAP.get(rule.check)
@@ -1415,16 +1421,40 @@ class ValidationEngine:
                 continue  # Skip unknown validators
 
             validator: BaseValidator = validator_class(rule)
-            validator._no_banner = context.no_banner
-            validator._compact = context.compact
+            validator._suppress_output = True  # printed below, after the banner
             result = validator.validate(context)
+            blocks.extend(validator._failure_blocks)
             if result == ValidationResult.SKIP:
                 skipped.append(rule.check.replace("_", "-"))
             elif result == ValidationResult.FAIL:
                 if rule.severity == "warn":
                     warned.append(rule.check.replace("_", "-"))
                 else:
-                    failed = True
+                    failed.append(rule.check)
+
+        if blocks:
+            from commit_check.util import (
+                _print_failure,
+                print_error_header,
+                rejection_headline,
+            )
+
+            # Only an enforced failure earns the banner; a warning rejects
+            # nothing. --compact and --no-banner keep it off entirely.
+            if (
+                failed
+                and not context.no_banner
+                and not context.compact
+                and not print_error_header.has_been_called
+            ):
+                print_error_header(rejection_headline(failed))
+            for rule_dict, value in blocks:
+                _print_failure(
+                    rule_dict,
+                    value,
+                    no_banner=context.no_banner,
+                    compact=context.compact,
+                )
 
         if skipped:
             # A skipped check validated nothing, and a silent skip is
