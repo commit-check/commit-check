@@ -60,7 +60,7 @@ commit-check --message --branch
 ```yaml
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.16.0
+    rev: v2.17.0
     hooks:
       - id: check-message
       - id: check-branch
@@ -218,7 +218,7 @@ commit-check --message
 # In pre-commit hooks (.pre-commit-config.yaml)
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.16.0
+    rev: v2.17.0
     hooks:
       - id: check-message
         args:
@@ -248,7 +248,7 @@ commit-check --no-force-push
 # In pre-commit hooks (.pre-commit-config.yaml)
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.16.0
+    rev: v2.17.0
     hooks:
       - id: check-no-force-push
         stages: [pre-push]
@@ -280,7 +280,7 @@ commit-check --tag --tag-regex '^v\d+\.\d+\.\d+$'
 # a push carries, from the pre-push ref metadata on stdin
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.16.0
+    rev: v2.17.0
     hooks:
       - id: check-tag
         stages: [pre-push]
@@ -320,7 +320,7 @@ commit-check --files --rev abc1234
 # (a tag on already-pushed history adds nothing, so it is skipped)
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.16.0
+    rev: v2.17.0
     hooks:
       - id: check-files
         stages: [pre-push]
