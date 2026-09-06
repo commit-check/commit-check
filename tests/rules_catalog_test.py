@@ -88,6 +88,21 @@ class TestRuleIds:
         """The display name is the kebab-case form of the config key."""
         assert RuleCatalogEntry(check="subject_imperative").name == "subject-imperative"
 
+    @pytest.mark.benchmark
+    def test_spec_fields_match_the_error_text(self):
+        """The error text must carry the spec exactly as the fields say.
+
+        Hyperlink rendering rewrites the error by string replacement: it strips
+        the trailing ``. See {spec_url}`` and wraps ``spec_name`` in a link. If
+        either drifts out of the text, the rewrite silently does nothing.
+        """
+        for entry in ALL_ENTRIES:
+            if entry.spec_url or entry.spec_name:
+                assert entry.spec_name and entry.spec_url, entry.check
+                assert entry.error, entry.check
+                assert entry.spec_name in entry.error, entry.check
+                assert entry.error.endswith(f". See {entry.spec_url}"), entry.check
+
 
 class TestRuleIdPropagation:
     """Built rules carry their catalog identity through to output."""

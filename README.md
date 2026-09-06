@@ -662,7 +662,7 @@ Commit rejected.
 
 CC201 branch check failed ==> test-branch
 The branch should follow Conventional Branch. See https://conventionalbranch.org
-Suggest: Use <type>/<description> with allowed types or add branch name to allow_branch_names in config, or use ignore_authors in config branch section to bypass
+Suggest: Use <type>/<description> with an allowed type, or add the branch to allow_branch_names in config
 Docs: https://commit-check.com/rules/#cc201
 ```
 

@@ -45,6 +45,8 @@ def _print_failure(
         rule_id=rule_id,
         docs_url=docs_url,
         warn=warn,
+        spec_name=check.get("spec_name", "") or "",
+        spec_url=check.get("spec_url", "") or "",
     )
     if check.get("suggest"):
         print_suggestion(check["suggest"])
@@ -652,6 +654,8 @@ def print_error_message(
     rule_id: str = "",
     docs_url: str = "",
     warn: bool = False,
+    spec_name: str = "",
+    spec_url: str = "",
 ) -> None:
     """Print error message.
 
@@ -663,6 +667,10 @@ def print_error_message(
         terminal supports it
     :param warn: the rule is reported, not enforced: say ``warning`` rather
         than ``failed``, and colour the value as a caution, not an error
+    :param spec_name: name of the specification mentioned in ``error``, linked
+        from the name when the terminal supports it
+    :param spec_url: address of that specification; ``error`` carries it as a
+        trailing ``. See {spec_url}``, dropped once the name is a link
 
     :returns: Give error messages to user
     """
@@ -676,6 +684,12 @@ def print_error_message(
         f"{prefix}{YELLOW}{name}{RESET_COLOR} check {verdict} ==> {colour}{reason}{RESET_COLOR}"
     )
     if error:
+        # Same trade-off as the Docs: line above — once the spec name is a
+        # link, spelling out its address only adds noise; without hyperlink
+        # support the untouched text is how the reader gets the URL at all.
+        if spec_name and spec_url and supports_hyperlinks():
+            error = error.replace(f". See {spec_url}", "")
+            error = error.replace(spec_name, hyperlink(spec_name, spec_url))
         print(error)
 
 
