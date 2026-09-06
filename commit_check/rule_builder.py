@@ -61,6 +61,18 @@ class ValidationRule:
         entry = RULES_BY_CHECK.get(self.check)
         return entry.docs_url if entry else None
 
+    @property
+    def spec_name(self) -> str | None:
+        """Name of the specification the rule enforces, from the catalog."""
+        entry = RULES_BY_CHECK.get(self.check)
+        return entry.spec_name if entry else None
+
+    @property
+    def spec_url(self) -> str | None:
+        """Address of the specification the rule enforces, from the catalog."""
+        entry = RULES_BY_CHECK.get(self.check)
+        return entry.spec_url if entry else None
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for backward compatibility."""
         result: dict[str, Any] = {
@@ -74,6 +86,9 @@ class ValidationRule:
             result["rule_id"] = self.rule_id
         if self.docs_url:
             result["docs_url"] = self.docs_url
+        if self.spec_name and self.spec_url:
+            result["spec_name"] = self.spec_name
+            result["spec_url"] = self.spec_url
         if self.value is not None:
             result["value"] = self.value
         if self.allowed:

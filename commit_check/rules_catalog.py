@@ -48,6 +48,12 @@ class RuleCatalogEntry:
     error: str | None = None
     suggest: str | None = None
     rule_id: str | None = None
+    # The specification the rule enforces. ``error`` must mention ``spec_name``
+    # and end with ``. See {spec_url}``: terminals with hyperlink support link
+    # the name and drop the trailing address, everything else prints ``error``
+    # verbatim so the URL still reaches CI logs and pipes.
+    spec_name: str | None = None
+    spec_url: str | None = None
 
     @property
     def name(self) -> str:
@@ -70,6 +76,8 @@ COMMIT_RULES = [
         regex=None,  # Built dynamically from config
         error="The commit message should follow Conventional Commits. See https://www.conventionalcommits.org",
         suggest="Use <type>(<scope>): <description> with allowed types",
+        spec_name="Conventional Commits",
+        spec_url="https://www.conventionalcommits.org",
     ),
     RuleCatalogEntry(
         rule_id="CC002",
@@ -197,14 +205,14 @@ FILES_RULES = [
         check="file_size",
         regex=None,
         error="File exceeds the maximum size of {max_size}",
-        suggest="Keep files under {max_size}, or store large assets outside git (e.g. Git LFS); raise max_size in the [files] config section if the limit is wrong",
+        suggest="Keep files under {max_size}, use Git LFS for large assets, or raise max_size in the [files] config",
     ),
     RuleCatalogEntry(
         rule_id="CC303",
         check="file_pattern",
         regex=None,
         error="File path matches a prohibited pattern",
-        suggest="Remove the file from the commit (secrets already committed need their credentials rotated), or adjust prohibited_patterns in the [files] config section",
+        suggest="Remove the file from the commit (rotate any committed secrets), or adjust prohibited_patterns in the [files] config",
     ),
     RuleCatalogEntry(
         rule_id="CC304",
@@ -222,7 +230,9 @@ BRANCH_RULES = [
         check="branch",
         regex=None,  # Built dynamically from config
         error="The branch should follow Conventional Branch. See https://conventionalbranch.org",
-        suggest="Use <type>/<description> with allowed types or add branch name to allow_branch_names in config, or use ignore_authors in config branch section to bypass",
+        suggest="Use <type>/<description> with an allowed type, or add the branch to allow_branch_names in config",
+        spec_name="Conventional Branch",
+        spec_url="https://conventionalbranch.org",
     ),
     RuleCatalogEntry(
         rule_id="CC202",

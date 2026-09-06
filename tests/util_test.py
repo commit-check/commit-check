@@ -710,6 +710,69 @@ class TestUtil:
             assert "CC005" in stdout
 
         @pytest.mark.benchmark
+        def test_spec_name_is_linked_when_supported(self, capfd, mocker):
+            """The spec name becomes the link; the spelled-out URL goes."""
+            mocker.patch("commit_check.util.supports_hyperlinks", return_value=True)
+            print_error_message(
+                "branch",
+                "The branch should follow Conventional Branch. See https://conventionalbranch.org",
+                "Feature/x",
+                rule_id="CC201",
+                docs_url="https://commit-check.com/rules/#cc201",
+                spec_name="Conventional Branch",
+                spec_url="https://conventionalbranch.org",
+            )
+            stdout, _ = capfd.readouterr()
+            assert (
+                "\033]8;;https://conventionalbranch.org\033\\"
+                "Conventional Branch\033]8;;\033\\" in stdout
+            )
+            assert "See https://conventionalbranch.org" not in stdout
+
+        @pytest.mark.benchmark
+        def test_spec_url_kept_verbatim_when_unsupported(self, capfd, mocker):
+            """A CI log still needs the address written out."""
+            mocker.patch("commit_check.util.supports_hyperlinks", return_value=False)
+            print_error_message(
+                "branch",
+                "The branch should follow Conventional Branch. See https://conventionalbranch.org",
+                "Feature/x",
+                rule_id="CC201",
+                docs_url="https://commit-check.com/rules/#cc201",
+                spec_name="Conventional Branch",
+                spec_url="https://conventionalbranch.org",
+            )
+            stdout, _ = capfd.readouterr()
+            assert "\033]8;;" not in stdout
+            assert (
+                "The branch should follow Conventional Branch."
+                " See https://conventionalbranch.org" in stdout
+            )
+
+        @pytest.mark.benchmark
+        def test_spec_fields_flow_through_print_failure(self, capfd, mocker):
+            mocker.patch("commit_check.util.supports_hyperlinks", return_value=True)
+            _print_failure(
+                {
+                    "check": "message",
+                    "error": "The commit message should follow Conventional Commits. See https://www.conventionalcommits.org",
+                    "suggest": "Use <type>(<scope>): <description>",
+                    "rule_id": "CC001",
+                    "docs_url": "https://commit-check.com/rules/#cc001",
+                    "spec_name": "Conventional Commits",
+                    "spec_url": "https://www.conventionalcommits.org",
+                },
+                "added stuff",
+                no_banner=True,
+            )
+            stdout, _ = capfd.readouterr()
+            assert (
+                "\033]8;;https://www.conventionalcommits.org\033\\"
+                "Conventional Commits\033]8;;\033\\" in stdout
+            )
+            assert "See https://www.conventionalcommits.org" not in stdout
+
+        @pytest.mark.benchmark
         def test_docs_line_kept_without_hyperlinks(self, capfd, mocker):
             """A CI log is where the printed URL is the only way to reach it."""
             mocker.patch("commit_check.util.supports_hyperlinks", return_value=False)
