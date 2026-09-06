@@ -1410,9 +1410,24 @@ class ValidationEngine:
         is only known once it is clear whether the failures are all about the
         commit, all about the branch, or spread across both.
         """
+        failed, warned, skipped, blocks = self._run_validators(context)
+        self._print_blocks(context, failed, blocks)
+        self._print_notices(skipped, warned)
+        # Only an enforced rule fails the run; a warning is reported and done.
+        return ValidationResult.FAIL if failed else ValidationResult.PASS
+
+    def _run_validators(
+        self, context: ValidationContext
+    ) -> tuple[list[str], list[str], list[str], list[tuple[dict, str]]]:
+        """Run every rule with output held back.
+
+        :returns: the checks that failed and are enforced, the ones that failed
+            but only warn, the ones that were skipped (the last two in their
+            display form), and the failure blocks for the printer in rule order.
+        """
         failed: list[str] = []
-        skipped: list[str] = []
         warned: list[str] = []
+        skipped: list[str] = []
         blocks: list[tuple[dict, str]] = []
 
         for rule in self.rules:
@@ -1421,7 +1436,7 @@ class ValidationEngine:
                 continue  # Skip unknown validators
 
             validator: BaseValidator = validator_class(rule)
-            validator._suppress_output = True  # printed below, after the banner
+            validator._suppress_output = True  # printed later, after the banner
             result = validator.validate(context)
             blocks.extend(validator._failure_blocks)
             if result == ValidationResult.SKIP:
@@ -1432,37 +1447,49 @@ class ValidationEngine:
                 else:
                     failed.append(rule.check)
 
-        if blocks:
-            from commit_check.util import (
-                _print_failure,
-                print_error_header,
-                rejection_headline,
+        return failed, warned, skipped, blocks
+
+    @staticmethod
+    def _print_blocks(
+        context: ValidationContext, failed: list[str], blocks: list[tuple[dict, str]]
+    ) -> None:
+        """Print the banner, named for *failed*, then every failure block."""
+        if not blocks:
+            return
+
+        from commit_check.util import (
+            _print_failure,
+            print_error_header,
+            rejection_headline,
+        )
+
+        # Only an enforced failure earns the banner; a warning rejects
+        # nothing. --compact and --no-banner keep it off entirely.
+        if (
+            failed
+            and not context.no_banner
+            and not context.compact
+            and not print_error_header.has_been_called
+        ):
+            print_error_header(rejection_headline(failed))
+        for rule_dict, value in blocks:
+            _print_failure(
+                rule_dict,
+                value,
+                no_banner=context.no_banner,
+                compact=context.compact,
             )
 
-            # Only an enforced failure earns the banner; a warning rejects
-            # nothing. --compact and --no-banner keep it off entirely.
-            if (
-                failed
-                and not context.no_banner
-                and not context.compact
-                and not print_error_header.has_been_called
-            ):
-                print_error_header(rejection_headline(failed))
-            for rule_dict, value in blocks:
-                _print_failure(
-                    rule_dict,
-                    value,
-                    no_banner=context.no_banner,
-                    compact=context.compact,
-                )
+    @staticmethod
+    def _print_notices(skipped: list[str], warned: list[str]) -> None:
+        """Name the skipped and the warning checks on stderr."""
+        import sys
 
         if skipped:
             # A skipped check validated nothing, and a silent skip is
             # indistinguishable from a pass — which is how a merge commit at
             # HEAD once let a whole run report success having read nothing.
             # One line, stderr, so scripts parsing stdout are unaffected.
-            import sys
-
             print(
                 f"⊘ skipped (not validated): {', '.join(skipped)}",
                 file=sys.stderr,
@@ -1472,15 +1499,10 @@ class ValidationEngine:
             # A warning was printed in full above; this one line says why the
             # run still passes, so a hook that exits 0 after red-looking output
             # is not mistaken for a broken hook.
-            import sys
-
             print(
                 f"⚠ warnings (not enforced): {', '.join(warned)}",
                 file=sys.stderr,
             )
-
-        # Only an enforced rule fails the run; a warning is reported and done.
-        return ValidationResult.FAIL if failed else ValidationResult.PASS
 
     def validate_all_detailed(self, context: ValidationContext) -> list[CheckOutcome]:
         """Run all validations and return structured :class:`CheckOutcome` objects.

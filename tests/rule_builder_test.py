@@ -313,7 +313,8 @@ class TestRuleBuilder:
         ).build_all_rules()
         rule = next(r for r in custom if r.check == "message")
         assert rule.rule_id == "CC001"
-        assert rule.spec_name is None and rule.spec_url is None
+        assert rule.spec_name is None
+        assert rule.spec_url is None
         assert "spec_name" not in rule.to_dict()
         assert "spec_url" not in rule.to_dict()
 
