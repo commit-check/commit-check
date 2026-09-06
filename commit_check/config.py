@@ -71,6 +71,25 @@ def _github_shorthand_to_url(value: str) -> str | None:
     return f"https://raw.githubusercontent.com/{repo_part}/{ref}/{file_path}"
 
 
+class _HttpsOnlyRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Follow redirects only to HTTPS targets.
+
+    ``urlopen`` follows an HTTPS-to-HTTP redirect by default, which would
+    let a parent config be swapped in transit on the way to being merged
+    into the policy. Any redirect off HTTPS is refused instead.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[override]
+        if not newurl.startswith("https://"):
+            raise urllib.error.URLError(
+                f"redirect to a non-HTTPS URL refused: {newurl}"
+            )
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_opener = urllib.request.build_opener(_HttpsOnlyRedirectHandler())
+
+
 def _load_from_url(url: str) -> dict[str, Any]:
     """Load TOML config from an HTTPS URL.
 
@@ -78,12 +97,12 @@ def _load_from_url(url: str) -> dict[str, Any]:
     :returns: Parsed config dict.
     :raises ValueError: If the URL does not use HTTPS, or the fetched body is
         not valid TOML (``TOMLDecodeError``).
-    :raises OSError: If the URL cannot be fetched (``urllib.error.URLError``
-        is an ``OSError``).
+    :raises OSError: If the URL cannot be fetched, or redirects off HTTPS
+        (``urllib.error.URLError`` is an ``OSError``).
     """
     if not url.startswith("https://"):
         raise ValueError("only https:// URLs are accepted")
-    with urllib.request.urlopen(url, timeout=10) as response:  # noqa: S310
+    with _opener.open(url, timeout=10) as response:  # noqa: S310
         data = response.read()
     import io
 
