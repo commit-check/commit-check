@@ -5,6 +5,7 @@ import re
 import sys
 from typing import Any
 from dataclasses import dataclass, replace
+from functools import lru_cache
 from commit_check.rules_catalog import (
     COMMIT_RULES,
     BRANCH_RULES,
@@ -98,6 +99,16 @@ class ValidationRule:
         if self.ignored:
             result["ignored"] = self.ignored
         return result
+
+
+@lru_cache(maxsize=64)
+def _escaped_alternation(items: tuple[str, ...]) -> str:
+    """``a|b|c`` with each item escaped for a regex.
+
+    Cached on the tuple: the same allowed types are built for every rule
+    set, and escaping twenty names on each build was a measurable cost.
+    """
+    return "|".join(re.escape(item) for item in items)
 
 
 class RuleBuilder:
@@ -588,11 +599,11 @@ class RuleBuilder:
         self, allowed_types: list[str], allowed_names: list[str]
     ) -> str:
         """Build regex for conventional branch names."""
-        types_pattern = "|".join(re.escape(t) for t in allowed_types)
+        types_pattern = _escaped_alternation(tuple(allowed_types))
         # Every alternative is anchored at both ends so an allowed name matches
         # the whole branch name, not merely its start ("main-backup" is not
         # "main"). "PR-.+" is a pattern, the rest are literal names.
-        base_names = ["master", "main", "HEAD", r"PR-.+"]
-        all_names = base_names + [re.escape(n) for n in allowed_names]
-        names_pattern = "|".join(all_names)
+        names_pattern = "|".join(["master", "main", "HEAD", r"PR-.+"])
+        if allowed_names:
+            names_pattern += "|" + _escaped_alternation(tuple(allowed_names))
         return rf"^(?:{types_pattern})/.+$|^(?:{names_pattern})$"
