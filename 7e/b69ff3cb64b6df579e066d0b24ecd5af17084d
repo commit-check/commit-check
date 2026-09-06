@@ -1,0 +1,35 @@
+tests/util_test.py
+  s_4ebb9b00635847::t_c796c01849a5a3 712-774
+README.md
+  s_4ebb9b00635847::t_3ed1191e360c64 665
+commit_check/rule_builder.py
+  s_4ebb9b00635847::t_e87942133e65f5 89-91
+  s_4ebb9b00635847::t_5c4e4a7b38a5da 64-75
+tests/rules_catalog_test.py
+  s_4ebb9b00635847::t_db10720ebf1ca9 91-105
+commit_check/util.py
+  s_4ebb9b00635847::t_3c55743b68761e 48-49
+  s_4ebb9b00635847::t_c6dfd967c6274f 657-658,670-673,687-692
+commit_check/rules_catalog.py
+  s_4ebb9b00635847::t_67add69ab96b68 233-235
+  s_4ebb9b00635847::t_94741a250f0d9f 51-56
+  s_4ebb9b00635847::t_2577c54045b751 208
+  s_4ebb9b00635847::t_022de60bf0d8e0 215
+  s_4ebb9b00635847::t_698e452217f8ce 79-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "7eb69ff3cb64b6df579e066d0b24ecd5af17084d",
+  "prompts": {},
+  "sessions": {
+    "s_4ebb9b00635847": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "17b41028-44e4-427a-a42d-5d2fab602615",
+        "model": "claude-fable-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
