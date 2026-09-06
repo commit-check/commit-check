@@ -152,7 +152,12 @@ COMMIT_RULES = [
     RuleCatalogEntry(
         rule_id="CC101",
         check="author_name",
-        regex=r"^[A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u017F\u0180-\u024F ,.'\-]+$|.*(\[bot])",
+        # A name starts with a letter of any script (``\w`` is Unicode-aware
+        # in Python's ``re``) and continues with letters, digits, spaces and
+        # the punctuation names carry. U+0300-036F are combining diacritics,
+        # so a name typed in decomposed form (macOS does this) still counts
+        # as letters. The alternative admits bracketed bot accounts.
+        regex=r"^[^\W\d_][\w ,.'\-\u0300-\u036F]*$|.*(\[bot])",
         error="The committer name seems invalid",
         suggest="git config user.name 'Your Name'",
     ),
@@ -174,7 +179,7 @@ COMMIT_RULES = [
         rule_id="CC012",
         check="require_signed_off_by",
         regex=r"Signed-off-by: .+ <.+@.+>",
-        error="Signed-off-by not found in latest commit",
+        error="Signed-off-by trailer not found in the latest commit",
         suggest="git commit --amend --signoff or use --signoff on commit",
     ),
     RuleCatalogEntry(

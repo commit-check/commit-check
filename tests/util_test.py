@@ -589,8 +589,63 @@ class TestUtil:
             # Must print on stdout with given argument.
             print_error_header()
             stdout, _ = capfd.readouterr()
-            assert "Commit rejected by Commit-Check" in stdout
-            assert "Commit rejected." in stdout
+            assert stdout.startswith("Commit rejected by Commit-Check.")
+            assert "(c).-.(c)" in stdout
+            # The verdict is said once; the old closing "Commit rejected."
+            # line repeated it below the art.
+            assert stdout.count("rejected") == 1
+            assert "Commit rejected." not in stdout
+
+        @pytest.mark.benchmark
+        def test_print_error_header_takes_the_headline(self, capfd):
+            print_error_header("Branch rejected by Commit-Check.")
+            stdout, _ = capfd.readouterr()
+            assert stdout.startswith("Branch rejected by Commit-Check.")
+            assert "Commit rejected" not in stdout
+
+        @pytest.mark.parametrize(
+            "checks, headline",
+            [
+                (["message"], "Commit rejected by Commit-Check."),
+                (
+                    ["subject_max_length", "author_name"],
+                    "Commit rejected by Commit-Check.",
+                ),
+                (["file_size"], "Commit rejected by Commit-Check."),
+                (["branch"], "Branch rejected by Commit-Check."),
+                (["merge_base"], "Branch rejected by Commit-Check."),
+                (["branch", "merge_base"], "Branch rejected by Commit-Check."),
+                (["tag"], "Tag rejected by Commit-Check."),
+                (["no_force_push"], "Push rejected by Commit-Check."),
+                (["message", "branch"], "Checks failed - rejected by Commit-Check."),
+                (["branch", "tag"], "Checks failed - rejected by Commit-Check."),
+            ],
+        )
+        def test_rejection_headline_names_what_failed(self, checks, headline):
+            """A bad branch name is not a bad commit, and the banner says which."""
+            from commit_check.util import rejection_headline
+
+            assert rejection_headline(checks) == headline
+
+        def test_print_failure_banner_names_the_failing_family(
+            self, capfd, monkeypatch
+        ):
+            monkeypatch.setattr(print_error_header, "has_been_called", False)
+            monkeypatch.setenv("FORCE_HYPERLINK", "0")
+            _print_failure(
+                {
+                    "check": "tag",
+                    "rule_id": "CC401",
+                    "error": "Bad tag",
+                    "suggest": "Use SemVer",
+                    "docs_url": "https://commit-check.com/rules/#cc401",
+                },
+                "release_1",
+            )
+            stdout, _ = capfd.readouterr()
+            assert stdout.startswith("Tag rejected by Commit-Check.")
+            assert stdout.count("rejected") == 1
+            assert "CC401 tag check failed ==> release_1" in stdout
 
         @pytest.mark.benchmark
         @pytest.mark.parametrize(

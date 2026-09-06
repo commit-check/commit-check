@@ -701,6 +701,47 @@ class TestAuthorPatternConfig:
         assert self._validate(rule, "Jane Doe") == ValidationResult.PASS
         assert self._validate(rule, "12345 !!!") == ValidationResult.FAIL
 
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "张三",
+            "Иван Петров",
+            "Nguyễn Văn An",
+            # The same name in decomposed form: base letters plus combining
+            # marks, which is how macOS hands the text over.
+            "Nguye\u0302\u0303n Va\u0306n An",
+            "José Muñoz",
+            "John Smith",
+            "Zoë O'Brien-Smith",
+            "J. R. R. Tolkien",
+            "Mary-Jane Watson, Jr.",
+            "dependabot[bot]",
+        ],
+    )
+    def test_default_name_pattern_accepts_names_in_any_script(self, name):
+        """The shipped default once covered Latin scripts only, so --author-name
+        rejected a large share of the world's real names out of the box."""
+        rule = self._author_rule({}, "author_name")
+        assert self._validate(rule, name) == ValidationResult.PASS
+
+    @pytest.mark.parametrize("name", ["bad*name!", "123", "_x", "9lives", "Jane!"])
+    def test_default_name_pattern_still_rejects_non_names(self, name):
+        rule = self._author_rule({}, "author_name")
+        assert self._validate(rule, name) == ValidationResult.FAIL
+
+    def test_default_name_pattern_rejects_an_empty_name(self):
+        """An empty name matches neither alternative of the default regex."""
+        import re
+
+        rule = self._author_rule({}, "author_name")
+        assert re.match(rule.regex, "") is None
+        assert re.match(rule.regex, "张三") is not None
+
+    def test_custom_name_pattern_still_overrides_the_unicode_default(self):
+        rule = self._author_rule({"author_name_pattern": r"^[a-z]+$"}, "author_name")
+        assert self._validate(rule, "张三") == ValidationResult.FAIL
+        assert self._validate(rule, "jane") == ValidationResult.PASS
+
 
 class TestCommitTypeValidator:
     def test_supplied_empty_message_reaches_the_empty_commit_rule(self):
@@ -913,6 +954,60 @@ class TestSubjectLengthValidator:
         result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
+    @staticmethod
+    def _failure(check, limit, subject):
+        rule = ValidationRule(
+            check=check,
+            value=limit,
+            error="static catalog error",
+            suggest="static catalog suggest",
+        )
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.FAIL
+        )
+        return validator._last_failure
+
+    def test_max_length_failure_reports_the_measured_length(self):
+        """ "At most 20" is the rule; "62 characters" is how far off it is."""
+        subject = "feat: this subject is definitely longer than twenty characters"
+        assert len(subject) == 62
+        failure = self._failure("subject_max_length", 20, subject)
+        assert failure["error"] == (
+            "Subject is 62 characters; it must be at most 20 characters"
+        )
+        assert (
+            failure["suggest"] == "Shorten the subject by 42 characters, to 20 or fewer"
+        )
+
+    def test_min_length_failure_reports_the_measured_length(self):
+        failure = self._failure("subject_min_length", 30, "fix: typo")
+        assert failure["error"] == (
+            "Subject is 9 characters; it must be at least 30 characters"
+        )
+        assert (
+            failure["suggest"] == "Write a subject of at least 30 characters (21 more)"
+        )
+
+    def test_length_failure_counts_one_character_in_the_singular(self):
+        failure = self._failure("subject_max_length", 5, "abcdef")
+        assert failure["suggest"] == "Shorten the subject by 1 character, to 5 or fewer"
+        failure = self._failure("subject_min_length", 30, "x")
+        assert failure["error"] == (
+            "Subject is 1 character; it must be at least 30 characters"
+        )
+
+    def test_length_failure_prints_the_measured_text(self, capsys):
+        """The dynamic wording reaches the terminal, not only the JSON."""
+        rule = ValidationRule(check="subject_max_length", value=20)
+        validator = SubjectLengthValidator(rule)
+        subject = "feat: this subject is definitely longer than twenty characters"
+        validator.validate(ValidationContext(stdin_text=subject, no_banner=True))
+        out = capsys.readouterr().out
+        assert "Subject is 62 characters; it must be at most 20 characters" in out
+        assert "Suggest: Shorten the subject by 42 characters, to 20 or fewer" in out
+
 
 class TestSignoffValidator:
     @staticmethod
@@ -1007,6 +1102,50 @@ class TestSignoffValidator:
 
         result = validator.validate(context)
         assert result == ValidationResult.FAIL
+
+    @staticmethod
+    def _signoff_error(context):
+        validator = SignoffValidator(
+            ValidationRule(
+                check="require_signed_off_by",
+                regex=r"Signed-off-by: .+ <.+@.+>",
+                error="static catalog error",
+            )
+        )
+        validator._suppress_output = True
+        with patch(
+            "commit_check.engine.get_git_user_identity",
+            return_value=("Jane Doe", "jane@example.com"),
+        ):
+            with patch(
+                "commit_check.engine.get_commit_author_identity",
+                return_value=("Jane Doe", "jane@example.com"),
+            ):
+                assert validator.validate(context) == ValidationResult.FAIL
+        return validator._last_failure["error"]
+
+    def test_missing_signoff_in_a_pending_message_names_the_message(self, tmp_path):
+        """In a commit-msg hook "the latest commit" is the previous one, which
+        does carry a sign-off, so the error must speak of the message instead."""
+        assert self._signoff_error(ValidationContext(stdin_text="feat: add x")) == (
+            "Signed-off-by trailer not found in the commit message"
+        )
+        msg_file = tmp_path / "COMMIT_EDITMSG"
+        msg_file.write_text("feat: add x\n")
+        assert self._signoff_error(ValidationContext(commit_file=str(msg_file))) == (
+            "Signed-off-by trailer not found in the commit message"
+        )
+
+    def test_missing_signoff_in_an_existing_commit_names_the_commit(self):
+        info = lambda fmt, rev=None: {"s": "feat: add x", "b": ""}[fmt]  # noqa: E731
+        with patch("commit_check.engine.get_commit_info", side_effect=info):
+            with patch("commit_check.engine.has_commits", return_value=True):
+                assert self._signoff_error(ValidationContext()) == (
+                    "Signed-off-by trailer not found in the latest commit"
+                )
+                assert self._signoff_error(ValidationContext(rev="abc123")) == (
+                    "Signed-off-by trailer not found in the latest commit"
+                )
 
     @pytest.mark.benchmark
     def test_validate_with_signoff_in_stdin(self):
@@ -3175,3 +3314,90 @@ class TestFilesValidator:
         validator = FilesValidator(rule)
         validator.validate(ValidationContext(stdin_text="feature/branch-name"))
         mock_files.assert_called_once_with("HEAD")
+
+
+class TestValidateAllBanner:
+    """The text-mode banner names what the failing checks rejected."""
+
+    @staticmethod
+    def _run(rules, capsys, **context):
+        from commit_check.util import print_error_header
+
+        print_error_header.has_been_called = False
+        result = ValidationEngine(rules).validate_all(
+            ValidationContext(stdin_text="my_bad_branch", **context)
+        )
+        return result, capsys.readouterr().out
+
+    def test_branch_failure_gets_a_branch_banner_said_once(self, capsys):
+        result, out = self._run([ValidationRule(check="branch", regex=r"^ok$")], capsys)
+        assert result == ValidationResult.FAIL
+        assert out.startswith("Branch rejected by Commit-Check.")
+        assert out.count("rejected") == 1
+        # The banner is complete before the first failure block starts.
+        assert out.index("(c).-.(c)") < out.index(
+            "branch check failed ==> my_bad_branch"
+        )
+
+    def test_commit_failure_gets_a_commit_banner(self, capsys):
+        rules = [
+            ValidationRule(check="message", regex=r"^feat: "),
+            ValidationRule(check="subject_max_length", value=3),
+        ]
+        result, out = self._run(rules, capsys)
+        assert result == ValidationResult.FAIL
+        assert out.startswith("Commit rejected by Commit-Check.")
+        assert out.count("rejected") == 1
+        # Both blocks follow, in rule order.
+        assert out.index("message check failed") < out.index(
+            "subject-max-length check failed"
+        )
+
+    def test_failures_across_families_get_the_neutral_banner(self, capsys):
+        rules = [
+            ValidationRule(check="message", regex=r"^feat: "),
+            ValidationRule(check="branch", regex=r"^ok$"),
+        ]
+        _, out = self._run(rules, capsys)
+        assert out.startswith("Checks failed - rejected by Commit-Check.")
+        assert out.count("rejected") == 1
+
+    def test_only_the_failing_family_is_named(self, capsys):
+        """A run that checks the message and the branch, where only the branch
+        fails, is a branch rejection."""
+        rules = [
+            ValidationRule(check="message", regex=r"^my_bad"),
+            ValidationRule(check="branch", regex=r"^ok$"),
+        ]
+        _, out = self._run(rules, capsys)
+        assert out.startswith("Branch rejected by Commit-Check.")
+
+    def test_a_warning_alone_earns_no_banner(self, capsys):
+        rules = [ValidationRule(check="branch", regex=r"^ok$", severity="warn")]
+        result, out = self._run(rules, capsys)
+        assert result == ValidationResult.PASS
+        assert "rejected" not in out
+        assert "branch check warning ==> my_bad_branch" in out
+
+    def test_no_banner_and_compact_keep_the_banner_off(self, capsys):
+        rules = [ValidationRule(check="branch", regex=r"^ok$")]
+        _, out = self._run(rules, capsys, no_banner=True)
+        assert "rejected" not in out
+        assert "branch check failed ==> my_bad_branch" in out
+        _, out = self._run(rules, capsys, compact=True)
+        assert out == "[FAIL] CC201 branch: my_bad_branch\n"
+
+    def test_dynamic_error_reaches_both_the_terminal_and_the_record(self, capsys):
+        """One mechanism serves both surfaces, so they cannot drift apart."""
+        rule = ValidationRule(check="subject_min_length", value=30)
+        validator = SubjectLengthValidator(rule)
+        validator.validate(ValidationContext(stdin_text="fix: typo", no_banner=True))
+        out = capsys.readouterr().out
+        assert validator._last_failure["error"] == (
+            "Subject is 9 characters; it must be at least 30 characters"
+        )
+        assert validator._last_failure["error"] in out
+        assert (
+            validator._failure_blocks[0][0]["error"]
+            == (validator._last_failure["error"])
+        )

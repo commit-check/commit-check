@@ -51,6 +51,11 @@ class ValidationRule:
     # "error" fails the run; "warn" is reported in full but never fails it.
     # Set from the top-level ``warn`` list in the config.
     severity: str = "error"
+    # Whether the catalog's specification applies to this rule. False when the
+    # config replaced the format with its own ``message_pattern``: that rule
+    # still reports as CC001, but its failure must not point the reader at
+    # Conventional Commits.
+    enforces_spec: bool = True
 
     @property
     def rule_id(self) -> str | None:
@@ -68,13 +73,13 @@ class ValidationRule:
     def spec_name(self) -> str | None:
         """Name of the specification the rule enforces, from the catalog."""
         entry = RULES_BY_CHECK.get(self.check)
-        return entry.spec_name if entry else None
+        return entry.spec_name if entry and self.enforces_spec else None
 
     @property
     def spec_url(self) -> str | None:
         """Address of the specification the rule enforces, from the catalog."""
         entry = RULES_BY_CHECK.get(self.check)
-        return entry.spec_url if entry else None
+        return entry.spec_url if entry and self.enforces_spec else None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for backward compatibility."""
@@ -406,11 +411,18 @@ class RuleBuilder:
         """
         custom_pattern = self.commit_config.get("message_pattern", "").strip()
         if custom_pattern:
+            # A team that opted out of Conventional Commits must not be told
+            # to follow it: the pattern they chose is the one fact that fixes
+            # their message, so the failure names it and links to no spec.
             return ValidationRule(
                 check=catalog_entry.check,
                 regex=custom_pattern,
-                error=catalog_entry.error,
-                suggest="Commit message does not match the required pattern",
+                error=f"The commit message does not match the required pattern: {custom_pattern}",
+                suggest=(
+                    f"Write the message so that it matches {custom_pattern} "
+                    "(set by message_pattern in the [commit] config)"
+                ),
+                enforces_spec=False,
             )
 
         if not self.commit_config.get("conventional_commits", True):
