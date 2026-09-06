@@ -868,6 +868,20 @@ class TestHttpsOnlyRedirects:
         assert new_req is not None
         assert new_req.full_url == "https://example.com/moved/cchk.toml"
 
+    def test_opener_is_built_once_on_first_open(self):
+        import urllib.request
+        from commit_check.config import _LazyOpener
+
+        built = MagicMock()
+        with patch.object(urllib.request, "build_opener", return_value=built) as mk:
+            lazy = _LazyOpener()
+            mk.assert_not_called()
+            lazy.open("https://example.com/cchk.toml", timeout=3)
+            lazy.open("https://example.com/cchk.toml")
+        mk.assert_called_once()
+        built.open.assert_any_call("https://example.com/cchk.toml", timeout=3)
+        built.open.assert_any_call("https://example.com/cchk.toml", timeout=10)
+
     def test_opener_uses_the_https_only_handler(self):
         from commit_check.config import _HttpsOnlyRedirectHandler, _opener
 
