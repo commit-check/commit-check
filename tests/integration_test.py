@@ -246,6 +246,25 @@ class TestIntegration:
         )
         assert main() == 0
 
+    @pytest.mark.benchmark
+    def test_dry_run_still_reports_what_would_fail(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ):
+        """The checks run against the real commit; only the verdict is softened."""
+        _git("commit", "--allow-empty", "-m", "bad message", cwd=repo)
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            ["commit-check", "--message", "--dry-run", "--compact"],
+        )
+        assert main() == 0
+        out, err = capsys.readouterr()
+        assert "[FAIL] CC001 message: bad message" in out
+        assert "--dry-run forces exit code 0" in err
+
     # ── json format ─────────────────────────────────────────────────────
 
     @pytest.mark.benchmark

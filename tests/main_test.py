@@ -165,6 +165,56 @@ class TestMain:
         monkeypatch.setattr("sys.argv", [CMD, "-m", "--dry-run"])
         assert main() == 0
 
+    def test_dry_run_runs_the_checks_and_reports_the_failure(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        """--dry-run used to return before loading anything, so nothing was
+        checked and nothing was printed. The findings must be there; only
+        the exit code is softened, and the softening must be announced."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--dry-run"])
+        assert main() == 0
+        out, err = capsys.readouterr()
+        assert "CC001" in out + err
+        assert "--dry-run forces exit code 0" in err
+
+    def test_dry_run_is_silent_about_itself_when_everything_passes(
+        self, mocker, capsys, monkeypatch
+    ):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add x\n")
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--dry-run"])
+        assert main() == 0
+        assert "dry run" not in capsys.readouterr().err
+
+    def test_dry_run_json_keeps_the_real_status(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        """The JSON is the truth; the exit code is the only thing forced."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--dry-run", "--format", "json"])
+        assert main() == 0
+        out, err = capsys.readouterr()
+        payload = json.loads(out)
+        assert payload["status"] == "fail"
+        assert payload["checks"][0]["status"] == "fail"
+        assert "--dry-run forces exit code 0" in err
+
+    def test_dry_run_does_not_hide_a_configuration_error(
+        self, mocker, capsys, monkeypatch, tmp_path
+    ):
+        """A broken config means nothing ran, so there is nothing to preview;
+        forcing 0 here would be exactly the false green --dry-run had."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add x\n")
+        cfg = tmp_path / "cchk.toml"
+        cfg.write_text("[commit\n")
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--dry-run", "--config", str(cfg)])
+        assert main() == 2
+        assert str(cfg) in capsys.readouterr().err
+
 
 class TestStdinReader:
     """Test StdinReader edge cases."""
@@ -293,7 +343,7 @@ class TestRevOption:
         self, two_commit_repo, monkeypatch, capsys
     ):
         monkeypatch.setattr("sys.argv", [CMD, "--message", "--rev", "no-such-ref"])
-        assert main() == 1
+        assert main() == 2
         assert "does not resolve" in capsys.readouterr().err
 
     def test_rev_empty_string_is_rejected_not_ignored(
@@ -303,7 +353,7 @@ class TestRevOption:
         fall through to the engine where git's own failure leaks into the
         checked value with a green exit."""
         monkeypatch.setattr("sys.argv", [CMD, "--message", "--rev", ""])
-        assert main() == 1
+        assert main() == 2
         assert "does not resolve" in capsys.readouterr().err
 
     def test_rev_and_a_message_file_conflict(self, two_commit_repo, monkeypatch):
@@ -380,9 +430,9 @@ class TestMainFunctionEdgeCases:
             ],
         )
 
-        # This should fail with proper error message when config file doesn't exist
+        # A missing config file is a configuration error, not a verdict
         result = main()
-        assert result == 1
+        assert result == 2
 
     # Removed problematic tests that had configuration dependency issues
 
@@ -440,13 +490,44 @@ class TestMainFunctionEdgeCases:
         )
 
         result = main()
-        assert result == 1
+        assert result == 2
 
         captured = capsys.readouterr()
         assert (
             "Error: Specified config file not found: /nonexistent/config.toml"
             in captured.err
         )
+
+    @pytest.mark.benchmark
+    def test_invalid_toml_names_the_file_and_exits_2(
+        self, mocker, capsys, monkeypatch, tmp_path
+    ):
+        """TOMLDecodeError has a line and column but no file name; the CLI
+        may be reading any of four default locations, so it must add it."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add x\n")
+        cfg = tmp_path / "cchk.toml"
+        cfg.write_text("[commit\nsubject_max_length = 50\n")
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--config", str(cfg)])
+        assert main() == 2
+        err = capsys.readouterr().err
+        assert err.startswith("Error: ")
+        assert str(cfg) in err
+        assert "line 1" in err
+
+    @pytest.mark.benchmark
+    def test_invalid_default_config_names_the_file_too(
+        self, mocker, capsys, monkeypatch, tmp_path
+    ):
+        """Without --config the file was found by search; name which one."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add x\n")
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".github").mkdir()
+        (tmp_path / ".github" / "commit-check.toml").write_text("= broken\n")
+        monkeypatch.setattr("sys.argv", [CMD, "-m"])
+        assert main() == 2
+        assert ".github/commit-check.toml: " in capsys.readouterr().err
 
 
 class TestCLIArgumentIntegration:
@@ -1401,5 +1482,8 @@ class TestWarnLevel:
         cfg.write_text('warn = ["branchh"]\n')
         monkeypatch.setattr("sys.argv", [CMD, "-m", "--config", str(cfg)])
         rc = main()
-        assert rc == 1
-        assert "unknown rule 'branchh'" in capsys.readouterr().err
+        assert rc == 2
+        err = capsys.readouterr().err
+        assert "unknown rule 'branchh'" in err
+        # The merged config no longer knows the file; main() must add it.
+        assert f"Error: {cfg}: warn names" in err

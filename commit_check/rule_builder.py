@@ -6,6 +6,7 @@ import sys
 from typing import Any
 from dataclasses import dataclass, replace
 from functools import lru_cache
+from commit_check.config import ConfigError
 from commit_check.rules_catalog import (
     COMMIT_RULES,
     BRANCH_RULES,
@@ -147,13 +148,15 @@ class RuleBuilder:
         left the rule enforcing would be discovered by whoever it blocked.
         """
         # The common config lists nothing, and the builder runs once per
-        # check; that path pays for nothing here.
-        if not names:
+        # check; that path pays for nothing here. Only an absent key, an
+        # empty list or an empty string mean "nothing": ``warn = false`` is
+        # a type error, not a way to switch warnings off.
+        if names is None or names == []:
             return frozenset()
         if isinstance(names, str):
-            names = [names]
+            names = [names] if names.strip() else []
         if not isinstance(names, list) or not all(isinstance(n, str) for n in names):
-            raise ValueError(
+            raise ConfigError(
                 'warn must be a list of rule names, e.g. warn = ["branch"]'
             )
         resolved = set()
@@ -165,7 +168,7 @@ class RuleBuilder:
                 resolved.add(_CHECKS_BY_LOWER_ID[key])
             else:
                 known = ", ".join(sorted(RULES_BY_CHECK))
-                raise ValueError(
+                raise ConfigError(
                     f"warn names an unknown rule {name!r}. Known rules: {known}"
                 )
         return frozenset(resolved)

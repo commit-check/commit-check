@@ -20,6 +20,7 @@
   - [Organization-Level Configuration (inherit_from)](#organization-level-configuration-inherit_from)
   - [Use CLI Arguments or Environment Variables](#use-cli-arguments-or-environment-variables)
   - [Check Push Safety](#check-push-safety)
+  - [Exit Codes and Dry Run](#exit-codes-and-dry-run)
 - [AI-Native Usage](#ai-native-usage)
   - [Machine-Readable JSON Output (--format json)](#machine-readable-json-output---format-json)
   - [Quieter Human-Readable Output](#quieter-human-readable-output)
@@ -331,6 +332,43 @@ adds nothing to police. Content scanning (entropy, token detection) is
 deliberately out of scope: pair these checks with a scanner like gitleaks
 if you need it.
 
+### Exit Codes and Dry Run
+
+| Exit code | Meaning |
+|-----------|---------|
+| `0` | Every enforced check passed, or every check was skipped. |
+| `1` | A check failed. This is a verdict on the commit. |
+| `2` | The run could not start: bad usage, a `--rev` that does not resolve, or a config file that is missing, is not valid TOML, or names an unknown rule. Nothing was validated. |
+
+A configuration error names the file, so a broken `.github/cchk.toml` is
+reported as:
+
+```text
+Error: .github/cchk.toml: Expected ']' at the end of a table declaration (at line 1, column 8)
+```
+
+Scripts that treat any non-zero exit as a rejected commit keep working. Scripts
+that want to tell a broken policy from a broken commit can check for `2`, which
+is also the code `argparse` uses for a bad command line.
+
+`--dry-run` runs every requested check and prints the findings exactly as a
+normal run does, then exits `0` even when a check failed, with one line on
+stderr saying so:
+
+```bash
+echo "wip bad commit" | commit-check -m --dry-run --compact
+```
+
+```text
+[FAIL] CC001 message: wip bad commit
+⊘ dry run: a check failed, but --dry-run forces exit code 0
+```
+
+Use it to preview a rule set in CI before enforcing it. In `--format json` the
+`status` still says `fail`; only the exit code is softened. A configuration
+error is not softened: nothing ran, so there is nothing to preview, and a green
+exit would hide the broken file.
+
 ## AI-Native Usage
 
 Commit Check is designed to be consumed by AI agents, LLM toolchains, and
@@ -339,7 +377,8 @@ automation scripts — not just by humans reading terminal output.
 ### Machine-Readable JSON Output (`--format json`)
 
 Pass `--format json` to any CLI invocation to receive structured JSON instead
-of human-readable ASCII art.  The exit code is unchanged (`0` = pass, `1` = fail),
+of human-readable ASCII art.  The exit code is unchanged (`0` = pass, `1` = fail,
+`2` = configuration error; see [Exit Codes and Dry Run](#exit-codes-and-dry-run)),
 so existing CI scripts continue to work:
 
 ```bash

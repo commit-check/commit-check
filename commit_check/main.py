@@ -6,6 +6,7 @@ import os
 import sys
 import argparse
 
+from commit_check.config import ConfigError, find_config_path
 from commit_check.config_merger import ConfigMerger, parse_bool, parse_list, parse_int
 from commit_check.rule_builder import RuleBuilder
 from commit_check.engine import (
@@ -17,6 +18,13 @@ from commit_check.engine import (
     overall_status,
 )
 from . import __version__
+
+# Exit codes. ``1`` is a verdict on the commit; ``2`` means the run could not
+# be set up at all -- the same code argparse uses for a bad command line -- so
+# a wrapper can tell a rejected commit from a broken configuration.
+EXIT_PASS = 0
+EXIT_FAIL = 1
+EXIT_CONFIG_ERROR = 2
 
 
 class StdinReader:
@@ -117,6 +125,13 @@ def _get_parser() -> argparse.ArgumentParser:
         prog="commit-check",
         description="Check commit message, branch name, author name, email, and more.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "exit codes:\n"
+            "  0  every enforced check passed, or --dry-run was given\n"
+            "  1  a check failed\n"
+            "  2  the run could not start: bad usage, or a missing or "
+            "invalid config file"
+        ),
     )
 
     parser.add_argument(
@@ -207,7 +222,8 @@ def _get_parser() -> argparse.ArgumentParser:
     check_group.add_argument(
         "-d",
         "--dry-run",
-        help="perform a dry run without failing (always returns 0)",
+        help="run every check and print the findings, but exit 0 even when "
+        "one fails; a configuration error still exits 2",
         action="store_true",
         required=False,
     )
@@ -587,9 +603,6 @@ def main() -> int:
     parser = _get_parser()
     args = parser.parse_args()
 
-    if args.dry_run:
-        return 0
-
     stdin_reader = StdinReader()
 
     try:
@@ -613,7 +626,7 @@ def main() -> int:
                     "in this repository",
                     file=sys.stderr,
                 )
-                return 1
+                return EXIT_CONFIG_ERROR
 
         # Load and merge configuration from all sources: CLI > Env > TOML > Defaults
         config_data = ConfigMerger.from_all_sources(args, args.config)
@@ -624,8 +637,16 @@ def main() -> int:
             config_data.setdefault("push", {})["allow_force_push"] = False
 
         # Build validation rules from config
-        rule_builder = RuleBuilder(config_data)
-        all_rules = rule_builder.build_all_rules()
+        try:
+            rule_builder = RuleBuilder(config_data)
+            all_rules = rule_builder.build_all_rules()
+        except ConfigError as e:
+            # The merged dict no longer says which file a setting came from,
+            # and ``warn`` has no env or CLI form, so it was the TOML file.
+            # An explicit --config is named as the user wrote it; otherwise
+            # say which of the default locations was found.
+            source = args.config or find_config_path()
+            raise ConfigError(f"{source}: {e}" if source else str(e)) from e
 
         # Determine which checks to run
         requested_checks = _get_requested_checks(args)
@@ -680,17 +701,30 @@ def main() -> int:
         # Run validation – choose output mode based on --format
         output_format: str = getattr(args, "output_format", "text")
         if output_format == "json":
-            return _run_json_output(engine, context)
+            exit_code = _run_json_output(engine, context)
+        else:
+            result = engine.validate_all(context)
+            exit_code = EXIT_PASS if result == ValidationResult.PASS else EXIT_FAIL
 
-        result = engine.validate_all(context)
-        return 0 if result == ValidationResult.PASS else 1
+        if args.dry_run and exit_code == EXIT_FAIL:
+            # The checks ran and their findings are printed above; only the
+            # verdict is softened, so a team can preview a rule set in CI
+            # without being blocked by it. Say so, or the green exit reads
+            # as a pass.
+            print(
+                "⊘ dry run: a check failed, but --dry-run forces exit code 0",
+                file=sys.stderr,
+            )
+            return EXIT_PASS
+        return exit_code
 
-    except FileNotFoundError as e:
+    except (FileNotFoundError, ConfigError) as e:
+        # Nothing was validated, so this is not a verdict on the commit.
         print(f"Error: {e}", file=sys.stderr)
-        return 1
+        return EXIT_CONFIG_ERROR
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        return 1
+        return EXIT_FAIL
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from commit_check.config import (
+    ConfigError,
     load_config,
     DEFAULT_CONFIG_PATHS,
     _deep_merge,
@@ -308,10 +309,12 @@ missing closing bracket
             f.flush()
 
             try:
-                with pytest.raises(
-                    Exception, match="[Ee]xpected"
-                ):  # Should raise a TOML parsing error
+                with pytest.raises(ConfigError, match=r"[Ee]xpected") as excinfo:
                     load_config(f.name)
+                # The parser's message has a line and column but no file
+                # name; the loader adds the path as the user gave it.
+                assert str(excinfo.value).startswith(f"{f.name}: ")
+                assert isinstance(excinfo.value.__cause__, ValueError)
             finally:
                 os.unlink(f.name)
 
