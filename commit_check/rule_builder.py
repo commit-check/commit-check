@@ -6,6 +6,7 @@ import sys
 from typing import Any
 from dataclasses import dataclass, replace
 from functools import lru_cache
+from commit_check.config import ConfigError
 from commit_check.rules_catalog import (
     COMMIT_RULES,
     BRANCH_RULES,
@@ -153,7 +154,7 @@ class RuleBuilder:
         if isinstance(names, str):
             names = [names]
         if not isinstance(names, list) or not all(isinstance(n, str) for n in names):
-            raise ValueError(
+            raise ConfigError(
                 'warn must be a list of rule names, e.g. warn = ["branch"]'
             )
         resolved = set()
@@ -165,7 +166,7 @@ class RuleBuilder:
                 resolved.add(_CHECKS_BY_LOWER_ID[key])
             else:
                 known = ", ".join(sorted(RULES_BY_CHECK))
-                raise ValueError(
+                raise ConfigError(
                     f"warn names an unknown rule {name!r}. Known rules: {known}"
                 )
         return frozenset(resolved)

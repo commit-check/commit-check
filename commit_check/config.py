@@ -16,6 +16,17 @@ except ImportError:
 
     toml_load = tomli.load
 
+
+class ConfigError(ValueError):
+    """A configuration that cannot be used: a TOML file that does not parse,
+    or a setting that names something that does not exist.
+
+    The message names the offending file where there is one. The CLI reports
+    these as exit code 2, apart from a rejected commit (exit code 1), so a
+    wrapper can tell a broken policy from a broken commit.
+    """
+
+
 DEFAULT_CONFIG_PATHS = [
     Path("cchk.toml"),
     Path("commit-check.toml"),
@@ -189,27 +200,44 @@ def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
     return config
 
 
+def _load_toml_file(path: Path, shown_as: str | None = None) -> dict[str, Any]:
+    """Parse one TOML file, naming it in the error when it does not parse.
+
+    ``TOMLDecodeError`` carries a line and column but no file name, and the
+    CLI can be reading any of four default locations, so without the name
+    the user is left to guess which file is broken.
+
+    :param path: File to read.
+    :param shown_as: The path as the user wrote it, for the error message.
+    :raises ConfigError: If the file is not valid TOML.
+    """
+    with open(path, "rb") as f:
+        try:
+            return toml_load(f)
+        except ValueError as e:  # TOMLDecodeError is a ValueError
+            raise ConfigError(f"{shown_as or path}: {e}") from e
+
+
 def load_config(path_hint: str = "") -> dict[str, Any]:
     """Load and validate config from TOML file.
 
     Supports ``inherit_from`` at the top level to merge an organization-level
     configuration from a local file path, a ``github:`` shorthand, or an HTTPS
     URL before applying local overrides.
+
+    :raises FileNotFoundError: If ``path_hint`` names a file that does not exist.
+    :raises ConfigError: If the file is not valid TOML; the message names it.
     """
     if path_hint:
         p = Path(path_hint).resolve()
         if not p.exists():
             raise FileNotFoundError(f"Specified config file not found: {path_hint}")
-        with open(p, "rb") as f:
-            config = toml_load(f)
-        return _resolve_inherit_from(config)
+        return _resolve_inherit_from(_load_toml_file(p, shown_as=path_hint))
 
     # Check default config paths only when no specific path is provided
     for candidate in DEFAULT_CONFIG_PATHS:
         if candidate.exists():
-            with open(candidate, "rb") as f:
-                config = toml_load(f)
-            return _resolve_inherit_from(config)
+            return _resolve_inherit_from(_load_toml_file(candidate))
 
     # Return empty config if no default config files found
     return {}
