@@ -1,6 +1,7 @@
 """Rule builder that creates validation rules from config and catalog."""
 
 from __future__ import annotations
+import re
 import sys
 from typing import Any
 from dataclasses import dataclass, replace
@@ -579,9 +580,11 @@ class RuleBuilder:
         self, allowed_types: list[str], allowed_names: list[str]
     ) -> str:
         """Build regex for conventional branch names."""
-        types_pattern = "|".join(allowed_types)
-        # Build pattern for additional allowed branch names
-        base_names = ["master", "main", "HEAD", "PR-.+"]
-        all_names = base_names + allowed_names
-        names_pattern = ")|(".join(all_names)
-        return rf"^({types_pattern})\/.+|({names_pattern})"
+        types_pattern = "|".join(re.escape(t) for t in allowed_types)
+        # Every alternative is anchored at both ends so an allowed name matches
+        # the whole branch name, not merely its start ("main-backup" is not
+        # "main"). "PR-.+" is a pattern, the rest are literal names.
+        base_names = ["master", "main", "HEAD", r"PR-.+"]
+        all_names = base_names + [re.escape(n) for n in allowed_names]
+        names_pattern = "|".join(all_names)
+        return rf"^(?:{types_pattern})/.+$|^(?:{names_pattern})$"

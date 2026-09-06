@@ -3,6 +3,7 @@
 from commit_check.rule_builder import ValidationRule, RuleBuilder
 from commit_check.rules_catalog import RuleCatalogEntry
 import pytest
+import re
 
 # String constants used across tests
 BAD_FORMAT_ERROR = "Bad format"
@@ -170,10 +171,8 @@ class TestRuleBuilder:
         rule = builder._build_conventional_branch_rule(catalog_entry)
         assert rule is not None
         # Should include default branch names: master, main, HEAD, PR-*
-        assert "(master)" in rule.regex
-        assert "(main)" in rule.regex
-        assert "(HEAD)" in rule.regex
-        assert "(PR-.+)" in rule.regex
+        for name in ["master", "main", "HEAD", "PR-12"]:
+            assert re.match(rule.regex, name), f"{name!r} should be allowed"
 
     @pytest.mark.benchmark
     def test_rule_builder_allow_branch_names_custom(self):
@@ -191,13 +190,16 @@ class TestRuleBuilder:
         rule = builder._build_conventional_branch_rule(catalog_entry)
         assert rule is not None
         # Should include both default and custom branch names
-        assert "(master)" in rule.regex
-        assert "(main)" in rule.regex
-        assert "(HEAD)" in rule.regex
-        assert "(PR-.+)" in rule.regex
-        assert "(develop)" in rule.regex
-        assert "(staging)" in rule.regex
-        assert "(production)" in rule.regex
+        for name in [
+            "master",
+            "main",
+            "HEAD",
+            "PR-12",
+            "develop",
+            "staging",
+            "production",
+        ]:
+            assert re.match(rule.regex, name), f"{name!r} should be allowed"
 
     @pytest.mark.benchmark
     def test_rule_builder_allow_branch_names_empty_list(self):
@@ -210,10 +212,9 @@ class TestRuleBuilder:
         rule = builder._build_conventional_branch_rule(catalog_entry)
         assert rule is not None
         # Should only include default branch names
-        assert "(master)" in rule.regex
-        assert "(main)" in rule.regex
-        assert "(HEAD)" in rule.regex
-        assert "(PR-.+)" in rule.regex
+        for name in ["master", "main", "HEAD", "PR-12"]:
+            assert re.match(rule.regex, name), f"{name!r} should be allowed"
+        assert not re.match(rule.regex, "develop")
 
     @pytest.mark.benchmark
     def test_ai_agent_and_bot_branch_types_in_default(self):
@@ -715,3 +716,48 @@ class TestWarnSeverity:
             ValidationRule(check="branch", severity="warn").to_dict()["severity"]
             == "warn"
         )
+
+
+BRANCH_ENTRY = RuleCatalogEntry(check="branch", regex="", error="", suggest="")
+
+
+def _branch_regex(**branch_config) -> str:
+    builder = RuleBuilder({"branch": {"conventional_branch": True, **branch_config}})
+    rule = builder._build_conventional_branch_rule(BRANCH_ENTRY)
+    assert rule is not None and rule.regex is not None
+    return rule.regex
+
+
+class TestBranchRegexIsAnchored:
+    """An allowed name must match the whole branch name, not just its start."""
+
+    @pytest.mark.parametrize("branch", ["main-backup", "master2", "HEADless"])
+    def test_prefix_of_a_default_name_is_rejected(self, branch):
+        assert not re.match(_branch_regex(), branch)
+
+    def test_prefix_of_a_custom_name_is_rejected(self):
+        regex = _branch_regex(allow_branch_names=["develop"])
+        assert re.match(regex, "develop")
+        assert not re.match(regex, "develop-x")
+
+    @pytest.mark.parametrize(
+        "branch", ["main", "master", "HEAD", "PR-12", "feature/x", "chore/a/b"]
+    )
+    def test_default_names_and_typed_branches_still_pass(self, branch):
+        assert re.match(_branch_regex(), branch)
+
+    def test_custom_names_still_pass(self):
+        regex = _branch_regex(allow_branch_names=["develop", "staging"])
+        assert re.match(regex, "develop")
+        assert re.match(regex, "staging")
+
+    def test_type_alone_without_a_description_is_rejected(self):
+        assert not re.match(_branch_regex(), "feature")
+        assert not re.match(_branch_regex(), "feature/")
+
+    def test_literal_names_are_escaped(self):
+        # A dot in a configured name is a dot, not "any character".
+        regex = _branch_regex(allow_branch_names=["rel.1"])
+        assert re.match(regex, "rel.1")
+        assert not re.match(regex, "relx1")
+
