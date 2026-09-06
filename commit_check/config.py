@@ -219,15 +219,15 @@ def _load_toml_file(path: Path, shown_as: str | None = None) -> dict[str, Any]:
 
 
 def find_config_path(path_hint: str = "") -> Path | None:
-    """The config file a run reads, as the user would name it, or ``None``.
+    """The config file a run reads, or ``None`` when there is none.
 
-    With ``path_hint`` that is the hint itself, if it exists. Without one it
-    is the first of :data:`DEFAULT_CONFIG_PATHS` that exists. Kept separate
-    from :func:`load_config` so an error found later, in a setting the merged
-    dict no longer attributes to a file, can still name the file.
+    With ``path_hint`` that is the hint, canonicalised, if it exists. Without
+    one it is the first of :data:`DEFAULT_CONFIG_PATHS` that exists. Kept
+    separate from :func:`load_config` so an error found later, in a setting
+    the merged dict no longer attributes to a file, can still name the file.
     """
     if path_hint:
-        p = Path(path_hint)
+        p = Path(path_hint).resolve()
         return p if p.exists() else None
     for candidate in DEFAULT_CONFIG_PATHS:
         if candidate.exists():

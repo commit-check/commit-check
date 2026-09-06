@@ -643,7 +643,9 @@ def main() -> int:
         except ConfigError as e:
             # The merged dict no longer says which file a setting came from,
             # and ``warn`` has no env or CLI form, so it was the TOML file.
-            source = find_config_path(args.config or "")
+            # An explicit --config is named as the user wrote it; otherwise
+            # say which of the default locations was found.
+            source = args.config or find_config_path()
             raise ConfigError(f"{source}: {e}" if source else str(e)) from e
 
         # Determine which checks to run
