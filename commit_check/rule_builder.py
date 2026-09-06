@@ -148,11 +148,13 @@ class RuleBuilder:
         left the rule enforcing would be discovered by whoever it blocked.
         """
         # The common config lists nothing, and the builder runs once per
-        # check; that path pays for nothing here.
-        if not names:
+        # check; that path pays for nothing here. Only an absent key, an
+        # empty list or an empty string mean "nothing": ``warn = false`` is
+        # a type error, not a way to switch warnings off.
+        if names is None or names == []:
             return frozenset()
         if isinstance(names, str):
-            names = [names]
+            names = [names] if names.strip() else []
         if not isinstance(names, list) or not all(isinstance(n, str) for n in names):
             raise ConfigError(
                 'warn must be a list of rule names, e.g. warn = ["branch"]'

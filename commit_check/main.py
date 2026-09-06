@@ -6,7 +6,7 @@ import os
 import sys
 import argparse
 
-from commit_check.config import ConfigError
+from commit_check.config import ConfigError, find_config_path
 from commit_check.config_merger import ConfigMerger, parse_bool, parse_list, parse_int
 from commit_check.rule_builder import RuleBuilder
 from commit_check.engine import (
@@ -637,8 +637,14 @@ def main() -> int:
             config_data.setdefault("push", {})["allow_force_push"] = False
 
         # Build validation rules from config
-        rule_builder = RuleBuilder(config_data)
-        all_rules = rule_builder.build_all_rules()
+        try:
+            rule_builder = RuleBuilder(config_data)
+            all_rules = rule_builder.build_all_rules()
+        except ConfigError as e:
+            # The merged dict no longer says which file a setting came from,
+            # and ``warn`` has no env or CLI form, so it was the TOML file.
+            source = find_config_path(args.config or "")
+            raise ConfigError(f"{source}: {e}" if source else str(e)) from e
 
         # Determine which checks to run
         requested_checks = _get_requested_checks(args)

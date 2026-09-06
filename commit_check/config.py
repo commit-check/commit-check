@@ -218,6 +218,23 @@ def _load_toml_file(path: Path, shown_as: str | None = None) -> dict[str, Any]:
             raise ConfigError(f"{shown_as or path}: {e}") from e
 
 
+def find_config_path(path_hint: str = "") -> Path | None:
+    """The config file a run reads, as the user would name it, or ``None``.
+
+    With ``path_hint`` that is the hint itself, if it exists. Without one it
+    is the first of :data:`DEFAULT_CONFIG_PATHS` that exists. Kept separate
+    from :func:`load_config` so an error found later, in a setting the merged
+    dict no longer attributes to a file, can still name the file.
+    """
+    if path_hint:
+        p = Path(path_hint)
+        return p if p.exists() else None
+    for candidate in DEFAULT_CONFIG_PATHS:
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def load_config(path_hint: str = "") -> dict[str, Any]:
     """Load and validate config from TOML file.
 
@@ -228,16 +245,10 @@ def load_config(path_hint: str = "") -> dict[str, Any]:
     :raises FileNotFoundError: If ``path_hint`` names a file that does not exist.
     :raises ConfigError: If the file is not valid TOML; the message names it.
     """
-    if path_hint:
-        p = Path(path_hint).resolve()
-        if not p.exists():
+    path = find_config_path(path_hint)
+    if path is None:
+        if path_hint:
             raise FileNotFoundError(f"Specified config file not found: {path_hint}")
-        return _resolve_inherit_from(_load_toml_file(p, shown_as=path_hint))
-
-    # Check default config paths only when no specific path is provided
-    for candidate in DEFAULT_CONFIG_PATHS:
-        if candidate.exists():
-            return _resolve_inherit_from(_load_toml_file(candidate))
-
-    # Return empty config if no default config files found
-    return {}
+        # No default config file: run on the built-in defaults.
+        return {}
+    return _resolve_inherit_from(_load_toml_file(path, shown_as=path_hint or None))

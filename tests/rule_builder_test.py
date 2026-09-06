@@ -701,6 +701,18 @@ class TestWarnSeverity:
         with pytest.raises(ValueError, match="must be a list"):
             RuleBuilder({"warn": {"branch": True}})
 
+    @pytest.mark.parametrize("value", [False, 0])
+    def test_a_falsey_non_list_is_refused_not_taken_as_empty(self, value):
+        """``warn = false`` reads like "switch warnings off" but is a type
+        error; accepting it would hide the mistake."""
+        with pytest.raises(ValueError, match="must be a list"):
+            RuleBuilder({"warn": value})
+
+    @pytest.mark.parametrize("value", [[], ""])
+    def test_an_empty_list_or_string_means_no_warnings(self, value):
+        rules = RuleBuilder({"warn": value}).build_all_rules()
+        assert all(r.severity == "error" for r in rules)
+
     def test_to_dict_carries_severity(self):
         assert ValidationRule(check="branch").to_dict()["severity"] == "error"
         assert (

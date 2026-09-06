@@ -166,7 +166,7 @@ class TestMain:
         assert main() == 0
 
     def test_dry_run_runs_the_checks_and_reports_the_failure(
-        self, mocker, capsys, monkeypatch
+        self, mocker, capsys, monkeypatch, pinned_author
     ):
         """--dry-run used to return before loading anything, so nothing was
         checked and nothing was printed. The findings must be there; only
@@ -188,7 +188,9 @@ class TestMain:
         assert main() == 0
         assert "dry run" not in capsys.readouterr().err
 
-    def test_dry_run_json_keeps_the_real_status(self, mocker, capsys, monkeypatch):
+    def test_dry_run_json_keeps_the_real_status(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
         """The JSON is the truth; the exit code is the only thing forced."""
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="invalid commit message\n")
@@ -1481,4 +1483,7 @@ class TestWarnLevel:
         monkeypatch.setattr("sys.argv", [CMD, "-m", "--config", str(cfg)])
         rc = main()
         assert rc == 2
-        assert "unknown rule 'branchh'" in capsys.readouterr().err
+        err = capsys.readouterr().err
+        assert "unknown rule 'branchh'" in err
+        # The merged config no longer knows the file; main() must add it.
+        assert f"Error: {cfg}: warn names" in err

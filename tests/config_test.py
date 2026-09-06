@@ -309,7 +309,7 @@ missing closing bracket
             f.flush()
 
             try:
-                with pytest.raises(ConfigError, match="[Ee]xpected") as excinfo:
+                with pytest.raises(ConfigError, match=r"[Ee]xpected") as excinfo:
                     load_config(f.name)
                 # The parser's message has a line and column but no file
                 # name; the loader adds the path as the user gave it.
