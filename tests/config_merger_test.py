@@ -185,9 +185,11 @@ class TestConfigMergerParseEnvVars:
     def test_invalid_env_var_is_skipped(self, monkeypatch, capsys):
         monkeypatch.setenv("CCHK_SUBJECT_MAX_LENGTH", "invalid")
         config = ConfigMerger.parse_env_vars()
-        # Should not crash, but should print warning
+        # Should not crash, but should print a warning -- on stderr, so that
+        # stdout stays clean for --format json.
         captured = capsys.readouterr()
-        assert "Warning" in captured.out
+        assert "Warning: Invalid value for CCHK_SUBJECT_MAX_LENGTH" in captured.err
+        assert captured.out == ""
         # Should not have subject_max_length in config
         assert "subject_max_length" not in config.get("commit", {})
 
