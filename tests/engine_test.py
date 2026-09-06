@@ -164,6 +164,21 @@ class TestCommitMessageValidator:
         assert result == ValidationResult.PASS
 
     @pytest.mark.benchmark
+    def test_revert_subject_passes_under_the_default_config(self):
+        """A git-written revert is exempt from CC001; CC007 decides its fate."""
+        from commit_check.rule_builder import RuleBuilder
+        from commit_check.rules_catalog import RuleCatalogEntry
+
+        rule = RuleBuilder({})._build_conventional_commit_rule(
+            RuleCatalogEntry(check="message", regex="", error="", suggest="")
+        )
+        assert rule is not None
+        validator = CommitMessageValidator(rule)
+        context = ValidationContext(stdin_text='Revert "feat: init"')
+
+        assert validator.validate(context) == ValidationResult.PASS
+
+    @pytest.mark.benchmark
     def test_commit_message_validator_invalid_commit(self):
         """Test CommitMessageValidator with invalid commit message."""
         rule = ValidationRule(

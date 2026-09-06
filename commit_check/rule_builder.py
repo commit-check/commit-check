@@ -574,7 +574,15 @@ class RuleBuilder:
     def _build_conventional_commit_regex(self, allowed_types: list[str]) -> str:
         """Build regex for conventional commit messages."""
         types_pattern = "|".join(sorted(set(allowed_types)))
-        return rf"^({types_pattern})(\([\w\-\.]+\))?(!)?: [^\n]+([\s\S]*)|(Merge).*|(fixup!.*)"
+        # Subjects git writes itself are exempt from the format rule; whether
+        # they are allowed at all is CC006/CC007/CC009's call. Git writes each
+        # prefix exactly as below, trailing space or quote included, so author
+        # prose such as "Merged ..." or "fixup!! ..." is still held to the
+        # format.
+        git_prefixes = r'^(?:Merge |Revert "|fixup! |squash! |amend! )'
+        return (
+            rf"^({types_pattern})(\([\w\-\.]+\))?(!)?: [^\n]+([\s\S]*)|{git_prefixes}"
+        )
 
     def _build_conventional_branch_regex(
         self, allowed_types: list[str], allowed_names: list[str]

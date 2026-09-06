@@ -761,3 +761,47 @@ class TestBranchRegexIsAnchored:
         assert re.match(regex, "rel.1")
         assert not re.match(regex, "relx1")
 
+
+class TestConventionalCommitGitPrefixes:
+    """CC001 exempts exactly the subjects git writes itself.
+
+    Whether such commits are allowed at all is decided by CC006 (merge), CC007
+    (revert) and CC009 (fixup); the format rule only declines to judge them.
+    """
+
+    @staticmethod
+    def _regex() -> str:
+        builder = RuleBuilder({"commit": {"conventional_commits": True}})
+        entry = RuleCatalogEntry(
+            check="message", regex="", error=BAD_FORMAT_ERROR, suggest=""
+        )
+        rule = builder._build_conventional_commit_rule(entry)
+        assert rule is not None and rule.regex is not None
+        return rule.regex
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            'Revert "feat: init"',
+            "Merge branch 'feature' into main",
+            "Merge pull request #1 from org/feature",
+            "fixup! feat: x",
+            "squash! feat: x",
+            "amend! feat: x",
+        ],
+    )
+    def test_git_written_subject_is_exempt(self, message):
+        assert re.match(self._regex(), message)
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "Merged stuff into main",
+            "Mergeable widgets",
+            "fixup!! nonsense",
+            "Reverted the thing",
+            "fixup!feat: x",
+        ],
+    )
+    def test_author_prose_resembling_a_prefix_is_not_exempt(self, message):
+        assert not re.match(self._regex(), message)
