@@ -731,6 +731,24 @@ class TestJsonFormat:
         assert all("check" in c and "status" in c for c in data["checks"])
 
     @pytest.mark.benchmark
+    def test_json_output_survives_an_invalid_env_var(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        """The env-var warning goes to stderr, so stdout is still JSON."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
+        monkeypatch.setenv("CCHK_SUBJECT_MAX_LENGTH", "abc")
+
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--format", "json"])
+        rc = main()
+
+        out, err = capsys.readouterr()
+        data = json.loads(out)
+        assert rc == 0
+        assert data["status"] == "pass"
+        assert "Warning: Invalid value for CCHK_SUBJECT_MAX_LENGTH" in err
+
+    @pytest.mark.benchmark
     def test_json_format_pass_reports_checked_value(
         self, mocker, capsys, monkeypatch, pinned_author
     ):

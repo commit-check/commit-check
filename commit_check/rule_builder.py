@@ -1,9 +1,11 @@
 """Rule builder that creates validation rules from config and catalog."""
 
 from __future__ import annotations
+import re
 import sys
 from typing import Any
 from dataclasses import dataclass, replace
+from functools import lru_cache
 from commit_check.rules_catalog import (
     COMMIT_RULES,
     BRANCH_RULES,
@@ -97,6 +99,16 @@ class ValidationRule:
         if self.ignored:
             result["ignored"] = self.ignored
         return result
+
+
+@lru_cache(maxsize=64)
+def _escaped_alternation(items: tuple[str, ...]) -> str:
+    """``a|b|c`` with each item escaped for a regex.
+
+    Cached on the tuple: the same allowed types are built for every rule
+    set, and escaping twenty names on each build was a measurable cost.
+    """
+    return "|".join(re.escape(item) for item in items)
 
 
 class RuleBuilder:
@@ -573,15 +585,25 @@ class RuleBuilder:
     def _build_conventional_commit_regex(self, allowed_types: list[str]) -> str:
         """Build regex for conventional commit messages."""
         types_pattern = "|".join(sorted(set(allowed_types)))
-        return rf"^({types_pattern})(\([\w\-\.]+\))?(!)?: [^\n]+([\s\S]*)|(Merge).*|(fixup!.*)"
+        # Subjects git writes itself are exempt from the format rule; whether
+        # they are allowed at all is CC006/CC007/CC009's call. Git writes each
+        # prefix exactly as below, trailing space or quote included, so author
+        # prose such as "Merged ..." or "fixup!! ..." is still held to the
+        # format.
+        git_prefixes = r'^(?:Merge |Revert "|fixup! |squash! |amend! )'
+        return (
+            rf"^({types_pattern})(\([\w\-\.]+\))?(!)?: [^\n]+([\s\S]*)|{git_prefixes}"
+        )
 
     def _build_conventional_branch_regex(
         self, allowed_types: list[str], allowed_names: list[str]
     ) -> str:
         """Build regex for conventional branch names."""
-        types_pattern = "|".join(allowed_types)
-        # Build pattern for additional allowed branch names
-        base_names = ["master", "main", "HEAD", "PR-.+"]
-        all_names = base_names + allowed_names
-        names_pattern = ")|(".join(all_names)
-        return rf"^({types_pattern})\/.+|({names_pattern})"
+        types_pattern = _escaped_alternation(tuple(allowed_types))
+        # Every alternative is anchored at both ends so an allowed name matches
+        # the whole branch name, not merely its start ("main-backup" is not
+        # "main"). "PR-.+" is a pattern, the rest are literal names.
+        names_pattern = "|".join(["master", "main", "HEAD", r"PR-.+"])
+        if allowed_names:
+            names_pattern += "|" + _escaped_alternation(tuple(allowed_names))
+        return rf"^(?:{types_pattern})/.+$|^(?:{names_pattern})$"

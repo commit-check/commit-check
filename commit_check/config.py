@@ -3,6 +3,7 @@
 from __future__ import annotations
 from typing import Any
 from pathlib import Path
+import sys
 import urllib.request
 import urllib.error
 
@@ -70,23 +71,83 @@ def _github_shorthand_to_url(value: str) -> str | None:
     return f"https://raw.githubusercontent.com/{repo_part}/{ref}/{file_path}"
 
 
+class _HttpsOnlyRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Follow redirects only to HTTPS targets.
+
+    ``urlopen`` follows an HTTPS-to-HTTP redirect by default, which would
+    let a parent config be swapped in transit on the way to being merged
+    into the policy. Any redirect off HTTPS is refused instead.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[override]
+        if not newurl.startswith("https://"):
+            raise urllib.error.URLError(
+                f"redirect to a non-HTTPS URL refused: {newurl}"
+            )
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+class _LazyOpener:
+    """The HTTPS-only opener, built on first use.
+
+    ``build_opener`` is not free, and most runs never fetch a parent config
+    at all, so the cost is paid only by the run that does.
+    """
+
+    def __init__(self) -> None:
+        self._opener: urllib.request.OpenerDirector | None = None
+
+    @property
+    def handlers(self) -> list[urllib.request.BaseHandler]:
+        return list(getattr(self._get(), "handlers"))
+
+    def _get(self) -> urllib.request.OpenerDirector:
+        if self._opener is None:
+            self._opener = urllib.request.build_opener(_HttpsOnlyRedirectHandler())
+        return self._opener
+
+    def open(self, url: str, timeout: float = 10):  # type: ignore[no-untyped-def]
+        return self._get().open(url, timeout=timeout)
+
+
+_opener = _LazyOpener()
+
+
 def _load_from_url(url: str) -> dict[str, Any]:
     """Load TOML config from an HTTPS URL.
 
     :param url: HTTPS URL pointing to a TOML config file.
-    :returns: Parsed config dict, or empty dict on failure.
-    :raises ValueError: If the URL does not use HTTPS.
+    :returns: Parsed config dict.
+    :raises ValueError: If the URL does not use HTTPS, or the fetched body is
+        not valid TOML (``TOMLDecodeError``).
+    :raises OSError: If the URL cannot be fetched, or redirects off HTTPS
+        (``urllib.error.URLError`` is an ``OSError``).
     """
     if not url.startswith("https://"):
-        return {}
-    try:
-        with urllib.request.urlopen(url, timeout=10) as response:  # noqa: S310
-            data = response.read()
-        import io
+        raise ValueError("only https:// URLs are accepted")
+    with _opener.open(url, timeout=10) as response:  # noqa: S310
+        data = response.read()
+    import io
 
-        return toml_load(io.BytesIO(data))
-    except urllib.error.URLError:
-        return {}
+    return toml_load(io.BytesIO(data))
+
+
+def _load_parent_config(inherit_from: str) -> dict[str, Any]:
+    """Load the parent config named by an ``inherit_from`` value.
+
+    :raises ValueError: For a malformed ``github:`` shorthand, a non-HTTPS URL,
+        or a parent that is not valid TOML (``TOMLDecodeError``).
+    :raises OSError: For an unreachable URL or an unreadable local file.
+    """
+    if inherit_from.startswith("github:"):
+        url = _github_shorthand_to_url(inherit_from)
+        if url is None:
+            raise ValueError('expected "github:owner/repo[@ref]:path/to/file.toml"')
+        return _load_from_url(url)
+    if inherit_from.startswith(("https://", "http://")):
+        return _load_from_url(inherit_from)
+    with open(Path(inherit_from), "rb") as f:
+        return toml_load(f)
 
 
 def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
@@ -108,21 +169,20 @@ def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
     if not inherit_from or not isinstance(inherit_from, str):
         return config
 
-    parent: dict[str, Any] = {}
-    if inherit_from.startswith("github:"):
-        url = _github_shorthand_to_url(inherit_from)
-        if url:
-            parent = _load_from_url(url)
-    elif inherit_from.startswith("https://"):
-        parent = _load_from_url(inherit_from)
-    else:
-        parent_path = Path(inherit_from)
-        if parent_path.exists():
-            try:
-                with open(parent_path, "rb") as f:
-                    parent = toml_load(f)
-            except Exception:
-                parent = {}
+    # Fail open, as documented: a parent that cannot be loaded leaves the
+    # local config in force. Say so on stderr rather than silently, and keep
+    # stdout clean for --format json.
+    # TOMLDecodeError (tomllib and tomli alike) is a ValueError; URLError is
+    # an OSError.
+    try:
+        parent = _load_parent_config(inherit_from)
+    except (OSError, ValueError) as e:
+        print(
+            f'⊘ inherit_from "{inherit_from}" could not be loaded: {e}; '
+            "continuing with the local config",
+            file=sys.stderr,
+        )
+        parent = {}
 
     if parent:
         return _deep_merge(parent, config)

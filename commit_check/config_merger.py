@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import os
+import sys
 import argparse
 from collections.abc import Callable
 from typing import Any
@@ -206,8 +207,9 @@ class ConfigMerger:
                     parsed_value = parser(value)
                     config[section][key] = parsed_value
                 except (ValueError, TypeError) as e:
-                    # Log warning but don't fail - just skip invalid env vars
-                    print(f"Warning: Invalid value for {env_var}: {e}")
+                    # Log warning but don't fail - just skip invalid env vars.
+                    # stderr, so --format json output stays parseable.
+                    print(f"Warning: Invalid value for {env_var}: {e}", file=sys.stderr)
 
         # Remove empty sections
         config = {k: v for k, v in config.items() if v}

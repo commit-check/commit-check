@@ -16,7 +16,7 @@ from commit_check.config import (
 )
 
 # String constants used across tests
-URLOPEN_MODULE = "urllib.request.urlopen"
+URLOPEN_MODULE = "commit_check.config._opener.open"
 EXAMPLE_CONFIG_URL = "https://example.com/cchk.toml"
 
 
@@ -722,6 +722,83 @@ class TestGithubShorthandToUrl:
         assert _github_shorthand_to_url("github:my-org/.github:") is None
 
 
+class TestInheritFromFailuresAreReported:
+    """A parent that cannot be loaded is reported on stderr, then ignored.
+
+    The behaviour stays fail-open, as documented: the local config is used on
+    its own. Nothing goes to stdout, so ``--format json`` output stays
+    parseable.
+    """
+
+    LOCAL = {"commit": {"subject_max_length": 72}}
+
+    @staticmethod
+    def _resolve(inherit_from, capsys):
+        config = {"inherit_from": inherit_from, "commit": {"subject_max_length": 72}}
+        result = _resolve_inherit_from(config)
+        out, err = capsys.readouterr()
+        assert out == ""
+        assert err.count("\n") == 1
+        assert err.startswith(f'⊘ inherit_from "{inherit_from}" could not be loaded: ')
+        assert err.rstrip().endswith("; continuing with the local config")
+        return result, err
+
+    def test_malformed_github_shorthand(self, capsys):
+        with patch(URLOPEN_MODULE) as mock_urlopen:
+            result, err = self._resolve("github:no-slash-here", capsys)
+            mock_urlopen.assert_not_called()
+        assert result == self.LOCAL
+        assert "github:owner/repo" in err
+
+    def test_unreachable_url(self, capsys):
+        import urllib.error
+
+        with patch(
+            URLOPEN_MODULE, side_effect=urllib.error.URLError("network unreachable")
+        ):
+            result, err = self._resolve(EXAMPLE_CONFIG_URL, capsys)
+        assert result == self.LOCAL
+        assert "network unreachable" in err
+
+    def test_http_url_is_refused(self, capsys):
+        with patch(URLOPEN_MODULE) as mock_urlopen:
+            result, err = self._resolve("http://example.com/cchk.toml", capsys)
+            mock_urlopen.assert_not_called()
+        assert result == self.LOCAL
+        assert "https://" in err
+
+    def test_unreadable_local_path(self, capsys):
+        result, err = self._resolve("/nonexistent/dir/parent.toml", capsys)
+        assert result == self.LOCAL
+        assert "No such file" in err
+
+    def test_invalid_toml_in_local_parent(self, capsys, tmp_path):
+        parent = tmp_path / "parent.toml"
+        parent.write_text("[commit\nsubject_max_length = 100\n")
+        result, err = self._resolve(str(parent), capsys)
+        assert result == self.LOCAL
+        assert "line 1" in err
+
+    def test_invalid_toml_in_fetched_parent(self, capsys):
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"not = valid = toml\n"
+        mock_response.__enter__ = lambda s: s
+        mock_response.__exit__ = MagicMock(return_value=False)
+
+        with patch(URLOPEN_MODULE, return_value=mock_response):
+            result, err = self._resolve(EXAMPLE_CONFIG_URL, capsys)
+        assert result == self.LOCAL
+
+    def test_successful_load_prints_nothing(self, capsys, tmp_path):
+        parent = tmp_path / "parent.toml"
+        parent.write_text("[commit]\nsubject_max_length = 100\n")
+        config = {"inherit_from": str(parent), "commit": {"subject_min_length": 5}}
+        result = _resolve_inherit_from(config)
+        assert result["commit"] == {"subject_max_length": 100, "subject_min_length": 5}
+        out, err = capsys.readouterr()
+        assert out == "" and err == ""
+
+
 class TestLoadFromUrl:
     """Tests for the _load_from_url helper."""
 
@@ -745,8 +822,8 @@ class TestLoadFromUrl:
             URLOPEN_MODULE,
             side_effect=urllib.error.URLError("network error"),
         ):
-            result = _load_from_url(EXAMPLE_CONFIG_URL)
-            assert result == {}
+            with pytest.raises(urllib.error.URLError):
+                _load_from_url(EXAMPLE_CONFIG_URL)
 
     @pytest.mark.benchmark
     def test_load_from_url_http_error(self):
@@ -758,8 +835,63 @@ class TestLoadFromUrl:
                 EXAMPLE_CONFIG_URL, 404, "Not Found", {}, None
             ),
         ):
-            result = _load_from_url(EXAMPLE_CONFIG_URL)
-            assert result == {}
+            with pytest.raises(urllib.error.HTTPError):
+                _load_from_url(EXAMPLE_CONFIG_URL)
+
+    @pytest.mark.benchmark
+    def test_load_from_url_rejects_non_https(self):
+        with patch(URLOPEN_MODULE) as mock_urlopen:
+            with pytest.raises(ValueError, match="https"):
+                _load_from_url("http://example.com/cchk.toml")
+            mock_urlopen.assert_not_called()
+
+
+class TestHttpsOnlyRedirects:
+    """A parent config fetched over HTTPS must not be redirected off HTTPS."""
+
+    def _redirect(self, target: str):
+        import urllib.request
+        from commit_check.config import _HttpsOnlyRedirectHandler
+
+        req = urllib.request.Request(EXAMPLE_CONFIG_URL)
+        handler = _HttpsOnlyRedirectHandler()
+        return handler.redirect_request(req, None, 302, "Found", {}, target)
+
+    def test_redirect_to_http_is_refused(self):
+        import urllib.error
+
+        with pytest.raises(urllib.error.URLError, match="non-HTTPS"):
+            self._redirect("http://example.com/cchk.toml")
+
+    def test_redirect_to_https_is_followed(self):
+        new_req = self._redirect("https://example.com/moved/cchk.toml")
+        assert new_req is not None
+        assert new_req.full_url == "https://example.com/moved/cchk.toml"
+
+    def test_opener_is_built_once_on_first_open(self):
+        import urllib.request
+        from commit_check.config import _LazyOpener
+
+        built = MagicMock()
+        with patch.object(urllib.request, "build_opener", return_value=built) as mk:
+            lazy = _LazyOpener()
+            mk.assert_not_called()
+            lazy.open("https://example.com/cchk.toml", timeout=3)
+            lazy.open("https://example.com/cchk.toml")
+        mk.assert_called_once()
+        built.open.assert_any_call("https://example.com/cchk.toml", timeout=3)
+        built.open.assert_any_call("https://example.com/cchk.toml", timeout=10)
+
+    def test_opener_uses_the_https_only_handler(self):
+        from commit_check.config import _HttpsOnlyRedirectHandler, _opener
+
+        assert any(isinstance(h, _HttpsOnlyRedirectHandler) for h in _opener.handlers)
+        # The default redirect handler must not remain alongside it.
+        import urllib.request
+
+        assert not any(
+            type(h) is urllib.request.HTTPRedirectHandler for h in _opener.handlers
+        )
 
 
 class TestLoadConfigInheritFrom:
