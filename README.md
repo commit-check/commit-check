@@ -267,7 +267,7 @@ variable that override it (priority: CLI > env > TOML > default). Booleans accep
 | `branch.allow_branch_names` | `[]` | `--allow-branch-names` | `CCHK_ALLOW_BRANCH_NAMES` | Extra whole branch names allowed besides `main`, `master`, `HEAD`, `PR-*` |
 | `branch.require_rebase_target` | `""` | `--require-rebase-target` | `CCHK_REQUIRE_REBASE_TARGET` | Branch the current branch must be rebased onto (CC202); empty disables |
 | `branch.ignore_authors` | `[]` | `--branch-ignore-authors` | `CCHK_BRANCH_IGNORE_AUTHORS` | Authors whose branches skip the branch checks |
-| `push.allow_force_push` | `true` | — (`--no-force-push` runs the check) | `CCHK_ALLOW_FORCE_PUSH` | Whether a force push is permitted (CC301); set `false` to reject non-fast-forward pushes |
+| `push.allow_force_push` | `true` | — (`--no-force-push` runs the check) | `CCHK_ALLOW_FORCE_PUSH` | Reserved; has no effect today. CC301 runs only with `--no-force-push`, which always rejects a non-fast-forward push |
 | `tag.regex` | SemVer with optional `v` | `--tag-regex` | `CCHK_TAG_REGEX` | Pattern tag names must match (CC401); empty disables |
 | `files.max_size` | `""` (off) | `--files-max-size` | `CCHK_FILES_MAX_SIZE` | Largest committed file, in bytes or with `KB`/`MB`/`GB` (CC302) |
 | `files.prohibited_patterns` | `[]` | `--files-prohibited-patterns` | `CCHK_FILES_PROHIBITED_PATTERNS` | fnmatch patterns committed paths must not match (CC303) |

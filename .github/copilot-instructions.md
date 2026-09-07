@@ -176,17 +176,18 @@ cchk --help  # Verify alias works
 │   ├── ai_signatures_data.py # Known AI tool signatures (pure data)
 │   ├── imperatives.py       # IMPERATIVES / NON_IMPERATIVE_LOOKALIKES sets for subject validation
 │   └── util.py              # Git operations, output formatting (_print_failure)
-├── tests/                    # Test suite (13 *_test.py files; run pytest --co -q for the count)
+├── tests/                    # Test suite (14 *_test.py files; run pytest --co -q for the count)
 │   ├── main_test.py         # CLI integration tests
 │   ├── api_test.py          # Python API tests
 │   ├── engine_test.py       # Validator tests
 │   ├── engine_fixes_test.py # Suggested-fix output from validators
 │   ├── fixes_test.py        # fixes.py helpers
-│   ├── ai_signatures_test.py # AI signature detection (also the CodSpeed benchmarks)
+│   ├── ai_signatures_test.py # AI signature detection
 │   ├── config_test.py       # TOML loading and inherit_from
 │   ├── config_merger_test.py # Config merging tests
 │   ├── rule_builder_test.py # Rule building tests
 │   ├── rules_catalog_test.py # Rule ID contract
+│   ├── readme_test.py       # README configuration table vs get_default_config()
 │   ├── util_test.py         # Git helpers and output formatting
 │   ├── integration_test.py  # End-to-end CLI runs
 │   └── version_test.py      # Version string
