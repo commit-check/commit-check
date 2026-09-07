@@ -20,16 +20,19 @@ Always reference these instructions first and fallback to search or bash command
 ```
 commit_check/
 ├── main.py              # CLI entry point, argument parsing
+├── api.py               # Public Python API (validate_message, validate_branch, ...)
 ├── config_merger.py     # Merges CLI→Env→TOML→Defaults
-├── config.py           # TOML file loading logic
+├── config.py           # TOML file loading logic, inherit_from, deep_merge
 ├── rule_builder.py     # Builds ValidationRule objects from config
-├── rules_catalog.py    # Catalog of all validation rules (COMMIT_RULES, BRANCH_RULES)
+├── rules_catalog.py    # Catalog of all validation rules (COMMIT_RULES, BRANCH_RULES, PUSH_RULES, FILES_RULES, TAG_RULES)
 ├── engine.py           # ValidationEngine orchestrates BaseValidator subclasses
-├── imperatives.py      # Imperative verb list for subject validation
+├── fixes.py            # Suggested fixes shown with a failure
+├── ai_signatures.py    # AI tool signature detection (data in ai_signatures_data.py)
+├── imperatives.py      # IMPERATIVES / NON_IMPERATIVE_LOOKALIKES sets for the subject-imperative stem test
 └── util.py             # Git operations, output formatting, helpers
 ```
 
-**Key Flow**: `main()` → `ConfigMerger` → `RuleBuilder` → `ValidationEngine` → `BaseValidator` subclasses → exit code 0/1
+**Key Flow**: `main()` → `ConfigMerger` → `RuleBuilder` → `ValidationEngine` → `BaseValidator` subclasses → exit code 0/1/2
 
 ### Configuration Discovery
 Tool searches for TOML files in this order:
@@ -54,7 +57,6 @@ python3 -m pip install nox
 
 # Install package in development mode with PYTHONPATH (network timeout workaround)
 export PYTHONPATH=/home/runner/work/commit-check/commit-check
-python3 -m pip install pyyaml  # Core dependency
 ```
 
 ### Build and Package
@@ -86,16 +88,6 @@ nox -s coverage  # NETWORK ISSUES: Often fails due to PyPI timeouts, takes 5+ mi
 python3 -m pip install pre-commit  # May timeout, retry if needed
 pre-commit install --hook-type pre-commit
 pre-commit run --all-files --show-diff-on-failure  # Takes 2-5 minutes for full run
-```
-
-### Documentation
-```bash
-# NETWORK ISSUES: Documentation builds fail due to external dependencies (fonts.google.com)
-# Install docs dependencies (may timeout)
-python3 -m pip install sphinx-immaterial sphinx-autobuild
-
-# Build docs -- FAILS due to network restrictions in CI environments
-PYTHONPATH=/home/runner/work/commit-check/commit-check sphinx-build -E -W -b html docs _build/html
 ```
 
 ## Validation Scenarios
@@ -165,10 +157,6 @@ cchk --help  # Verify alias works
 - **Issue**: nox sessions fail due to dependency installation timeouts
 - **Workaround**: Run commands directly with PYTHONPATH instead of nox sessions
 
-### Documentation
-- **Issue**: Sphinx build fails due to external font loading (fonts.google.com)
-- **Status**: Cannot be fixed in restricted CI environments
-
 ## Configuration and Important Files
 
 ### Repository Structure
@@ -177,18 +165,31 @@ cchk --help  # Verify alias works
 ├── commit_check/              # Main Python package
 │   ├── __init__.py           # Package constants, defaults (DEFAULT_COMMIT_TYPES, DEFAULT_BRANCH_TYPES)
 │   ├── main.py              # CLI entry point, StdinReader, argument parsing
+│   ├── api.py               # Public Python API (no subprocess)
 │   ├── config_merger.py     # ConfigMerger: CLI→Env→TOML→Defaults priority cascade
-│   ├── config.py            # TOML file loading (uses tomllib/tomli)
+│   ├── config.py            # TOML file loading (uses tomllib/tomli), inherit_from, deep_merge
 │   ├── rule_builder.py      # RuleBuilder: creates ValidationRule from config + catalog
-│   ├── rules_catalog.py     # COMMIT_RULES, BRANCH_RULES catalogs (RuleCatalogEntry)
+│   ├── rules_catalog.py     # COMMIT_RULES, BRANCH_RULES, PUSH_RULES, FILES_RULES, TAG_RULES (RuleCatalogEntry)
 │   ├── engine.py            # ValidationEngine, BaseValidator, ValidationContext
-│   ├── imperatives.py       # List of imperative verbs for subject validation
+│   ├── fixes.py             # Suggested fixes shown with a failure
+│   ├── ai_signatures.py     # AI tool signature detection
+│   ├── ai_signatures_data.py # Known AI tool signatures (pure data)
+│   ├── imperatives.py       # IMPERATIVES / NON_IMPERATIVE_LOOKALIKES sets for subject validation
 │   └── util.py              # Git operations, output formatting (_print_failure)
-├── tests/                    # Test suite (~564 tests in main_test.py alone)
+├── tests/                    # Test suite (13 *_test.py files; run pytest --co -q for the count)
 │   ├── main_test.py         # CLI integration tests
+│   ├── api_test.py          # Python API tests
 │   ├── engine_test.py       # Validator tests
+│   ├── engine_fixes_test.py # Suggested-fix output from validators
+│   ├── fixes_test.py        # fixes.py helpers
+│   ├── ai_signatures_test.py # AI signature detection (also the CodSpeed benchmarks)
+│   ├── config_test.py       # TOML loading and inherit_from
 │   ├── config_merger_test.py # Config merging tests
-│   └── rule_builder_test.py # Rule building tests
+│   ├── rule_builder_test.py # Rule building tests
+│   ├── rules_catalog_test.py # Rule ID contract
+│   ├── util_test.py         # Git helpers and output formatting
+│   ├── integration_test.py  # End-to-end CLI runs
+│   └── version_test.py      # Version string
 ├── assets/                   # README assets (demo recording)
 ├── cchk.toml                # Example TOML configuration (v2.0 format)
 ├── pyproject.toml           # Package metadata, build config, tool settings
@@ -198,7 +199,7 @@ cchk --help  # Verify alias works
 
 ### Key Files
 - **pyproject.toml**: Package metadata, dependencies, entry points (`commit-check` and `cchk`)
-- **noxfile.py**: Automated build tasks (lint, test, build, docs, coverage)
+- **noxfile.py**: Automated build tasks (lint, test-hook, build, install, commit-check, coverage)
 - **cchk.toml**: TOML configuration example for this repo
 - **commit_check/__init__.py**: DEFAULT_COMMIT_TYPES, DEFAULT_BRANCH_TYPES, DEFAULT_BOOLEAN_RULES
 - **commit_check/engine.py**: ValidationResult (PASS=0, FAIL=1), BaseValidator ABC
@@ -219,14 +220,14 @@ cchk --help  # Verify alias works
 
 ### Commit Message Validation
 - **Conventional Commits**: Enforces standard format: `type(scope): description`
-- **Supported types**: build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test
+- **Default types**: feat, fix, docs, style, refactor, test, chore, perf, build, ci (commit.allow_commit_types). Revert commits are governed by allow_revert_commits, not a type.
 - **Scope**: Optional, e.g., `feat(api): add endpoint`
 - **Breaking changes**: Supports `!` notation: `feat!: breaking change`
 - **Merge commits**: Special handling for merge commit messages
 
 ### Branch Name Validation
 - **Conventional Branches**: Enforces patterns like `feature/`, `bugfix/`, etc.
-- **Allowed prefixes**: bugfix/, feature/, release/, hotfix/, task/, chore/
+- **Default prefixes**: feature, bugfix, hotfix, release, chore, feat, fix, build, ci, docs, perf, refactor, test, style, ai, claude, codex, copilot, cursor, dependabot, renovate (branch.allow_branch_types)
 - **Special branches**: master, main, HEAD, PR-* are allowed
 
 ### Author Validation
@@ -237,6 +238,7 @@ cchk --help  # Verify alias works
 ### Exit Codes
 - **0**: All checks passed
 - **1**: One or more checks failed
+- **2**: The run could not start (bad usage, unresolvable --rev, or a config file that is missing, invalid TOML, or names an unknown rule)
 - **Error output**: Colorized ASCII art rejection message with specific error details
 
 ## When to Use What
