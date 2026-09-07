@@ -560,6 +560,15 @@ class TestDeepMerge:
         base["files"]["max_size"] = "1MB"
         assert override == {"files": {"prohibited_patterns": ["*.pem"]}}
 
+    def test_deep_merge_does_not_alias_lists_into_existing_sections(self):
+        """A list override into a section *base* already has is copied too."""
+        override = {"files": {"prohibited_patterns": ["*.pem"]}}
+        base: dict = {"files": {"max_size": "1MB"}}
+        deep_merge(base, override)
+        assert base == {"files": {"max_size": "1MB", "prohibited_patterns": ["*.pem"]}}
+        base["files"]["prohibited_patterns"].append("*.key")
+        assert override == {"files": {"prohibited_patterns": ["*.pem"]}}
+
     def test_deep_merge_replaces_non_dict_with_copied_dict(self):
         base = {"section": "scalar"}
         override = {"section": {"key": ["v"]}}

@@ -40,17 +40,16 @@ DEFAULT_CONFIG_PATHS = [
 def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> None:
     """Deep merge *override* into *base*, modifying *base* in place.
 
-    Nested dicts from *override* are copied before being assigned, so the
-    caller's dict is never aliased into *base*: a later merge into *base*
-    cannot reach back and change what the caller passed in.
+    Every value taken from *override* is copied before being assigned, so
+    nothing the caller passed in (a nested dict or a list such as
+    ``prohibited_patterns``) is ever aliased into *base*: a later change to
+    *base* cannot reach back and change the caller's config.
     """
     for key, value in override.items():
         if key in base and isinstance(base[key], dict) and isinstance(value, dict):
             deep_merge(base[key], value)
-        elif isinstance(value, dict):
-            base[key] = copy.deepcopy(value)
         else:
-            base[key] = value
+            base[key] = copy.deepcopy(value)
 
 
 def _github_shorthand_to_url(value: str) -> str | None:

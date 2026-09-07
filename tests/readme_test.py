@@ -34,11 +34,21 @@ def test_every_default_key_is_in_readme(readme_text, dotted_key):
     )
 
 
+def _table_row(readme_text: str, dotted_key: str) -> str:
+    """The configuration-reference row for ``dotted_key`` (empty if absent)."""
+    prefix = f"| `{dotted_key}` |"
+    return next(
+        (line for line in readme_text.splitlines() if line.startswith(prefix)), ""
+    )
+
+
 @pytest.mark.parametrize("env_var", sorted(ConfigMerger.ENV_VAR_MAPPING))
 def test_every_env_var_is_in_readme(readme_text, env_var):
-    """Each ``CCHK_*`` variable the merger reads is documented."""
-    assert f"`{env_var}`" in readme_text, (
-        f"{env_var} is missing from the README configuration reference"
+    """Each ``CCHK_*`` variable is documented on the row of the key it sets."""
+    section, key, _parser = ConfigMerger.ENV_VAR_MAPPING[env_var]
+    row = _table_row(readme_text, f"{section}.{key}")
+    assert f"`{env_var}`" in row, (
+        f"{env_var} is missing from the README row for {section}.{key}"
     )
 
 
