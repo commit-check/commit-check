@@ -515,7 +515,8 @@ class TestMainFunctionEdgeCases:
         assert str(cfg) in err
         assert "line 1" in err
 
-    @pytest.mark.benchmark
+    # No benchmark mark: CodSpeed executes marked tests more than once against
+    # the same tmp_path, and the mkdir below only works on a fresh one.
     def test_invalid_default_config_names_the_file_too(
         self, mocker, capsys, monkeypatch, tmp_path
     ):
