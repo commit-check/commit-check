@@ -19,6 +19,7 @@
   - [Use Custom Configuration File](#use-custom-configuration-file)
   - [Organization-Level Configuration (inherit_from)](#organization-level-configuration-inherit_from)
   - [Use CLI Arguments or Environment Variables](#use-cli-arguments-or-environment-variables)
+  - [Configuration reference](#configuration-reference)
   - [Check Push Safety](#check-push-safety)
   - [Exit Codes and Dry Run](#exit-codes-and-dry-run)
 - [AI-Native Usage](#ai-native-usage)
@@ -232,7 +233,49 @@ repos:
           - --author-email-pattern=^.+@example\.com$
 ```
 
-See the [Configuration documentation](https://commit-check.com/configuration/) for all available options.
+The table below lists every option; https://commit-check.com/configuration/ has the long-form rule descriptions.
+
+### Configuration reference
+
+Every setting, with its built-in default, the CLI flag and the `CCHK_*` environment
+variable that override it (priority: CLI > env > TOML > default). Booleans accept
+`true/false`, `yes/no`, `1/0`; lists are comma-separated on the CLI and in env vars.
+
+| Key | Default | CLI flag | Env var | Meaning |
+|-----|---------|----------|---------|---------|
+| `warn` (top level) | `[]` | — | — | Checks or rule IDs to report without failing the run (see "Report a rule without enforcing it") |
+| `commit.conventional_commits` | `true` | `--conventional-commits` | `CCHK_CONVENTIONAL_COMMITS` | Enforce the Conventional Commits format (CC001) |
+| `commit.message_pattern` | `""` | — | `CCHK_MESSAGE_PATTERN` | Custom regex the whole message must match; when set it replaces the Conventional Commits check (still reported as CC001) |
+| `commit.subject_capitalized` | `false` | `--subject-capitalized` | `CCHK_SUBJECT_CAPITALIZED` | Require the subject to start with a capital letter (CC002) |
+| `commit.subject_imperative` | `false` | `--subject-imperative` | `CCHK_SUBJECT_IMPERATIVE` | Require the subject to use the imperative mood (CC003) |
+| `commit.subject_max_length` | `80` | `--subject-max-length` | `CCHK_SUBJECT_MAX_LENGTH` | Maximum subject length (CC004) |
+| `commit.subject_min_length` | `5` | `--subject-min-length` | `CCHK_SUBJECT_MIN_LENGTH` | Minimum subject length (CC005) |
+| `commit.allow_commit_types` | `feat, fix, docs, style, refactor, test, chore, perf, build, ci` | `--allow-commit-types` | `CCHK_ALLOW_COMMIT_TYPES` | Allowed `<type>` values in the subject |
+| `commit.allow_merge_commits` | `true` | `--allow-merge-commits` | `CCHK_ALLOW_MERGE_COMMITS` | Allow merge commits (CC006) |
+| `commit.allow_revert_commits` | `true` | `--allow-revert-commits` | `CCHK_ALLOW_REVERT_COMMITS` | Allow revert commits (CC007) |
+| `commit.allow_empty_commits` | `true` | `--allow-empty-commits` | `CCHK_ALLOW_EMPTY_COMMITS` | Allow empty commit messages (CC008) |
+| `commit.allow_fixup_commits` | `true` | `--allow-fixup-commits` | `CCHK_ALLOW_FIXUP_COMMITS` | Allow `fixup!` commits (CC009) |
+| `commit.allow_wip_commits` | `true` | `--allow-wip-commits` | `CCHK_ALLOW_WIP_COMMITS` | Allow WIP commits (CC010) |
+| `commit.require_body` | `false` | `--require-body` | `CCHK_REQUIRE_BODY` | Require a commit body (CC011) |
+| `commit.require_signed_off_by` | `false` | `--require-signed-off-by` | `CCHK_REQUIRE_SIGNED_OFF_BY` | Require a `Signed-off-by:` trailer (CC012) |
+| `commit.ignore_authors` | `[]` | `--ignore-authors` | `CCHK_IGNORE_AUTHORS` | Authors and co-authors whose commits skip the commit checks |
+| `commit.ai_attribution` | `"ignore"` | `--ai-attribution` | `CCHK_AI_ATTRIBUTION` | `ignore` or `forbid`; `forbid` rejects commits carrying known AI tool signatures (CC013) |
+| `commit.author_email_pattern` | `"^.+@.+$"` | `--author-email-pattern` | `CCHK_AUTHOR_EMAIL_PATTERN` | Regex the author email must match (CC102, with `--author-email`) |
+| `commit.author_name_pattern` | `""` | `--author-name-pattern` | `CCHK_AUTHOR_NAME_PATTERN` | Regex the author name must match (CC101, with `--author-name`) |
+| `branch.conventional_branch` | `true` | `--conventional-branch` | `CCHK_CONVENTIONAL_BRANCH` | Enforce `<type>/<description>` branch names (CC201) |
+| `branch.allow_branch_types` | `feature, bugfix, hotfix, release, chore, feat, fix, build, ci, docs, perf, refactor, test, style, ai, claude, codex, copilot, cursor, dependabot, renovate` | `--allow-branch-types` | `CCHK_ALLOW_BRANCH_TYPES` | Allowed branch `<type>` prefixes |
+| `branch.allow_branch_names` | `[]` | `--allow-branch-names` | `CCHK_ALLOW_BRANCH_NAMES` | Extra whole branch names allowed besides `main`, `master`, `HEAD`, `PR-*` |
+| `branch.require_rebase_target` | `""` | `--require-rebase-target` | `CCHK_REQUIRE_REBASE_TARGET` | Branch the current branch must be rebased onto (CC202); empty disables |
+| `branch.ignore_authors` | `[]` | `--branch-ignore-authors` | `CCHK_BRANCH_IGNORE_AUTHORS` | Authors whose branches skip the branch checks |
+| `push.allow_force_push` | `true` | — (`--no-force-push` runs the check) | `CCHK_ALLOW_FORCE_PUSH` | Whether a force push is permitted (CC301); set `false` to reject non-fast-forward pushes |
+| `tag.regex` | SemVer with optional `v` | `--tag-regex` | `CCHK_TAG_REGEX` | Pattern tag names must match (CC401); empty disables |
+| `files.max_size` | `""` (off) | `--files-max-size` | `CCHK_FILES_MAX_SIZE` | Largest committed file, in bytes or with `KB`/`MB`/`GB` (CC302) |
+| `files.prohibited_patterns` | `[]` | `--files-prohibited-patterns` | `CCHK_FILES_PROHIBITED_PATTERNS` | fnmatch patterns committed paths must not match (CC303) |
+| `files.max_path_length` | `0` (off) | `--files-max-path-length` | `CCHK_FILES_MAX_PATH_LENGTH` | Longest allowed committed path, in characters (CC304) |
+
+Output/appearance is not configuration: `--format json`, `--no-banner`, `--compact`,
+`--dry-run`, `--rev`, `--config` are per-run flags, and color follows `NO_COLOR` /
+`FORCE_COLOR` (https://no-color.org).
 
 ### Check Push Safety
 
