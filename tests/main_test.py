@@ -515,7 +515,8 @@ class TestMainFunctionEdgeCases:
         assert str(cfg) in err
         assert "line 1" in err
 
-    @pytest.mark.benchmark
+    # No benchmark mark: CodSpeed executes marked tests more than once against
+    # the same tmp_path, and the mkdir below only works on a fresh one.
     def test_invalid_default_config_names_the_file_too(
         self, mocker, capsys, monkeypatch, tmp_path
     ):
@@ -1322,14 +1323,14 @@ class TestTagFlag:
         from commit_check.main import _get_parser, _get_requested_checks
 
         args = _get_parser().parse_args(["-t"])
-        assert _get_requested_checks(args) == ["tag"]
+        assert _get_requested_checks(args) == {"tag"}
 
     def test_tag_combines_with_branch(self):
         """-b -t requests branch, merge_base and tag checks."""
         from commit_check.main import _get_parser, _get_requested_checks
 
         args = _get_parser().parse_args(["-b", "-t"])
-        assert _get_requested_checks(args) == ["branch", "merge_base", "tag"]
+        assert _get_requested_checks(args) == {"branch", "merge_base", "tag"}
 
     def test_tag_regex_reaches_config(self):
         """--tag-regex overrides the [tag] section pattern."""
@@ -1358,11 +1359,11 @@ class TestFilesFlag:
         from commit_check.main import _get_parser, _get_requested_checks
 
         args = _get_parser().parse_args(["-f"])
-        assert _get_requested_checks(args) == [
+        assert _get_requested_checks(args) == {
             "file_size",
             "file_pattern",
             "path_length",
-        ]
+        }
 
     def test_files_cli_options_reach_config(self):
         from commit_check.main import _get_parser

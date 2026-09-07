@@ -1,18 +1,23 @@
 """Clean validation engine following SOLID principles."""
 
 from __future__ import annotations
+import re
 import shlex
+import subprocess
+import sys
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import IntEnum
 from dataclasses import field
+from fnmatch import fnmatchcase
 
 from commit_check.rule_builder import ValidationRule
 from commit_check.ai_signatures import (
     detect_ai_signatures,
 )
 from commit_check.util import (
+    _print_failure,
     fetch_remote_ref,
     fetch_upstream_ref,
     get_commit_author_identity,
@@ -30,6 +35,8 @@ from commit_check.util import (
     has_commits,
     git_merge_base,
     git_rev_parse_verify,
+    print_error_header,
+    rejection_headline,
 )
 from commit_check.imperatives import IMPERATIVES, NON_IMPERATIVE_LOOKALIKES
 from commit_check.fixes import (
@@ -263,8 +270,6 @@ class BaseValidator(ABC):
 
     def _author_in_ignore_list(self, context: ValidationContext) -> bool:
         """Check if the current author or any co-author is in the ignore list."""
-        import re
-
         ignore_authors = context.config.get("commit", {}).get("ignore_authors", [])
         if not ignore_authors:
             return False
@@ -372,8 +377,6 @@ class BaseValidator(ABC):
         self._failure_blocks.append((rule_dict, actual_value))
 
         if not self._suppress_output:
-            from commit_check.util import _print_failure
-
             _print_failure(
                 rule_dict,
                 actual_value,
@@ -394,8 +397,6 @@ class CommitMessageValidator(BaseValidator):
             return ValidationResult.PASS
 
         self._checked_value = message
-
-        import re
 
         if self.rule.regex and re.match(self.rule.regex, message):
             return ValidationResult.PASS
@@ -482,8 +483,6 @@ class SubjectCapitalizationValidator(SubjectValidator):
         "A" and not on the "f" that follows, and "Update" alone is judged at
         all.
         """
-        import re
-
         match = re.match(r"^\w+(?:\([^)]*\))?!?:\s*(.*)", subject)
         description = match.group(1).strip() if match else subject
         return bool(description) and description[0].isupper()
@@ -513,8 +512,6 @@ class SubjectImperativeValidator(SubjectValidator):
             return ValidationResult.SKIP
 
         # Extract first word (ignore conventional commit prefixes)
-        import re
-
         # support breaking changes (feat!:)
         match = re.match(r"^(?:\w+(?:\([^)]*\))?!?:\s*)?(\w+)", subject)
         if not match:
@@ -648,8 +645,6 @@ class AuthorValidator(BaseValidator):
     def _validate_author(self, author_value: str) -> ValidationResult:
         """Validate author against rule constraints."""
         if self.rule.regex:
-            import re
-
             if re.match(self.rule.regex, author_value):
                 return ValidationResult.PASS
             self._print_failure(author_value)
@@ -681,8 +676,6 @@ class BranchValidator(BaseValidator):
 
         if not self.rule.regex:
             return ValidationResult.PASS
-
-        import re
 
         if re.match(self.rule.regex, branch_name):
             return ValidationResult.PASS
@@ -747,8 +740,6 @@ class TagValidator(BaseValidator):
 
         if not self.rule.regex:
             return ValidationResult.PASS
-
-        import re
 
         for tag in tags:
             if not re.match(self.rule.regex, tag):
@@ -886,8 +877,6 @@ class FilesValidator(BaseValidator):
         # "*.pem" catch KEY.PEM on Windows and miss it everywhere else --
         # one config, two policies. fnmatchcase() is the same on every
         # platform, and case-sensitive is what git pathspecs already are.
-        from fnmatch import fnmatchcase
-
         patterns = self.rule.value or []
         offenders = []
         for path, _ in files:
@@ -976,8 +965,6 @@ class MergeBaseValidator(BaseValidator):
             ``"^main$"`` or ``"main"``).
         :returns: The resolved branch name if verified, ``None`` otherwise.
         """
-        import subprocess
-
         # Strip common regex anchors to obtain a clean branch name
         branch_name = pattern.lstrip("^").rstrip("$").strip()
         if not branch_name:
@@ -1029,8 +1016,6 @@ class SignoffValidator(BaseValidator):
             return ValidationResult.PASS
 
         self._checked_value = message
-
-        import re
 
         if self.rule.regex and re.search(self.rule.regex, message):
             return ValidationResult.PASS
@@ -1457,12 +1442,6 @@ class ValidationEngine:
         if not blocks:
             return
 
-        from commit_check.util import (
-            _print_failure,
-            print_error_header,
-            rejection_headline,
-        )
-
         # Only an enforced failure earns the banner; a warning rejects
         # nothing. --compact and --no-banner keep it off entirely.
         if (
@@ -1483,8 +1462,6 @@ class ValidationEngine:
     @staticmethod
     def _print_notices(skipped: list[str], warned: list[str]) -> None:
         """Name the skipped and the warning checks on stderr."""
-        import sys
-
         if skipped:
             # A skipped check validated nothing, and a silent skip is
             # indistinguishable from a pass — which is how a merge commit at

@@ -41,7 +41,7 @@ and pre-commit resolves it against real tags when CI runs — so pointing it at 
 
 ## Git Rules
 
-- **Follow the Conventional Branch spec** for branch names: `<type>/<description>` with lowercase kebab-case descriptions. Allowed types: `feature/`, `bugfix/`, `hotfix/`, `release/`, `chore/`. Example: `chore/add-agent-guidelines`.
+- **Branch names.** This repository does not enforce branch naming (`cchk.toml` sets `conventional_branch = false`); CI only checks that the branch is rebased onto `main` (`require_rebase_target = "main"`). Prefer the Conventional Branch form `<type>/<kebab-case-description>` anyway, using any type in the tool's defaults (e.g. `feat/`, `fix/`, `chore/`, `docs/`, `claude/`). Example: `chore/add-agent-guidelines`.
 - **Follow the Conventional Commits spec** for commit messages: `<type>: <description>` (e.g., `feat: ...`, `fix: ...`, `chore: ...`, `docs: ...`).
 - **No force push.** Never use `git push --force` or `git push --force-with-lease`.
 - **Additive commits only.** When addressing review feedback, add new commits on top. Never rebase, squash commits (e.g., do not use `git rebase -i` to squash history after the PR is open).

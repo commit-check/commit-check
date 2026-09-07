@@ -36,7 +36,7 @@ CLI args / Env vars / TOML file
    BaseValidator subclasses  ← Each validator performs one focused check
            │
            ▼
-       Exit code 0/1
+   Exit code 0 / 1 (rejected) / 2 (config error)
 ```
 
 ### Module responsibilities
@@ -45,12 +45,16 @@ CLI args / Env vars / TOML file
 commit_check/
 ├── __init__.py          # Package constants: DEFAULT_COMMIT_TYPES, DEFAULT_BRANCH_TYPES, DEFAULT_BOOLEAN_RULES
 ├── main.py              # CLI entry point, argument parsing, StdinReader
-├── config.py            # TOML file loading (uses tomllib on Python 3.11+, tomli on older)
+├── api.py               # Public Python API (validate_message, validate_branch, ...) without a subprocess
+├── config.py            # TOML file loading (uses tomllib on Python 3.11+, tomli on older), inherit_from, deep_merge
 ├── config_merger.py     # ConfigMerger: merges CLI → Env → TOML → Defaults
 ├── rule_builder.py      # RuleBuilder: creates ValidationRule objects from config + catalog
-├── rules_catalog.py     # Catalog of all rules (COMMIT_RULES, BRANCH_RULES)
+├── rules_catalog.py     # Catalog of all rules (COMMIT_RULES, BRANCH_RULES, PUSH_RULES, FILES_RULES, TAG_RULES)
 ├── engine.py            # ValidationEngine, BaseValidator ABC, ValidationContext, ValidationResult
-├── imperatives.py       # ~258 English imperative verbs for subject validation
+├── fixes.py             # Suggested fixes printed with a failure (header, case, WIP, sign-off, branch type)
+├── ai_signatures.py     # detect_ai_signatures / has_ai_signature for the ai_attribution rule
+├── ai_signatures_data.py # Registry of known AI tool signatures (pure data)
+├── imperatives.py       # IMPERATIVES / NON_IMPERATIVE_LOOKALIKES sets used by the -s stem test in CC003 (not an allow-list)
 └── util.py              # Git operations, output formatting (_print_failure)
 ```
 
@@ -65,10 +69,14 @@ BaseValidator (ABC)
 │   └── SubjectLengthValidator          # Subject length min/max
 ├── AuthorValidator               # Author name and email format
 ├── BranchValidator               # Branch naming conventions
+├── TagValidator                  # Tag name pattern
+├── FilesValidator                # Committed file size, path pattern, path length
 ├── MergeBaseValidator            # Merge base / rebase target
 ├── SignoffValidator              # Signed-off-by trailer presence
 ├── BodyValidator                 # Commit body presence
-└── CommitTypeValidator           # Handles merge/revert/fixup/wip/empty commits
+├── ForcePushValidator            # Non-fast-forward push detection
+├── CommitTypeValidator           # Handles merge/revert/fixup/wip/empty commits
+└── AiAttributionValidator        # AI tool signatures in the message
 ```
 
 ### Configuration priority cascade
@@ -115,15 +123,11 @@ nox -s lint
 pre-commit install
 ```
 
-### Build documentation
+### Documentation
 
-```bash
-# One-time build
-nox -s docs
-
-# Live preview with auto-reload
-nox -s docs-live
-```
+The user documentation lives in a separate repository and is served from
+https://commit-check.com; this repository only carries `README.md`. There is no
+docs build session here.
 
 ### Test the pre-commit hook locally
 

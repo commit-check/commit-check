@@ -15,6 +15,20 @@ from commit_check.api import (
 class TestValidateMessage:
     """Tests for validate_message()."""
 
+    def test_caller_config_is_not_modified_or_aliased(self):
+        """The caller's config, lists included, is untouched after a call."""
+        import copy
+
+        config = {
+            "commit": {"allow_commit_types": ["feat", "fix"]},
+            "files": {"prohibited_patterns": ["*.pem"]},
+        }
+        snapshot = copy.deepcopy(config)
+        validate_message("feat: add thing", config=config)
+        assert config == snapshot
+        validate_message("chore: add thing", config=config)
+        assert config == snapshot
+
     @pytest.mark.benchmark
     def test_valid_conventional_commit_passes(self):
         """A well-formed conventional commit message returns status='pass'."""

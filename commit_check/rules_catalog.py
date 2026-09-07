@@ -276,3 +276,16 @@ ALL_RULES = [
 #: Lookup from check name to its catalog entry, for rules that have an ID.
 #: Rule identity lives only here, so built rules can never carry a stale copy.
 RULES_BY_CHECK = {entry.check: entry for entry in ALL_RULES}
+
+#: The checks each CLI flag or API function requests. The catalog is the only
+#: place that knows which checks exist, so the grouping lives beside it rather
+#: than as a list copied into ``main.py`` and ``api.py`` that could drift.
+#: ``--message`` runs every commit rule except the author ones (they have
+#: their own flags) and the ``ignore_authors`` bookkeeping entry.
+MESSAGE_CHECKS: frozenset[str] = frozenset(
+    entry.check
+    for entry in COMMIT_RULES
+    if entry.check not in {"author_name", "author_email", "ignore_authors"}
+)
+BRANCH_CHECKS: frozenset[str] = frozenset({"branch", "merge_base"})
+FILES_CHECKS: frozenset[str] = frozenset(entry.check for entry in FILES_RULES)

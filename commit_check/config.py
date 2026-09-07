@@ -3,6 +3,8 @@
 from __future__ import annotations
 from typing import Any
 from pathlib import Path
+import copy
+import io
 import sys
 import urllib.request
 import urllib.error
@@ -35,15 +37,19 @@ DEFAULT_CONFIG_PATHS = [
 ]
 
 
-def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
-    """Deep merge override into base, returning a new dict."""
-    result = dict(base)
+def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> None:
+    """Deep merge *override* into *base*, modifying *base* in place.
+
+    Every value taken from *override* is copied before being assigned, so
+    nothing the caller passed in (a nested dict or a list such as
+    ``prohibited_patterns``) is ever aliased into *base*: a later change to
+    *base* cannot reach back and change the caller's config.
+    """
     for key, value in override.items():
-        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            result[key] = _deep_merge(result[key], value)
+        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+            deep_merge(base[key], value)
         else:
-            result[key] = value
-    return result
+            base[key] = copy.deepcopy(value)
 
 
 def _github_shorthand_to_url(value: str) -> str | None:
@@ -138,8 +144,6 @@ def _load_from_url(url: str) -> dict[str, Any]:
         raise ValueError("only https:// URLs are accepted")
     with _opener.open(url, timeout=10) as response:  # noqa: S310
         data = response.read()
-    import io
-
     return toml_load(io.BytesIO(data))
 
 
@@ -196,7 +200,8 @@ def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
         parent = {}
 
     if parent:
-        return _deep_merge(parent, config)
+        deep_merge(parent, config)
+        return parent
     return config
 
 

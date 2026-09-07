@@ -11,8 +11,12 @@ import pytest
 from commit_check.rules_catalog import (
     ALL_RULES,
     RULES_BY_CHECK,
+    BRANCH_CHECKS,
     BRANCH_RULES,
     COMMIT_RULES,
+    FILES_CHECKS,
+    FILES_RULES,
+    MESSAGE_CHECKS,
     PUSH_RULES,
     RULES_DOCS_URL,
     RuleCatalogEntry,
@@ -134,3 +138,23 @@ class TestRuleIdPropagation:
         rule = next(r for r in rules if r.check == "ignore_authors")
         assert rule.rule_id is None
         assert rule.docs_url is None
+
+
+class TestCheckGroups:
+    """The check groups the CLI flags and API functions request."""
+
+    def test_message_checks_are_commit_rules(self):
+        """Every message check is a catalog entry, so none can be a typo."""
+        assert MESSAGE_CHECKS <= {entry.check for entry in COMMIT_RULES}
+
+    def test_message_checks_cover_every_commit_rule_but_author_ones(self):
+        """A new commit rule joins --message automatically."""
+        left_out = {entry.check for entry in COMMIT_RULES} - MESSAGE_CHECKS
+        assert left_out == {"author_name", "author_email", "ignore_authors"}
+
+    def test_branch_checks_are_branch_rules(self):
+        assert BRANCH_CHECKS <= {entry.check for entry in BRANCH_RULES}
+        assert "ignore_authors" not in BRANCH_CHECKS
+
+    def test_files_checks_are_every_files_rule(self):
+        assert FILES_CHECKS == {entry.check for entry in FILES_RULES}
