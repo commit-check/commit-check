@@ -10,7 +10,7 @@ from commit_check.config import (
     ConfigError,
     load_config,
     DEFAULT_CONFIG_PATHS,
-    _deep_merge,
+    deep_merge,
     _resolve_inherit_from,
     _load_from_url,
     _github_shorthand_to_url,
@@ -526,30 +526,46 @@ value = "test"
 
 
 class TestDeepMerge:
-    """Tests for the _deep_merge helper."""
+    """Tests for the deep_merge helper."""
 
     @pytest.mark.benchmark
     def test_deep_merge_simple(self):
         base = {"a": 1, "b": 2}
         override = {"b": 3, "c": 4}
-        result = _deep_merge(base, override)
-        assert result == {"a": 1, "b": 3, "c": 4}
+        assert deep_merge(base, override) is None
+        assert base == {"a": 1, "b": 3, "c": 4}
 
     @pytest.mark.benchmark
     def test_deep_merge_nested(self):
         base = {"commit": {"conventional_commits": True, "subject_max_length": 80}}
         override = {"commit": {"subject_max_length": 72}}
-        result = _deep_merge(base, override)
-        assert result["commit"]["conventional_commits"] is True
-        assert result["commit"]["subject_max_length"] == 72
+        deep_merge(base, override)
+        assert base["commit"]["conventional_commits"] is True
+        assert base["commit"]["subject_max_length"] == 72
 
     @pytest.mark.benchmark
-    def test_deep_merge_does_not_mutate_base(self):
+    def test_deep_merge_merges_nested_in_place(self):
         base = {"a": {"x": 1}}
         override = {"a": {"y": 2}}
-        _deep_merge(base, override)
-        # _deep_merge returns a new dict; base itself may be used but result is new
-        assert _deep_merge(base, override)["a"] == {"x": 1, "y": 2}
+        deep_merge(base, override)
+        assert base["a"] == {"x": 1, "y": 2}
+
+    def test_deep_merge_does_not_alias_new_nested_dicts(self):
+        """A nested dict only in *override* is copied, not shared."""
+        override = {"files": {"prohibited_patterns": ["*.pem"]}}
+        base: dict = {}
+        deep_merge(base, override)
+        assert base == override
+        base["files"]["prohibited_patterns"].append("*.key")
+        base["files"]["max_size"] = "1MB"
+        assert override == {"files": {"prohibited_patterns": ["*.pem"]}}
+
+    def test_deep_merge_replaces_non_dict_with_copied_dict(self):
+        base = {"section": "scalar"}
+        override = {"section": {"key": ["v"]}}
+        deep_merge(base, override)
+        assert base["section"] is not override["section"]
+        assert base == {"section": {"key": ["v"]}}
 
 
 class TestResolveInheritFrom:

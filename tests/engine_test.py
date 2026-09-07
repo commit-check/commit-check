@@ -617,7 +617,7 @@ class TestAuthorValidator:
 
         # Mock author value and print function
         with patch.object(validator, "_get_author_value", return_value="Unknown User"):
-            with patch("commit_check.util._print_failure"):
+            with patch("commit_check.engine._print_failure"):
                 context = ValidationContext()
                 result = validator.validate(context)
                 assert result == ValidationResult.FAIL
@@ -668,7 +668,7 @@ class TestAuthorPatternConfig:
     @staticmethod
     def _validate(rule, author_value):
         validator = AuthorValidator(rule)
-        with patch("commit_check.util._print_failure"):
+        with patch("commit_check.engine._print_failure"):
             return validator.validate(ValidationContext(stdin_text=author_value))
 
     @pytest.mark.benchmark
@@ -854,7 +854,7 @@ class TestCommitTypeValidator:
                 "an": "test-author",
             }[x]
 
-            with patch("commit_check.util._print_failure"):
+            with patch("commit_check.engine._print_failure"):
                 result = validator.validate(context)
                 assert result == ValidationResult.FAIL
 
@@ -889,7 +889,7 @@ class TestCommitTypeValidator:
                 "an": "test-author",
             }[x]
 
-            with patch("commit_check.util._print_failure"):
+            with patch("commit_check.engine._print_failure"):
                 result = validator.validate(context)
                 assert result == ValidationResult.FAIL
 
@@ -1066,7 +1066,7 @@ class TestSignoffValidator:
         validator = SignoffValidator(self._default_signoff_rule())
         context = ValidationContext(stdin_text="feat: add feature")
 
-        with patch("commit_check.util._print_failure"):
+        with patch("commit_check.engine._print_failure"):
             result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
@@ -1166,7 +1166,7 @@ class TestSignoffValidator:
         validator = SignoffValidator(rule)
         context = ValidationContext(stdin_text="feat: add feature")
 
-        with patch("commit_check.util._print_failure"):
+        with patch("commit_check.engine._print_failure"):
             result = validator.validate(context)
             assert result == ValidationResult.FAIL
 
@@ -1257,7 +1257,7 @@ class TestBodyValidator:
         validator = BodyValidator(rule)
         context = ValidationContext(stdin_text="feat: add feature")
 
-        with patch("commit_check.util._print_failure"):
+        with patch("commit_check.engine._print_failure"):
             result = validator.validate(context)
             assert result == ValidationResult.FAIL
 
@@ -1273,7 +1273,7 @@ class TestBodyValidator:
         validator = BodyValidator(rule)
         context = ValidationContext(stdin_text="\n\nbody content")
 
-        with patch("commit_check.util._print_failure"):
+        with patch("commit_check.engine._print_failure"):
             result = validator.validate(context)
             assert result == ValidationResult.FAIL
 
@@ -1753,7 +1753,7 @@ class TestValidationEngine:
         engine = ValidationEngine(rules)
         context = ValidationContext(stdin_text="feat: add new feature")
 
-        with patch("commit_check.util._print_failure"):
+        with patch("commit_check.engine._print_failure"):
             result = engine.validate_all(context)
             assert result == ValidationResult.FAIL  # Any failure = overall failure
 
@@ -1956,7 +1956,7 @@ class TestSubjectImperativeValidator:
         context = ValidationContext(stdin_text="fix: resolved the issue")
 
         # Mock the print function to avoid output during tests
-        with patch("commit_check.util._print_failure"):
+        with patch("commit_check.engine._print_failure"):
             result = validator.validate(context)
             assert result == ValidationResult.FAIL
 
@@ -2032,7 +2032,7 @@ class TestCoAuthorSkip:
         context = ValidationContext(stdin_text=message, config=config)
 
         with patch("commit_check.engine.get_commit_info", return_value="other-author"):
-            with patch("commit_check.util._print_failure"):
+            with patch("commit_check.engine._print_failure"):
                 result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
@@ -2193,7 +2193,7 @@ class TestGetGitConfigValue:
                 return_value="01 Invalid Name",
             ),
         ):
-            with patch("commit_check.util._print_failure"):
+            with patch("commit_check.engine._print_failure"):
                 result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
@@ -2394,7 +2394,7 @@ class TestForcePushValidator:
                     with patch(
                         "commit_check.engine.git_merge_base", return_value=1
                     ) as mock_merge:
-                        with patch("commit_check.util._print_failure"):
+                        with patch("commit_check.engine._print_failure"):
                             result = validator.validate(context)
 
         mock_merge.assert_called_once_with("deadbeef", "HEAD")
@@ -2420,7 +2420,7 @@ class TestForcePushValidator:
                         with patch(
                             "commit_check.engine.fetch_upstream_ref", return_value=True
                         ) as mock_fetch:
-                            with patch("commit_check.util._print_failure"):
+                            with patch("commit_check.engine._print_failure"):
                                 result = validator.validate(context)
 
         mock_fetch.assert_called_once_with("origin/main")
@@ -2462,7 +2462,7 @@ class TestForcePushValidator:
         context = ValidationContext(stdin_text=push_info)
 
         with patch("commit_check.engine.git_merge_base", return_value=1):
-            with patch("commit_check.util._print_failure"):
+            with patch("commit_check.engine._print_failure"):
                 result = validator.validate(context)
 
         assert result == ValidationResult.FAIL
@@ -2500,7 +2500,7 @@ class TestForcePushValidator:
             with patch("commit_check.engine.get_upstream_branch", return_value=""):
                 with patch(GET_GIT_REMOTES, return_value=["origin"]):
                     with patch(FETCH_REMOTE_REF, return_value=True) as mock_fetch:
-                        with patch("commit_check.util._print_failure"):
+                        with patch("commit_check.engine._print_failure"):
                             result = validator.validate(context)
 
         assert mock_merge.call_count == 2
@@ -2546,7 +2546,7 @@ class TestForcePushValidator:
                     return_value=["origin", "upstream"],
                 ):
                     with patch(FETCH_REMOTE_REF, return_value=True) as mock_fetch:
-                        with patch("commit_check.util._print_failure"):
+                        with patch("commit_check.engine._print_failure"):
                             result = validator.validate(context)
 
         assert mock_merge.call_count == 3
@@ -2598,7 +2598,7 @@ class TestForcePushValidator:
             return 1
 
         with patch("commit_check.engine.git_merge_base", side_effect=side_effect):
-            with patch("commit_check.util._print_failure"):
+            with patch("commit_check.engine._print_failure"):
                 result = validator.validate(context)
 
         assert result == ValidationResult.FAIL

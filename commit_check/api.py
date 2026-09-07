@@ -45,9 +45,10 @@ code branching on ``status == "fail"`` keeps working unchanged.
 
 from __future__ import annotations
 
-import copy
+from collections.abc import Collection
 from typing import Any
 
+from commit_check.config import deep_merge
 from commit_check.config_merger import get_default_config
 from commit_check.engine import (
     CheckOutcome,
@@ -57,6 +58,7 @@ from commit_check.engine import (
     overall_status,
 )
 from commit_check.rule_builder import RuleBuilder
+from commit_check.rules_catalog import BRANCH_CHECKS, MESSAGE_CHECKS
 
 
 # ---------------------------------------------------------------------------
@@ -75,7 +77,7 @@ def _build_result(outcomes: list[CheckOutcome]) -> dict[str, Any]:
 
 
 def _run_checks(
-    check_names: list[str],
+    check_names: Collection[str],
     context: ValidationContext,
     config: dict[str, Any],
 ) -> dict[str, Any]:
@@ -92,12 +94,7 @@ def _merge_config(user_config: dict[str, Any] | None) -> dict[str, Any]:
     """Return the effective config: user overrides merged on top of defaults."""
     base = get_default_config()
     if user_config:
-        from commit_check.config_merger import deep_merge
-
-        # deep_copy the user config so that deep_merge cannot mutate the
-        # caller's dict (deep_merge operates in-place on `base`, and may
-        # assign nested objects from `override` directly into `base`).
-        deep_merge(base, copy.deepcopy(user_config))
+        deep_merge(base, user_config)
     return base
 
 
@@ -132,22 +129,7 @@ def validate_message(
     """
     cfg = _merge_config(config)
     context = ValidationContext(stdin_text=message.strip(), config=cfg)
-    check_names = [
-        "message",
-        "subject_imperative",
-        "subject_max_length",
-        "subject_min_length",
-        "subject_capitalized",
-        "require_signed_off_by",
-        "require_body",
-        "allow_merge_commits",
-        "allow_revert_commits",
-        "allow_empty_commits",
-        "allow_fixup_commits",
-        "allow_wip_commits",
-        "ai_attribution",
-    ]
-    return _run_checks(check_names, context, cfg)
+    return _run_checks(MESSAGE_CHECKS, context, cfg)
 
 
 def validate_branch(
@@ -177,7 +159,7 @@ def validate_branch(
         stdin_text=branch.strip() if branch else None,
         config=cfg,
     )
-    return _run_checks(["branch", "merge_base"], context, cfg)
+    return _run_checks(BRANCH_CHECKS, context, cfg)
 
 
 def validate_tag(

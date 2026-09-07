@@ -3,12 +3,19 @@
 from __future__ import annotations
 import json
 import os
+import select
 import sys
 import argparse
 
 from commit_check.config import ConfigError, find_config_path
 from commit_check.config_merger import ConfigMerger, parse_bool, parse_list, parse_int
 from commit_check.rule_builder import RuleBuilder
+from commit_check.rules_catalog import BRANCH_CHECKS, FILES_CHECKS, MESSAGE_CHECKS
+from commit_check.util import (
+    get_remote_branch_sha,
+    git_rev_parse_verify,
+    print_error_header,
+)
 from commit_check.engine import (
     ValidationEngine,
     ValidationContext,
@@ -49,7 +56,6 @@ class StdinReader:
             # blocking read there; the hang has only been observed on POSIX
             # runners, and a wrong guess here would break piping instead.
             return True
-        import select
 
         try:
             ready, _, _ = select.select([sys.stdin], [], [], timeout)
@@ -106,8 +112,6 @@ def _build_pre_commit_push_input() -> str | None:
         return None
 
     if remote_name:
-        from commit_check.util import get_remote_branch_sha
-
         remote_branch = remote_ref.removeprefix("refs/heads/")
         remote_sha = get_remote_branch_sha(remote_name, remote_branch)
 
@@ -540,40 +544,28 @@ def _resolve_stdin_for_non_message(
     return stdin_content
 
 
-def _get_requested_checks(args: argparse.Namespace) -> list[str]:
-    """Build the list of requested validation checks based on CLI args."""
-    requested_checks: list[str] = []
+def _get_requested_checks(args: argparse.Namespace) -> set[str]:
+    """The validation checks the CLI flags request.
+
+    Only membership matters: rules run in catalog order, and this set is what
+    the built rules are filtered against.
+    """
+    requested_checks: set[str] = set()
 
     if args.message:
-        requested_checks.extend(
-            [
-                "message",
-                "subject_imperative",
-                "subject_max_length",
-                "subject_min_length",
-                "require_signed_off_by",
-                "subject_capitalized",
-                "require_body",
-                "allow_merge_commits",
-                "allow_revert_commits",
-                "allow_empty_commits",
-                "allow_fixup_commits",
-                "allow_wip_commits",
-                "ai_attribution",
-            ]
-        )
+        requested_checks |= MESSAGE_CHECKS
     if args.branch:
-        requested_checks.extend(["branch", "merge_base"])
+        requested_checks |= BRANCH_CHECKS
     if args.tag:
-        requested_checks.append("tag")
+        requested_checks.add("tag")
     if args.files:
-        requested_checks.extend(["file_size", "file_pattern", "path_length"])
+        requested_checks |= FILES_CHECKS
     if args.author_name:
-        requested_checks.append("author_name")
+        requested_checks.add("author_name")
     if args.author_email:
-        requested_checks.append("author_email")
+        requested_checks.add("author_email")
     if args.no_force_push:
-        requested_checks.append("no_force_push")
+        requested_checks.add("no_force_push")
 
     return requested_checks
 
@@ -634,8 +626,6 @@ def main() -> int:
                 )
             # Fail here, with the revision named, rather than deep inside a
             # validator where the error would surface as a missing message.
-            from commit_check.util import git_rev_parse_verify
-
             if not git_rev_parse_verify(args.rev):
                 print(
                     f"Error: --rev {args.rev!r} does not resolve to a commit "
@@ -697,9 +687,7 @@ def main() -> int:
                 stdin_content = _resolve_stdin_for_non_message(args, stdin_reader)
 
         # Reset banner state for this run
-        from commit_check.util import print_error_header as _peh
-
-        _peh.has_been_called = False
+        print_error_header.has_been_called = False
 
         context = ValidationContext(
             stdin_text=stdin_content,

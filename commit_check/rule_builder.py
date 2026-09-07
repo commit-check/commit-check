@@ -7,6 +7,7 @@ from typing import Any
 from dataclasses import dataclass, replace
 from functools import lru_cache
 from commit_check.config import ConfigError
+from commit_check.util import format_size, parse_size
 from commit_check.rules_catalog import (
     COMMIT_RULES,
     BRANCH_RULES,
@@ -269,8 +270,6 @@ class RuleBuilder:
         catalog_entry: RuleCatalogEntry, files_config: dict[str, Any]
     ) -> ValidationRule | None:
         """Build the file size rule when max_size parses to a usable limit."""
-        from commit_check.util import format_size, parse_size
-
         max_size = parse_size(files_config.get("max_size"))
         if max_size is None:
             return None

@@ -7,7 +7,7 @@ import argparse
 from collections.abc import Callable
 from typing import Any
 
-from commit_check.config import load_config as load_toml_config
+from commit_check.config import deep_merge, load_config as load_toml_config
 from commit_check import (
     DEFAULT_COMMIT_TYPES,
     DEFAULT_BRANCH_TYPES,
@@ -102,15 +102,6 @@ def get_default_config() -> dict[str, Any]:
             "max_path_length": 0,
         },
     }
-
-
-def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> None:
-    """Deep merge override into base dictionary (modifies base in-place)."""
-    for key, value in override.items():
-        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
-            deep_merge(base[key], value)
-        else:
-            base[key] = value
 
 
 class ConfigMerger:

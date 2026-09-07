@@ -140,6 +140,12 @@ class TestDeepMerge:
         deep_merge(base, override)
         assert base == {"section": "not_a_dict"}
 
+    def test_reexported_from_config(self):
+        """config_merger keeps the historical import path working."""
+        from commit_check import config
+
+        assert deep_merge is config.deep_merge
+
 
 class TestConfigMergerParseEnvVars:
     """Tests for ConfigMerger.parse_env_vars method."""
