@@ -15,6 +15,8 @@ from commit_check import (
     DEFAULT_BOOLEAN_RULES,
     DEFAULT_PUSH_RULES,
     DEFAULT_AI_ATTRIBUTION,
+    DEFAULT_AI_DISCLOSURE_PATTERN,
+    DEFAULT_AI_DISCLOSURE_TRAILERS,
     DEFAULT_TAG_REGEX,
 )
 
@@ -80,6 +82,8 @@ def get_default_config() -> dict[str, Any]:
             "require_signed_off_by": DEFAULT_BOOLEAN_RULES["require_signed_off_by"],
             "ignore_authors": [],
             "ai_attribution": DEFAULT_AI_ATTRIBUTION,
+            "ai_disclosure_trailers": DEFAULT_AI_DISCLOSURE_TRAILERS.copy(),
+            "ai_disclosure_pattern": DEFAULT_AI_DISCLOSURE_PATTERN,
             "author_email_pattern": "^.+@.+$",
             "author_name_pattern": "",
         },
@@ -126,6 +130,12 @@ class ConfigMerger:
         "CCHK_REQUIRE_SIGNED_OFF_BY": ("commit", "require_signed_off_by", parse_bool),
         "CCHK_IGNORE_AUTHORS": ("commit", "ignore_authors", parse_list),
         "CCHK_AI_ATTRIBUTION": ("commit", "ai_attribution", str),
+        "CCHK_AI_DISCLOSURE_TRAILERS": (
+            "commit",
+            "ai_disclosure_trailers",
+            parse_list,
+        ),
+        "CCHK_AI_DISCLOSURE_PATTERN": ("commit", "ai_disclosure_pattern", str),
         "CCHK_AUTHOR_EMAIL_PATTERN": ("commit", "author_email_pattern", str),
         "CCHK_AUTHOR_NAME_PATTERN": ("commit", "author_name_pattern", str),
         # Branch section
@@ -162,6 +172,8 @@ class ConfigMerger:
         "require_signed_off_by": ("commit", "require_signed_off_by"),
         "ignore_authors": ("commit", "ignore_authors"),
         "ai_attribution": ("commit", "ai_attribution"),
+        "ai_disclosure_trailers": ("commit", "ai_disclosure_trailers"),
+        "ai_disclosure_pattern": ("commit", "ai_disclosure_pattern"),
         "author_email_pattern": ("commit", "author_email_pattern"),
         "author_name_pattern": ("commit", "author_name_pattern"),
         # Branch section

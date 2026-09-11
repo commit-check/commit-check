@@ -3,10 +3,12 @@
 import pytest
 
 from commit_check.fixes import (
+    append_trailer,
     fix_branch_type,
     fix_conventional_header,
     fix_subject_case,
     fix_wip,
+    rewrite_lines,
     signoff_trailer,
     strip_lines_containing,
 )
@@ -166,3 +168,76 @@ class TestStripLinesContaining:
             strip_lines_containing("Co-authored-by: Claude", ["Co-authored-by: Claude"])
             is None
         )
+
+
+class TestRewriteLines:
+    CLAUDE = "Co-authored-by: Claude <noreply@anthropic.com>"
+
+    def test_replaces_the_line_carrying_the_fragment(self):
+        message = f"feat: init\n\nBody\n\n{self.CLAUDE}"
+        assert rewrite_lines(message, {self.CLAUDE: "Assisted-by: Claude"}) == (
+            "feat: init\n\nBody\n\nAssisted-by: Claude"
+        )
+
+    def test_none_drops_the_line(self):
+        message = f"feat: init\n\n{self.CLAUDE}\nSigned-off-by: Jane <j@x>"
+        assert rewrite_lines(message, {self.CLAUDE: None}) == (
+            "feat: init\n\nSigned-off-by: Jane <j@x>"
+        )
+
+    def test_a_replacement_is_written_once(self):
+        copilot = "Co-authored-by: Copilot"
+        message = f"feat: init\n\n{self.CLAUDE}\n{copilot}"
+        rewrites = {self.CLAUDE: "Assisted-by: AI", copilot: "Assisted-by: AI"}
+        assert rewrite_lines(message, rewrites) == "feat: init\n\nAssisted-by: AI"
+
+    def test_a_replacement_the_message_already_has_is_not_repeated(self):
+        message = f"feat: init\n\nAssisted-by: Claude\n{self.CLAUDE}"
+        assert rewrite_lines(message, {self.CLAUDE: "Assisted-by: Claude"}) == (
+            "feat: init\n\nAssisted-by: Claude"
+        )
+
+    def test_an_emptied_paragraph_leaves_no_double_blank(self):
+        message = f"feat: init\n\n{self.CLAUDE}\n\nSigned-off-by: Jane <j@x>"
+        assert rewrite_lines(message, {self.CLAUDE: None}) == (
+            "feat: init\n\nSigned-off-by: Jane <j@x>"
+        )
+
+    def test_no_match_no_fix(self):
+        assert rewrite_lines("feat: init", {self.CLAUDE: "x"}) is None
+        assert rewrite_lines("feat: init", {}) is None
+        assert rewrite_lines("feat: init", {"": "x"}) is None
+
+    def test_nothing_left_is_no_fix(self):
+        assert rewrite_lines(self.CLAUDE, {self.CLAUDE: None}) is None
+
+
+class TestAppendTrailer:
+    def test_a_subject_alone_gets_a_new_paragraph(self):
+        assert append_trailer("feat: init", "Assisted-by: LLM") == (
+            "feat: init\n\nAssisted-by: LLM"
+        )
+
+    def test_joins_a_trailer_block(self):
+        message = "feat: init\n\nBody\n\nSigned-off-by: Jane <j@x>"
+        assert append_trailer(message, "Assisted-by: LLM") == (
+            "feat: init\n\nBody\n\nSigned-off-by: Jane <j@x>\nAssisted-by: LLM"
+        )
+
+    def test_prose_in_the_last_paragraph_starts_a_new_one(self):
+        message = "feat: init\n\nSee also: the docs, which explain it"
+        assert append_trailer(message, "Assisted-by: LLM") == (
+            "feat: init\n\nSee also: the docs, which explain it\n\nAssisted-by: LLM"
+        )
+
+    def test_a_trailer_already_present_is_not_repeated(self):
+        message = "feat: init\n\nAssisted-by: LLM"
+        assert append_trailer(message, "Assisted-by: LLM") == message
+
+    def test_trailing_whitespace_is_dropped_first(self):
+        assert append_trailer("feat: init\n\n", "Assisted-by: LLM") == (
+            "feat: init\n\nAssisted-by: LLM"
+        )
+
+    def test_an_empty_message_is_the_trailer(self):
+        assert append_trailer("", "Assisted-by: LLM") == "Assisted-by: LLM"

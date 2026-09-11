@@ -17,14 +17,31 @@ from commit_check.rules_catalog import (
     RuleCatalogEntry,
 )
 from commit_check import (
+    AI_ATTRIBUTION_POLICIES,
     DEFAULT_COMMIT_TYPES,
     DEFAULT_BRANCH_TYPES,
     DEFAULT_BRANCH_NAMES,
     DEFAULT_BOOLEAN_RULES,
     DEFAULT_PUSH_RULES,
     DEFAULT_AI_ATTRIBUTION,
+    DEFAULT_AI_DISCLOSURE_PATTERN,
+    DEFAULT_AI_DISCLOSURE_TRAILERS,
     DEFAULT_TAG_REGEX,
 )
+
+
+#: The checks each ``ai_attribution`` policy builds. ``forbid`` rejects every
+#: AI signature under one rule; ``disclose`` asks for three things, one rule
+#: each, so a project can warn on one while enforcing the others.
+_AI_CHECKS_BY_POLICY: dict[str, frozenset[str]] = {
+    "ignore": frozenset(),
+    "forbid": frozenset({"ai_attribution"}),
+    "disclose": frozenset({"ai_disclosure", "ai_co_author", "ai_signoff"}),
+}
+_AI_CHECKS: frozenset[str] = frozenset().union(*_AI_CHECKS_BY_POLICY.values())
+
+#: A git trailer token: letters, digits and hyphens, and no colon.
+_TRAILER_KEY = re.compile(r"^[A-Za-z][A-Za-z0-9-]*$")
 
 
 # Lookup tables for the top-level ``warn`` list, built once at import: a
@@ -395,7 +412,7 @@ class RuleBuilder:
             return self._build_length_rule(catalog_entry, "subject_min_length")
         elif check == "ignore_authors":
             return self._build_author_list_rule(catalog_entry, "ignore_authors")
-        elif check == "ai_attribution":
+        elif check in _AI_CHECKS:
             return self._build_ai_attribution_rule(catalog_entry)
         elif check == "author_email":
             return self._build_author_pattern_rule(
@@ -549,21 +566,107 @@ class RuleBuilder:
     def _build_ai_attribution_rule(
         self, catalog_entry: RuleCatalogEntry
     ) -> ValidationRule | None:
-        """Build AI attribution validation rule.
+        """Build one of the AI attribution rules, when the policy asks for it.
 
-        Only active when policy is ``"forbid"`` — rejects any commit with
-        known AI tool signatures.
+        ``forbid`` builds CC013 alone. ``disclose`` builds CC014–CC016, each
+        carrying the accepted trailers and the value pattern, so any one of
+        them can judge a message by itself. ``ignore`` builds nothing.
         """
-        policy = self.commit_config.get("ai_attribution", DEFAULT_AI_ATTRIBUTION)
-        if policy != "forbid":
+        policy = self._ai_policy()
+        if catalog_entry.check not in _AI_CHECKS_BY_POLICY[policy]:
             return None
+        if policy == "forbid":
+            return ValidationRule(
+                check=catalog_entry.check,
+                value=policy,
+                error=catalog_entry.error or "",
+                suggest=catalog_entry.suggest or "",
+            )
 
+        trailers = self._ai_disclosure_trailers()
+        # The catalog text names the first accepted trailer, the one a fix
+        # is written with.
         return ValidationRule(
             check=catalog_entry.check,
             value=policy,
-            error=catalog_entry.error or "",
-            suggest=catalog_entry.suggest or "",
+            regex=self._ai_disclosure_pattern() or None,
+            allowed=trailers,
+            error=(catalog_entry.error or "").format(trailer=trailers[0]),
+            suggest=(catalog_entry.suggest or "").format(trailer=trailers[0]),
         )
+
+    def _ai_policy(self) -> str:
+        """The ``ai_attribution`` policy, once it is known to be one.
+
+        A value that is none of them used to disable the check without a
+        word, so ``"require"`` — the name the feature was once announced
+        under — enforced nothing while reading as if it did.
+        """
+        policy = self.commit_config.get("ai_attribution", DEFAULT_AI_ATTRIBUTION)
+        if policy not in AI_ATTRIBUTION_POLICIES:
+            setting = "[commit] ai_attribution"
+            raise ConfigError(
+                f"{setting} must be one of {', '.join(AI_ATTRIBUTION_POLICIES)}, "
+                f"got {policy!r}",
+                setting=setting,
+            )
+        return policy
+
+    def _ai_disclosure_trailers(self) -> list[str]:
+        """The trailers that disclose AI assistance, as the config spells them.
+
+        A trailer is a token such as ``Assisted-by``; a trailing colon is
+        forgiven, since that is how the trailer is written in a message.
+        ``Signed-off-by`` is refused: a sign-off certifies the Developer
+        Certificate of Origin, which only a person can do, so it can never
+        be how a tool is disclosed.
+        """
+        setting = "[commit] ai_disclosure_trailers"
+        raw = self.commit_config.get(
+            "ai_disclosure_trailers", DEFAULT_AI_DISCLOSURE_TRAILERS
+        )
+        if isinstance(raw, str):
+            # A comma-separated string, as a flag or a CCHK_* variable
+            # would give it; the same shape in TOML is read the same way.
+            raw = [part.strip() for part in raw.split(",") if part.strip()]
+        if (
+            not isinstance(raw, list)
+            or not raw
+            or not all(isinstance(name, str) for name in raw)
+        ):
+            raise ConfigError(
+                f'{setting} must be a non-empty list of trailer names, e.g. ["Assisted-by"]',
+                setting=setting,
+            )
+        trailers: list[str] = []
+        for name in raw:
+            key = name.strip().rstrip(":").strip()
+            if not _TRAILER_KEY.match(key):
+                raise ConfigError(
+                    f"{setting} names an invalid trailer {name!r}; "
+                    "a trailer is a token such as Assisted-by",
+                    setting=setting,
+                )
+            if key.lower() == "signed-off-by":
+                raise ConfigError(
+                    f"{setting} cannot include Signed-off-by: a sign-off "
+                    "certifies the Developer Certificate of Origin, which "
+                    "only a person can do",
+                    setting=setting,
+                )
+            if key.lower() not in {t.lower() for t in trailers}:
+                trailers.append(key)
+        return trailers
+
+    def _ai_disclosure_pattern(self) -> str:
+        """The regex a disclosure's value must match, or empty for any value."""
+        pattern = self.commit_config.get(
+            "ai_disclosure_pattern", DEFAULT_AI_DISCLOSURE_PATTERN
+        )
+        pattern = pattern.strip() if isinstance(pattern, str) else ""
+        if not pattern:
+            return ""
+        return _checked_regex(pattern, "[commit] ai_disclosure_pattern")
 
     def _build_boolean_rule(
         self, catalog_entry: RuleCatalogEntry, section_config: dict[str, Any]

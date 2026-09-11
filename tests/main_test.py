@@ -1669,3 +1669,144 @@ class TestInvalidUserRegexIsAConfigError:
         err = capsys.readouterr().err
         assert rc == 2
         assert "[tag] regex is not a valid regex" in err
+
+
+class TestAiDisclosurePolicy:
+    """``--ai-attribution disclose`` end to end: the three rules, and their settings."""
+
+    CLAUDE = (
+        "feat: add caching\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\n"
+    )
+    COPILOT = (
+        "feat: add caching\n\n"
+        "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>\n"
+    )
+
+    def _run_json(self, mocker, capsys, monkeypatch, message, *argv):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=message)
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--format", "json", *argv])
+        rc = main()
+        data = json.loads(capsys.readouterr().out)
+        return rc, {c["rule_id"]: c for c in data["checks"]}, data
+
+    def test_a_vendor_co_author_line_fails_two_rules_with_one_fix(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        rc, by_id, data = self._run_json(
+            mocker, capsys, monkeypatch, self.CLAUDE, "--ai-attribution", "disclose"
+        )
+        assert rc == 1
+        assert data["status"] == "fail"
+        assert "CC013" not in by_id
+        fixed = "feat: add caching\n\nAssisted-by: Claude Opus 4.5"
+        assert by_id["CC014"]["status"] == "fail"
+        assert by_id["CC014"]["fix"] == fixed
+        assert by_id["CC014"]["docs_url"] == "https://commit-check.com/rules/#cc014"
+        assert by_id["CC015"]["status"] == "fail"
+        assert by_id["CC015"]["fix"] == fixed
+        assert by_id["CC016"]["status"] == "pass"
+
+    def test_a_disclosed_commit_passes(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        rc, by_id, data = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            "feat: add caching\n\nAssisted-by: LLM coccinelle sparse\n",
+            "--ai-attribution",
+            "disclose",
+        )
+        assert rc == 0
+        assert data["status"] == "pass"
+        assert {by_id[r]["status"] for r in ("CC014", "CC015", "CC016")} == {"pass"}
+
+    def test_the_trailers_flag_can_accept_a_co_author(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        rc, by_id, _ = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            self.COPILOT,
+            "--ai-attribution",
+            "disclose",
+            "--ai-disclosure-trailers",
+            "Assisted-by,Co-authored-by",
+        )
+        assert rc == 0
+        assert by_id["CC015"]["status"] == "pass"
+
+    def test_the_settings_reach_the_rules_from_the_environment(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        monkeypatch.setenv("CCHK_AI_ATTRIBUTION", "disclose")
+        monkeypatch.setenv("CCHK_AI_DISCLOSURE_TRAILERS", "Assisted-by,Co-authored-by")
+        rc, by_id, _ = self._run_json(mocker, capsys, monkeypatch, self.COPILOT)
+        assert rc == 0
+        assert by_id["CC014"]["status"] == "pass"
+
+    def test_the_pattern_flag_is_enforced(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        rc, by_id, _ = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            "feat: add caching\n\nAssisted-by: LLM\n",
+            "--ai-attribution",
+            "disclose",
+            "--ai-disclosure-pattern",
+            r"^\S+/\S+$",
+        )
+        assert rc == 1
+        assert by_id["CC014"]["status"] == "fail"
+        assert "ai_disclosure_pattern" in by_id["CC014"]["suggest"]
+        assert by_id["CC014"]["fix"] == ""
+
+    def test_an_unknown_policy_in_the_config_names_the_setting_and_exits_two(
+        self, mocker, capsys, monkeypatch, tmp_path
+    ):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add x\n")
+        cfg = tmp_path / "cchk.toml"
+        cfg.write_text('[commit]\nai_attribution = "require"\n')
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--config", str(cfg)])
+        rc = main()
+        err = capsys.readouterr().err
+        assert rc == 2
+        assert (
+            "Error: [commit] ai_attribution must be one of ignore, forbid, disclose, "
+            "got 'require'"
+        ) in err
+        # The setting has a flag and an env var, so the file is not blamed.
+        assert str(cfg) not in err
+
+    def test_a_bad_pattern_from_a_flag_exits_two(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add x\n")
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                CMD,
+                "-m",
+                "--ai-attribution",
+                "disclose",
+                "--ai-disclosure-pattern",
+                "^(",
+            ],
+        )
+        rc = main()
+        err = capsys.readouterr().err
+        assert rc == 2
+        assert "Error: [commit] ai_disclosure_pattern is not a valid regex: '^('" in err
+
+    def test_the_policy_flag_refuses_an_unknown_value(self, capsys, monkeypatch):
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--ai-attribution", "require"])
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 2
+        assert "invalid choice: 'require'" in capsys.readouterr().err
