@@ -785,11 +785,20 @@ class TestBranchRegexIsAnchored:
         assert not re.match(_branch_regex(), "feature")
         assert not re.match(_branch_regex(), "feature/")
 
-    def test_literal_names_are_escaped(self):
-        # A dot in a configured name is a dot, not "any character".
-        regex = _branch_regex(allow_branch_names=["rel.1"])
-        assert re.match(regex, "rel.1")
-        assert not re.match(regex, "relx1")
+    def test_a_configured_name_may_be_a_pattern(self):
+        # An entry is a regex, like the built-in "PR-.+": the Action's own
+        # config allows the branches peter-evans/create-pull-request opens
+        # this way (commit-check-action#225).
+        regex = _branch_regex(allow_branch_names=["create-pull-request/.+"])
+        assert re.match(regex, "create-pull-request/update-deps")
+        assert re.match(regex, "create-pull-request/patch")
+        # Still anchored at the end, so the pattern has to cover the name.
+        assert not re.match(regex, "wip-create-pull-request/patch")
+
+    def test_a_configured_type_may_be_a_pattern(self):
+        regex = _branch_regex(allow_branch_types=["renovate.*"])
+        assert re.match(regex, "renovate-bot/pin-deps")
+        assert not re.match(regex, "renovate-bot")
 
 
 class TestConventionalCommitGitPrefixes:

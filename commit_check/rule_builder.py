@@ -1,11 +1,9 @@
 """Rule builder that creates validation rules from config and catalog."""
 
 from __future__ import annotations
-import re
 import sys
 from typing import Any
 from dataclasses import dataclass, replace
-from functools import lru_cache
 from commit_check.config import ConfigError
 from commit_check.util import format_size, parse_size
 from commit_check.rules_catalog import (
@@ -106,16 +104,6 @@ class ValidationRule:
         if self.ignored:
             result["ignored"] = self.ignored
         return result
-
-
-@lru_cache(maxsize=64)
-def _escaped_alternation(items: tuple[str, ...]) -> str:
-    """``a|b|c`` with each item escaped for a regex.
-
-    Cached on the tuple: the same allowed types are built for every rule
-    set, and escaping twenty names on each build was a measurable cost.
-    """
-    return "|".join(re.escape(item) for item in items)
 
 
 class RuleBuilder:
@@ -613,11 +601,13 @@ class RuleBuilder:
         self, allowed_types: list[str], allowed_names: list[str]
     ) -> str:
         """Build regex for conventional branch names."""
-        types_pattern = _escaped_alternation(tuple(allowed_types))
-        # Every alternative is anchored at both ends so an allowed name matches
-        # the whole branch name, not merely its start ("main-backup" is not
-        # "main"). "PR-.+" is a pattern, the rest are literal names.
+        types_pattern = "|".join(allowed_types)
+        # Configured types and names are regular expressions, as they have
+        # always been: the built-in "PR-.+" is one, and the Action's own
+        # config allows "create-pull-request/.+" that way. Every alternative
+        # is anchored at both ends so a name has to match the whole branch
+        # name, not merely its start ("main-backup" is not "main").
         names_pattern = "|".join(["master", "main", "HEAD", r"PR-.+"])
         if allowed_names:
-            names_pattern += "|" + _escaped_alternation(tuple(allowed_names))
+            names_pattern += "|" + "|".join(allowed_names)
         return rf"^(?:{types_pattern})/.+$|^(?:{names_pattern})$"
