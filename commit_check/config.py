@@ -26,7 +26,16 @@ class ConfigError(ValueError):
     The message names the offending file where there is one. The CLI reports
     these as exit code 2, apart from a rejected commit (exit code 1), so a
     wrapper can tell a broken policy from a broken commit.
+
+    ``setting`` names the configuration key at fault, for the keys that can
+    arrive from a CLI flag or a ``CCHK_*`` variable as well as from the file.
+    Naming the file as their source would be a guess, so the message names
+    the setting instead and the CLI leaves the file out.
     """
+
+    def __init__(self, message: str, *, setting: str | None = None) -> None:
+        super().__init__(message)
+        self.setting = setting
 
 
 DEFAULT_CONFIG_PATHS = [

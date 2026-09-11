@@ -381,13 +381,20 @@ if you need it.
 |-----------|---------|
 | `0` | Every enforced check passed, or every check was skipped. |
 | `1` | A check failed. This is a verdict on the commit. |
-| `2` | The run could not start: bad usage, a `--rev` that does not resolve, or a config file that is missing, is not valid TOML, or names an unknown rule. Nothing was validated. |
+| `2` | The run could not start: bad usage, a `--rev` that does not resolve, a setting whose regex does not compile, or a config file that is missing, is not valid TOML, or names an unknown rule. Nothing was validated. |
 
 A configuration error names the file, so a broken `.github/cchk.toml` is
 reported as:
 
 ```text
 Error: .github/cchk.toml: Expected ']' at the end of a table declaration (at line 1, column 8)
+```
+
+A setting that can also be given as a flag or a `CCHK_*` variable names
+itself instead of guessing at a file, and echoes the value it could not use:
+
+```text
+Error: [commit] message_pattern is not a valid regex: '^(unclosed' (missing ), unterminated subpattern at position 1)
 ```
 
 Scripts that treat any non-zero exit as a rejected commit keep working. Scripts

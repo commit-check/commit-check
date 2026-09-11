@@ -108,6 +108,25 @@ class ValidationRule:
         return result
 
 
+def _checked_regex(pattern: str, setting: str) -> str:
+    """*pattern*, once it is known to compile.
+
+    An unusable pattern otherwise fails on its first ``re.match``, deep
+    inside a validator, where main's catch-all prints it as a bare
+    "missing ), unterminated subpattern at position 1" and returns exit
+    code 1 -- the code a rejected commit gets, with nothing to say which of
+    the settings holds the pattern. Compiling it while the rule is built
+    names the setting and makes it a configuration error (exit code 2).
+    """
+    try:
+        re.compile(pattern)
+    except re.error as e:
+        raise ConfigError(
+            f"{setting} is not a valid regex: {pattern!r} ({e})", setting=setting
+        ) from e
+    return pattern
+
+
 @lru_cache(maxsize=64)
 def _escaped_alternation(items: tuple[str, ...]) -> str:
     """``a|b|c`` with each item escaped for a regex.
@@ -334,6 +353,8 @@ class RuleBuilder:
             if catalog_entry.check == "tag":
                 regex = tag_config.get("regex", DEFAULT_TAG_REGEX)
                 regex = regex.strip() if isinstance(regex, str) else DEFAULT_TAG_REGEX
+                if regex:
+                    regex = _checked_regex(regex, "[tag] regex")
                 rules.append(
                     ValidationRule(
                         check=catalog_entry.check,
@@ -410,6 +431,7 @@ class RuleBuilder:
         """
         custom_pattern = self.commit_config.get("message_pattern", "").strip()
         if custom_pattern:
+            custom_pattern = _checked_regex(custom_pattern, "[commit] message_pattern")
             # A team that opted out of Conventional Commits must not be told
             # to follow it: the pattern they chose is the one fact that fixes
             # their message, so the failure names it and links to no spec.
@@ -509,7 +531,9 @@ class RuleBuilder:
         """Build author name or email validation rule."""
         regex = catalog_entry.regex
         if self.commit_config.get(config_key, ""):
-            regex = self.commit_config.get(config_key, "").strip()
+            regex = _checked_regex(
+                self.commit_config.get(config_key, "").strip(), f"[commit] {config_key}"
+            )
 
         return ValidationRule(
             check=catalog_entry.check,

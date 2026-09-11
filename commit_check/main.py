@@ -650,7 +650,12 @@ def main() -> int:
             # The merged dict no longer says which file a setting came from,
             # and ``warn`` has no env or CLI form, so it was the TOML file.
             # An explicit --config is named as the user wrote it; otherwise
-            # say which of the default locations was found.
+            # say which of the default locations was found. A setting that
+            # also has a flag and a CCHK_* variable names itself, and is
+            # left alone: pointing at a file it may not have come from
+            # would send the reader to the wrong place.
+            if e.setting:
+                raise
             source = args.config or find_config_path()
             raise ConfigError(f"{source}: {e}" if source else str(e)) from e
 
