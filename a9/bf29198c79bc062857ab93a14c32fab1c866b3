@@ -1,0 +1,23 @@
+README.md
+  s_80a77d656a1a9b::t_26cf99658a6aa5 266-267
+commit_check/rule_builder.py
+  s_80a77d656a1a9b::t_ff97e69f6320c8 604-609,612
+tests/rule_builder_test.py
+  s_80a77d656a1a9b::t_26530eddfea7b9 788-801
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a9bf29198c79bc062857ab93a14c32fab1c866b3",
+  "prompts": {},
+  "sessions": {
+    "s_80a77d656a1a9b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "555f20c1-3e19-461a-ac92-9c2e4ce6e933",
+        "model": "claude-opus-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
