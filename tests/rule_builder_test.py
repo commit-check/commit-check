@@ -1,5 +1,6 @@
 """Tests for commit_check.rule_builder module."""
 
+from commit_check.config import ConfigError
 from commit_check.rule_builder import ValidationRule, RuleBuilder
 from commit_check.rules_catalog import RuleCatalogEntry
 import pytest
@@ -844,3 +845,50 @@ class TestConventionalCommitGitPrefixes:
     )
     def test_author_prose_resembling_a_prefix_is_not_exempt(self, message):
         assert not re.match(self._regex(), message)
+
+
+class TestInvalidUserRegexNamesTheSetting:
+    """A pattern that cannot compile is a broken policy, not a bad commit.
+
+    Left to fail on first use it surfaced through main's catch-all as a bare
+    re.error text under exit code 1 -- the code a rejected commit gets --
+    with nothing to say which setting held it.
+    """
+
+    @pytest.mark.parametrize(
+        ("section", "key", "pattern"),
+        [
+            ("commit", "message_pattern", "^(unclosed"),
+            ("commit", "author_name_pattern", "["),
+            ("commit", "author_email_pattern", "("),
+            ("tag", "regex", "^(unclosed"),
+        ],
+    )
+    def test_the_setting_and_the_pattern_are_both_named(self, section, key, pattern):
+        setting = f"[{section}] {key}"
+        with pytest.raises(ConfigError) as excinfo:
+            RuleBuilder({section: {key: pattern}}).build_all_rules()
+        message = str(excinfo.value)
+        assert setting in message
+        assert repr(pattern) in message
+        # The reason from re itself, so the position is not lost.
+        assert "position" in message
+        assert excinfo.value.setting == setting
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            {"commit": {"message_pattern": r"^PROJ-\d+: .+"}},
+            {"commit": {"author_name_pattern": r"^\w+ \w+$"}},
+            {"commit": {"author_email_pattern": r"^.+@example\.com$"}},
+            {"tag": {"regex": r"^v\d+\.\d+\.\d+$"}},
+        ],
+    )
+    def test_a_usable_pattern_is_untouched(self, config):
+        assert RuleBuilder(config).build_all_rules()
+
+    def test_an_empty_tag_regex_still_disables_the_match(self):
+        # "" means "do not pattern-match tags", not "compile an empty regex".
+        rules = RuleBuilder({"tag": {"regex": ""}}).build_all_rules()
+        tag_rule = next(r for r in rules if r.check == "tag")
+        assert tag_rule.regex is None

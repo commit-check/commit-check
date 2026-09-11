@@ -1615,3 +1615,57 @@ class TestWarnLevel:
         assert "unknown rule 'branchh'" in err
         # The merged config no longer knows the file; main() must add it.
         assert f"Error: {cfg}: warn names" in err
+
+
+class TestInvalidUserRegexIsAConfigError:
+    """#570 made exit code 2 mean "the policy is broken, nothing was judged".
+
+    A pattern the user wrote that does not compile is exactly that, and used
+    to come back as exit code 1 with a bare re.error text.
+    """
+
+    def test_message_pattern_names_the_setting_and_exits_two(
+        self, mocker, capsys, monkeypatch, tmp_path
+    ):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add x\n")
+        cfg = tmp_path / "cchk.toml"
+        cfg.write_text('[commit]\nmessage_pattern = "^(unclosed"\n')
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--config", str(cfg)])
+        rc = main()
+        err = capsys.readouterr().err
+        assert rc == 2
+        assert "[commit] message_pattern is not a valid regex" in err
+        assert "'^(unclosed'" in err
+        assert "unterminated subpattern" in err
+
+    def test_a_pattern_from_a_flag_does_not_blame_the_config_file(
+        self, mocker, capsys, monkeypatch, tmp_path
+    ):
+        # The bad value came from the command line; naming the unrelated
+        # file that is also present would send the reader to the wrong place.
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add x\n")
+        cfg = tmp_path / "cchk.toml"
+        cfg.write_text("[commit]\nconventional_commits = true\n")
+        monkeypatch.setattr(
+            "sys.argv",
+            [CMD, "--author-name", "--author-name-pattern", "[", "--config", str(cfg)],
+        )
+        rc = main()
+        err = capsys.readouterr().err
+        assert rc == 2
+        assert "[commit] author_name_pattern is not a valid regex" in err
+        assert str(cfg) not in err
+
+    def test_tag_regex_from_a_flag_exits_two(self, capsys, monkeypatch, tmp_path):
+        cfg = tmp_path / "cchk.toml"
+        cfg.write_text("[commit]\nconventional_commits = true\n")
+        monkeypatch.setattr(
+            "sys.argv",
+            [CMD, "--tag", "--tag-regex", "^(unclosed", "--config", str(cfg)],
+        )
+        rc = main()
+        err = capsys.readouterr().err
+        assert rc == 2
+        assert "[tag] regex is not a valid regex" in err
