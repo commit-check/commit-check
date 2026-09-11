@@ -263,8 +263,8 @@ variable that override it (priority: CLI > env > TOML > default). Booleans accep
 | `commit.author_email_pattern` | `"^.+@.+$"` | `--author-email-pattern` | `CCHK_AUTHOR_EMAIL_PATTERN` | Regex the author email must match (CC102, with `--author-email`) |
 | `commit.author_name_pattern` | `""` | `--author-name-pattern` | `CCHK_AUTHOR_NAME_PATTERN` | Regex the author name must match (CC101, with `--author-name`) |
 | `branch.conventional_branch` | `true` | `--conventional-branch` | `CCHK_CONVENTIONAL_BRANCH` | Enforce `<type>/<description>` branch names (CC201) |
-| `branch.allow_branch_types` | `feature, bugfix, hotfix, release, chore, feat, fix, build, ci, docs, perf, refactor, test, style, ai, claude, codex, copilot, cursor, dependabot, renovate` | `--allow-branch-types` | `CCHK_ALLOW_BRANCH_TYPES` | Allowed branch `<type>` prefixes |
-| `branch.allow_branch_names` | `[]` | `--allow-branch-names` | `CCHK_ALLOW_BRANCH_NAMES` | Extra whole branch names allowed besides `main`, `master`, `HEAD`, `PR-*` |
+| `branch.allow_branch_types` | `feature, bugfix, hotfix, release, chore, feat, fix, build, ci, docs, perf, refactor, test, style, ai, claude, codex, copilot, cursor, dependabot, renovate` | `--allow-branch-types` | `CCHK_ALLOW_BRANCH_TYPES` | Allowed branch `<type>` prefixes; each entry is a regex matched against the whole type |
+| `branch.allow_branch_names` | `[]` | `--allow-branch-names` | `CCHK_ALLOW_BRANCH_NAMES` | Extra branch names allowed besides `main`, `master`, `HEAD`, `PR-.+`; each entry is a regex matched against the whole branch name, so `create-pull-request/.+` allows a family of them |
 | `branch.require_rebase_target` | `""` | `--require-rebase-target` | `CCHK_REQUIRE_REBASE_TARGET` | Branch the current branch must be rebased onto (CC202); empty disables |
 | `branch.ignore_authors` | `[]` | `--branch-ignore-authors` | `CCHK_BRANCH_IGNORE_AUTHORS` | Authors whose branches skip the branch checks |
 | `push.allow_force_push` | `true` | — (`--no-force-push` runs the check) | `CCHK_ALLOW_FORCE_PUSH` | Reserved; has no effect today. CC301 runs only with `--no-force-push`, which always rejects a non-fast-forward push |
