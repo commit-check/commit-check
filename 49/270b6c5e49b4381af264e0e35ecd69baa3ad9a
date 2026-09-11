@@ -1,0 +1,84 @@
+commit_check/ai_signatures_data.py
+  s_372643545cf36e::t_d116bebac6d673 7-11,20-33,44-45,51,61-63,68,75-77,80,85-86,88-89,93-94,98-131,137,142-146,154,159,161,163,165-168,175,177,184,186-188,196,198,205,207,214,216,223,225,232,234,236,243,245,252,254,262,266-268,270,274-277,279-283,285-289
+tests/ai_policy_test.py
+  s_372643545cf36e::t_2149dd8423fa28 1-218
+  s_372643545cf36e::t_fdda5ceecd6529 219-224
+commit_check/rule_builder.py
+  s_372643545cf36e::t_fe806b1cb9e6f1 415
+  s_372643545cf36e::t_2d9639b2d19f3f 20,27-28,33-44
+  s_372643545cf36e::t_7eb4d74dc794ab 629-631
+  s_372643545cf36e::t_37a734a9a6c424 569,571-573,575-576,578-584,586-588,592-628,632-664,666-669
+  s_372643545cf36e::t_9dfee22170cf2f 45-46
+tests/fixes_test.py
+  s_372643545cf36e::t_ac5699c88bd5ab 6,11
+  s_372643545cf36e::t_1da072e2e315a5 171-243
+tests/engine_fixes_test.py
+  s_372643545cf36e::t_222c0a971bd803 5-6
+  s_372643545cf36e::t_466c85d1d3ae2e 338-527
+commit_check/__init__.py
+  s_372643545cf36e::t_78bacf564d79c7 128-139
+commit_check/engine.py
+  s_372643545cf36e::t_f4d57950375bfc 1431-1455
+  s_372643545cf36e::t_00a995284bc145 15-16
+  s_372643545cf36e::t_efe6254a7ff906 1316-1328,1330-1348,1355,1359-1363,1366-1367,1369,1374-1375,1377-1378,1380-1385,1391-1408,1410-1415,1417-1430,1456-1513
+  s_372643545cf36e::t_76fc01d708fdff 1409,1416
+  s_372643545cf36e::t_605e866b506bc2 1541
+  s_372643545cf36e::t_d3474e8b9e9982 1514-1516,1542-1543
+commit_check/config_merger.py
+  s_372643545cf36e::t_4e797aa3dc3c11 85-86
+  s_372643545cf36e::t_8b998069d819dd 133-138
+  s_372643545cf36e::t_00ddef4e21d3ee 175-176
+  s_372643545cf36e::t_bb3a53639da4f6 18-19
+commit_check/ai_policy.py
+  s_372643545cf36e::t_07c3924a66bca7 1-206
+commit_check/rules_catalog.py
+  s_372643545cf36e::t_19cfff534dfbcc 190-214
+commit_check/main.py
+  s_372643545cf36e::t_2d052dcf154ae3 387,389-410
+  s_372643545cf36e::t_33a564facd8d72 27
+tests/engine_test.py
+  s_372643545cf36e::t_09c147be484945 1784-1786
+  s_372643545cf36e::t_2f1980371cc556 2742-2810
+README.md
+  s_372643545cf36e::t_cadccd57db01c1 128-133
+  s_372643545cf36e::t_f9d2e8cbcf81ec 418-419
+  s_372643545cf36e::t_8f74e889262fe6 581-585
+  s_372643545cf36e::t_db49b2d0585e51 383-417,420-431
+  s_372643545cf36e::t_0031e54840b1c4 265-267
+tests/ai_signatures_test.py
+  s_372643545cf36e::t_c6f2de46c78b85 208,213
+  s_372643545cf36e::t_8bac730facb3f9 6,8,12-17
+  s_372643545cf36e::t_af32e130256bb0 310
+  s_372643545cf36e::t_40f60c7d4d7e02 348-520
+  s_372643545cf36e::t_bde251a5f668bf 18,521-531
+commit_check/ai_signatures.py
+  s_372643545cf36e::t_9303b27576f519 21,29-31,36-56,63-65,73,78,81-102,109,113-135
+commit_check/fixes.py
+  s_372643545cf36e::t_03a0974f9bfa87 121-150,158-181
+tests/rule_builder_test.py
+  s_372643545cf36e::t_bae44ccfadb727 473-571
+  s_372643545cf36e::t_345b9c85da8503 436-442,446-452
+  s_372643545cf36e::t_fe1a8f5bf8b62b 572-583
+CONTRIBUTING.md
+  s_372643545cf36e::t_59396a715b2c0c 57
+tests/integration_test.py
+  s_372643545cf36e::t_be126d56c51ac5 284-333
+tests/main_test.py
+  s_372643545cf36e::t_759a19845abe62 1672-1812
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "49270b6c5e49b4381af264e0e35ecd69baa3ad9a",
+  "prompts": {},
+  "sessions": {
+    "s_372643545cf36e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cf0a6471-ef8d-4f90-9d78-27576d4ecf86",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
