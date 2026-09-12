@@ -1,0 +1,27 @@
+commit_check/ai_signatures.py
+  s_372643545cf36e::t_f6539a1d8e562a 256,258
+commit_check/rule_builder.py
+  s_372643545cf36e::t_2f32d89a04eecd 630-634,638
+tests/ai_policy_test.py
+  s_372643545cf36e::t_60a569954d42b8 92-98
+tests/ai_signatures_test.py
+  s_372643545cf36e::t_ad6b2c2ba711cf 551-560
+tests/rule_builder_test.py
+  s_372643545cf36e::t_7d5b63a3914508 532-535
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3c5324d09f56e741f2f31a8463a1920145de040b",
+  "prompts": {},
+  "sessions": {
+    "s_372643545cf36e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cf0a6471-ef8d-4f90-9d78-27576d4ecf86",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
