@@ -627,12 +627,15 @@ class RuleBuilder:
         elif not isinstance(raw, list):
             raw = [raw]
         trailers: list[str] = []
-        for name in (str(item).strip().rstrip(":").strip() for item in raw):
-            if not name:
+        for item in raw:
+            # Only a string can name a trailer: str(True) would pass the
+            # token test and enforce a trailer called "True".
+            name = item.strip().rstrip(":").strip() if isinstance(item, str) else ""
+            if name == "" and isinstance(item, str):
                 continue
             if not _TRAILER_KEY.match(name) or name.lower() == "signed-off-by":
                 raise ConfigError(
-                    f"{setting} cannot use {name!r}: a trailer is a token such as "
+                    f"{setting} cannot use {item!r}: a trailer is a token such as "
                     "Assisted-by, and never Signed-off-by, which only a person may add",
                     setting=setting,
                 )

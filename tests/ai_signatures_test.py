@@ -548,6 +548,16 @@ class TestFindTrailers:
             ("Assisted-by", "", "Assisted-by:"),
         ]
 
+    def test_a_carriage_return_is_line_ending_not_value(self):
+        crlf = "feat: x\r\n\r\nAssisted-by: Claude Code\r\nGenerated-by:\r\n"
+        assert [
+            value
+            for _, value, _ in find_trailers(crlf, ["Assisted-by", "Generated-by"])
+        ] == [
+            "Claude Code",
+            "",
+        ]
+
     def test_only_a_line_starting_with_the_key_counts_and_the_key_is_literal(self):
         assert (
             find_trailers("feat: x\n\nsee Assisted-by: LLM above", ["Assisted-by"])

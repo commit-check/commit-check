@@ -529,8 +529,10 @@ class TestDiscloseRuleBuilder:
         [
             ([], "at least one trailer"),
             ("", "at least one trailer"),
-            ([1], "cannot use '1'"),
-            (123, "cannot use '123'"),
+            ([1], "cannot use 1"),
+            (123, "cannot use 123"),
+            (True, "cannot use True"),
+            ([False], "cannot use False"),
             (["Assisted by"], "cannot use 'Assisted by'"),
             (["Assisted-by: LLM"], "cannot use"),
             (["Signed-off-by"], "never Signed-off-by"),

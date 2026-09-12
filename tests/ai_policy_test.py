@@ -89,6 +89,13 @@ class TestAnalyze:
         assert not bad.compliant
 
 
+class TestLineEndings:
+    def test_crlf_input_matches_an_exact_pattern(self):
+        """A CRLF message once put the carriage return into the value."""
+        message = "fix: x\r\n\r\nAssisted-by: Claude Code\r\n"
+        assert analyze(message, ["Assisted-by"], r"^Claude Code$").compliant
+
+
 class TestCoAuthorAsDisclosure:
     """A project that lists Co-authored-by accepts the tool as a co-author."""
 
