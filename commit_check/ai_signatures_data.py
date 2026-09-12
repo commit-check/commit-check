@@ -44,12 +44,20 @@ class AiSignaturePattern:
     :param role: How the match places the tool in the commit — one of
         :data:`ROLES`.
     :param description: Human-readable description of what is matched.
+    :param keys: For a trailer, the keys it can match, lower-cased; empty for
+        a body marker. The scanner indexes on these so a message is only
+        measured against the trailers it actually carries.
+    :param value_pattern: For a trailer, what may follow the key. The scanner
+        compiles the value patterns that share a key into one alternation,
+        so a trailer line is read once however many tools the catalog knows.
     """
 
     regex: re.Pattern[str]
     kind: str  # "trailer" | "body_marker"
     role: str
     description: str = ""
+    keys: frozenset[str] = frozenset()
+    value_pattern: str = ""
 
 
 @dataclass(frozen=True)
@@ -92,6 +100,8 @@ def _trailer(
         kind="trailer",
         role=role,
         description=description,
+        keys=frozenset(key.lower() for key in keys),
+        value_pattern=value_pattern,
     )
 
 
@@ -140,8 +150,14 @@ def _body_marker(pattern: str, description: str = "") -> AiSignaturePattern:
 
 
 def _names(pattern: str) -> re.Pattern[str]:
-    """Compile a ``name_pattern``: the tool's names, matched anywhere in text."""
-    return re.compile(pattern, re.IGNORECASE)
+    """Compile a ``name_pattern``: the tool's names, as whole words.
+
+    Bounded at both ends, or a tool's name would be found inside a longer
+    one: without this, ``Generated-by: Raider`` was disclosed as Aider.
+    ``\\b`` cannot serve here because a name may begin or end with a
+    non-word character.
+    """
+    return re.compile(rf"(?<!\w)(?:{pattern})(?!\w)", re.IGNORECASE)
 
 
 # ---------------------------------------------------------------------------

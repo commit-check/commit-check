@@ -2,6 +2,7 @@
 
 import pytest
 from commit_check.ai_signatures import (
+    _GROUPS,
     detect_ai_signatures,
     find_trailers,
     has_ai_signature,
@@ -491,10 +492,123 @@ class TestToolNamedIn:
             ("LLM coccinelle sparse", None),
             ("ChatGPTv5", None),
             ("", None),
+            # A name inside a longer word is a different word: "Raider" was
+            # read as Aider before the patterns were bounded.
+            ("Raider", None),
+            ("Raiders of the lost ark", None),
+            ("codexual", None),
+            ("Claudette", None),
+            ("Precursor", None),
+            # ... but punctuation around the name still bounds it
+            ("(aider)", "Aider"),
+            ("noreply@anthropic.com", "Claude Code"),
+            ("copilot/fix-42", "GitHub Copilot"),
         ],
     )
     def test_names(self, text, tool):
         assert tool_named_in(text) == tool
+
+
+class TestPatternIndex:
+    """Only the patterns a message could match are measured, and all of them.
+
+    The catalog grew faster than the scan may: a message is measured against
+    the trailers it carries, so adding a tool costs nothing for the commits
+    that do not name it. The index is derived from the same keys the
+    patterns are built from, so it cannot fall behind them.
+    """
+
+    def test_every_trailer_pattern_declares_its_keys(self):
+        for tool in ALL_KNOWN_TOOLS:
+            for pattern in tool.patterns:
+                if pattern.kind == "trailer":
+                    assert pattern.keys, f"{tool.name}: {pattern.description}"
+                else:
+                    assert pattern.keys == frozenset(), tool.name
+
+    def test_the_declared_keys_are_the_ones_the_regex_reads(self):
+        """The index cannot drift from the pattern it indexes.
+
+        Both come from the same argument to ``_trailer``; this is what says
+        so, because a key declared but missing from the regex (or the other
+        way round) would quietly stop a pattern from ever being measured.
+        """
+        for tool in ALL_KNOWN_TOOLS:
+            for pattern in tool.patterns:
+                if pattern.kind != "trailer":
+                    continue
+                head = pattern.regex.pattern.split("):", 1)[0]
+                in_regex = {
+                    key.lower().replace("\\", "")
+                    for key in head.lstrip("^(?:").split("|")
+                }
+                assert in_regex == pattern.keys, f"{tool.name}: {pattern.description}"
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "feat: add feature",
+            "feat: add feature\n\nSigned-off-by: Alice <alice@example.com>",
+            "feat: x\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "feat: x\n\nASSISTED-BY: LLM",
+            "feat: x\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)",
+            "feat: x\n\nClaude-Session: abc\nCo-developed-by: Copilot",
+            "feat: x\n\nNot-a-trailer here: still prose",
+        ],
+    )
+    def test_the_grouped_scan_finds_what_every_pattern_would(self, message):
+        """The compiled groups agree with measuring each pattern separately.
+
+        This is what keeps the two representations honest: ``ALL_PATTERNS``
+        is one regex per pattern, the scanner is one regex per trailer key,
+        and a branch lost in the alternation would show up here. Order is
+        compared as a set, because grouping moves every pattern reading a
+        key to where that key first appears in the catalog.
+        """
+        full = set()
+        for regex, tool_name, desc, kind, role in ALL_PATTERNS:
+            for match in regex.finditer(message):
+                full.add(match.group(0).strip())
+        found = detect_ai_signatures(message)
+        assert {s["matched_text"] for s in found} == full
+        assert has_ai_signature(message) is bool(full)
+
+    def test_matches_of_one_key_come_in_message_order(self):
+        message = (
+            "feat: x\n\n"
+            "Co-authored-by: Copilot\n"
+            "Co-authored-by: Claude <noreply@anthropic.com>"
+        )
+        assert [s["tool"] for s in detect_ai_signatures(message)] == [
+            "GitHub Copilot",
+            "Claude Code",
+        ]
+
+    def test_the_most_specific_branch_of_a_group_wins(self):
+        """Alternation is tried in catalog order, as separate patterns were.
+
+        A Claude co-author line matches the Claude branch and the generic
+        model-name branch alike; the tool reported is the specific one.
+        """
+        claude = _only(
+            "feat: x\n\nCo-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>"
+        )
+        assert claude["tool"] == "Claude Code"
+        generic = _only("feat: x\n\nCo-authored-by: gpt-4-turbo <bot@example.com>")
+        assert generic["tool"] == "Generic AI"
+
+    def test_every_branch_of_a_group_can_be_told_apart(self):
+        """One capturing group per branch, so a match names its own pattern.
+
+        A body marker is a group of one and carries no branch; the value
+        patterns must otherwise capture nothing of their own, or the branch
+        numbers would no longer line up with the members.
+        """
+        for group in _GROUPS:
+            if group.keys:
+                assert group.regex.groups == len(group.members), group.keys
+            else:
+                assert len(group.members) == 1
 
 
 class TestFindTrailers:

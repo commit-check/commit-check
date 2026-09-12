@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 
 from commit_check.ai_signatures import detect_ai_signatures, find_trailers
 from commit_check.ai_signatures_data import (
@@ -110,12 +111,23 @@ def analyze(message: str, accepted: list[str], pattern: str = "") -> AiPolicyRep
         project's spelling; matched case-insensitively.
     :param pattern: A regex the disclosure's value must match from its
         start (``re.match``), or empty for any non-empty value.
+
+    The three rules of the policy each ask about the same message under the
+    same settings, so the reading is memoised and done once. The report and
+    the lists it holds are shared between them and are never modified.
     """
+    return _analyze(message, tuple(accepted), pattern)
+
+
+@lru_cache(maxsize=8)
+def _analyze(message: str, accepted: tuple[str, ...], pattern: str) -> AiPolicyReport:
+    """:func:`analyze`, with the arguments in a form a cache can key on."""
+    accepted_keys = list(accepted)
     signatures = detect_ai_signatures(message)
     ai_lines = {s["matched_text"] for s in signatures}
 
     disclosures: list[Disclosure] = []
-    for key, value, line in find_trailers(message, accepted):
+    for key, value, line in find_trailers(message, accepted_keys):
         line = line.strip()
         # A person trailer discloses a tool only when its value names one:
         # a human co-author under an accepted key is a co-author, not a

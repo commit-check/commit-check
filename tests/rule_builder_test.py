@@ -548,6 +548,16 @@ class TestDiscloseRuleBuilder:
         )
         assert rules["ai_disclosure"].regex == r"^\S+/\S+$"
 
+    @pytest.mark.parametrize("pattern", [123, True, ["^x"], {"a": 1}])
+    def test_a_non_string_pattern_is_refused_rather_than_ignored(self, pattern):
+        """Reading it as "no pattern" would leave the rule unenforced."""
+        with pytest.raises(ConfigError) as excinfo:
+            _ai_rules({"ai_attribution": "disclose", "ai_disclosure_pattern": pattern})
+        assert "[commit] ai_disclosure_pattern must be a regex string" in str(
+            excinfo.value
+        )
+        assert excinfo.value.setting == "[commit] ai_disclosure_pattern"
+
     def test_a_pattern_that_does_not_compile_names_its_setting(self):
         with pytest.raises(ConfigError) as excinfo:
             _ai_rules(

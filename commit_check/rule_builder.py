@@ -659,14 +659,24 @@ class RuleBuilder:
         return trailers
 
     def _ai_disclosure_pattern(self) -> str:
-        """The regex a disclosure's value must match, or empty for any value."""
+        """The regex a disclosure's value must match, or empty for any value.
+
+        A value of another type is refused rather than ignored: reading it
+        as "no pattern" would leave the rule the author wrote silently
+        unenforced, which is the failure exit code 2 exists to prevent.
+        """
+        setting = "[commit] ai_disclosure_pattern"
         pattern = self.commit_config.get(
             "ai_disclosure_pattern", DEFAULT_AI_DISCLOSURE_PATTERN
         )
-        pattern = pattern.strip() if isinstance(pattern, str) else ""
+        if not isinstance(pattern, str):
+            raise ConfigError(
+                f"{setting} must be a regex string, got {pattern!r}", setting=setting
+            )
+        pattern = pattern.strip()
         if not pattern:
             return ""
-        return _checked_regex(pattern, "[commit] ai_disclosure_pattern")
+        return _checked_regex(pattern, setting)
 
     def _build_boolean_rule(
         self, catalog_entry: RuleCatalogEntry, section_config: dict[str, Any]
