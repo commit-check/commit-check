@@ -125,7 +125,18 @@ DEFAULT_BOOLEAN_RULES = {
 }
 
 # AI attribution defaults
-DEFAULT_AI_ATTRIBUTION = "ignore"  # "ignore" | "forbid"
+#: The policies ``ai_attribution`` accepts. ``ignore`` checks nothing;
+#: ``forbid`` rejects every known AI signature; ``disclose`` accepts AI
+#: assistance that is disclosed with an accepted trailer and rejects the tool
+#: as a co-author or a sign-off.
+AI_ATTRIBUTION_POLICIES = ("ignore", "forbid", "disclose")
+DEFAULT_AI_ATTRIBUTION = "ignore"
+# The trailers that disclose AI assistance under "disclose": Assisted-by is
+# the Linux kernel's, Fedora's and FluxCD's; Generated-by is the Apache
+# Software Foundation's.
+DEFAULT_AI_DISCLOSURE_TRAILERS = ["Assisted-by", "Generated-by"]
+# A regex the disclosure's value must match; empty accepts any non-empty value.
+DEFAULT_AI_DISCLOSURE_PATTERN = ""
 
 
 try:

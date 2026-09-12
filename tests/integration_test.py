@@ -281,3 +281,35 @@ class TestIntegration:
             ["commit-check", "--message", "--format", "json"],
         )
         assert main() == 0
+
+
+class TestAiDisclosurePolicy:
+    """``ai_attribution = "disclose"`` against commits a real repository holds."""
+
+    @pytest.mark.benchmark
+    def test_a_vendor_co_author_line_fails_and_a_disclosure_passes(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
+        (repo / "cchk.toml").write_text('[commit]\nai_attribution = "disclose"\n')
+        monkeypatch.setattr(sys, "argv", ["commit-check", "--message"])
+
+        _git(
+            "commit",
+            "--allow-empty",
+            "-m",
+            "feat: add caching\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            cwd=repo,
+        )
+        assert main() == 1
+
+        _git(
+            "commit",
+            "--allow-empty",
+            "-m",
+            "feat: add caching\n\nAssisted-by: Claude Code\n\n"
+            "Signed-off-by: Test User <test@example.com>",
+            cwd=repo,
+        )
+        assert main() == 0

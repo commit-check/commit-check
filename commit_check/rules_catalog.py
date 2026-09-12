@@ -187,7 +187,31 @@ COMMIT_RULES = [
         check="ai_attribution",
         regex=None,
         error="AI attribution policy violation",
-        suggest="This project forbids AI-assisted commits. Remove AI trailers and re-commit.",
+        suggest="This project does not accept AI attribution in commit messages. Remove AI trailers and re-commit.",
+    ),
+    # The three conditions of ai_attribution = "disclose", one rule each so a
+    # project can warn on one while enforcing the others. ``{trailer}`` is
+    # the first accepted disclosure trailer, filled in by the rule builder.
+    RuleCatalogEntry(
+        rule_id="CC014",
+        check="ai_disclosure",
+        regex=None,
+        error="AI assistance is not disclosed with an accepted trailer",
+        suggest="Disclose the AI tool with a {trailer}: trailer",
+    ),
+    RuleCatalogEntry(
+        rule_id="CC015",
+        check="ai_co_author",
+        regex=None,
+        error="An AI tool is credited as a co-author",
+        suggest="Disclose the tool with a {trailer}: trailer instead of crediting it as a co-author",
+    ),
+    RuleCatalogEntry(
+        rule_id="CC016",
+        check="ai_signoff",
+        regex=None,
+        error="An AI tool signed off the commit",
+        suggest="Only a person can certify the Developer Certificate of Origin: remove the AI Signed-off-by line and sign off yourself (git commit --signoff)",
     ),
 ]
 

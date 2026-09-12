@@ -3,9 +3,19 @@
 import pytest
 from commit_check.ai_signatures import (
     detect_ai_signatures,
+    find_trailers,
+    groups,
     has_ai_signature,
+    tool_named_in,
     ALL_KNOWN_TOOLS,
     ALL_PATTERNS,
+)
+from commit_check.ai_signatures_data import (
+    ROLE_CO_AUTHOR,
+    ROLE_DISCLOSURE,
+    ROLE_SIGNOFF,
+    ROLE_STAMP,
+    ROLES,
 )
 
 
@@ -196,11 +206,12 @@ class TestDetectAiSignatures:
     @pytest.mark.benchmark
     def test_all_patterns_compile(self):
         """All patterns in the master registry compile successfully."""
-        for regex, tool_name, desc, kind in ALL_PATTERNS:
+        for regex, tool_name, desc, kind, role in ALL_PATTERNS:
             assert regex is not None, f"{tool_name}: {desc} has None regex"
             assert kind in ("trailer", "body_marker"), (
                 f"{tool_name}: invalid kind {kind}"
             )
+            assert role in ROLES, f"{tool_name}: invalid role {role}"
 
     @pytest.mark.benchmark
     def test_kind_field_correct_for_body_marker(self):
@@ -297,7 +308,7 @@ class TestSignatureDatabase:
     @pytest.mark.benchmark
     def test_all_patterns_have_description(self):
         """All patterns have a non-empty description."""
-        for regex, tool_name, desc, kind in ALL_PATTERNS:
+        for regex, tool_name, desc, kind, role in ALL_PATTERNS:
             assert desc, f"Pattern for {tool_name} is missing a description"
 
     @pytest.mark.benchmark
@@ -335,3 +346,222 @@ class TestSignatureDatabase:
         devin_hits = [s for s in result if s["tool"] == "Devin"]
         # With a personal email, Devin should NOT be detected
         assert len(devin_hits) == 0
+
+
+def _only(message: str) -> dict[str, str]:
+    """The one signature in *message*, asserting there is exactly one."""
+    result = detect_ai_signatures(message)
+    assert len(result) == 1, result
+    return result[0]
+
+
+class TestRoles:
+    """Every signature says how it places the tool: that is what a policy rules on.
+
+    The disclosure trailers are read as the policies write them — the Linux
+    kernel's ``Assisted-by: LLM [tools]`` (since August 2026, and its earlier
+    ``AGENT:MODEL``), Fedora's free tool name, FluxCD's ``agent/model``, the
+    ASF's ``Generated-by`` — and attributed to the tool the value names.
+    """
+
+    @pytest.mark.parametrize(
+        "trailer, tool, role",
+        [
+            (
+                "Co-authored-by: Claude <noreply@anthropic.com>",
+                "Claude Code",
+                ROLE_CO_AUTHOR,
+            ),
+            (
+                "Co-developed-by: Claude <noreply@anthropic.com>",
+                "Claude Code",
+                ROLE_CO_AUTHOR,
+            ),
+            (
+                "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+                "GitHub Copilot",
+                ROLE_CO_AUTHOR,
+            ),
+            (
+                "Signed-off-by: Claude <noreply@anthropic.com>",
+                "Claude Code",
+                ROLE_SIGNOFF,
+            ),
+            (
+                "Signed-off-by: gpt-4-turbo <bot@example.com>",
+                "Generic AI",
+                ROLE_SIGNOFF,
+            ),
+            ("Assisted-by: LLM coccinelle sparse", "Generic AI", ROLE_DISCLOSURE),
+            (
+                "Assisted-by: Claude:claude-3-opus coccinelle sparse",
+                "Claude Code",
+                ROLE_DISCLOSURE,
+            ),
+            ("Assisted-by: ChatGPTv5", "Generic AI", ROLE_DISCLOSURE),
+            ("Assisted-by: claude-code/claude-opus-4", "Claude Code", ROLE_DISCLOSURE),
+            ("Generated-by: GitHub Copilot", "GitHub Copilot", ROLE_DISCLOSURE),
+            ("assisted-by: LLM", "Generic AI", ROLE_DISCLOSURE),
+            ("Claude-Session: sess_abc123", "Claude Code", ROLE_STAMP),
+        ],
+    )
+    def test_trailer(self, trailer, tool, role):
+        signature = _only(f"feat: add feature\n\n{trailer}")
+        assert (signature["tool"], signature["role"]) == (tool, role)
+        assert signature["kind"] == "trailer"
+        assert signature["matched_text"] == trailer
+        assert signature["value"] == trailer.split(":", 1)[1].strip()
+
+    def test_body_marker_is_a_stamp(self):
+        signature = _only(
+            "feat: add feature\n\n"
+            "🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+        )
+        assert signature["role"] == ROLE_STAMP
+        assert signature["kind"] == "body_marker"
+        assert signature["trailer"] == signature["value"] == ""
+
+    def test_a_human_sign_off_is_not_a_signature(self):
+        assert (
+            detect_ai_signatures("feat: x\n\nSigned-off-by: Jane <jane@example.com>")
+            == []
+        )
+        assert (
+            detect_ai_signatures(
+                "feat: x\n\nSigned-off-by: Claude Dubois <claude.dubois@gmail.com>"
+            )
+            == []
+        )
+
+    def test_a_disclosure_match_stays_on_its_own_line(self):
+        """The optional tool list must not swallow the trailer below it."""
+        message = (
+            "fix: x\n\n"
+            "Assisted-by: Claude:claude-3-opus coccinelle sparse\n"
+            "Signed-off-by: Jane Dev <jane@example.com>"
+        )
+        assert _only(message)["matched_text"] == (
+            "Assisted-by: Claude:claude-3-opus coccinelle sparse"
+        )
+
+
+class TestToolNamedIn:
+    @pytest.mark.parametrize(
+        "text, tool",
+        [
+            ("Claude Code", "Claude Code"),
+            ("claude-code/claude-opus-4", "Claude Code"),
+            ("noreply@anthropic.com", "Claude Code"),
+            ("codex/gpt-5", "OpenAI Codex"),
+            ("copilot/fix-42", "GitHub Copilot"),
+            ("(aider)", "Aider"),
+            ("LLM coccinelle sparse", None),
+            ("", None),
+            # A name inside a longer word is a different word: "Raider" was
+            # read as Aider before the patterns were bounded.
+            ("Raider", None),
+            ("Claudette", None),
+        ],
+    )
+    def test_names(self, text, tool):
+        assert tool_named_in(text) == tool
+
+
+class TestPatternIndex:
+    """Only the patterns a message could match are measured, and all of them.
+
+    The catalog grew faster than the scan may: a message is measured against
+    the trailers it carries, so adding a tool costs nothing for the commits
+    that do not name it. The index is derived from the same keys the
+    patterns are built from, so it cannot fall behind them.
+    """
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "feat: add feature",
+            "feat: add feature\n\nSigned-off-by: Alice <alice@example.com>",
+            "feat: x\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "feat: x\n\nASSISTED-BY: LLM",
+            "feat: x\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)",
+            "feat: x\n\nClaude-Session: abc\nCo-developed-by: Copilot",
+            "feat: x\n\nNot-a-trailer here: still prose",
+        ],
+    )
+    def test_the_grouped_scan_finds_what_every_pattern_would(self, message):
+        """The compiled groups agree with measuring each pattern separately.
+
+        This is what keeps the two representations honest: ``ALL_PATTERNS``
+        is one regex per pattern, the scanner is one regex per trailer key,
+        and a branch lost in the alternation would show up here. Order is
+        compared as a set, because grouping moves every pattern reading a
+        key to where that key first appears in the catalog.
+        """
+        full = set()
+        for regex, tool_name, desc, kind, role in ALL_PATTERNS:
+            for match in regex.finditer(message):
+                full.add(match.group(0).strip())
+        found = detect_ai_signatures(message)
+        assert {s["matched_text"] for s in found} == full
+        assert has_ai_signature(message) is bool(full)
+
+    def test_the_most_specific_branch_of_a_group_wins(self):
+        """Alternation is tried in catalog order, as separate patterns were.
+
+        A Claude co-author line matches the Claude branch and the generic
+        model-name branch alike; the tool reported is the specific one.
+        """
+        claude = _only(
+            "feat: x\n\nCo-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>"
+        )
+        assert claude["tool"] == "Claude Code"
+        generic = _only("feat: x\n\nCo-authored-by: gpt-4-turbo <bot@example.com>")
+        assert generic["tool"] == "Generic AI"
+
+    def test_every_branch_of_a_group_can_be_told_apart(self):
+        """One capturing group per branch, so a match names its own pattern.
+
+        A body marker is a group of one and carries no branch; the value
+        patterns must otherwise capture nothing of their own, or the branch
+        numbers would no longer line up with the members.
+        """
+        for group in groups():
+            if group.keys:
+                assert group.regex.groups == len(group.members), group.keys
+            else:
+                assert len(group.members) == 1
+
+
+class TestFindTrailers:
+    def test_finds_accepted_keys_in_any_case_and_keeps_their_spelling(self):
+        message = (
+            "feat: add x\n\n"
+            "Some body text: with a colon\n\n"
+            "assisted-by: LLM\n"
+            "Generated-by:   GitHub Copilot   \n"
+            "Signed-off-by: Jane <jane@example.com>\n"
+            "Assisted-by:"
+        )
+        assert find_trailers(message, ["Assisted-by", "Generated-by"]) == [
+            ("assisted-by", "LLM", "assisted-by: LLM"),
+            ("Generated-by", "GitHub Copilot", "Generated-by:   GitHub Copilot   "),
+            ("Assisted-by", "", "Assisted-by:"),
+        ]
+
+    def test_a_carriage_return_is_line_ending_not_value(self):
+        crlf = "feat: x\r\n\r\nAssisted-by: Claude Code\r\nGenerated-by:\r\n"
+        assert [
+            value
+            for _, value, _ in find_trailers(crlf, ["Assisted-by", "Generated-by"])
+        ] == [
+            "Claude Code",
+            "",
+        ]
+
+    def test_only_a_line_starting_with_the_key_counts_and_the_key_is_literal(self):
+        assert (
+            find_trailers("feat: x\n\nsee Assisted-by: LLM above", ["Assisted-by"])
+            == []
+        )
+        assert find_trailers("feat: x\n\nAIxTool: yes", ["AI.Tool"]) == []
+        assert find_trailers("feat: x\n\nAI.Tool: yes", []) == []

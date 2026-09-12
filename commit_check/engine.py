@@ -12,6 +12,8 @@ from enum import IntEnum
 from dataclasses import field
 from fnmatch import fnmatchcase
 
+from commit_check import DEFAULT_AI_DISCLOSURE_TRAILERS
+from commit_check import ai_policy
 from commit_check.rule_builder import ValidationRule
 from commit_check.ai_signatures import (
     detect_ai_signatures,
@@ -1311,45 +1313,176 @@ class CommitTypeValidator(BaseValidator):
         return not is_wip or self.rule.value
 
 
-class AiAttributionValidator(BaseValidator):
-    """Validates commit messages against AI attribution policy.
+def _or_list(items: list[str]) -> str:
+    """``a``, ``a or b``, ``a, b or c``."""
+    if len(items) <= 1:
+        return "".join(items)
+    return f"{', '.join(items[:-1])} or {items[-1]}"
 
-    Single responsibility: when configured to ``forbid``, rejects any commit
-    that contains known AI tool signatures.  When set to ``ignore`` (the
-    default), the check is a no-op.
+
+def _first_of(lines: list[str]) -> str:
+    """The first line, with a count when there are more."""
+    if len(lines) > 1:
+        return f"{lines[0]} (+{len(lines) - 1} more)"
+    return lines[0]
+
+
+def _added_lines(before: str, after: str) -> list[str]:
+    """The lines *after* carries that *before* did not."""
+    seen = set(before.splitlines())
+    return [line for line in after.splitlines() if line not in seen]
+
+
+def _tools(signatures: list[dict[str, str]]) -> str:
+    """The tools *signatures* name, once each, in a stable order."""
+    return ", ".join(sorted({s["tool"] for s in signatures}))
+
+
+#: The two rules about a tool taking a person's place, by check: the report
+#: lines that offend, what the tool did, what to call the line in the advice,
+#: and what the author still owes once it is gone.
+_PERSON_ROLES = {
+    "ai_co_author": (
+        "co_author_lines",
+        "is credited as a co-author",
+        "the co-author line",
+        "",
+    ),
+    "ai_signoff": (
+        "signoff_lines",
+        "signed off the commit",
+        "the AI sign-off",
+        ", then sign off yourself (git commit --signoff)",
+    ),
+}
+
+
+class AiAttributionValidator(BaseValidator):
+    """Judges a commit message against the AI attribution policy.
+
+    One class serves the four AI checks, by the rule's check name.
+    ``ai_attribution`` is the ``forbid`` policy: any known AI signature
+    fails. ``ai_disclosure``, ``ai_co_author`` and ``ai_signoff`` are the
+    three conditions of ``disclose``, one rule each so a project can warn on
+    one while enforcing the rest. The whole message is read, subject
+    included, so a fix is a message that can be committed as it is.
     """
 
     def validate(self, context: ValidationContext) -> ValidationResult:
         if self._should_skip_commit_validation(context):
             return ValidationResult.SKIP
 
-        message = self._get_commit_body(context)
+        message = self._get_commit_message(context)
         if not message:
             return ValidationResult.PASS
 
-        policy = self.rule.value  # "ignore" | "forbid"
-        if policy != "forbid":
+        if self.rule.check != "ai_attribution":
+            self._checked_value = message
+            return self._judge_under_disclose(message)
+
+        if self.rule.value != "forbid":
             # No-op policy: nothing is checked, so no value is recorded.
             return ValidationResult.PASS
+        self._checked_value = message
+        return self._judge_under_forbid(message)
 
+    def _judge_under_forbid(self, message: str) -> ValidationResult:
         signatures = detect_ai_signatures(message)
         if not signatures:
-            # The message was scanned and no AI signature found.
-            self._checked_value = message
             return ValidationResult.PASS
 
-        tools = {s["tool"] for s in signatures}
-        fix = strip_lines_containing(
-            message, [s.get("matched_text", "") for s in signatures]
-        )
+        fix = strip_lines_containing(message, [s["matched_text"] for s in signatures])
         self._print_failure(
-            ", ".join(sorted(tools)),
-            error=f"AI-assisted commit is forbidden — detected tools: {', '.join(sorted(tools))}",
+            _tools(signatures),
+            error=f"AI attribution is forbidden in this project — detected: {_tools(signatures)}",
             suggest=(
-                "This project forbids AI-assisted commits. Remove the AI trailer lines and re-commit."
-                if fix
-                else "This project forbids AI-assisted commits. Remove AI trailers and re-commit."
+                "This project does not accept AI attribution in commit messages. "
+                + (
+                    "Remove the AI trailer lines and re-commit."
+                    if fix
+                    else "Remove AI trailers and re-commit."
+                )
             ),
+            fix=fix,
+        )
+        return ValidationResult.FAIL
+
+    def _judge_under_disclose(self, message: str) -> ValidationResult:
+        accepted = self.rule.allowed or list(DEFAULT_AI_DISCLOSURE_TRAILERS)
+        pattern = self.rule.regex or ""
+        report = ai_policy.analyze(message, accepted, pattern)
+        if self.rule.check == "ai_disclosure":
+            return self._judge_disclosure(message, report, accepted, pattern)
+        return self._judge_person_role(message, report, accepted, pattern)
+
+    def _judge_disclosure(
+        self,
+        message: str,
+        report: ai_policy.AiPolicyReport,
+        accepted: list[str],
+        pattern: str,
+    ) -> ValidationResult:
+        if report.malformed:
+            # The accepted trailer is there but discloses nothing usable. It
+            # is the author's to rewrite, so there is no fix.
+            bad = report.malformed[0]
+            if bad.problem == "empty":
+                error = f"{bad.key}: discloses nothing: the trailer has no value"
+                suggest = f"Name the tool after {bad.key}:"
+            else:
+                error = f"The {bad.key} value does not match the required pattern: {pattern}"
+                suggest = (
+                    f"Write the {bad.key} value so that it matches {pattern} "
+                    "(set by ai_disclosure_pattern in the [commit] config)"
+                )
+            self._print_failure(
+                _first_of([d.line for d in report.malformed]),
+                error=error,
+                suggest=suggest,
+            )
+            return ValidationResult.FAIL
+
+        if not report.undisclosed:
+            return ValidationResult.PASS
+
+        fix = ai_policy.propose_fix(message, report, accepted, pattern)
+        added = _added_lines(message, fix) if fix else []
+        self._print_failure(
+            _first_of([s["matched_text"] for s in report.evidence]),
+            error=(
+                f"AI assistance is not disclosed with {_or_list(accepted)} "
+                f"— detected: {_tools(report.evidence)}"
+            ),
+            suggest=f'Disclose the tool with "{added[0]}"' if added else None,
+            fix=fix,
+        )
+        return ValidationResult.FAIL
+
+    def _judge_person_role(
+        self,
+        message: str,
+        report: ai_policy.AiPolicyReport,
+        accepted: list[str],
+        pattern: str,
+    ) -> ValidationResult:
+        lines, did, what, then = _PERSON_ROLES[self.rule.check]
+        offenders: list[dict[str, str]] = getattr(report, lines)
+        if not offenders:
+            return ValidationResult.PASS
+
+        fix = ai_policy.propose_fix(message, report, accepted, pattern)
+        suggest = None
+        if fix:
+            added = _added_lines(message, fix)
+            suggest = (
+                f'Use "{added[0]}" in place of {what}{then}'
+                if added
+                else f"Remove {what}{then or ': the tool is already disclosed'}"
+            )
+        self._print_failure(
+            _first_of([s["matched_text"] for s in offenders]),
+            error=f"An AI tool {did}: {_tools(offenders)}",
+            suggest=suggest,
             fix=fix,
         )
         return ValidationResult.FAIL
@@ -1378,6 +1511,9 @@ class ValidationEngine:
         "ignore_authors": CommitTypeValidator,
         "no_force_push": ForcePushValidator,
         "ai_attribution": AiAttributionValidator,
+        "ai_disclosure": AiAttributionValidator,
+        "ai_co_author": AiAttributionValidator,
+        "ai_signoff": AiAttributionValidator,
         "tag": TagValidator,
         "file_size": FilesValidator,
         "file_pattern": FilesValidator,

@@ -54,6 +54,7 @@ commit_check/
 ├── fixes.py             # Suggested fixes printed with a failure (header, case, WIP, sign-off, branch type)
 ├── ai_signatures.py     # detect_ai_signatures / has_ai_signature for the ai_attribution rule
 ├── ai_signatures_data.py # Registry of known AI tool signatures (pure data)
+├── ai_policy.py         # The "disclose" policy: reads a message's AI signatures against the accepted trailers and names the corrected message
 ├── imperatives.py       # IMPERATIVES / NON_IMPERATIVE_LOOKALIKES sets used by the -s stem test in CC003 (not an allow-list)
 └── util.py              # Git operations, output formatting (_print_failure)
 ```

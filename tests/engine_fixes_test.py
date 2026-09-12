@@ -2,6 +2,8 @@
 
 from unittest.mock import patch
 
+import pytest
+
 from commit_check.engine import (
     ValidationContext,
     ValidationEngine,
@@ -333,3 +335,172 @@ class TestWarnSeverityInTheEngine:
         assert overall_status(["warn", "fail"]) == "fail"
         assert overall_status(["skip", "skip"]) == "skip"
         assert count_warnings(["warn", "warn", "fail"]) == 2
+
+
+CLAUDE_STAMP = "🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+CLAUDE_CO_AUTHOR = "Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
+
+
+def _disclose_outcomes(message, commit_config=None, warn=None):
+    """The three disclose rules, built as the config builds them, run on *message*."""
+    config = {"commit": {"ai_attribution": "disclose", **(commit_config or {})}}
+    if warn:
+        config["warn"] = warn
+    rules = [
+        r for r in RuleBuilder(config).build_all_rules() if r.check.startswith("ai_")
+    ]
+    outcomes = ValidationEngine(rules).validate_all_detailed(
+        ValidationContext(stdin_text=message)
+    )
+    return {o.check: o for o in outcomes}
+
+
+class TestDisclosePolicyInTheEngine:
+    """CC014–CC016 judge one message each on its own, and agree on the fix."""
+
+    def test_a_vendor_stamped_commit_fails_disclosure_and_co_author_with_one_fix(self):
+        message = f"feat: add caching\n\n{CLAUDE_STAMP}\n\n{CLAUDE_CO_AUTHOR}"
+        by_check = _disclose_outcomes(message)
+        fixed = f"feat: add caching\n\n{CLAUDE_STAMP}\n\nAssisted-by: Claude Opus 4.5"
+
+        assert by_check["ai_disclosure"].status == "fail"
+        assert by_check["ai_disclosure"].rule_id == "CC014"
+        assert by_check["ai_disclosure"].value == f"{CLAUDE_CO_AUTHOR} (+1 more)"
+        assert by_check["ai_disclosure"].error == (
+            "AI assistance is not disclosed with Assisted-by or Generated-by "
+            "— detected: Claude Code"
+        )
+        assert by_check["ai_disclosure"].fix == fixed
+        assert by_check["ai_disclosure"].suggest == (
+            'Disclose the tool with "Assisted-by: Claude Opus 4.5"'
+        )
+
+        assert by_check["ai_co_author"].status == "fail"
+        assert by_check["ai_co_author"].rule_id == "CC015"
+        assert by_check["ai_co_author"].value == CLAUDE_CO_AUTHOR
+        assert by_check["ai_co_author"].error == (
+            "An AI tool is credited as a co-author: Claude Code"
+        )
+        assert by_check["ai_co_author"].fix == fixed
+        assert by_check["ai_co_author"].suggest == (
+            'Use "Assisted-by: Claude Opus 4.5" in place of the co-author line'
+        )
+
+        assert by_check["ai_signoff"].status == "pass"
+
+        # Applying either fix satisfies all three rules.
+        assert {o.status for o in _disclose_outcomes(fixed).values()} == {"pass"}
+
+    def test_a_disclosed_tool_credited_as_co_author_only_loses_the_credit(self):
+        message = (
+            "feat: add caching\n\nAssisted-by: Claude Code\n"
+            "Co-authored-by: Claude <noreply@anthropic.com>"
+        )
+        by_check = _disclose_outcomes(message)
+        assert by_check["ai_disclosure"].status == "pass"
+        assert by_check["ai_disclosure"].value == message
+        assert by_check["ai_co_author"].status == "fail"
+        assert (
+            by_check["ai_co_author"].fix
+            == "feat: add caching\n\nAssisted-by: Claude Code"
+        )
+        assert by_check["ai_co_author"].suggest == (
+            "Remove the co-author line: the tool is already disclosed"
+        )
+
+    def test_an_ai_sign_off_is_rejected_and_becomes_the_disclosure(self):
+        message = "feat: add caching\n\nSigned-off-by: Claude <noreply@anthropic.com>"
+        by_check = _disclose_outcomes(message)
+        assert by_check["ai_signoff"].status == "fail"
+        assert by_check["ai_signoff"].rule_id == "CC016"
+        assert (
+            by_check["ai_signoff"].error
+            == "An AI tool signed off the commit: Claude Code"
+        )
+        assert by_check["ai_signoff"].fix == "feat: add caching\n\nAssisted-by: Claude"
+        assert by_check["ai_signoff"].suggest == (
+            'Use "Assisted-by: Claude" in place of the AI sign-off, then sign off '
+            "yourself (git commit --signoff)"
+        )
+        # Undisclosed too, with the same fix.
+        assert by_check["ai_disclosure"].status == "fail"
+        assert by_check["ai_disclosure"].fix == by_check["ai_signoff"].fix
+
+    def test_a_disclosure_that_misses_the_pattern_has_no_fix(self):
+        by_check = _disclose_outcomes(
+            "feat: add caching\n\nAssisted-by: LLM coccinelle sparse",
+            {"ai_disclosure_pattern": r"^\S+/\S+$"},
+        )
+        out = by_check["ai_disclosure"]
+        assert out.status == "fail"
+        assert out.value == "Assisted-by: LLM coccinelle sparse"
+        assert out.error == (
+            r"The Assisted-by value does not match the required pattern: ^\S+/\S+$"
+        )
+        assert out.suggest == (
+            r"Write the Assisted-by value so that it matches ^\S+/\S+$ "
+            "(set by ai_disclosure_pattern in the [commit] config)"
+        )
+        assert out.fix == ""
+
+    def test_an_empty_disclosure_is_named(self):
+        out = _disclose_outcomes("feat: add caching\n\nAssisted-by:")["ai_disclosure"]
+        assert out.status == "fail"
+        assert out.error == "Assisted-by: discloses nothing: the trailer has no value"
+        assert out.suggest == "Name the tool after Assisted-by:"
+
+    def test_a_generic_stamp_keeps_the_catalog_suggestion(self):
+        out = _disclose_outcomes("feat: add caching\n\nGenerated by AI")[
+            "ai_disclosure"
+        ]
+        assert out.status == "fail"
+        assert out.fix == ""
+        assert out.suggest == "Disclose the AI tool with a Assisted-by: trailer"
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "feat: add caching\n\nAssisted-by: LLM coccinelle sparse\nSigned-off-by: Jane <j@x>",
+            "feat: add caching\n\nCo-authored-by: Jane Doe <jane@example.com>",
+        ],
+    )
+    def test_compliant_messages_pass_every_rule_with_the_message_as_the_value(
+        self, message
+    ):
+        by_check = _disclose_outcomes(message)
+        assert {o.status for o in by_check.values()} == {"pass"}
+        assert {o.value for o in by_check.values()} == {message}
+
+    def test_disclosure_can_be_a_warning_while_the_person_rules_enforce(self):
+        message = f"feat: add caching\n\n{CLAUDE_CO_AUTHOR}"
+        by_check = _disclose_outcomes(message, warn=["ai_disclosure"])
+        assert by_check["ai_disclosure"].status == "warn"
+        assert by_check["ai_co_author"].status == "fail"
+        assert overall_status(o.status for o in by_check.values()) == "fail"
+
+        stamp_only = f"feat: add caching\n\n{CLAUDE_STAMP}"
+        by_check = _disclose_outcomes(stamp_only, warn=["ai_disclosure"])
+        assert by_check["ai_disclosure"].status == "warn"
+        assert overall_status(o.status for o in by_check.values()) == "pass"
+
+    def test_text_mode_names_each_rule(self, capsys):
+        rules = [
+            r
+            for r in RuleBuilder(
+                {"commit": {"ai_attribution": "disclose"}}
+            ).build_all_rules()
+            if r.check.startswith("ai_")
+        ]
+        result = ValidationEngine(rules).validate_all(
+            ValidationContext(
+                stdin_text=f"feat: add caching\n\n{CLAUDE_CO_AUTHOR}", no_banner=True
+            )
+        )
+        out, _ = capsys.readouterr()
+        assert result == ValidationResult.FAIL
+        assert f"ai-disclosure check failed ==> {CLAUDE_CO_AUTHOR}" in out
+        assert f"ai-co-author check failed ==> {CLAUDE_CO_AUTHOR}" in out
+        assert "ai-signoff" not in out
+        assert 'Suggest: Disclose the tool with "Assisted-by: Claude Opus 4.5"' in out
+        assert "Docs: https://commit-check.com/rules/#cc014" in out
+        assert "Docs: https://commit-check.com/rules/#cc015" in out

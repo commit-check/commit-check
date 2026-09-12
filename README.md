@@ -125,9 +125,12 @@ allow_wip_commits = false
 require_signed_off_by = false
 # Bypass checks for bot/automation authors and co-authors:
 ignore_authors = ["dependabot[bot]", "renovate[bot]", "copilot[bot]"]
-# AI attribution policy: "ignore" (default) or "forbid"
-# "forbid" rejects commits with known AI tool signatures
-ai_attribution = "forbid"
+# AI attribution policy: "ignore" (default), "forbid" or "disclose".
+# "forbid" rejects commits carrying known AI tool signatures; "disclose"
+# accepts AI assistance disclosed with an Assisted-by: or Generated-by:
+# trailer and rejects the tool as a co-author or a sign-off.
+# See "AI Attribution Policy" below.
+ai_attribution = "disclose"
 
 [branch]
 # https://conventionalbranch.org
@@ -259,7 +262,9 @@ variable that override it (priority: CLI > env > TOML > default). Booleans accep
 | `commit.require_body` | `false` | `--require-body` | `CCHK_REQUIRE_BODY` | Require a commit body (CC011) |
 | `commit.require_signed_off_by` | `false` | `--require-signed-off-by` | `CCHK_REQUIRE_SIGNED_OFF_BY` | Require a `Signed-off-by:` trailer (CC012) |
 | `commit.ignore_authors` | `[]` | `--ignore-authors` | `CCHK_IGNORE_AUTHORS` | Authors and co-authors whose commits skip the commit checks |
-| `commit.ai_attribution` | `"ignore"` | `--ai-attribution` | `CCHK_AI_ATTRIBUTION` | `ignore` or `forbid`; `forbid` rejects commits carrying known AI tool signatures (CC013) |
+| `commit.ai_attribution` | `"ignore"` | `--ai-attribution` | `CCHK_AI_ATTRIBUTION` | `ignore`, `forbid` or `disclose`. `forbid` rejects commits carrying known AI tool signatures (CC013); `disclose` accepts AI assistance disclosed with one of `ai_disclosure_trailers` (CC014) and rejects the tool as a co-author (CC015) or as a sign-off (CC016) |
+| `commit.ai_disclosure_trailers` | `Assisted-by, Generated-by` | `--ai-disclosure-trailers` | `CCHK_AI_DISCLOSURE_TRAILERS` | Trailers that disclose AI assistance under `disclose`; the first is the one a fix is written with. List `Co-authored-by` to accept the tool as a co-author |
+| `commit.ai_disclosure_pattern` | `""` | `--ai-disclosure-pattern` | `CCHK_AI_DISCLOSURE_PATTERN` | Regex the disclosure's value must match under `disclose`, e.g. `^\S+/\S+` for `agent/model`; empty accepts any value, but a trailer with no value at all is always reported |
 | `commit.author_email_pattern` | `"^.+@.+$"` | `--author-email-pattern` | `CCHK_AUTHOR_EMAIL_PATTERN` | Regex the author email must match (CC102, with `--author-email`) |
 | `commit.author_name_pattern` | `""` | `--author-name-pattern` | `CCHK_AUTHOR_NAME_PATTERN` | Regex the author name must match (CC101, with `--author-name`) |
 | `branch.conventional_branch` | `true` | `--conventional-branch` | `CCHK_CONVENTIONAL_BRANCH` | Enforce `<type>/<description>` branch names (CC201) |
@@ -374,6 +379,55 @@ A commit that only deletes files is reported as skipped — removing a file
 adds nothing to police. Content scanning (entropy, token detection) is
 deliberately out of scope: pair these checks with a scanner like gitleaks
 if you need it.
+
+### AI Attribution Policy
+
+AI coding tools stamp the commits they help with — `Co-authored-by: Claude
+<noreply@anthropic.com>`, `Co-authored-by: Copilot <...>`, a `🤖 Generated
+with` line — and projects have started writing down what they want instead:
+the Linux kernel, Fedora and FluxCD ask for an `Assisted-by:` trailer, the
+Apache Software Foundation for `Generated-by:`, and the kernel adds that a
+tool must never add a `Signed-off-by:` line, because only a person can
+certify the Developer Certificate of Origin. `ai_attribution` turns that
+policy into a check:
+
+| Policy | What it means | Rules |
+|--------|---------------|-------|
+| `"ignore"` (default) | No opinion; nothing is checked | — |
+| `"forbid"` | Commit messages carry no AI attribution at all | CC013 |
+| `"disclose"` | AI assistance is welcome, disclosed with one of `ai_disclosure_trailers`; the tool is not credited as a co-author and does not sign off | CC014, CC015, CC016 |
+
+```toml
+[commit]
+ai_attribution = "disclose"
+# Optional: the trailers that count as a disclosure (default shown); the
+# first one is what a fix is written with
+ai_disclosure_trailers = ["Assisted-by", "Generated-by"]
+# Optional: what the trailer's value must look like, e.g. agent/model
+# ai_disclosure_pattern = '^\S+/\S+'
+```
+
+A commit that a tool stamped but nobody disclosed fails with the disclosure
+already written:
+
+```bash
+printf 'feat: add caching\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>' | commit-check -m --compact
+```
+
+```text
+[FAIL] CC014 ai-disclosure: Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+[FAIL] CC015 ai-co-author: Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+```
+
+Both carry the same `fix`: the co-author line replaced by `Assisted-by:
+Claude Opus 5`. A commit that already discloses the tool passes CC014, and
+CC015 then asks only for the co-author line to go. Disclosure that is
+appreciated rather than required is `warn = ["ai_disclosure"]`; a project
+that accepts the tool as a co-author lists `Co-authored-by` among the
+trailers.
+
+The check reads what the message says, not what happened: assistance that
+left no trace is invisible to it, as it is to every other tool.
 
 ### Exit Codes and Dry Run
 
@@ -524,10 +578,11 @@ When the correction is mechanical, `fix` carries the corrected value and
 `suggest` names it, so an agent (or a person) can apply it without
 interpreting anything: a type written `Fix` or misspelt `feta`, a missing
 colon, a lowercase description under `subject_capitalized`, a `WIP:` marker,
-a missing `Signed-off-by` trailer, a branch typed `Feature/x`, or AI
-attribution lines under `ai_attribution = "forbid"`. Anything that takes a
-judgment, such as choosing a type for a bare subject or shortening a long one,
-leaves `fix` empty and `suggest` generic.
+a missing `Signed-off-by` trailer, a branch typed `Feature/x`, AI
+attribution lines under `ai_attribution = "forbid"`, or a vendor's co-author
+line rewritten as the project's disclosure trailer under `"disclose"`.
+Anything that takes a judgment, such as choosing a type for a bare subject or
+shortening a long one, leaves `fix` empty and `suggest` generic.
 
 ```bash
 echo "Fix: add streaming support" | commit-check -m --format json

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import difflib
 import re
+from collections.abc import Mapping
 
 # type, optional scope, optional bang, optional colon, the rest. Lenient on
 # purpose: this is the shape of a subject that *tried* to be conventional.
@@ -118,6 +119,36 @@ def fix_branch_type(branch: str, allowed_types: list[str] | None) -> str | None:
     return fixed if fixed != branch else None
 
 
+def rewrite_lines(message: str, rewrites: Mapping[str, str | None]) -> str | None:
+    """The message with each line containing a key of *rewrites* replaced.
+
+    A key's value is the line that takes its place, or ``None`` to drop the
+    line. A replacement that the message already carries, or that an
+    earlier rewrite already produced, is not written twice: two AI trailers
+    that disclose the same tool become one disclosure. Blank lines left
+    behind by a dropped paragraph are collapsed.
+
+    Returns ``None`` when nothing would change or nothing would be left.
+    """
+    if not rewrites:
+        return None
+    kept: list[str] = []
+    changed = False
+    for line in message.splitlines():
+        hit = next((frag for frag in rewrites if frag and frag in line), None)
+        if hit is None:
+            kept.append(line)
+            continue
+        changed = True
+        replacement = rewrites[hit]
+        if replacement is not None and replacement not in kept:
+            kept.append(replacement)
+    if not changed:
+        return None
+    result = re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip()
+    return result or None
+
+
 def strip_lines_containing(message: str, fragments: list[str]) -> str | None:
     """The message without any line that contains one of *fragments*.
 
@@ -125,14 +156,27 @@ def strip_lines_containing(message: str, fragments: list[str]) -> str | None:
     text it matched, and the line carrying it is what has to go. Returns
     None when nothing would change or nothing would be left.
     """
-    if not fragments:
-        return None
-    kept = [
-        line
-        for line in message.splitlines()
-        if not any(fragment and fragment in line for fragment in fragments)
-    ]
-    if len(kept) == len(message.splitlines()):
-        return None
-    result = "\n".join(kept).strip()
-    return result or None
+    return rewrite_lines(message, dict.fromkeys(fragments))
+
+
+_TRAILER_LINE = re.compile(r"^[A-Za-z][\w-]*:[ \t]")
+
+
+def append_trailer(message: str, trailer: str) -> str:
+    """*message* with *trailer* added to its trailer block, or as a new one.
+
+    Git reads trailers from the last paragraph, so a trailer appended after a
+    blank line when that paragraph is already trailers would start a new
+    paragraph and leave the old ones behind. A message already carrying the
+    trailer is returned as it is.
+    """
+    body = message.rstrip()
+    if not body:
+        return trailer
+    _head, separator, last = body.rpartition("\n\n")
+    lines = last.splitlines()
+    if trailer in lines:
+        return body
+    if separator and lines and all(_TRAILER_LINE.match(line) for line in lines):
+        return f"{body}\n{trailer}"
+    return f"{body}\n\n{trailer}"

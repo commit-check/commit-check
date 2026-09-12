@@ -433,13 +433,23 @@ class TestAiAttributionRuleBuilder:
         assert rule.value == "forbid"
 
     @pytest.mark.benchmark
-    def test_ai_attribution_require_returns_none(self):
-        """ai_attribution='require' returns None (only forbid supported)."""
+    def test_unknown_policy_is_a_config_error(self):
+        """A policy that is none of the three is refused, not ignored.
+
+        ``"require"`` was the name the feature was announced under; it used to
+        build no rule at all, so a config that read as enforcing enforced
+        nothing.
+        """
         config = {"commit": {"ai_attribution": "require"}}
         builder = RuleBuilder(config)
         entry = RuleCatalogEntry(check="ai_attribution")
-        rule = builder._build_ai_attribution_rule(entry)
-        assert rule is None
+        with pytest.raises(ConfigError) as excinfo:
+            builder._build_ai_attribution_rule(entry)
+        assert "must be one of ignore, forbid, disclose" in str(excinfo.value)
+        assert "'require'" in str(excinfo.value)
+        # The setting has a flag and an env var, so the error names it and
+        # not a file it may not have come from.
+        assert excinfo.value.setting == "[commit] ai_attribution"
 
     @pytest.mark.benchmark
     def test_build_all_rules_forbid_includes_attribution(self):
@@ -458,6 +468,132 @@ class TestAiAttributionRuleBuilder:
         rules = builder.build_all_rules()
         ai_rules = [r for r in rules if r.check.startswith("ai_")]
         assert len(ai_rules) == 0
+
+
+def _ai_rules(commit_config):
+    rules = RuleBuilder({"commit": commit_config}).build_all_rules()
+    return {r.check: r for r in rules if r.check.startswith("ai_")}
+
+
+class TestDiscloseRuleBuilder:
+    """``disclose`` is three rules, each able to judge a message on its own."""
+
+    def test_disclose_builds_the_three_conditions_and_not_forbid(self):
+        rules = _ai_rules({"ai_attribution": "disclose"})
+        assert set(rules) == {"ai_disclosure", "ai_co_author", "ai_signoff"}
+        assert [
+            rules[c].rule_id for c in ("ai_disclosure", "ai_co_author", "ai_signoff")
+        ] == [
+            "CC014",
+            "CC015",
+            "CC016",
+        ]
+        for rule in rules.values():
+            assert rule.value == "disclose"
+            assert rule.allowed == ["Assisted-by", "Generated-by"]
+            assert rule.regex is None
+
+    def test_the_catalog_text_names_the_first_accepted_trailer(self):
+        rules = _ai_rules(
+            {"ai_attribution": "disclose", "ai_disclosure_trailers": ["Generated-by"]}
+        )
+        assert rules["ai_disclosure"].suggest == (
+            "Disclose the AI tool with a Generated-by: trailer"
+        )
+        assert "Generated-by:" in (rules["ai_co_author"].suggest or "")
+        assert "{trailer}" not in (rules["ai_signoff"].suggest or "")
+
+    def test_trailers_are_normalised_and_keep_their_first_spelling(self):
+        rules = _ai_rules(
+            {
+                "ai_attribution": "disclose",
+                "ai_disclosure_trailers": [
+                    "Assisted-by:",
+                    " assisted-by ",
+                    "Co-authored-by",
+                ],
+            }
+        )
+        assert rules["ai_disclosure"].allowed == ["Assisted-by", "Co-authored-by"]
+        # A comma-separated string, as a flag or a CCHK_* variable gives it.
+        rules = _ai_rules(
+            {
+                "ai_attribution": "disclose",
+                "ai_disclosure_trailers": "Assisted-by, Generated-by",
+            }
+        )
+        assert rules["ai_disclosure"].allowed == ["Assisted-by", "Generated-by"]
+
+    @pytest.mark.parametrize(
+        "trailers, complaint",
+        [
+            ([], "at least one trailer"),
+            ("", "at least one trailer"),
+            ([1], "cannot use 1"),
+            (123, "cannot use 123"),
+            (True, "cannot use True"),
+            ([False], "cannot use False"),
+            (["Assisted by"], "cannot use 'Assisted by'"),
+            (["Assisted-by: LLM"], "cannot use"),
+            (["Signed-off-by"], "never Signed-off-by"),
+            (["signed-off-by:"], "never Signed-off-by"),
+        ],
+    )
+    def test_unusable_trailers_are_config_errors(self, trailers, complaint):
+        with pytest.raises(ConfigError) as excinfo:
+            _ai_rules(
+                {"ai_attribution": "disclose", "ai_disclosure_trailers": trailers}
+            )
+        assert complaint in str(excinfo.value)
+        assert excinfo.value.setting == "[commit] ai_disclosure_trailers"
+
+    def test_the_pattern_is_carried_once_it_compiles(self):
+        rules = _ai_rules(
+            {"ai_attribution": "disclose", "ai_disclosure_pattern": r" ^\S+/\S+$ "}
+        )
+        assert rules["ai_disclosure"].regex == r"^\S+/\S+$"
+
+    @pytest.mark.parametrize("pattern", [123, True, ["^x"], {"a": 1}])
+    def test_a_non_string_pattern_is_refused_rather_than_ignored(self, pattern):
+        """Reading it as "no pattern" would leave the rule unenforced."""
+        with pytest.raises(ConfigError) as excinfo:
+            _ai_rules({"ai_attribution": "disclose", "ai_disclosure_pattern": pattern})
+        assert "[commit] ai_disclosure_pattern must be a regex string" in str(
+            excinfo.value
+        )
+        assert excinfo.value.setting == "[commit] ai_disclosure_pattern"
+
+    def test_a_pattern_that_does_not_compile_names_its_setting(self):
+        with pytest.raises(ConfigError) as excinfo:
+            _ai_rules(
+                {"ai_attribution": "disclose", "ai_disclosure_pattern": "^(unclosed"}
+            )
+        assert "[commit] ai_disclosure_pattern is not a valid regex" in str(
+            excinfo.value
+        )
+        assert excinfo.value.setting == "[commit] ai_disclosure_pattern"
+
+    def test_the_disclosure_settings_are_inert_under_the_other_policies(self):
+        """A setting the policy never reads is not validated."""
+        for policy in ("ignore", "forbid"):
+            _ai_rules(
+                {
+                    "ai_attribution": policy,
+                    "ai_disclosure_trailers": [],
+                    "ai_disclosure_pattern": "^(unclosed",
+                }
+            )
+
+    def test_warn_can_demote_one_condition(self):
+        rules = RuleBuilder(
+            {"warn": ["CC015"], "commit": {"ai_attribution": "disclose"}}
+        ).build_all_rules()
+        by_check = {r.check: r.severity for r in rules if r.check.startswith("ai_")}
+        assert by_check == {
+            "ai_disclosure": "error",
+            "ai_co_author": "warn",
+            "ai_signoff": "error",
+        }
 
 
 class TestLengthRuleMessages:

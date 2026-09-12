@@ -1781,6 +1781,9 @@ class TestValidationEngine:
             "allow_wip_commits": CommitTypeValidator,
             "ignore_authors": CommitTypeValidator,
             "ai_attribution": AiAttributionValidator,
+            "ai_disclosure": AiAttributionValidator,
+            "ai_co_author": AiAttributionValidator,
+            "ai_signoff": AiAttributionValidator,
         }
 
         for check, validator_class in expected_mappings.items():
@@ -2735,6 +2738,75 @@ class TestAiAttributionValidator:
 
         result = validator.validate(context)
         assert result == ValidationResult.PASS
+
+    @pytest.mark.parametrize(
+        "trailer",
+        [
+            # The Linux kernel's disclosure, as written since August 2026
+            "Assisted-by: LLM coccinelle sparse",
+            # Fedora's
+            "Assisted-by: ChatGPTv5",
+            # The Apache Software Foundation's
+            "Generated-by: GitHub Copilot",
+            # A tool certifying the DCO
+            "Signed-off-by: Claude <noreply@anthropic.com>",
+            "Co-developed-by: Claude <noreply@anthropic.com>",
+        ],
+    )
+    def test_forbid_rejects_every_way_a_tool_shows(self, trailer):
+        """A disclosure written the way a policy asks for it is still AI attribution.
+
+        The scanner once knew only the kernel's first ``AGENT:MODEL`` format,
+        so a commit disclosing a tool the way the kernel, Fedora or the ASF
+        now write it passed a ``forbid`` policy untouched.
+        """
+        rule = ValidationRule(check="ai_attribution", value="forbid")
+        validator = AiAttributionValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(stdin_text=f"feat: add feature\n\n{trailer}")
+        assert validator.validate(context) == ValidationResult.FAIL
+        assert validator._last_failure is not None
+        assert validator._last_failure["fix"] == "feat: add feature"
+
+    def test_forbid_names_what_it_found(self):
+        rule = ValidationRule(check="ai_attribution", value="forbid")
+        validator = AiAttributionValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(
+            stdin_text="feat: add feature\n\nCo-authored-by: Claude <noreply@anthropic.com>"
+        )
+        assert validator.validate(context) == ValidationResult.FAIL
+        assert validator._last_failure == {
+            "check": "ai_attribution",
+            "value": "Claude Code",
+            "error": "AI attribution is forbidden in this project — detected: Claude Code",
+            "suggest": (
+                "This project does not accept AI attribution in commit messages. "
+                "Remove the AI trailer lines and re-commit."
+            ),
+            "fix": "feat: add feature",
+        }
+
+    def test_a_fix_for_a_revision_is_a_whole_message(self):
+        """The scan reads the whole commit, so the fix keeps its subject.
+
+        Reading only the body made the fix a message with no subject line —
+        nothing anyone could commit as it stood.
+        """
+        rule = ValidationRule(check="ai_attribution", value="forbid")
+        validator = AiAttributionValidator(rule)
+        validator._suppress_output = True
+
+        def fake_info(fmt, sha="HEAD"):
+            assert sha == "abc123"
+            return {"s": "feat: subject", "b": "Co-authored-by: Copilot"}.get(fmt, "")
+
+        with patch("commit_check.engine.get_commit_info", side_effect=fake_info):
+            with patch("commit_check.engine.has_commits", return_value=True):
+                result = validator.validate(ValidationContext(rev="abc123"))
+        assert result == ValidationResult.FAIL
+        assert validator._last_failure is not None
+        assert validator._last_failure["fix"] == "feat: subject"
 
     def test_empty_message_is_not_read_from_git(self):
         """An empty stdin_text must not fall through to the HEAD commit.

@@ -24,7 +24,7 @@ from commit_check.engine import (
     count_warnings,
     overall_status,
 )
-from . import __version__
+from . import AI_ATTRIBUTION_POLICIES, __version__
 
 # Exit codes. ``1`` is a verdict on the commit; ``2`` means the run could not
 # be set up at all -- the same code argparse uses for a bad command line -- so
@@ -384,10 +384,30 @@ def _get_parser() -> argparse.ArgumentParser:
         "--ai-attribution",
         type=str,
         default=None,
-        choices=["ignore", "forbid"],
+        choices=list(AI_ATTRIBUTION_POLICIES),
         metavar="POLICY",
-        help="AI attribution policy: ignore (default) or forbid. "
-        "'forbid' rejects commits with known AI tool signatures.",
+        help="AI attribution policy: ignore (default), forbid or disclose. "
+        "'forbid' rejects commits with known AI tool signatures; 'disclose' "
+        "accepts AI assistance disclosed with an accepted trailer and "
+        "rejects the tool as a co-author or a sign-off.",
+    )
+
+    commit_group.add_argument(
+        "--ai-disclosure-trailers",
+        type=parse_list,
+        default=None,
+        metavar="LIST",
+        help="comma-separated trailers that disclose AI assistance under "
+        "--ai-attribution=disclose (default: Assisted-by,Generated-by)",
+    )
+
+    commit_group.add_argument(
+        "--ai-disclosure-pattern",
+        type=str,
+        default=None,
+        metavar="REGEX",
+        help="regex the value of an AI disclosure trailer must match "
+        "(e.g. '^\\S+/\\S+' for agent/model); empty accepts any value",
     )
 
     commit_group.add_argument(
