@@ -1,0 +1,23 @@
+commit_check/ai_policy.py
+  s_372643545cf36e::t_714a3c79abd255 122-140,144-157,162-179
+commit_check/ai_signatures.py
+  s_372643545cf36e::t_595ec4a17e879d 125-156,167,169
+commit_check/fixes.py
+  s_372643545cf36e::t_16f0eaadfffcde 16,122,159
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d5ad160ee93ba26904e8d79be3f7d6bfbb2d9dad",
+  "prompts": {},
+  "sessions": {
+    "s_372643545cf36e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cf0a6471-ef8d-4f90-9d78-27576d4ecf86",
+        "model": "claude-opus-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
