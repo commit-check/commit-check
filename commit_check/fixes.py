@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import difflib
 import re
+from collections.abc import Mapping
 
 # type, optional scope, optional bang, optional colon, the rest. Lenient on
 # purpose: this is the shape of a subject that *tried* to be conventional.
@@ -118,7 +119,7 @@ def fix_branch_type(branch: str, allowed_types: list[str] | None) -> str | None:
     return fixed if fixed != branch else None
 
 
-def rewrite_lines(message: str, rewrites: dict[str, str | None]) -> str | None:
+def rewrite_lines(message: str, rewrites: Mapping[str, str | None]) -> str | None:
     """The message with each line containing a key of *rewrites* replaced.
 
     A key's value is the line that takes its place, or ``None`` to drop the
@@ -155,7 +156,7 @@ def strip_lines_containing(message: str, fragments: list[str]) -> str | None:
     text it matched, and the line carrying it is what has to go. Returns
     None when nothing would change or nothing would be left.
     """
-    return rewrite_lines(message, {fragment: None for fragment in fragments})
+    return rewrite_lines(message, dict.fromkeys(fragments))
 
 
 _TRAILER_LINE = re.compile(r"^[A-Za-z][\w-]*:[ \t]")

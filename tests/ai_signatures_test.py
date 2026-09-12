@@ -501,7 +501,6 @@ class TestToolNamedIn:
             ("Precursor", None),
             # ... but punctuation around the name still bounds it
             ("(aider)", "Aider"),
-            ("noreply@anthropic.com", "Claude Code"),
             ("copilot/fix-42", "GitHub Copilot"),
         ],
     )

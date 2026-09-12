@@ -119,46 +119,64 @@ def analyze(message: str, accepted: list[str], pattern: str = "") -> AiPolicyRep
     return _analyze(message, tuple(accepted), pattern)
 
 
-@lru_cache(maxsize=8)
-def _analyze(message: str, accepted: tuple[str, ...], pattern: str) -> AiPolicyReport:
-    """:func:`analyze`, with the arguments in a form a cache can key on."""
-    accepted_keys = list(accepted)
-    signatures = detect_ai_signatures(message)
-    ai_lines = {s["matched_text"] for s in signatures}
+def _problem_with(value: str, pattern: str) -> str:
+    """Why a disclosure does not count, or ``""`` when it does."""
+    if not value:
+        return "empty"
+    if pattern and not re.match(pattern, value):
+        return "pattern"
+    return ""
 
-    disclosures: list[Disclosure] = []
-    for key, value, line in find_trailers(message, accepted_keys):
+
+def _read_disclosures(
+    message: str, accepted: list[str], pattern: str, ai_lines: set[str]
+) -> list[Disclosure]:
+    """The accepted trailers the message carries, and whether each counts.
+
+    A person trailer discloses a tool only when its value names one: a human
+    co-author under an accepted key is a co-author, not a disclosure.
+    """
+    disclosures = []
+    for key, value, line in find_trailers(message, accepted):
         line = line.strip()
-        # A person trailer discloses a tool only when its value names one:
-        # a human co-author under an accepted key is a co-author, not a
-        # disclosure.
         if key.lower() in _PERSON_KEYS and line not in ai_lines:
             continue
-        if not value:
-            problem = "empty"
-        elif pattern and not re.match(pattern, value):
-            problem = "pattern"
-        else:
-            problem = ""
-        disclosures.append(Disclosure(key, value, line, problem))
-    disclosure_lines = {d.line for d in disclosures}
+        disclosures.append(Disclosure(key, value, line, _problem_with(value, pattern)))
+    return disclosures
 
-    co_authors: list[Signature] = []
-    signoffs: list[Signature] = []
-    others: list[Signature] = []
-    stamps: list[Signature] = []
+
+def _by_role(
+    signatures: list[Signature], disclosure_lines: set[str]
+) -> tuple[list[Signature], list[Signature], list[Signature], list[Signature]]:
+    """The signatures that are not accepted disclosures, sorted by role."""
+    buckets: dict[str, list[Signature]] = {
+        ROLE_CO_AUTHOR: [],
+        ROLE_SIGNOFF: [],
+        ROLE_DISCLOSURE: [],
+        "stamp": [],
+    }
     for signature in signatures:
         if signature["matched_text"] in disclosure_lines:
             continue
         role = signature["role"]
-        if role == ROLE_CO_AUTHOR:
-            co_authors.append(signature)
-        elif role == ROLE_SIGNOFF:
-            signoffs.append(signature)
-        elif role == ROLE_DISCLOSURE:
-            others.append(signature)
-        else:
-            stamps.append(signature)
+        buckets[role if role in buckets else "stamp"].append(signature)
+    return (
+        buckets[ROLE_CO_AUTHOR],
+        buckets[ROLE_SIGNOFF],
+        buckets[ROLE_DISCLOSURE],
+        buckets["stamp"],
+    )
+
+
+@lru_cache(maxsize=8)
+def _analyze(message: str, accepted: tuple[str, ...], pattern: str) -> AiPolicyReport:
+    """:func:`analyze`, with the arguments in a form a cache can key on."""
+    signatures = detect_ai_signatures(message)
+    ai_lines = {s["matched_text"] for s in signatures}
+    disclosures = _read_disclosures(message, list(accepted), pattern, ai_lines)
+    co_authors, signoffs, others, stamps = _by_role(
+        signatures, {d.line for d in disclosures}
+    )
     return AiPolicyReport(disclosures, co_authors, signoffs, others, stamps)
 
 

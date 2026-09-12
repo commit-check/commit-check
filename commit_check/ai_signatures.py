@@ -122,6 +122,38 @@ _GROUPS: list[_Group] = _build_groups()
 _TRAILER_KEY = re.compile(r"([A-Za-z][A-Za-z0-9-]*):")
 
 
+def _trailer_lines(message: str) -> list[tuple[str, str]]:
+    """Every trailer-shaped line in *message*, as ``(key, line)``.
+
+    The key is lower-cased, because a trailer is read case-insensitively;
+    the line is kept as written, because it is what gets reported.
+    """
+    lines: list[tuple[str, str]] = []
+    for line in message.splitlines():
+        head = _TRAILER_KEY.match(line)
+        if head:
+            lines.append((head.group(1).lower(), line))
+    return lines
+
+
+def _group_matches(
+    group: _Group, trailers: list[tuple[str, str]], message: str
+) -> Iterator[tuple[_Member, str]]:
+    """What *group* finds, in message order."""
+    if not group.keys:
+        for found in group.regex.finditer(message):
+            yield group.members[0], found.group(0).strip()
+        return
+    for key, line in trailers:
+        if key not in group.keys:
+            continue
+        branch = group.regex.search(line)
+        if branch:
+            # Exactly one branch of the alternation took part, and its
+            # number says which pattern matched.
+            yield group.members[(branch.lastindex or 1) - 1], branch.group(0).strip()
+
+
 def _scan(message: str) -> Iterator[tuple[_Member, str]]:
     """Every signature in *message*, as ``(member, matched text)``.
 
@@ -132,28 +164,9 @@ def _scan(message: str) -> Iterator[tuple[_Member, str]]:
 
     Groups come in catalog order and their lines in message order.
     """
-    trailers: list[tuple[str, str]] = []
-    for line in message.splitlines():
-        head = _TRAILER_KEY.match(line)
-        if head:
-            trailers.append((head.group(1).lower(), line))
-
+    trailers = _trailer_lines(message)
     for group in _GROUPS:
-        if not group.keys:
-            for found in group.regex.finditer(message):
-                yield group.members[0], found.group(0).strip()
-            continue
-        for key, line in trailers:
-            if key not in group.keys:
-                continue
-            branch = group.regex.search(line)
-            if branch:
-                # Exactly one branch of the alternation took part, and its
-                # number says which pattern matched.
-                yield (
-                    group.members[(branch.lastindex or 1) - 1],
-                    branch.group(0).strip(),
-                )
+        yield from _group_matches(group, trailers, message)
 
 
 def tool_named_in(text: str) -> str | None:
