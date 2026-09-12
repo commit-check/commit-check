@@ -52,12 +52,10 @@ class _Group:
     """One compiled scan, and what each of its alternatives means.
 
     Every pattern that reads the same trailer key is compiled into a single
-    alternation whose branches are numbered capturing groups, so a trailer
-    line is read once however many tools the catalog knows about. Branches
-    are tried in catalog order — the order the separate patterns used to be
-    tried in, and the reason the most specific one still wins.
-
-    A body marker has no key, and its group is the pattern by itself.
+    alternation whose branches are numbered capturing groups, in catalog
+    order, so a trailer line is read once however many tools the catalog
+    knows and the most specific pattern still wins. A body marker has no
+    key, and its group is the pattern by itself.
     """
 
     keys: frozenset[str]
@@ -67,11 +65,14 @@ class _Group:
 
 
 def _build_groups() -> list[_Group]:
-    """Compile the catalog into one scan per trailer key set, in catalog order."""
-    keys_to_slot: dict[frozenset[str], int] = {}
-    slots: list[tuple[frozenset[str], list[str], list[_Member]]] = []
-    markers: list[tuple[int, _Group]] = []
+    """Compile the catalog: one alternation per trailer key set, then the markers.
 
+    Order between groups carries no meaning — each line is read by the one
+    group whose key it starts with — so the trailer groups come in the order
+    their key sets first appear and the body markers after them.
+    """
+    keyed: dict[frozenset[str], tuple[list[str], list[_Member]]] = {}
+    markers: list[_Group] = []
     for tool in ALL_KNOWN_TOOLS:
         for pattern in tool.patterns:
             member: _Member = (
@@ -81,38 +82,22 @@ def _build_groups() -> list[_Group]:
                 pattern.role,
             )
             if not pattern.keys:
-                markers.append(
-                    (len(slots), _Group(frozenset(), pattern.regex, (member,)))
-                )
+                markers.append(_Group(frozenset(), pattern.regex, (member,)))
                 continue
-            slot = keys_to_slot.get(pattern.keys)
-            if slot is None:
-                slot = keys_to_slot[pattern.keys] = len(slots)
-                slots.append((pattern.keys, [], []))
-            slots[slot][1].append(pattern.value_pattern)
-            slots[slot][2].append(member)
+            values, members = keyed.setdefault(pattern.keys, ([], []))
+            values.append(pattern.value_pattern)
+            members.append(member)
 
-    groups: list[_Group] = []
-    for position, (keys, values, members) in enumerate(slots):
-        for marker_at, marker in markers:
-            if marker_at == position:
-                groups.append(marker)
+    groups = []
+    for keys, (values, members) in keyed.items():
         alternation = "|".join(re.escape(key) for key in sorted(keys))
-        branches = "|".join(
-            f"(?P<s{index}>{value})" for index, value in enumerate(values)
+        branches = "|".join(f"(?P<s{i}>{value})" for i, value in enumerate(values))
+        regex = re.compile(
+            rf"^(?:{alternation}):[ \t]*(?:{branches})[ \t]*$",
+            re.IGNORECASE | re.MULTILINE,
         )
-        groups.append(
-            _Group(
-                keys,
-                re.compile(
-                    rf"^(?:{alternation}):[ \t]*(?:{branches})[ \t]*$",
-                    re.IGNORECASE | re.MULTILINE,
-                ),
-                tuple(members),
-            )
-        )
-    groups.extend(marker for marker_at, marker in markers if marker_at == len(slots))
-    return groups
+        groups.append(_Group(keys, regex, tuple(members)))
+    return groups + markers
 
 
 @lru_cache(maxsize=1)
@@ -174,10 +159,7 @@ def _scan(message: str) -> Iterator[tuple[_Member, str]]:
 
     A trailer group is measured only against the lines that carry its key,
     so a message says nothing to the tools it does not name, and nothing at
-    all when it carries no trailers. Body markers read the whole message;
-    there are two.
-
-    Groups come in catalog order and their lines in message order.
+    all when it carries no trailers. Body markers read the whole message.
     """
     trailers = _trailer_lines(message)
     for group in groups():
@@ -262,10 +244,8 @@ def has_ai_signature(message: str) -> bool:
 def find_trailers(message: str, keys: list[str]) -> list[tuple[str, str, str]]:
     """Every trailer line in *message* whose key is one of *keys*.
 
-    Keys match case-insensitively (``Co-Authored-By`` is ``Co-authored-by``),
-    anywhere in the message at the start of a line — the same reading the
-    signature scanner and the sign-off rule take, and the one GitHub takes
-    when it looks for co-authors.
+    Keys match case-insensitively, at the start of any line — the reading
+    the signature scanner and the sign-off rule take too.
 
     :returns: ``(key as written, value, line)`` per match, in message order;
         the value is empty for a trailer that names nothing.

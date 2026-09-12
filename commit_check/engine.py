@@ -1333,19 +1333,39 @@ def _added_lines(before: str, after: str) -> list[str]:
     return [line for line in after.splitlines() if line not in seen]
 
 
+def _tools(signatures: list[dict[str, str]]) -> str:
+    """The tools *signatures* name, once each, in a stable order."""
+    return ", ".join(sorted({s["tool"] for s in signatures}))
+
+
+#: The two rules about a tool taking a person's place, by check: the report
+#: lines that offend, what the tool did, what to call the line in the advice,
+#: and what the author still owes once it is gone.
+_PERSON_ROLES = {
+    "ai_co_author": (
+        "co_author_lines",
+        "is credited as a co-author",
+        "the co-author line",
+        "",
+    ),
+    "ai_signoff": (
+        "signoff_lines",
+        "signed off the commit",
+        "the AI sign-off",
+        ", then sign off yourself (git commit --signoff)",
+    ),
+}
+
+
 class AiAttributionValidator(BaseValidator):
     """Judges a commit message against the AI attribution policy.
 
-    One class serves the four AI checks, branching on the rule's check name.
+    One class serves the four AI checks, by the rule's check name.
     ``ai_attribution`` is the ``forbid`` policy: any known AI signature
-    fails. The other three are the ``disclose`` policy, one condition each,
-    so a project can warn on one while enforcing the rest: the assistance is
-    disclosed with an accepted trailer (``ai_disclosure``), the tool is not
-    credited as a co-author (``ai_co_author``), and it does not sign off
-    (``ai_signoff``). Under ``ignore`` no rule is built at all.
-
-    The whole message is read, subject included, so that a fix is a message
-    that can be committed as it is rather than a body with no subject.
+    fails. ``ai_disclosure``, ``ai_co_author`` and ``ai_signoff`` are the
+    three conditions of ``disclose``, one rule each so a project can warn on
+    one while enforcing the rest. The whole message is read, subject
+    included, so a fix is a message that can be committed as it is.
     """
 
     def validate(self, context: ValidationContext) -> ValidationResult:
@@ -1371,11 +1391,10 @@ class AiAttributionValidator(BaseValidator):
         if not signatures:
             return ValidationResult.PASS
 
-        tools = ", ".join(sorted({s["tool"] for s in signatures}))
         fix = strip_lines_containing(message, [s["matched_text"] for s in signatures])
         self._print_failure(
-            tools,
-            error=f"AI attribution is forbidden in this project — detected: {tools}",
+            _tools(signatures),
+            error=f"AI attribution is forbidden in this project — detected: {_tools(signatures)}",
             suggest=(
                 "This project does not accept AI attribution in commit messages. "
                 + (
@@ -1394,9 +1413,7 @@ class AiAttributionValidator(BaseValidator):
         report = ai_policy.analyze(message, accepted, pattern)
         if self.rule.check == "ai_disclosure":
             return self._judge_disclosure(message, report, accepted, pattern)
-        if self.rule.check == "ai_co_author":
-            return self._judge_co_author(message, report, accepted, pattern)
-        return self._judge_signoff(message, report, accepted, pattern)
+        return self._judge_person_role(message, report, accepted, pattern)
 
     def _judge_disclosure(
         self,
@@ -1406,109 +1423,65 @@ class AiAttributionValidator(BaseValidator):
         pattern: str,
     ) -> ValidationResult:
         if report.malformed:
-            return self._report_malformed_disclosure(report, pattern)
+            # The accepted trailer is there but discloses nothing usable. It
+            # is the author's to rewrite, so there is no fix.
+            bad = report.malformed[0]
+            if bad.problem == "empty":
+                error = f"{bad.key}: discloses nothing: the trailer has no value"
+                suggest = f"Name the tool after {bad.key}:"
+            else:
+                error = f"The {bad.key} value does not match the required pattern: {pattern}"
+                suggest = (
+                    f"Write the {bad.key} value so that it matches {pattern} "
+                    "(set by ai_disclosure_pattern in the [commit] config)"
+                )
+            self._print_failure(
+                _first_of([d.line for d in report.malformed]),
+                error=error,
+                suggest=suggest,
+            )
+            return ValidationResult.FAIL
 
         if not report.undisclosed:
             return ValidationResult.PASS
 
-        tools = ", ".join(sorted({s["tool"] for s in report.evidence}))
         fix = ai_policy.propose_fix(message, report, accepted, pattern)
-        suggest: str | None = None
-        if fix:
-            added = _added_lines(message, fix)
-            suggest = f'Disclose the tool with "{added[0]}"' if added else None
+        added = _added_lines(message, fix) if fix else []
         self._print_failure(
             _first_of([s["matched_text"] for s in report.evidence]),
             error=(
                 f"AI assistance is not disclosed with {_or_list(accepted)} "
-                f"— detected: {tools}"
+                f"— detected: {_tools(report.evidence)}"
             ),
-            suggest=suggest,
+            suggest=f'Disclose the tool with "{added[0]}"' if added else None,
             fix=fix,
         )
         return ValidationResult.FAIL
 
-    def _report_malformed_disclosure(
-        self, report: ai_policy.AiPolicyReport, pattern: str
-    ) -> ValidationResult:
-        """Fail on an accepted trailer that discloses nothing usable.
-
-        The disclosure is the author's to rewrite — which model, in which
-        format, is not this tool's to guess — so there is no fix.
-        """
-        bad = report.malformed[0]
-        if bad.problem == "empty":
-            error = f"{bad.key}: discloses nothing: the trailer has no value"
-            suggest = f"Name the tool after {bad.key}:"
-        else:
-            error = (
-                f"The {bad.key} value does not match the required pattern: {pattern}"
-            )
-            suggest = (
-                f"Write the {bad.key} value so that it matches {pattern} "
-                "(set by ai_disclosure_pattern in the [commit] config)"
-            )
-        self._print_failure(
-            _first_of([d.line for d in report.malformed]),
-            error=error,
-            suggest=suggest,
-        )
-        return ValidationResult.FAIL
-
-    def _judge_co_author(
+    def _judge_person_role(
         self,
         message: str,
         report: ai_policy.AiPolicyReport,
         accepted: list[str],
         pattern: str,
     ) -> ValidationResult:
-        offenders = report.co_author_lines
+        lines, did, what, then = _PERSON_ROLES[self.rule.check]
+        offenders: list[dict[str, str]] = getattr(report, lines)
         if not offenders:
             return ValidationResult.PASS
 
-        tools = ", ".join(sorted({s["tool"] for s in offenders}))
         fix = ai_policy.propose_fix(message, report, accepted, pattern)
         suggest = None
         if fix:
             added = _added_lines(message, fix)
             suggest = (
-                f'Use "{added[0]}" in place of the co-author line'
+                f'Use "{added[0]}" in place of {what}{then}'
                 if added
-                else "Remove the co-author line: the tool is already disclosed"
+                else f"Remove {what}{then or ': the tool is already disclosed'}"
             )
         self._print_failure(
             _first_of([s["matched_text"] for s in offenders]),
-            error=f"An AI tool is credited as a co-author: {tools}",
-            suggest=suggest,
-            fix=fix,
-        )
-        return ValidationResult.FAIL
-
-    def _judge_signoff(
-        self,
-        message: str,
-        report: ai_policy.AiPolicyReport,
-        accepted: list[str],
-        pattern: str,
-    ) -> ValidationResult:
-        offenders = report.signoff_lines
-        if not offenders:
-            return ValidationResult.PASS
-
-        tools = ", ".join(sorted({s["tool"] for s in offenders}))
-        fix = ai_policy.propose_fix(message, report, accepted, pattern)
-        suggest = None
-        if fix:
-            added = _added_lines(message, fix)
-            suggest = (
-                f'Use "{added[0]}" in place of the AI sign-off, then sign off '
-                "yourself (git commit --signoff)"
-                if added
-                else "Remove the AI sign-off line and sign off yourself (git commit --signoff)"
-            )
-        self._print_failure(
-            _first_of([s["matched_text"] for s in offenders]),
-            error=f"An AI tool signed off the commit: {tools}",
+            error=f"An AI tool {did}: {_tools(offenders)}",
             suggest=suggest,
             fix=fix,
         )

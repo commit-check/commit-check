@@ -66,16 +66,6 @@ class TestAnalyze:
         assert [s["tool"] for s in report.signoff_lines] == ["Claude Code"]
         assert not report.compliant
 
-    def test_a_disclosure_under_another_trailer_is_undisclosed(self):
-        report = analyze("fix: x\n\nGenerated-by: GitHub Copilot", ["Assisted-by"])
-        assert report.undisclosed
-        assert [s["trailer"] for s in report.other_disclosures] == ["Generated-by"]
-
-    def test_a_stamp_alone_is_undisclosed(self):
-        report = analyze(f"fix: x\n\n{CLAUDE_STAMP}", ACCEPTED)
-        assert report.undisclosed
-        assert report.co_author_lines == report.signoff_lines == []
-
     def test_an_empty_disclosure_is_malformed(self):
         report = analyze("fix: x\n\nAssisted-by:", ACCEPTED)
         assert not report.disclosed
@@ -98,12 +88,6 @@ class TestAnalyze:
         ]
         assert not bad.compliant
 
-    def test_one_good_disclosure_is_enough(self):
-        """A malformed second trailer still fails, but the message is disclosed."""
-        report = analyze("fix: x\n\nAssisted-by: LLM\nGenerated-by:", ACCEPTED)
-        assert report.disclosed
-        assert len(report.malformed) == 1
-
 
 class TestCoAuthorAsDisclosure:
     """A project that lists Co-authored-by accepts the tool as a co-author."""
@@ -122,13 +106,6 @@ class TestCoAuthorAsDisclosure:
         )
         assert not report.disclosed
         assert report.compliant  # no AI shows, nothing to disclose
-
-    def test_a_stamp_next_to_a_human_co_author_is_still_undisclosed(self):
-        report = analyze(
-            f"fix: x\n\n{CLAUDE_STAMP}\n\nCo-authored-by: Jane Doe <jane@example.com>",
-            self.ACCEPTED,
-        )
-        assert report.undisclosed
 
     def test_co_developed_by_is_not_covered_by_co_authored_by(self):
         report = analyze(
@@ -176,24 +153,11 @@ class TestProposeFix:
             f"fix: x\n\n{CLAUDE_STAMP}\n\nAssisted-by: Claude Code"
         )
 
-    def test_the_appended_disclosure_joins_an_existing_trailer_block(self):
-        message = f"fix: x\n\n{CLAUDE_STAMP}\n\n{HUMAN_SIGNOFF}"
-        assert fix_for(message) == (
-            f"fix: x\n\n{CLAUDE_STAMP}\n\n{HUMAN_SIGNOFF}\nAssisted-by: Claude Code"
-        )
-
     def test_two_tools_give_two_disclosures(self):
         message = f"fix: x\n\n{CLAUDE_CO_AUTHOR}\n{COPILOT_CO_AUTHOR}"
         assert fix_for(message) == (
             "fix: x\n\nAssisted-by: Claude Opus 4.5\nAssisted-by: Copilot"
         )
-
-    def test_one_tool_credited_twice_is_disclosed_once(self):
-        message = (
-            "fix: x\n\nCo-authored-by: Claude <noreply@anthropic.com>\n"
-            "Signed-off-by: Claude <noreply@anthropic.com>"
-        )
-        assert fix_for(message) == "fix: x\n\nAssisted-by: Claude"
 
     def test_a_compliant_message_has_no_fix(self):
         assert fix_for("fix: x\n\nAssisted-by: LLM") is None

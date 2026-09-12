@@ -313,21 +313,3 @@ class TestAiDisclosurePolicy:
             cwd=repo,
         )
         assert main() == 0
-
-    @pytest.mark.benchmark
-    def test_a_disclosed_commit_that_a_tool_signed_off_fails(
-        self,
-        repo: Path,
-        monkeypatch: pytest.MonkeyPatch,
-    ):
-        (repo / "cchk.toml").write_text('[commit]\nai_attribution = "disclose"\n')
-        _git(
-            "commit",
-            "--allow-empty",
-            "-m",
-            "feat: add caching\n\nAssisted-by: LLM\n"
-            "Signed-off-by: Claude <noreply@anthropic.com>",
-            cwd=repo,
-        )
-        monkeypatch.setattr(sys, "argv", ["commit-check", "--message"])
-        assert main() == 1

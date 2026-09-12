@@ -234,10 +234,8 @@ class TestAppendTrailer:
         message = "feat: init\n\nAssisted-by: LLM"
         assert append_trailer(message, "Assisted-by: LLM") == message
 
-    def test_trailing_whitespace_is_dropped_first(self):
+    def test_whitespace_and_emptiness(self):
         assert append_trailer("feat: init\n\n", "Assisted-by: LLM") == (
             "feat: init\n\nAssisted-by: LLM"
         )
-
-    def test_an_empty_message_is_the_trailer(self):
         assert append_trailer("", "Assisted-by: LLM") == "Assisted-by: LLM"

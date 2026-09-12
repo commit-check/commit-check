@@ -515,23 +515,26 @@ class TestDiscloseRuleBuilder:
             }
         )
         assert rules["ai_disclosure"].allowed == ["Assisted-by", "Co-authored-by"]
-
-    def test_a_single_trailer_may_be_a_string(self):
+        # A comma-separated string, as a flag or a CCHK_* variable gives it.
         rules = _ai_rules(
-            {"ai_attribution": "disclose", "ai_disclosure_trailers": "Assisted-by"}
+            {
+                "ai_attribution": "disclose",
+                "ai_disclosure_trailers": "Assisted-by, Generated-by",
+            }
         )
-        assert rules["ai_disclosure"].allowed == ["Assisted-by"]
+        assert rules["ai_disclosure"].allowed == ["Assisted-by", "Generated-by"]
 
     @pytest.mark.parametrize(
         "trailers, complaint",
         [
-            ([], "non-empty list"),
-            ("", "non-empty list"),
-            ([1], "non-empty list"),
-            (["Assisted by"], "invalid trailer 'Assisted by'"),
-            (["Assisted-by: LLM"], "invalid trailer"),
-            (["Signed-off-by"], "cannot include Signed-off-by"),
-            (["signed-off-by:"], "cannot include Signed-off-by"),
+            ([], "at least one trailer"),
+            ("", "at least one trailer"),
+            ([1], "cannot use '1'"),
+            (123, "cannot use '123'"),
+            (["Assisted by"], "cannot use 'Assisted by'"),
+            (["Assisted-by: LLM"], "cannot use"),
+            (["Signed-off-by"], "never Signed-off-by"),
+            (["signed-off-by:"], "never Signed-off-by"),
         ],
     )
     def test_unusable_trailers_are_config_errors(self, trailers, complaint):

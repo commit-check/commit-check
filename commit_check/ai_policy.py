@@ -1,19 +1,14 @@
 """A commit message read against the ``disclose`` AI attribution policy.
 
-``ai_attribution = "disclose"`` welcomes AI assistance on three conditions,
-each its own rule so a project can warn on one while enforcing the others:
+``disclose`` welcomes AI assistance on three conditions, one rule each: it
+is disclosed with one of the project's trailers (CC014), the tool is not
+credited as a co-author (CC015), and it does not sign off (CC016). Nothing
+here can see assistance that left no trace, so the first is judged on the
+traces there are — a co-author line, a sign-off, a vendor's own mark, a
+disclosure under some other trailer — none of which counts as the
+disclosure the project asked for.
 
-* it is disclosed with one of the project's trailers (CC014);
-* the tool is not credited as a co-author (CC015);
-* the tool does not sign off the commit (CC016).
-
-Nothing here can see assistance that left no trace, so the first condition
-is judged on the traces there are: a co-author line, a sign-off, a vendor's
-own mark, a disclosure written with some other trailer. Any of those without
-an accepted disclosure is a commit that says "AI was here" in every way but
-the one the project asked for.
-
-Everything in this module is pure: no git, no output. The validator in
+Everything here is pure: no git, no output. The validator in
 :mod:`commit_check.engine` turns a report into a verdict.
 """
 
@@ -112,9 +107,8 @@ def analyze(message: str, accepted: list[str], pattern: str = "") -> AiPolicyRep
     :param pattern: A regex the disclosure's value must match from its
         start (``re.match``), or empty for any non-empty value.
 
-    The three rules of the policy each ask about the same message under the
-    same settings, so the reading is memoised and done once. The report and
-    the lists it holds are shared between them and are never modified.
+    The three rules ask about the same message under the same settings, so
+    the reading is memoised; the report is shared and never modified.
     """
     return _analyze(message, tuple(accepted), pattern)
 
@@ -133,8 +127,7 @@ def _read_disclosures(
 ) -> list[Disclosure]:
     """The accepted trailers the message carries, and whether each counts.
 
-    A person trailer discloses a tool only when its value names one: a human
-    co-author under an accepted key is a co-author, not a disclosure.
+    A person trailer discloses a tool only when its value names one.
     """
     disclosures = []
     for key, value, line in find_trailers(message, accepted):
@@ -198,15 +191,11 @@ def propose_fix(
 ) -> str | None:
     """The message corrected to comply, or ``None`` when that takes a guess.
 
-    A line that credits the tool as a person, or discloses it with a trailer
-    the project does not accept, becomes the disclosure when the message has
-    none and goes when it has one. A vendor's own mark is left where it is —
-    it is not what the policy objects to — and the disclosure is added
-    beside it. A disclosure someone wrote badly is theirs to rewrite: which
-    model, in which format, is not this tool's to guess.
-
-    The result is read again under the same policy before it is offered, so
-    a correction that would still fail is never named.
+    A line that credits the tool as a person, or discloses it under another
+    trailer, becomes the disclosure when the message has none and goes when
+    it has one. A vendor's own mark stays and the disclosure is added beside
+    it. A disclosure someone wrote badly is theirs to rewrite. The result is
+    read again under the same policy before it is offered.
     """
     if report.compliant or report.malformed:
         return None

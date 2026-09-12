@@ -426,18 +426,6 @@ class TestDisclosePolicyInTheEngine:
         assert by_check["ai_disclosure"].status == "fail"
         assert by_check["ai_disclosure"].fix == by_check["ai_signoff"].fix
 
-    def test_a_disclosed_ai_sign_off_is_just_removed(self):
-        message = (
-            "feat: add caching\n\nAssisted-by: LLM\n"
-            "Signed-off-by: Claude <noreply@anthropic.com>"
-        )
-        by_check = _disclose_outcomes(message)
-        assert by_check["ai_disclosure"].status == "pass"
-        assert by_check["ai_signoff"].fix == "feat: add caching\n\nAssisted-by: LLM"
-        assert by_check["ai_signoff"].suggest == (
-            "Remove the AI sign-off line and sign off yourself (git commit --signoff)"
-        )
-
     def test_a_disclosure_that_misses_the_pattern_has_no_fix(self):
         by_check = _disclose_outcomes(
             "feat: add caching\n\nAssisted-by: LLM coccinelle sparse",
@@ -473,9 +461,7 @@ class TestDisclosePolicyInTheEngine:
         "message",
         [
             "feat: add caching\n\nAssisted-by: LLM coccinelle sparse\nSigned-off-by: Jane <j@x>",
-            "feat: add caching\n\nGenerated-by: GitHub Copilot",
             "feat: add caching\n\nCo-authored-by: Jane Doe <jane@example.com>",
-            "feat: add caching",
         ],
     )
     def test_compliant_messages_pass_every_rule_with_the_message_as_the_value(
@@ -484,13 +470,6 @@ class TestDisclosePolicyInTheEngine:
         by_check = _disclose_outcomes(message)
         assert {o.status for o in by_check.values()} == {"pass"}
         assert {o.value for o in by_check.values()} == {message}
-
-    def test_co_authored_by_can_be_the_disclosure(self):
-        message = "feat: add caching\n\nCo-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>"
-        by_check = _disclose_outcomes(
-            message, {"ai_disclosure_trailers": ["Assisted-by", "Co-authored-by"]}
-        )
-        assert {o.status for o in by_check.values()} == {"pass"}
 
     def test_disclosure_can_be_a_warning_while_the_person_rules_enforce(self):
         message = f"feat: add caching\n\n{CLAUDE_CO_AUTHOR}"

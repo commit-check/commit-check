@@ -598,9 +598,8 @@ class RuleBuilder:
     def _ai_policy(self) -> str:
         """The ``ai_attribution`` policy, once it is known to be one.
 
-        A value that is none of them used to disable the check without a
-        word, so ``"require"`` — the name the feature was once announced
-        under — enforced nothing while reading as if it did.
+        Any other value used to disable the check without a word, so a
+        config that read as enforcing enforced nothing.
         """
         policy = self.commit_config.get("ai_attribution", DEFAULT_AI_ATTRIBUTION)
         if policy not in AI_ATTRIBUTION_POLICIES:
@@ -616,54 +615,41 @@ class RuleBuilder:
         """The trailers that disclose AI assistance, as the config spells them.
 
         A trailer is a token such as ``Assisted-by``; a trailing colon is
-        forgiven, since that is how the trailer is written in a message.
-        ``Signed-off-by`` is refused: a sign-off certifies the Developer
-        Certificate of Origin, which only a person can do, so it can never
-        be how a tool is disclosed.
+        forgiven. ``Signed-off-by`` is refused: it certifies the Developer
+        Certificate of Origin, which only a person can do.
         """
         setting = "[commit] ai_disclosure_trailers"
         raw = self.commit_config.get(
             "ai_disclosure_trailers", DEFAULT_AI_DISCLOSURE_TRAILERS
         )
         if isinstance(raw, str):
-            # A comma-separated string, as a flag or a CCHK_* variable
-            # would give it; the same shape in TOML is read the same way.
-            raw = [part.strip() for part in raw.split(",") if part.strip()]
-        if (
-            not isinstance(raw, list)
-            or not raw
-            or not all(isinstance(name, str) for name in raw)
-        ):
+            raw = raw.split(",")
+        elif not isinstance(raw, list):
+            raw = [raw]
+        trailers: list[str] = []
+        for name in (str(item).strip().rstrip(":").strip() for item in raw):
+            if not name:
+                continue
+            if not _TRAILER_KEY.match(name) or name.lower() == "signed-off-by":
+                raise ConfigError(
+                    f"{setting} cannot use {name!r}: a trailer is a token such as "
+                    "Assisted-by, and never Signed-off-by, which only a person may add",
+                    setting=setting,
+                )
+            if name.lower() not in {t.lower() for t in trailers}:
+                trailers.append(name)
+        if not trailers:
             raise ConfigError(
-                f'{setting} must be a non-empty list of trailer names, e.g. ["Assisted-by"]',
+                f'{setting} must name at least one trailer, e.g. ["Assisted-by"]',
                 setting=setting,
             )
-        trailers: list[str] = []
-        for name in raw:
-            key = name.strip().rstrip(":").strip()
-            if not _TRAILER_KEY.match(key):
-                raise ConfigError(
-                    f"{setting} names an invalid trailer {name!r}; "
-                    "a trailer is a token such as Assisted-by",
-                    setting=setting,
-                )
-            if key.lower() == "signed-off-by":
-                raise ConfigError(
-                    f"{setting} cannot include Signed-off-by: a sign-off "
-                    "certifies the Developer Certificate of Origin, which "
-                    "only a person can do",
-                    setting=setting,
-                )
-            if key.lower() not in {t.lower() for t in trailers}:
-                trailers.append(key)
         return trailers
 
     def _ai_disclosure_pattern(self) -> str:
         """The regex a disclosure's value must match, or empty for any value.
 
-        A value of another type is refused rather than ignored: reading it
-        as "no pattern" would leave the rule the author wrote silently
-        unenforced, which is the failure exit code 2 exists to prevent.
+        Another type is refused rather than read as "no pattern", which
+        would leave the rule the author wrote silently unenforced.
         """
         setting = "[commit] ai_disclosure_pattern"
         pattern = self.commit_config.get(
@@ -674,9 +660,7 @@ class RuleBuilder:
                 f"{setting} must be a regex string, got {pattern!r}", setting=setting
             )
         pattern = pattern.strip()
-        if not pattern:
-            return ""
-        return _checked_regex(pattern, setting)
+        return _checked_regex(pattern, setting) if pattern else ""
 
     def _build_boolean_rule(
         self, catalog_entry: RuleCatalogEntry, section_config: dict[str, Any]

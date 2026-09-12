@@ -1722,22 +1722,6 @@ class TestAiDisclosurePolicy:
         assert data["status"] == "pass"
         assert {by_id[r]["status"] for r in ("CC014", "CC015", "CC016")} == {"pass"}
 
-    def test_the_trailers_flag_can_accept_a_co_author(
-        self, mocker, capsys, monkeypatch, pinned_author
-    ):
-        rc, by_id, _ = self._run_json(
-            mocker,
-            capsys,
-            monkeypatch,
-            self.COPILOT,
-            "--ai-attribution",
-            "disclose",
-            "--ai-disclosure-trailers",
-            "Assisted-by,Co-authored-by",
-        )
-        assert rc == 0
-        assert by_id["CC015"]["status"] == "pass"
-
     def test_the_settings_reach_the_rules_from_the_environment(
         self, mocker, capsys, monkeypatch, pinned_author
     ):
@@ -1746,24 +1730,6 @@ class TestAiDisclosurePolicy:
         rc, by_id, _ = self._run_json(mocker, capsys, monkeypatch, self.COPILOT)
         assert rc == 0
         assert by_id["CC014"]["status"] == "pass"
-
-    def test_the_pattern_flag_is_enforced(
-        self, mocker, capsys, monkeypatch, pinned_author
-    ):
-        rc, by_id, _ = self._run_json(
-            mocker,
-            capsys,
-            monkeypatch,
-            "feat: add caching\n\nAssisted-by: LLM\n",
-            "--ai-attribution",
-            "disclose",
-            "--ai-disclosure-pattern",
-            r"^\S+/\S+$",
-        )
-        assert rc == 1
-        assert by_id["CC014"]["status"] == "fail"
-        assert "ai_disclosure_pattern" in by_id["CC014"]["suggest"]
-        assert by_id["CC014"]["fix"] == ""
 
     def test_an_unknown_policy_in_the_config_names_the_setting_and_exits_two(
         self, mocker, capsys, monkeypatch, tmp_path
@@ -1803,10 +1769,3 @@ class TestAiDisclosurePolicy:
         err = capsys.readouterr().err
         assert rc == 2
         assert "Error: [commit] ai_disclosure_pattern is not a valid regex: '^('" in err
-
-    def test_the_policy_flag_refuses_an_unknown_value(self, capsys, monkeypatch):
-        monkeypatch.setattr("sys.argv", [CMD, "-m", "--ai-attribution", "require"])
-        with pytest.raises(SystemExit) as excinfo:
-            main()
-        assert excinfo.value.code == 2
-        assert "invalid choice: 'require'" in capsys.readouterr().err

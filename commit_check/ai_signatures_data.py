@@ -108,10 +108,7 @@ def _trailer(
 def _identity(value_pattern: str, label: str) -> list[AiSignaturePattern]:
     """The co-author and sign-off patterns for one way a tool names itself.
 
-    A tool that can appear after ``Co-authored-by:`` can appear after
-    ``Signed-off-by:`` just the same, and the policies that object to the
-    one object to the other; one identity pattern serves both so the two
-    cannot drift apart.
+    One identity serves both trailers, so the two cannot drift apart.
     """
     return [
         _trailer(
@@ -152,10 +149,7 @@ def _body_marker(pattern: str, description: str = "") -> AiSignaturePattern:
 def _names(pattern: str) -> re.Pattern[str]:
     """Compile a ``name_pattern``: the tool's names, as whole words.
 
-    Bounded at both ends, or a tool's name would be found inside a longer
-    one: without this, ``Generated-by: Raider`` was disclosed as Aider.
-    ``\\b`` cannot serve here because a name may begin or end with a
-    non-word character.
+    Bounded at both ends, or ``Generated-by: Raider`` is disclosed as Aider.
     """
     return re.compile(rf"(?<!\w)(?:{pattern})(?!\w)", re.IGNORECASE)
 
