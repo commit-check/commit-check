@@ -1,0 +1,31 @@
+README.md
+  s_372643545cf36e::t_a857e96336888b 267
+commit_check/ai_policy.py
+  s_372643545cf36e::t_8f00bf1941ece4 24,114-117,119-125,130
+commit_check/ai_signatures.py
+  s_372643545cf36e::t_f49804da217bbc 19-20,45-157,193-215,222
+commit_check/ai_signatures_data.py
+  s_372643545cf36e::t_b602f05270cfc7 47-52,59-60,103-104,153-160
+commit_check/rule_builder.py
+  s_372643545cf36e::t_58f55ae8ea762c 662-668,672-676,679
+tests/ai_signatures_test.py
+  s_372643545cf36e::t_002069bfc5ab9f 5,495-505,512-613
+tests/rule_builder_test.py
+  s_372643545cf36e::t_c59ece66242174 551-560
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "37c8af333f8b9ce36adcf8c94c1550db521038e5",
+  "prompts": {},
+  "sessions": {
+    "s_372643545cf36e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cf0a6471-ef8d-4f90-9d78-27576d4ecf86",
+        "model": "claude-opus-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
