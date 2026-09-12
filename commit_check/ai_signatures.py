@@ -18,6 +18,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass
+from functools import lru_cache
 
 from commit_check.ai_signatures_data import ALL_KNOWN_TOOLS as _ALL_KNOWN_TOOLS
 from commit_check.ai_signatures_data import GENERIC_AI, ROLE_DISCLOSURE
@@ -114,8 +115,22 @@ def _build_groups() -> list[_Group]:
     return groups
 
 
-#: The catalog, compiled for scanning.
-_GROUPS: list[_Group] = _build_groups()
+@lru_cache(maxsize=1)
+def groups() -> tuple[_Group, ...]:
+    """The catalog, compiled for scanning — on first use, not at import.
+
+    ``ai_attribution`` is off by default, so most runs never scan a message
+    at all, and compiling the alternations costs milliseconds in a cold
+    interpreter: real money for a hook that runs on every commit.
+    """
+    return tuple(_build_groups())
+
+
+@lru_cache(maxsize=1)
+def _scans() -> tuple[re.Pattern[str], ...]:
+    """The group regexes alone, for a question that needs no detail."""
+    return tuple(group.regex for group in groups())
+
 
 #: The key of a trailer-shaped line, e.g. ``Co-authored-by`` in
 #: ``Co-authored-by: Claude``.
@@ -165,7 +180,7 @@ def _scan(message: str) -> Iterator[tuple[_Member, str]]:
     Groups come in catalog order and their lines in message order.
     """
     trailers = _trailer_lines(message)
-    for group in _GROUPS:
+    for group in groups():
         yield from _group_matches(group, trailers, message)
 
 
@@ -231,8 +246,17 @@ def detect_ai_signatures(message: str) -> list[dict[str, str]]:
 
 
 def has_ai_signature(message: str) -> bool:
-    """Return ``True`` if *message* contains any known AI signature."""
-    return any(True for _member, _matched in _scan(message))
+    """Return ``True`` if *message* contains any known AI signature.
+
+    This one asks a yes/no question and stops at the first answer, so it
+    reads the message directly rather than splitting it into lines first:
+    the split only pays for itself when there is nothing to find in a long
+    message, and every group is anchored to a line start anyway.
+    """
+    for scan in _scans():
+        if scan.search(message):
+            return True
+    return False
 
 
 def find_trailers(message: str, keys: list[str]) -> list[tuple[str, str, str]]:

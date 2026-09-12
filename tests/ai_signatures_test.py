@@ -2,9 +2,9 @@
 
 import pytest
 from commit_check.ai_signatures import (
-    _GROUPS,
     detect_ai_signatures,
     find_trailers,
+    groups,
     has_ai_signature,
     tool_named_in,
     ALL_KNOWN_TOOLS,
@@ -603,7 +603,7 @@ class TestPatternIndex:
         patterns must otherwise capture nothing of their own, or the branch
         numbers would no longer line up with the members.
         """
-        for group in _GROUPS:
+        for group in groups():
             if group.keys:
                 assert group.regex.groups == len(group.members), group.keys
             else:
