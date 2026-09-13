@@ -1,0 +1,35 @@
+tests/engine_test.py
+  s_eb72ae5f552a21::t_37940bcc6c363f 534-566
+commit_check/main.py
+  s_eb72ae5f552a21::t_9ec1e01e365891 714-720,731-732
+tests/main_test.py
+  s_eb72ae5f552a21::t_9078a072af1c0b 375-504
+commit_check/engine.py
+  s_eb72ae5f552a21::t_827cb104924e3b 259-266,270-272
+  s_eb72ae5f552a21::t_4274572502d191 639-641
+  s_eb72ae5f552a21::t_5e165b3d1cdf53 359,366
+  s_eb72ae5f552a21::t_9b165deab5df92 1142-1143,1148
+  s_eb72ae5f552a21::t_b0e8c0f621790a 267-269
+  s_eb72ae5f552a21::t_f959c02203ede6 838-840
+  s_eb72ae5f552a21::t_6a8cffd01acee6 102
+  s_eb72ae5f552a21::t_f22849564d5a56 753-755
+  s_eb72ae5f552a21::t_5e0c23e7794466 695-696
+  s_eb72ae5f552a21::t_621c8887b9d468 96-101
+  s_eb72ae5f552a21::t_7f48b1580d1bf1 258
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "dbac209e4b96deded3e367d17dceae273136ae1f",
+  "prompts": {},
+  "sessions": {
+    "s_eb72ae5f552a21": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e0360f2c-a026-4518-a6db-de1da347106b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
