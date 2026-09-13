@@ -372,6 +372,136 @@ class TestRevOption:
         assert any("updated the parser" in v for v in values)
 
 
+class TestPipedMessageWithOtherChecks:
+    """A message piped to --message is the message, and nothing else.
+
+    ``printf 'feat: ...' | commit-check --message --branch`` failed CC201 with
+    the message as the branch name: every requested check read the one piped
+    value as its own. Next to --message the other checks now read git, as
+    they do when the message comes from a file. Without --message, a check
+    still reads what is piped to it.
+    """
+
+    MESSAGE = "feat: add streaming support\n\nSigned-off-by: Dev <dev@example.com>\n"
+
+    @pytest.fixture
+    def repo(self, tmp_path, monkeypatch):
+        """A repository where every value git holds differs from the piped text.
+
+        A Conventional Branch, a configured identity and a tag at HEAD: a
+        check that reads git passes and names what it read, and one that
+        reads the message fails on it.
+        """
+        subprocess.run(
+            [
+                "git",
+                "init",
+                "-q",
+                "--initial-branch=feature/streaming-support",
+                str(tmp_path),
+            ],
+            check=True,
+        )
+        monkeypatch.chdir(tmp_path)
+        git = ["git", "-C", str(tmp_path)]
+        subprocess.run(git + ["config", "user.name", "Good Author"], check=True)
+        subprocess.run(git + ["config", "user.email", "good@example.com"], check=True)
+        subprocess.run(
+            git + ["commit", "-q", "--allow-empty", "-m", "chore: start"], check=True
+        )
+        subprocess.run(git + ["tag", "v1.0.0"], check=True)
+        return tmp_path
+
+    def _run_json(self, mocker, monkeypatch, capsys, piped, *flags):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=piped)
+        monkeypatch.setattr("sys.argv", [CMD, *flags, "--format", "json"])
+        rc = main()
+        checks = json.loads(capsys.readouterr().out)["checks"]
+        return rc, {c["check"]: c for c in checks}
+
+    def test_the_reported_run_passes(self, repo, mocker, monkeypatch, capsys):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=self.MESSAGE)
+        monkeypatch.setattr("sys.argv", [CMD, "--message", "--branch", "--no-banner"])
+        assert main() == 0
+        out, _ = capsys.readouterr()
+        assert "CC201" not in out
+
+    def test_the_checked_out_branch_is_still_checked(
+        self, repo, mocker, monkeypatch, capsys
+    ):
+        """Reading git must not mean skipping: a bad branch still fails."""
+        subprocess.run(
+            ["git", "-C", str(repo), "checkout", "-q", "-b", "wrong_branch"],
+            check=True,
+        )
+        rc, checks = self._run_json(
+            mocker, monkeypatch, capsys, self.MESSAGE, "--message", "--branch"
+        )
+        assert rc == 1
+        assert checks["message"]["status"] == "pass"
+        assert checks["branch"]["status"] == "fail"
+        assert checks["branch"]["value"] == "wrong_branch"
+
+    @pytest.mark.parametrize(
+        "flag, check, from_git",
+        [
+            ("--branch", "branch", "feature/streaming-support"),
+            ("--author-name", "author_name", "Good Author"),
+            ("--author-email", "author_email", "good@example.com"),
+            ("--tag", "tag", "v1.0.0"),
+        ],
+    )
+    def test_other_checks_read_git_next_to_a_piped_message(
+        self, repo, mocker, monkeypatch, capsys, flag, check, from_git
+    ):
+        rc, checks = self._run_json(
+            mocker, monkeypatch, capsys, self.MESSAGE, "--message", flag
+        )
+        assert rc == 0
+        assert checks["message"]["value"] == self.MESSAGE.strip()
+        assert checks[check]["status"] == "pass"
+        assert checks[check]["value"] == from_git
+
+    def test_no_force_push_compares_with_the_upstream_next_to_a_piped_message(
+        self, repo, mocker, monkeypatch, capsys
+    ):
+        """A four-word message line parsed as a push ref line, and the check
+        passed having compared nothing. It must compare with the upstream, as
+        it does when nothing is piped."""
+        upstream = "origin/feature/streaming-support"
+        mocker.patch("commit_check.engine.get_upstream_branch", return_value=upstream)
+        mocker.patch("commit_check.engine.get_upstream_remote_sha", return_value="")
+        mocker.patch("commit_check.engine.git_merge_base", return_value=1)
+        rc, checks = self._run_json(
+            mocker, monkeypatch, capsys, self.MESSAGE, "--message", "--no-force-push"
+        )
+        assert rc == 1
+        assert checks["no_force_push"]["status"] == "fail"
+        assert checks["no_force_push"]["value"] == (
+            f"feature/streaming-support -> {upstream}"
+        )
+
+    @pytest.mark.parametrize(
+        "flag, check, piped",
+        [
+            ("--message", "message", "feat: add streaming support"),
+            ("--branch", "branch", "feature/from-stdin"),
+            ("--author-name", "author_name", "Piped Author"),
+            ("--author-email", "author_email", "piped@example.com"),
+            ("--tag", "tag", "v9.9.9"),
+        ],
+    )
+    def test_a_single_check_reads_what_is_piped_to_it(
+        self, repo, mocker, monkeypatch, capsys, flag, check, piped
+    ):
+        rc, checks = self._run_json(mocker, monkeypatch, capsys, piped, flag)
+        assert rc == 0
+        assert checks[check]["status"] == "pass"
+        assert checks[check]["value"] == piped
+
+
 class TestMainFunctionEdgeCases:
     """Test main function edge cases for better coverage."""
 
