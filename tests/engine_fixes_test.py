@@ -230,6 +230,46 @@ class TestBranchFix:
         assert out.suggest == "Use type/description"
 
 
+class TestBranchDescriptionFix:
+    """Under ``require_description_grammar`` the description is fixable too."""
+
+    # The regex RuleBuilder produces with the option on.
+    STRICT = r"[a-z0-9]+(?:\.[a-z0-9]+)*(?:-[a-z0-9]+(?:\.[a-z0-9]+)*)*"
+
+    def rule(self):
+        return ValidationRule(
+            check="branch",
+            regex=rf"^(?:feature|bugfix|hotfix)/{self.STRICT}$|^main$",
+            error="Bad branch name",
+            suggest="Use type/description",
+            allowed=["feature", "bugfix", "hotfix"],
+        )
+
+    def test_description_case_and_separators_are_corrected(self):
+        out = failed([self.rule()], stdin_text="feature/Add_Login")
+        assert out.fix == "feature/add-login"
+        assert (
+            out.suggest
+            == 'Rename the branch to "feature/add-login" (git branch -m feature/add-login)'
+        )
+
+    def test_type_and_description_are_corrected_together(self):
+        out = failed([self.rule()], stdin_text="Feature/New_Login")
+        assert out.fix == "feature/new-login"
+
+    def test_unresolvable_description_keeps_generic_suggestion(self):
+        out = failed([self.rule()], stdin_text="feature/$(whoami)")
+        assert out.fix == ""
+        assert out.suggest == "Use type/description"
+
+    def test_unfixable_type_keeps_generic_suggestion(self):
+        # The description alone is fixable, but no allowed type is a
+        # near-miss of "stuff", so the re-check rejects the result.
+        out = failed([self.rule()], stdin_text="stuff/New--Login")
+        assert out.fix == ""
+        assert out.suggest == "Use type/description"
+
+
 class TestAiAttributionFix:
     def rule(self):
         return ValidationRule(

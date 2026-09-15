@@ -938,6 +938,70 @@ class TestBranchRegexIsAnchored:
         assert not re.match(regex, "renovate-bot")
 
 
+class TestBranchDescriptionGrammar:
+    """``require_description_grammar`` holds the half after "/" to the spec.
+
+    It is opt-in: with the option off the description stays ``.+``, which is
+    what keeps bot-generated names validating as they always have.
+    """
+
+    @pytest.mark.parametrize("branch", ["feature/Add-Login", "fix/header_bug"])
+    def test_off_by_default_accepts_a_free_form_description(self, branch):
+        assert re.match(_branch_regex(), branch)
+        assert re.match(_branch_regex(require_description_grammar=False), branch)
+
+    @pytest.mark.parametrize(
+        "branch",
+        ["feature/add-login-page", "release/v1.2.0", "feature/issue-123-new-login"],
+    )
+    def test_conformant_descriptions_pass(self, branch):
+        assert re.match(_branch_regex(require_description_grammar=True), branch)
+
+    @pytest.mark.parametrize(
+        "branch",
+        [
+            "feature/new--login",
+            "feature/-new-login",
+            "feature/new-login-",
+            "release/v1.-2.0",
+            "fix/header_bug",
+            "feature/Add-Login",
+        ],
+    )
+    def test_non_conformant_descriptions_are_rejected(self, branch):
+        assert not re.match(_branch_regex(require_description_grammar=True), branch)
+
+    @pytest.mark.parametrize(
+        "branch",
+        [
+            "dependabot/go_modules/go-deps-c57c3fe1e0",
+            "dependabot/npm_and_yarn/lodash-4.17.21",
+            "dependabot/pip/certifi-2022.12.7",
+        ],
+    )
+    def test_dependabot_grouped_names_need_the_option_off(self, branch):
+        # Dependabot writes these itself; they carry a second "/" and
+        # underscores, so the grammar rejects them. That is exactly why the
+        # option is opt-in rather than part of conventional_branch.
+        assert re.match(_branch_regex(), branch)
+        assert not re.match(_branch_regex(require_description_grammar=True), branch)
+
+    @pytest.mark.parametrize(
+        "branch", ["renovate/lodash-5.x", "renovate/major-lodash-5.x"]
+    )
+    def test_renovate_names_pass_either_way(self, branch):
+        assert re.match(_branch_regex(), branch)
+        assert re.match(_branch_regex(require_description_grammar=True), branch)
+
+    def test_allow_branch_names_readmits_a_bot(self):
+        regex = _branch_regex(
+            require_description_grammar=True,
+            allow_branch_names=[r"dependabot/.+"],
+        )
+        assert re.match(regex, "dependabot/npm_and_yarn/lodash-4.17.21")
+        assert not re.match(regex, "feature/Add-Login")
+
+
 class TestConventionalCommitGitPrefixes:
     """CC001 exempts exactly the subjects git writes itself.
 

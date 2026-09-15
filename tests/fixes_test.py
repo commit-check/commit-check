@@ -4,6 +4,7 @@ import pytest
 
 from commit_check.fixes import (
     append_trailer,
+    fix_branch_description,
     fix_branch_type,
     fix_conventional_header,
     fix_subject_case,
@@ -137,6 +138,41 @@ class TestFixBranchType:
 
     def test_already_valid_no_fix(self):
         assert fix_branch_type("feature/login", ["feature"]) is None
+
+
+class TestFixBranchDescription:
+    @pytest.mark.parametrize(
+        "branch, expected",
+        [
+            ("feature/Add-Login", "feature/add-login"),
+            ("fix/header_bug", "fix/header-bug"),
+            ("feature/new--login", "feature/new-login"),
+            ("feature/-new-login-", "feature/new-login"),
+            ("release/v1.-2.0", "release/v1-2.0"),
+            ("feature/New Login Page", "feature/new-login-page"),
+        ],
+    )
+    def test_mechanical_slips_are_corrected(self, branch, expected):
+        assert fix_branch_description(branch) == expected
+
+    def test_already_conformant_no_fix(self):
+        assert fix_branch_description("feature/add-login-page") is None
+
+    @pytest.mark.parametrize("branch", ["feature/___", "feature/---"])
+    def test_nothing_left_after_stripping_no_fix(self, branch):
+        assert fix_branch_description(branch) is None
+
+    @pytest.mark.parametrize(
+        "branch",
+        ["feature/$(whoami)", "feature/@@@", "dependabot/go_modules/go-deps"],
+    )
+    def test_unresolvable_punctuation_no_fix(self, branch):
+        # A second "/" or shell punctuation needs a decision, not a rewrite.
+        assert fix_branch_description(branch) is None
+
+    @pytest.mark.parametrize("branch", ["login", "feature/"])
+    def test_no_description_to_fix(self, branch):
+        assert fix_branch_description(branch) is None
 
 
 class TestStripLinesContaining:

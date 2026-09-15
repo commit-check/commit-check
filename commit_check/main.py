@@ -440,6 +440,16 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     branch_group.add_argument(
+        "--require-description-grammar",
+        type=parse_bool,
+        default=None,
+        metavar="BOOL",
+        help="require the branch description after '/' to follow "
+        "Conventional Branch's strict grammar: lowercase, hyphen-separated "
+        "segments (true/false)",
+    )
+
+    branch_group.add_argument(
         "--allow-branch-types",
         type=parse_list,
         default=None,

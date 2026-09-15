@@ -89,6 +89,7 @@ def get_default_config() -> dict[str, Any]:
         },
         "branch": {
             "conventional_branch": True,
+            "require_description_grammar": False,
             "allow_branch_types": DEFAULT_BRANCH_TYPES.copy(),
             "allow_branch_names": DEFAULT_BRANCH_NAMES.copy(),
             "require_rebase_target": "",
@@ -140,6 +141,11 @@ class ConfigMerger:
         "CCHK_AUTHOR_NAME_PATTERN": ("commit", "author_name_pattern", str),
         # Branch section
         "CCHK_CONVENTIONAL_BRANCH": ("branch", "conventional_branch", parse_bool),
+        "CCHK_REQUIRE_DESCRIPTION_GRAMMAR": (
+            "branch",
+            "require_description_grammar",
+            parse_bool,
+        ),
         "CCHK_ALLOW_BRANCH_TYPES": ("branch", "allow_branch_types", parse_list),
         "CCHK_ALLOW_BRANCH_NAMES": ("branch", "allow_branch_names", parse_list),
         "CCHK_REQUIRE_REBASE_TARGET": ("branch", "require_rebase_target", str),
@@ -178,6 +184,7 @@ class ConfigMerger:
         "author_name_pattern": ("commit", "author_name_pattern"),
         # Branch section
         "conventional_branch": ("branch", "conventional_branch"),
+        "require_description_grammar": ("branch", "require_description_grammar"),
         "allow_branch_types": ("branch", "allow_branch_types"),
         "allow_branch_names": ("branch", "allow_branch_names"),
         "require_rebase_target": ("branch", "require_rebase_target"),
