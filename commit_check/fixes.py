@@ -126,7 +126,6 @@ _BRANCH_DESC_WORD_SEPARATOR = re.compile(r"[\s_]+")
 # punctuation only the author can resolve.
 _BRANCH_DESC_INVALID_CHAR = re.compile(r"[^a-z0-9.-]")
 _BRANCH_DESC_REPEATED_SEPARATOR = re.compile(r"[-.]{2,}")
-_BRANCH_DESC_EDGE_SEPARATOR = re.compile(r"^[-.]+|[-.]+$")
 
 
 def fix_branch_description(branch: str) -> str | None:
@@ -152,7 +151,7 @@ def fix_branch_description(branch: str) -> str | None:
     if _BRANCH_DESC_INVALID_CHAR.search(normalized):
         return None
     normalized = _BRANCH_DESC_REPEATED_SEPARATOR.sub("-", normalized)
-    normalized = _BRANCH_DESC_EDGE_SEPARATOR.sub("", normalized)
+    normalized = normalized.strip("-.")
     if not normalized:
         return None
     fixed = f"{branch_type}/{normalized}"
