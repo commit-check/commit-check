@@ -6,6 +6,7 @@
 [![PyPI Downloads](https://static.pepy.tech/badge/commit-check/month?color=%232c9ccd)](https://pepy.tech/projects/commit-check)
 [![Python Versions](https://img.shields.io/pypi/pyversions/commit-check?logo=python&logoColor=white)](https://pypi.org/project/commit-check/)
 [![commit-check](https://img.shields.io/badge/commit--check-enabled-brightgreen?logo=Git&logoColor=white&color=%232c9ccd)](https://github.com/commit-check/commit-check)
+[![Conventional Branch](https://conventionalbranch.org/badge.svg)](https://conventionalbranch.org/)
 [![CodeCov](https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT)](https://codecov.io/gh/commit-check/commit-check)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/commit-check/commit-check/badge)](https://api.securityscorecards.dev/projects/github.com/commit-check/commit-check)
 
