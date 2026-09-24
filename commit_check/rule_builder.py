@@ -43,6 +43,14 @@ _AI_CHECKS: frozenset[str] = frozenset().union(*_AI_CHECKS_BY_POLICY.values())
 #: A git trailer token: letters, digits and hyphens, and no colon.
 _TRAILER_KEY = re.compile(r"^[A-Za-z][A-Za-z0-9-]*$")
 
+#: Conventional Branch's description grammar (spec.json's ABNF): lowercase
+#: alphanumeric segments, each optionally dotted, joined by single hyphens.
+#: Used only when [branch] require_description_grammar opts in; the default
+#: stays ".+" so today's branches -- Dependabot's and Renovate's own
+#: grouped-update names included (see DEFAULT_BRANCH_TYPES) -- keep
+#: validating exactly as they always have.
+_STRICT_BRANCH_DESCRIPTION = r"[a-z0-9]+(?:\.[a-z0-9]+)*(?:-[a-z0-9]+(?:\.[a-z0-9]+)*)*"
+
 
 # Lookup tables for the top-level ``warn`` list, built once at import: a
 # check name or rule ID in any case maps to the catalog's check name.
@@ -735,4 +743,9 @@ class RuleBuilder:
         names_pattern = "|".join(["master", "main", "HEAD", r"PR-.+"])
         if allowed_names:
             names_pattern += "|" + "|".join(allowed_names)
-        return rf"^(?:{types_pattern})/.+$|^(?:{names_pattern})$"
+        description_pattern = (
+            _STRICT_BRANCH_DESCRIPTION
+            if self.branch_config.get("require_description_grammar", False)
+            else ".+"
+        )
+        return rf"^(?:{types_pattern})/{description_pattern}$|^(?:{names_pattern})$"

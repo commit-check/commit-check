@@ -42,6 +42,7 @@ from commit_check.util import (
 )
 from commit_check.imperatives import IMPERATIVES, NON_IMPERATIVE_LOOKALIKES
 from commit_check.fixes import (
+    fix_branch_description,
     fix_branch_type,
     fix_conventional_header,
     fix_subject_case,
@@ -682,7 +683,14 @@ class BranchValidator(BaseValidator):
         if re.match(self.rule.regex, branch_name):
             return ValidationResult.PASS
 
-        fixed = fix_branch_type(branch_name, self.rule.allowed)
+        # Each fixer targets one half of "type/description" and returns None
+        # when it has nothing to add; composing them lets a branch with both
+        # a misspelt type and (under require_description_grammar) a
+        # non-conformant description get one combined suggestion. The regex
+        # re-check below is still what gates it: a type beyond repair yields
+        # no fix even when the description alone was fixable.
+        fixed_type = fix_branch_type(branch_name, self.rule.allowed)
+        fixed = fix_branch_description(fixed_type or branch_name) or fixed_type
         fix = suggest = None
         if fixed and re.match(self.rule.regex, fixed):
             fix = fixed

@@ -113,6 +113,7 @@ class TestGetDefaultConfig:
         config = get_default_config()
         branch = config["branch"]
         assert branch["conventional_branch"] is True
+        assert branch["require_description_grammar"] is False
         assert isinstance(branch["allow_branch_types"], list)
         assert "feature" in branch["allow_branch_types"]
 
@@ -176,9 +177,11 @@ class TestConfigMergerParseEnvVars:
 
     def test_parse_branch_env_vars(self, monkeypatch):
         monkeypatch.setenv("CCHK_CONVENTIONAL_BRANCH", "false")
+        monkeypatch.setenv("CCHK_REQUIRE_DESCRIPTION_GRAMMAR", "true")
         monkeypatch.setenv("CCHK_ALLOW_BRANCH_TYPES", "feature,bugfix")
         config = ConfigMerger.parse_env_vars()
         assert config["branch"]["conventional_branch"] is False
+        assert config["branch"]["require_description_grammar"] is True
         assert config["branch"]["allow_branch_types"] == ["feature", "bugfix"]
 
     def test_parse_author_pattern_env_vars(self, monkeypatch):
@@ -259,11 +262,13 @@ class TestConfigMergerParseCliArgs:
     def test_branch_cli_args(self):
         args = argparse.Namespace(
             conventional_branch=False,
+            require_description_grammar=True,
             allow_branch_types=["feature", "bugfix"],
             require_rebase_target="main",
         )
         config = ConfigMerger.parse_cli_args(args)
         assert config["branch"]["conventional_branch"] is False
+        assert config["branch"]["require_description_grammar"] is True
         assert config["branch"]["allow_branch_types"] == ["feature", "bugfix"]
         assert config["branch"]["require_rebase_target"] == "main"
 

@@ -119,6 +119,45 @@ def fix_branch_type(branch: str, allowed_types: list[str] | None) -> str | None:
     return fixed if fixed != branch else None
 
 
+# Whitespace or underscores stand in for the hyphen Conventional Branch's
+# description grammar uses as a segment separator.
+_BRANCH_DESC_WORD_SEPARATOR = re.compile(r"[\s_]+")
+# A description outside [a-z0-9.-] once separators are normalized carries
+# punctuation only the author can resolve.
+_BRANCH_DESC_INVALID_CHAR = re.compile(r"[^a-z0-9.-]")
+_BRANCH_DESC_REPEATED_SEPARATOR = re.compile(r"[-.]{2,}")
+
+
+def fix_branch_description(branch: str) -> str | None:
+    """The branch with its description normalized to Conventional Branch's
+    grammar, or None when there is no unambiguous fix.
+
+    Lowercases the description, turns whitespace and underscores into
+    hyphens (both stand in for a word break), collapses a run of hyphens
+    and dots into a single hyphen, and strips any left at the start or end.
+    Declines -- returns None -- when there is no "/", the type has no
+    description to fix, nothing usable is left after stripping, or the
+    description carries a character this cannot mechanically resolve: a
+    second "/" (the shape of Dependabot's own multi-segment branches) or
+    punctuation such as "@" or "$(...)". Picking a replacement for those
+    would be a guess, not a fix.
+    """
+    if "/" not in branch:
+        return None
+    branch_type, description = branch.split("/", 1)
+    if not description:
+        return None
+    normalized = _BRANCH_DESC_WORD_SEPARATOR.sub("-", description.lower())
+    if _BRANCH_DESC_INVALID_CHAR.search(normalized):
+        return None
+    normalized = _BRANCH_DESC_REPEATED_SEPARATOR.sub("-", normalized)
+    normalized = normalized.strip("-.")
+    if not normalized:
+        return None
+    fixed = f"{branch_type}/{normalized}"
+    return fixed if fixed != branch else None
+
+
 def rewrite_lines(message: str, rewrites: Mapping[str, str | None]) -> str | None:
     """The message with each line containing a key of *rewrites* replaced.
 
