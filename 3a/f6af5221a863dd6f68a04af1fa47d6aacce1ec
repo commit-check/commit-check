@@ -1,0 +1,19 @@
+README.md
+  s_39b40faf32868b::t_b030163695f812 8,75,816,821,827-828
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3af6af5221a863dd6f68a04af1fa47d6aacce1ec",
+  "prompts": {},
+  "sessions": {
+    "s_39b40faf32868b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f0debcf5-afa4-4c60-b136-cd927a4ddf57",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
