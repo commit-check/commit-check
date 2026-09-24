@@ -2,12 +2,12 @@
 
 [![CI](https://github.com/commit-check/commit-check/actions/workflows/main.yml/badge.svg)](https://github.com/commit-check/commit-check/actions/workflows/main.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=commit-check_commit-check&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=commit-check_commit-check)
+[![CodeCov](https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT)](https://codecov.io/gh/commit-check/commit-check)
 [![PyPI](https://img.shields.io/pypi/v/commit-check?logo=python&logoColor=white&color=%232c9ccd)](https://pypi.org/project/commit-check/)
 [![PyPI Downloads](https://static.pepy.tech/badge/commit-check/month?color=%232c9ccd)](https://pepy.tech/projects/commit-check)
 [![Python Versions](https://img.shields.io/pypi/pyversions/commit-check?logo=python&logoColor=white)](https://pypi.org/project/commit-check/)
 [![commit-check](https://img.shields.io/badge/commit--check-enabled-2c9ccd?labelColor=0b1620&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI%2bPHBhdGggZD0iTTIxIDM0TDMwIDQzTDQ3IDIyIiBmaWxsPSJub25lIiBzdHJva2U9IiMyQzlDQ0QiIHN0cm9rZS13aWR0aD0iOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8%2bPGNpcmNsZSBjeD0iMjEiIGN5PSIzNCIgcj0iNyIgZmlsbD0iIzBCMTYyMCIgc3Ryb2tlPSIjMkM5Q0NEIiBzdHJva2Utd2lkdGg9IjUiLz48L3N2Zz4K)](https://commit-check.com)
 [![Conventional Branch](https://conventionalbranch.org/badge.svg)](https://conventionalbranch.org/)
-[![CodeCov](https://codecov.io/gh/commit-check/commit-check/branch/main/graph/badge.svg?token=GC2U5V5ZRT)](https://codecov.io/gh/commit-check/commit-check)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/commit-check/commit-check/badge)](https://api.securityscorecards.dev/projects/github.com/commit-check/commit-check)
 
 ## Table of Contents
