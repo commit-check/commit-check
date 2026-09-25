@@ -43,7 +43,7 @@ AI attribution policy, and push safety — using one versioned TOML policy acros
 local hooks, CI, GitHub Actions, the hosted GitHub App, and AI automation.
 
 - **One policy file:** `cchk.toml`
-- **Multiple enforcement points:** CLI, pre-commit, CI / GitHub Actions, or the [Commit Check GitHub App](https://github.com/marketplace/commit-check) with no workflow file
+- **Multiple enforcement points:** CLI, pre-commit, CI / GitHub Actions, or the [Commit Check GitHub App](https://github.com/apps/commit-check) with no workflow file
 - **Machine-readable output:** JSON + Python API for automation and AI agents
 
 ![commit-check demo](https://github.com/commit-check/commit-check/raw/main/assets/demo.gif)
@@ -63,7 +63,7 @@ commit-check --message --branch
 ```yaml
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.18.0
+    rev: v2.18.1
     hooks:
       - id: check-message
       - id: check-branch
@@ -224,7 +224,7 @@ commit-check --message
 # In pre-commit hooks (.pre-commit-config.yaml)
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.18.0
+    rev: v2.18.1
     hooks:
       - id: check-message
         args:
@@ -298,7 +298,7 @@ commit-check --no-force-push
 # In pre-commit hooks (.pre-commit-config.yaml)
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.18.0
+    rev: v2.18.1
     hooks:
       - id: check-no-force-push
         stages: [pre-push]
@@ -330,7 +330,7 @@ commit-check --tag --tag-regex '^v\d+\.\d+\.\d+$'
 # a push carries, from the pre-push ref metadata on stdin
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.18.0
+    rev: v2.18.1
     hooks:
       - id: check-tag
         stages: [pre-push]
@@ -370,7 +370,7 @@ commit-check --files --rev abc1234
 # (a tag on already-pushed history adds nothing, so it is skipped)
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.18.0
+    rev: v2.18.1
     hooks:
       - id: check-files
         stages: [pre-push]
