@@ -531,6 +531,39 @@ class TestBranchValidator:
         # Skipped — the commit's author (dependabot[bot]) is in ignore_authors
         assert result == ValidationResult.SKIP
 
+    def test_a_piped_message_is_not_the_branch_name(self):
+        """
+        ``commit-check --message --branch`` with a message piped in failed
+        CC201 on the message text. The name comes from git; the message still
+        describes the commit being made, so the ignore list is checked against
+        the configured identity, as it is when the message is in a file.
+        """
+        rule = ValidationRule(check="branch", regex=r"^feature/")
+        validator = BranchValidator(rule)
+
+        config = {"branch": {"ignore_authors": ["pre-commit-ci[bot]"]}}
+        context = ValidationContext(
+            stdin_text="feat: add streaming support",
+            stdin_is_message=True,
+            config=config,
+        )
+
+        with (
+            patch("commit_check.engine.has_commits", return_value=True),
+            patch(
+                "commit_check.engine.get_branch_name",
+                return_value="feature/streaming-support",
+            ),
+            patch(
+                "commit_check.engine.get_commit_info", return_value="pre-commit-ci[bot]"
+            ),
+            patch(GIT_CONFIG_VALUE, return_value="Alice Developer"),
+        ):
+            result = validator.validate(context)
+        # Neither skipped for HEAD's bot author nor failed on the message.
+        assert result == ValidationResult.PASS
+        assert validator._checked_value == "feature/streaming-support"
+
 
 class TestAuthorValidator:
     @patch("commit_check.engine.has_commits")
