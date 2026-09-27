@@ -1108,6 +1108,10 @@ class ForcePushValidator(BaseValidator):
 
     A force push is detected when the remote SHA is not an ancestor of the
     local SHA, meaning local history would overwrite the remote.
+
+    With nothing to compare -- no ref lines, only blank or malformed ones, or
+    no upstream to fall back on -- the check reports SKIP rather than PASS:
+    it examined nothing, and a pass would read as a push that was judged safe.
     """
 
     ZERO_SHA = "0000000000000000000000000000000000000000"
@@ -1120,20 +1124,26 @@ class ForcePushValidator(BaseValidator):
         if not context.stdin_text:
             if context.push_upstream_fallback:
                 return self._check_current_branch_against_upstream()
-            return ValidationResult.PASS
+            return ValidationResult.SKIP
 
+        checked_any = False
         for line in context.stdin_text.splitlines():
-            result = self._check_push_line(line.strip())
-            if result == ValidationResult.FAIL:
+            line = line.strip()
+            # A blank or malformed line names no ref, so it judges nothing.
+            if len(line.split()) < 4:
+                continue
+            checked_any = True
+            if self._check_push_line(line) == ValidationResult.FAIL:
                 return ValidationResult.FAIL
 
-        return ValidationResult.PASS
+        return ValidationResult.PASS if checked_any else ValidationResult.SKIP
 
     def _check_current_branch_against_upstream(self) -> ValidationResult:
         """Check whether pushing HEAD to its upstream would require force."""
         upstream_ref = get_upstream_branch()
         if not upstream_ref:
-            return ValidationResult.PASS
+            # No upstream means no remote history to compare HEAD with.
+            return ValidationResult.SKIP
 
         if self._collect_value:
             branch = get_branch_name()
