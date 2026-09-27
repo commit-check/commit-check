@@ -1,0 +1,28 @@
+commit_check/engine.py
+  s_2d998574dcd18b::t_80d54e0bc5c6c3 1111-1114,1127,1129,1131-1136,1139,1145-1146
+commit_check/api.py
+  s_2d998574dcd18b::t_f3df90add885af 209-210
+  s_2d998574dcd18b::t_4e173dd1e4ddef 225-226
+tests/api_test.py
+  s_2d998574dcd18b::t_d690e6bfca7b32 322-323,325-335
+tests/engine_test.py
+  s_2d998574dcd18b::t_21c3b205b63510 2260,2266,2290-2291,2299,2577,2584-2607
+tests/main_test.py
+  s_2d998574dcd18b::t_3f097817d883d3 1132,1139-1140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b704a05aaeb9096657955ab238ef8bdd67d09fba",
+  "prompts": {},
+  "sessions": {
+    "s_2d998574dcd18b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2a569585-25a8-4bf9-ad35-9992f6f6ba0f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
