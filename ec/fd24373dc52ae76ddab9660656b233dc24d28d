@@ -1,0 +1,19 @@
+assets/demo.tape
+  s_2d998574dcd18b::t_24b58a04e672fa 19-23,47-50,53-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ecfd24373dc52ae76ddab9660656b233dc24d28d",
+  "prompts": {},
+  "sessions": {
+    "s_2d998574dcd18b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2a569585-25a8-4bf9-ad35-9992f6f6ba0f",
+        "model": "unknown"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
