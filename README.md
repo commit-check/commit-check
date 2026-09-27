@@ -178,8 +178,11 @@ from commit_check.api import validate_message
 validate_message("feat: add streaming support")["status"]  # "pass"
 ```
 
-`commit_check.api` also has `validate_branch`, `validate_author` and
-`validate_all`; each takes an optional `config` dict and returns the same shape.
+`commit_check.api` also has `validate_branch`, `validate_author`,
+`validate_tag`, `validate_push` and `validate_all`, all returning the same
+shape. Unlike the CLI they do not read `cchk.toml`: pass the policy as a
+`config` dict. The [Python API](https://commit-check.com/guides/python-api/)
+page covers each function and how to load a repository's file.
 
 Exit codes: `0` passed · `1` a check failed · `2` nothing was checked — bad
 usage, or a config that is missing, is not valid TOML, names an unknown rule or
