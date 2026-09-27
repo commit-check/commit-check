@@ -16,7 +16,11 @@ Set FontSize 16
 # assuming 0.6em). Narrower breaks that line, and the URL above it, mid-word.
 Set Width 1400
 Set Height 600
-Set Theme "Dracula"
+# The palette of commit-check.com's terminal demos (docs/stylesheets/landing.css:
+# .cc-term and the .cc-t-* colors), so the README and the site show one
+# terminal. commit-check prints in bright red, green and yellow; the prompt
+# below is cyan.
+Set Theme { "name": "Commit Check", "background": "#0f1d28", "foreground": "#d6e1e8", "cursor": "#2c9ccd", "selection": "#22323f", "black": "#13212c", "red": "#ff7a6e", "green": "#4fc98b", "yellow": "#f2b866", "blue": "#2c9ccd", "magenta": "#c3a6f0", "cyan": "#7fc6e6", "white": "#d6e1e8", "brightBlack": "#8fa3b1", "brightRed": "#ff7a6e", "brightGreen": "#4fc98b", "brightYellow": "#f2b866", "brightBlue": "#7fc6e6", "brightMagenta": "#c3a6f0", "brightCyan": "#7fc6e6", "brightWhite": "#ffffff" }
 Set Padding 24
 Set TypingSpeed 50ms
 Set PlaybackSpeed 1.0
@@ -38,11 +42,16 @@ Enter
 Type "clear"
 Enter
 Sleep 2s
-Show
 
 # --- A commit message that does not follow Conventional Commits ---
+# Typed while hidden, so the recording opens on the rejection rather than on
+# an empty prompt: the first frame is all a reader sees when the GIF is paused
+# (GitHub pauses animated images for readers who ask for reduced motion) or
+# has not finished loading.
 Type "echo 'add user login' | commit-check -m"
 Enter
+Sleep 2s
+Show
 Sleep 4s
 
 # --- The same message, fixed. A passing check prints nothing and exits 0, so
