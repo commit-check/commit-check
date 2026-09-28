@@ -2257,13 +2257,13 @@ class TestForcePushValidator:
 
     @pytest.mark.benchmark
     def test_no_stdin_skips_validation(self):
-        """Validator passes when no stdin is provided (not a pre-push context)."""
+        """With no push refs there is nothing to compare, so the check skips."""
         rule = self._make_rule()
         validator = ForcePushValidator(rule)
         context = ValidationContext()  # stdin_text=None
 
         result = validator.validate(context)
-        assert result == ValidationResult.PASS
+        assert result == ValidationResult.SKIP
 
     @pytest.mark.benchmark
     def test_multiple_push_refs_accumulate_checked_value(self):
@@ -2287,8 +2287,8 @@ class TestForcePushValidator:
         )
 
     @pytest.mark.benchmark
-    def test_no_stdin_with_upstream_fallback_passes_without_upstream(self):
-        """Standalone mode passes when the current branch has no upstream."""
+    def test_no_stdin_with_upstream_fallback_skips_without_upstream(self):
+        """Standalone mode skips when the current branch has no upstream."""
         rule = self._make_rule()
         validator = ForcePushValidator(rule)
         context = ValidationContext(push_upstream_fallback=True)
@@ -2296,7 +2296,7 @@ class TestForcePushValidator:
         with patch("commit_check.engine.get_upstream_branch", return_value=""):
             result = validator.validate(context)
 
-        assert result == ValidationResult.PASS
+        assert result == ValidationResult.SKIP
 
     @pytest.mark.benchmark
     def test_no_stdin_with_upstream_fallback_passes_fast_forward(self):
@@ -2574,14 +2574,37 @@ class TestForcePushValidator:
 
     @pytest.mark.benchmark
     def test_malformed_push_line_is_skipped(self):
-        """Lines that do not have 4 fields are silently skipped."""
+        """A lone line without 4 fields names no ref, so the check skips."""
         rule = self._make_rule()
         validator = ForcePushValidator(rule)
         push_info = "only two fields"
         context = ValidationContext(stdin_text=push_info)
 
         result = validator.validate(context)
-        assert result == ValidationResult.PASS
+        assert result == ValidationResult.SKIP
+
+    @pytest.mark.benchmark
+    def test_blank_lines_only_are_skipped(self):
+        """Stdin holding nothing but blank lines has no ref to judge."""
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        context = ValidationContext(stdin_text="\n  \n\n")
+
+        result = validator.validate(context)
+        assert result == ValidationResult.SKIP
+
+    @pytest.mark.benchmark
+    def test_malformed_line_beside_a_real_ref_still_judges_the_ref(self):
+        """A malformed line is ignored; a real ref next to it is still checked."""
+        rule = self._make_rule()
+        validator = ForcePushValidator(rule)
+        push_info = "only two fields\nrefs/heads/main abc1 refs/heads/main def2"
+        context = ValidationContext(stdin_text=push_info)
+
+        with patch("commit_check.engine.git_merge_base", return_value=1):
+            assert validator.validate(context) == ValidationResult.FAIL
+        with patch("commit_check.engine.git_merge_base", return_value=0):
+            assert validator.validate(context) == ValidationResult.PASS
 
     @pytest.mark.benchmark
     def test_multiple_refs_one_force_push_blocks(self):

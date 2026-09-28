@@ -206,7 +206,8 @@ def validate_push(
 
     :param push_refs: Push ref information in the format produced by git's
         pre-push hook: ``<local ref> <local sha1> <remote ref> <remote sha1>``,
-        one entry per line.  If *None*, the check is skipped (returns pass).
+        one entry per line.  If *None* or empty, or no line names a ref,
+        there is nothing to compare and the check reports ``"skip"``.
     :param config: Optional configuration override dict.  The push check is
         always enabled when calling this function; a detected force push fails
         the result unless ``no_force_push`` is listed under ``warn``, in which
@@ -221,6 +222,8 @@ def validate_push(
         >>> result = validate_push(f"refs/heads/main abc123 refs/heads/main {zero}")
         >>> result["status"]
         'pass'
+        >>> validate_push(None)["status"]
+        'skip'
     """
     cfg = _merge_config(config)
     # Enable force push blocking in the config so the rule is built
