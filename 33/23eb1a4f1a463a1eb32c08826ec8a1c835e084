@@ -1,0 +1,31 @@
+README.md
+  s_2d998574dcd18b::t_502adc1d322d26 54-55
+commit_check/main.py
+  s_0ca869bfbb8152::t_487c352dc99abd 235-242,531-564,759-763
+tests/main_test.py
+  s_2d998574dcd18b::t_1c1769bbfacd40 375-417
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3323eb1a4f1a463a1eb32c08826ec8a1c835e084",
+  "prompts": {},
+  "sessions": {
+    "s_0ca869bfbb8152": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e336f38e-eab7-43a5-9e10-a0fa495f41c4",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    },
+    "s_2d998574dcd18b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2a569585-25a8-4bf9-ad35-9992f6f6ba0f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
