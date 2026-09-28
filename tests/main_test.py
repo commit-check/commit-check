@@ -383,20 +383,36 @@ class TestFixOption:
         return main(), path.read_text()
 
     @pytest.mark.parametrize(
-        "flags, fixed",
+        "message, flags, fixed",
         [
-            ((), "fix: add streaming support\n"),
-            (("--subject-capitalized=true",), "fix: Add streaming support\n"),
+            ("Fix: add x\n", (), "fix: add x\n"),
+            # A subject fix keeps the body.
+            (
+                "Fix: add x\n\nbody\n",
+                ("--subject-capitalized=true",),
+                "fix: Add x\n\nbody\n",
+            ),
+            # CC001 has no fix for "WIP: ...", but dropping the marker is one.
+            ("WIP: fix: add x\n", ("--allow-wip-commits=false",), "fix: add x\n"),
+            # The value is the trailer; the fix is the whole message.
+            (
+                "fix: add x\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\n",
+                ("--ai-attribution=disclose",),
+                "fix: add x\n\nAssisted-by: Claude Opus 5\n",
+            ),
         ],
     )
     def test_a_fixable_message_is_rewritten(
-        self, tmp_path, monkeypatch, capfd, flags, fixed
+        self, tmp_path, monkeypatch, capfd, message, flags, fixed
     ):
-        rc, text = self._run(
-            tmp_path, monkeypatch, "Fix: add streaming support\n", *flags
-        )
+        rc, text = self._run(tmp_path, monkeypatch, message, *flags)
         assert (rc, text) == (0, fixed)
-        assert "✎ fixed the commit message: CC001 message" in capfd.readouterr().err
+        assert "✎ fixed the commit message" in capfd.readouterr().err
+
+    def test_a_passing_message_is_not_touched(self, tmp_path, monkeypatch, capfd):
+        rc, text = self._run(tmp_path, monkeypatch, "fix: add x\n")
+        assert (rc, text) == (0, "fix: add x\n")
+        assert "✎" not in capfd.readouterr().err
 
     def test_an_unfixable_message_is_left_alone(self, tmp_path, monkeypatch):
         rc, text = self._run(tmp_path, monkeypatch, "add streaming support\n")

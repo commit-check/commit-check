@@ -531,9 +531,9 @@ def _get_parser() -> argparse.ArgumentParser:
 def _fix_message_file(path: str, rules: list, config: dict) -> None:
     """Rewrite a commit message file when every failure in it has a fix.
 
-    A fix corrects only the value its own rule examined -- the message, or
-    its subject -- so fixes go in one at a time, re-checking after each. A
-    failure with no fix leaves the file as it was.
+    A subject rule's fix is the corrected subject; every other rule's fix is
+    the corrected message. Fixes go in one at a time, re-checking after
+    each, and a failure no fix can reach leaves the file as it was.
     """
     with open(path, encoding="utf-8") as f:
         original = f.read()
@@ -544,22 +544,23 @@ def _fix_message_file(path: str, rules: list, config: dict) -> None:
         context = ValidationContext(
             stdin_text=message, stdin_is_message=True, config=config
         )
-        failed = [
-            o for o in engine.validate_all_detailed(context) if o.status == "fail"
-        ]
-        if not failed:
+        outcomes = engine.validate_all_detailed(context)
+        failed = [o for o in outcomes if o.status == "fail"]
+        fixable = [o for o in failed if o.fix]
+        if not fixable:
             break
-        first = failed[0]
-        if not first.fix or first.fix == first.value:
-            return
-        message = message.replace(first.value, first.fix, 1)
+        first = fixable[0]
+        subject = message.split("\n", 1)[0]
+        if first.value == subject:
+            message = first.fix + message[len(subject) :]
+        else:
+            message = first.fix
         fixed.append(f"{first.rule_id} {first.check.replace('_', '-')}")
-    else:
+    if failed or not fixed:
         return
-    if fixed:
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(original.replace(original.strip(), message, 1))
-        print(f"✎ fixed the commit message: {', '.join(fixed)}", file=sys.stderr)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(original.replace(original.strip(), message, 1))
+    print(f"✎ fixed the commit message: {', '.join(fixed)}", file=sys.stderr)
 
 
 def _resolve_commit_message_source(
