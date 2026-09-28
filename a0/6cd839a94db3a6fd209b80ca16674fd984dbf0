@@ -1,0 +1,23 @@
+commit_check/config_merger.py
+  s_2d998574dcd18b::t_9c94657d66514b 4
+  s_2d998574dcd18b::t_c76a11ef10009e 112-136
+  s_2d998574dcd18b::t_0456ed935c7c45 137-142,294-295
+tests/config_merger_test.py
+  s_2d998574dcd18b::t_6c83104dcc0ad5 13,391-415
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a06cd839a94db3a6fd209b80ca16674fd984dbf0",
+  "prompts": {},
+  "sessions": {
+    "s_2d998574dcd18b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2a569585-25a8-4bf9-ad35-9992f6f6ba0f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
