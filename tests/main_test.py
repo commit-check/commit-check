@@ -1259,13 +1259,15 @@ class TestNoForcePushFlag:
         assert main() == 1
 
     @pytest.mark.benchmark
-    def test_no_force_push_no_stdin_passes(self, mocker, monkeypatch):
+    def test_no_force_push_no_stdin_skips(self, mocker, monkeypatch, capfd):
         """When no stdin and no upstream are available, the check is skipped."""
         mocker.patch("sys.stdin.isatty", return_value=True)
         mocker.patch("commit_check.engine.get_upstream_branch", return_value="")
 
         monkeypatch.setattr("sys.argv", [CMD, "--no-force-push"])
         assert main() == 0
+        # Exit 0 either way; the notice is what tells a skip from a pass.
+        assert "⊘ skipped (not validated): no-force-push" in capfd.readouterr().err
 
     @pytest.mark.benchmark
     def test_no_force_push_no_stdin_uses_upstream_fallback(self, mocker, monkeypatch):

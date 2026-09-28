@@ -319,10 +319,20 @@ class TestValidatePush:
         assert "Force push" in failed[0]["error"]
 
     @pytest.mark.benchmark
-    def test_none_push_refs_passes(self):
-        """Calling with push_refs=None (no stdin) returns pass."""
+    def test_none_push_refs_skips(self):
+        """With push_refs=None nothing is compared, so the result is skip."""
         result = validate_push(None)
-        assert result["status"] == "pass"
+        assert result["status"] == "skip"
+        [check] = result["checks"]
+        assert check["check"] == "no_force_push"
+        assert check["status"] == "skip"
+        assert check["value"] == ""
+
+    @pytest.mark.benchmark
+    @pytest.mark.parametrize("push_refs", ["", "\n\n", "only two fields"])
+    def test_push_refs_naming_no_ref_skip(self, push_refs):
+        """Empty, blank or malformed push_refs name no ref to judge."""
+        assert validate_push(push_refs)["status"] == "skip"
 
     @pytest.mark.benchmark
     def test_custom_config_is_merged(self):
