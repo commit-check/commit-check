@@ -1,0 +1,35 @@
+.github/workflows/main.yml
+  s_2d998574dcd18b::t_6a0f802b0a7051 61,69
+README.md
+  s_2d998574dcd18b::t_10a4ea59dc9023 1,3-20,22-29,31,34,38-43,48,54-56,58,60,62-66,68,70-78,80,82,84,88-89,91,97-100,102-103,105-106,132,143-145,147,149,151-153,159-160,163-164,166-170,174,177,179,182-186,188-190,192,194-201,203-204,206,208,211,214,216-219
+assets/demo.tape
+  s_2d998574dcd18b::t_e11a42c87bb736 19-23,47-50,53-54
+commit_check/api.py
+  s_2d998574dcd18b::t_76a25916761631 209-210,225-226
+commit_check/engine.py
+  s_2d998574dcd18b::t_903d402fb2a057 1119-1122,1135,1137,1139-1144,1147,1153-1154
+pyproject.toml
+  s_2d998574dcd18b::t_f28628a8de10e7 29
+tests/api_test.py
+  s_2d998574dcd18b::t_bb31ccc5e1b0cf 322-323,325-335
+tests/engine_test.py
+  s_2d998574dcd18b::t_353eb5a088cdd9 2260,2266,2290-2291,2299,2577,2584-2607
+tests/main_test.py
+  s_2d998574dcd18b::t_f0f509edf359e4 1132,1139-1140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "09aca1dfdd677c9d60812057d6dd0b96b8777bfe",
+  "prompts": {},
+  "sessions": {
+    "s_2d998574dcd18b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2a569585-25a8-4bf9-ad35-9992f6f6ba0f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
