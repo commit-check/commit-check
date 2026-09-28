@@ -10,6 +10,7 @@ from commit_check.config_merger import (
     get_default_config,
     deep_merge,
     ConfigMerger,
+    unknown_setting_warnings,
 )
 
 
@@ -385,6 +386,33 @@ subject_max_length = 200
         args = argparse.Namespace()
         with pytest.raises(FileNotFoundError):
             ConfigMerger.from_all_sources(args, str(tmp_path / "nonexistent.toml"))
+
+
+class TestUnknownSettings:
+    """A setting nothing reads is named, not ignored in silence."""
+
+    def test_names_misspelt_keys_and_sections(self):
+        config = {
+            "commit": {"subject_max_lenght": 10, "require_body": True},
+            "branches": {"conventional_branch": True},
+            "pull_requset": {"check": "squash"},
+            "warn": ["CC003"],
+            "jira": {"required": True},
+            "pull_request": {"check": "squash"},
+        }
+        assert unknown_setting_warnings(config) == [
+            "⚠ unknown setting [commit] subject_max_lenght is ignored; "
+            "did you mean subject_max_length?",
+            "⚠ unknown setting [branches] is ignored; did you mean branch?",
+            "⚠ unknown setting [pull_requset] is ignored; did you mean pull_request?",
+        ]
+
+    def test_the_run_warns_and_carries_on(self, tmp_path, monkeypatch, capsys):
+        (tmp_path / "cchk.toml").write_text("[commit]\nsubject_max_lenght = 10\n")
+        monkeypatch.chdir(tmp_path)
+        config = ConfigMerger.from_all_sources(argparse.Namespace())
+        assert config["commit"]["subject_max_length"] == 80
+        assert "[commit] subject_max_lenght is ignored" in capsys.readouterr().err
 
 
 class TestTagConfig:

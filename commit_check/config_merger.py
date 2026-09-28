@@ -1,6 +1,7 @@
 """Configuration merger that combines CLI args, env vars, TOML config, and defaults."""
 
 from __future__ import annotations
+import difflib
 import os
 import sys
 import argparse
@@ -106,6 +107,37 @@ def get_default_config() -> dict[str, Any]:
             "max_path_length": 0,
         },
     }
+
+
+#: Read from the same file, but by other tools: ``warn`` by the rule builder,
+#: ``[jira]`` and ``[pull_request]`` by the GitHub App.
+_OTHER_KEYS = frozenset({"warn", "jira", "pull_request"})
+
+
+def unknown_setting_warnings(config: dict[str, Any]) -> list[str]:
+    """One line per setting in a config file that nothing reads.
+
+    A misspelt key used to be ignored in silence, leaving its rule off.
+    """
+    defaults = get_default_config()
+    names = []
+    for section, value in config.items():
+        if section in _OTHER_KEYS:
+            continue
+        if section not in defaults:
+            names.append((f"[{section}]", section, [*defaults, *_OTHER_KEYS]))
+        elif isinstance(value, dict):
+            names.extend(
+                (f"[{section}] {key}", key, defaults[section])
+                for key in value
+                if key not in defaults[section]
+            )
+    warnings = []
+    for shown, name, known in names:
+        match = difflib.get_close_matches(name, list(known), n=1)
+        hint = f"; did you mean {match[0]}?" if match else ""
+        warnings.append(f"⚠ unknown setting {shown} is ignored{hint}")
+    return warnings
 
 
 class ConfigMerger:
@@ -259,6 +291,8 @@ class ConfigMerger:
         try:
             toml_config = load_toml_config(config_path or "")
             if toml_config:
+                for warning in unknown_setting_warnings(toml_config):
+                    print(warning, file=sys.stderr)
                 deep_merge(config, toml_config)
         except FileNotFoundError:
             # If a specific path was provided and not found, this error is already raised
