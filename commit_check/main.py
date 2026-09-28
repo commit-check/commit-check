@@ -711,6 +711,9 @@ def main() -> int:
             if not args.message:
                 stdin_content = _resolve_stdin_for_non_message(args, stdin_reader)
 
+        # Next to --message, piped stdin is the message; other checks read git.
+        stdin_is_message = args.message and stdin_content is not None
+
         # Reset banner state for this run
         print_error_header.has_been_called = False
 
@@ -721,7 +724,9 @@ def main() -> int:
             config=config_data,
             no_banner=getattr(args, "no_banner", False),
             compact=getattr(args, "compact", False),
-            push_upstream_fallback=args.no_force_push and stdin_content is None,
+            push_upstream_fallback=args.no_force_push
+            and (stdin_content is None or stdin_is_message),
+            stdin_is_message=stdin_is_message,
         )
 
         # Run validation – choose output mode based on --format

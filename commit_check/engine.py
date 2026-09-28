@@ -93,6 +93,14 @@ class ValidationContext:
     files_cache: dict[str, list[tuple[str, int]]] = field(
         default_factory=dict, repr=False, compare=False
     )
+    # Set when stdin_text is a piped commit message: checks with a value of
+    # their own (branch, author, tags, push refs) then read git instead.
+    stdin_is_message: bool = False
+
+    @property
+    def piped_value(self) -> str | None:
+        """stdin_text as a check's own value, or None when it is the message."""
+        return None if self.stdin_is_message else self.stdin_text
 
 
 @dataclass
@@ -334,14 +342,14 @@ class BaseValidator(ABC):
         Determine if branch validation should be skipped.
 
         Skip if the current author is in the ignore_authors list for branches,
-        or if no stdin_text and no commits exist.
+        or if no branch name was supplied and no commits exist.
         """
         ignore_authors = context.config.get("branch", {}).get("ignore_authors", [])
         if ignore_authors:
             current_author = self._resolve_current_author(context)
             if current_author and current_author in ignore_authors:
                 return True
-        return context.stdin_text is None and not has_commits()
+        return context.piped_value is None and not has_commits()
 
     def _print_failure(
         self,
@@ -614,8 +622,9 @@ class AuthorValidator(BaseValidator):
         Checks git config first (for pre-commit validation of the configured identity),
         then falls back to the last commit's author info.
         """
-        if context.stdin_text is not None:
-            return context.stdin_text.strip()
+        supplied = context.piped_value
+        if supplied is not None:
+            return supplied.strip()
 
         git_config_map = {
             "author_name": "user.name",
@@ -669,11 +678,8 @@ class BranchValidator(BaseValidator):
     def validate(self, context: ValidationContext) -> ValidationResult:
         if self._should_skip_branch_validation(context):
             return ValidationResult.SKIP
-        branch_name = (
-            context.stdin_text.strip()
-            if context.stdin_text is not None
-            else get_branch_name()
-        )
+        supplied = context.piped_value
+        branch_name = supplied.strip() if supplied is not None else get_branch_name()
         self._checked_value = branch_name
 
         if not self.rule.regex:
@@ -730,8 +736,9 @@ class TagValidator(BaseValidator):
         return lines
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        if context.stdin_text is not None:
-            tags = self._tags_from_stdin(context.stdin_text)
+        supplied = context.piped_value
+        if supplied is not None:
+            tags = self._tags_from_stdin(supplied)
         else:
             tags = get_tags_at(context.rev or "HEAD")
 
@@ -814,8 +821,9 @@ class FilesValidator(BaseValidator):
         or commits the remote already has — which the caller reports as a
         skip rather than a pass.
         """
-        if context.stdin_text is not None:
-            revs = self._push_revs_from_stdin(context.stdin_text)
+        supplied = context.piped_value
+        if supplied is not None:
+            revs = self._push_revs_from_stdin(supplied)
             if revs is not None:
                 return revs or None
         return [context.rev or "HEAD"]
@@ -1121,13 +1129,14 @@ class ForcePushValidator(BaseValidator):
         # branch name, stdin_text carries a *list* of refs, and no refs means
         # there is nothing to check either way. So this one stays a truth test
         # while the single-value readers above distinguish "" from None.
-        if not context.stdin_text:
+        push_refs = context.piped_value
+        if not push_refs:
             if context.push_upstream_fallback:
                 return self._check_current_branch_against_upstream()
             return ValidationResult.SKIP
 
         checked_any = False
-        for line in context.stdin_text.splitlines():
+        for line in push_refs.splitlines():
             line = line.strip()
             # A blank or malformed line names no ref, so it judges nothing.
             if len(line.split()) < 4:
