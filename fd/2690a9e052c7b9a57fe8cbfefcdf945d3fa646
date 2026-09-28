@@ -1,0 +1,21 @@
+commit_check/main.py
+  s_2d998574dcd18b::t_3aed34fe340cd2 534-536,547-550,552-557,559,561-563
+tests/main_test.py
+  s_2d998574dcd18b::t_22cfa36ea5f095 386,388-402,406,408,410-415
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "fd2690a9e052c7b9a57fe8cbfefcdf945d3fa646",
+  "prompts": {},
+  "sessions": {
+    "s_2d998574dcd18b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2a569585-25a8-4bf9-ad35-9992f6f6ba0f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
