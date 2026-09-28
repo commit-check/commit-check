@@ -125,7 +125,7 @@ def unknown_setting_warnings(config: dict[str, Any]) -> list[str]:
         if section in _OTHER_KEYS:
             continue
         if section not in defaults:
-            names.append((f"[{section}]", section, defaults))
+            names.append((f"[{section}]", section, [*defaults, *_OTHER_KEYS]))
         elif isinstance(value, dict):
             names.extend(
                 (f"[{section}] {key}", key, defaults[section])

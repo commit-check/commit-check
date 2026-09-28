@@ -395,6 +395,7 @@ class TestUnknownSettings:
         config = {
             "commit": {"subject_max_lenght": 10, "require_body": True},
             "branches": {"conventional_branch": True},
+            "pull_requset": {"check": "squash"},
             "warn": ["CC003"],
             "jira": {"required": True},
             "pull_request": {"check": "squash"},
@@ -403,6 +404,7 @@ class TestUnknownSettings:
             "⚠ unknown setting [commit] subject_max_lenght is ignored; "
             "did you mean subject_max_length?",
             "⚠ unknown setting [branches] is ignored; did you mean branch?",
+            "⚠ unknown setting [pull_requset] is ignored; did you mean pull_request?",
         ]
 
     def test_the_run_warns_and_carries_on(self, tmp_path, monkeypatch, capsys):
