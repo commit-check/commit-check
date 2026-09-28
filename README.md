@@ -51,6 +51,8 @@ repos:
       - id: check-branch
 ```
 
+Add `args: [--fix]` to `check-message` and the hook corrects mechanical slips
+itself — a type's case, a missing colon — instead of rejecting the commit.
 The hooks for the other checks (`check-author-name`, `check-author-email`,
 `check-no-force-push`, `check-tag`, `check-files`) are listed in the
 [pre-commit guide](https://commit-check.com/guides/pre-commit/).

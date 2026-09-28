@@ -232,6 +232,14 @@ def _get_parser() -> argparse.ArgumentParser:
         required=False,
     )
 
+    parser.add_argument(
+        "--fix",
+        help="rewrite the commit message file when every failed message check "
+        "has a mechanical fix, such as a type's case or a missing colon",
+        action="store_true",
+        required=False,
+    )
+
     check_group.add_argument(
         "--no-force-push",
         help="check that no force push is being performed (uses pre-push hook stdin when available, otherwise checks the current branch against its upstream)",
@@ -520,6 +528,40 @@ def _get_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _fix_message_file(path: str, rules: list, config: dict) -> None:
+    """Rewrite a commit message file when every failure in it has a fix.
+
+    A fix corrects only the value its own rule examined -- the message, or
+    its subject -- so fixes go in one at a time, re-checking after each. A
+    failure with no fix leaves the file as it was.
+    """
+    with open(path, encoding="utf-8") as f:
+        original = f.read()
+    message = original.strip()
+    engine = ValidationEngine([r for r in rules if r.check in MESSAGE_CHECKS])
+    fixed = []
+    for _ in range(len(engine.rules) + 1):
+        context = ValidationContext(
+            stdin_text=message, stdin_is_message=True, config=config
+        )
+        failed = [
+            o for o in engine.validate_all_detailed(context) if o.status == "fail"
+        ]
+        if not failed:
+            break
+        first = failed[0]
+        if not first.fix or first.fix == first.value:
+            return
+        message = message.replace(first.value, first.fix, 1)
+        fixed.append(f"{first.rule_id} {first.check.replace('_', '-')}")
+    else:
+        return
+    if fixed:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(original.replace(original.strip(), message, 1))
+        print(f"✎ fixed the commit message: {', '.join(fixed)}", file=sys.stderr)
+
+
 def _resolve_commit_message_source(
     args: argparse.Namespace,
     stdin_reader: StdinReader,
@@ -713,6 +755,11 @@ def main() -> int:
 
         # Next to --message, piped stdin is the message; other checks read git.
         stdin_is_message = args.message and stdin_content is not None
+
+        if args.fix and not commit_file_path:
+            parser.error("--fix rewrites a commit message file; pass one")
+        if args.fix and commit_file_path and not args.dry_run:
+            _fix_message_file(commit_file_path, filtered_rules, config_data)
 
         # Reset banner state for this run
         print_error_header.has_been_called = False

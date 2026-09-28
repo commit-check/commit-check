@@ -372,6 +372,49 @@ class TestRevOption:
         assert any("updated the parser" in v for v in values)
 
 
+class TestFixOption:
+    """--fix rewrites a message file whose every failure has a mechanical fix."""
+
+    def _run(self, tmp_path, monkeypatch, message, *flags):
+        path = tmp_path / "COMMIT_EDITMSG"
+        path.write_text(message)
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.argv", [CMD, "--message", "--fix", *flags, str(path)])
+        return main(), path.read_text()
+
+    @pytest.mark.parametrize(
+        "flags, fixed",
+        [
+            ((), "fix: add streaming support\n"),
+            (("--subject-capitalized=true",), "fix: Add streaming support\n"),
+        ],
+    )
+    def test_a_fixable_message_is_rewritten(
+        self, tmp_path, monkeypatch, capfd, flags, fixed
+    ):
+        rc, text = self._run(
+            tmp_path, monkeypatch, "Fix: add streaming support\n", *flags
+        )
+        assert (rc, text) == (0, fixed)
+        assert "✎ fixed the commit message: CC001 message" in capfd.readouterr().err
+
+    def test_an_unfixable_message_is_left_alone(self, tmp_path, monkeypatch):
+        rc, text = self._run(tmp_path, monkeypatch, "add streaming support\n")
+        assert (rc, text) == (1, "add streaming support\n")
+
+    def test_dry_run_rewrites_nothing(self, tmp_path, monkeypatch):
+        rc, text = self._run(tmp_path, monkeypatch, "Fix: add x\n", "--dry-run")
+        assert (rc, text) == (0, "Fix: add x\n")
+
+    def test_needs_a_message_file(self, mocker, monkeypatch):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="Fix: add x")
+        monkeypatch.setattr("sys.argv", [CMD, "--message", "--fix"])
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 2
+
+
 class TestPipedMessageWithOtherChecks:
     """Next to --message, piped stdin is the message; the other checks read git.
 
