@@ -93,13 +93,14 @@ class ValidationContext:
     files_cache: dict[str, list[tuple[str, int]]] = field(
         default_factory=dict, repr=False, compare=False
     )
-    # True when stdin_text is a commit message: what the CLI's --message read
-    # from stdin. Checks that read a value of their own -- a branch name, an
-    # author, tags, push refs -- then leave it alone and read git, exactly as
-    # they do when the message comes from a file. Left False, stdin_text is
-    # the value for whichever checks run, which is how every API call uses
-    # it: one kind of value per context.
+    # Set when stdin_text is a piped commit message: checks with a value of
+    # their own (branch, author, tags, push refs) then read git instead.
     stdin_is_message: bool = False
+
+    @property
+    def piped_value(self) -> str | None:
+        """stdin_text as a check's own value, or None when it is the message."""
+        return None if self.stdin_is_message else self.stdin_text
 
 
 @dataclass
@@ -256,21 +257,6 @@ class BaseValidator(ABC):
         )
 
     @staticmethod
-    def _supplied_value(context: ValidationContext) -> str | None:
-        """The value supplied for a check that reads something other than the message.
-
-        A branch name, an author, tag names or push refs: what such a check
-        reads in place of asking git. A commit message is none of those.
-        ``commit-check --message --branch`` with a message piped in once
-        failed CC201 on the message text, so a message on stdin is withheld
-        here and the check reads git, as it does when the message is in a
-        file. Only the value is withheld: the message still describes the
-        commit being made, so the ignore lists resolve its author as they do
-        for a message file.
-        """
-        return None if context.stdin_is_message else context.stdin_text
-
-    @staticmethod
     def _get_commit_message(context: ValidationContext) -> str:
         """Get commit message from context or git."""
         if context.stdin_text is not None:
@@ -363,7 +349,7 @@ class BaseValidator(ABC):
             current_author = self._resolve_current_author(context)
             if current_author and current_author in ignore_authors:
                 return True
-        return self._supplied_value(context) is None and not has_commits()
+        return context.piped_value is None and not has_commits()
 
     def _print_failure(
         self,
@@ -636,7 +622,7 @@ class AuthorValidator(BaseValidator):
         Checks git config first (for pre-commit validation of the configured identity),
         then falls back to the last commit's author info.
         """
-        supplied = self._supplied_value(context)
+        supplied = context.piped_value
         if supplied is not None:
             return supplied.strip()
 
@@ -692,7 +678,7 @@ class BranchValidator(BaseValidator):
     def validate(self, context: ValidationContext) -> ValidationResult:
         if self._should_skip_branch_validation(context):
             return ValidationResult.SKIP
-        supplied = self._supplied_value(context)
+        supplied = context.piped_value
         branch_name = supplied.strip() if supplied is not None else get_branch_name()
         self._checked_value = branch_name
 
@@ -750,7 +736,7 @@ class TagValidator(BaseValidator):
         return lines
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        supplied = self._supplied_value(context)
+        supplied = context.piped_value
         if supplied is not None:
             tags = self._tags_from_stdin(supplied)
         else:
@@ -835,7 +821,7 @@ class FilesValidator(BaseValidator):
         or commits the remote already has — which the caller reports as a
         skip rather than a pass.
         """
-        supplied = self._supplied_value(context)
+        supplied = context.piped_value
         if supplied is not None:
             revs = self._push_revs_from_stdin(supplied)
             if revs is not None:
@@ -1143,7 +1129,7 @@ class ForcePushValidator(BaseValidator):
         # branch name, stdin_text carries a *list* of refs, and no refs means
         # there is nothing to check either way. So this one stays a truth test
         # while the single-value readers above distinguish "" from None.
-        push_refs = self._supplied_value(context)
+        push_refs = context.piped_value
         if not push_refs:
             if context.push_upstream_fallback:
                 return self._check_current_branch_against_upstream()
