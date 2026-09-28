@@ -1,0 +1,27 @@
+.github/copilot-instructions.md
+  s_2d998574dcd18b::t_ff0af04f8b8597 233
+commit_check/engine.py
+  s_2d998574dcd18b::t_9e79e18d820b70 685
+commit_check/main.py
+  s_2d998574dcd18b::t_5bbd7c919f9b3b 447-448
+commit_check/rule_builder.py
+  s_2d998574dcd18b::t_f960887c8beb18 46-47,49-53,493,499
+tests/rule_builder_test.py
+  s_2d998574dcd18b::t_c2f494c6d6df3b 942,946-951,959-960,968,971-973,977,980-993
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "11a456cc774ff2764f1930c709fd682cdd92e3bd",
+  "prompts": {},
+  "sessions": {
+    "s_2d998574dcd18b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2a569585-25a8-4bf9-ad35-9992f6f6ba0f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
