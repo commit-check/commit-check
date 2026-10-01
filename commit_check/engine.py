@@ -210,7 +210,6 @@ class BaseValidator(ABC):
     @abstractmethod
     def validate(self, context: ValidationContext) -> ValidationResult:
         """Perform validation and return result."""
-        pass
 
     @staticmethod
     def _resolve_current_author(context: ValidationContext) -> str:
@@ -1092,15 +1091,11 @@ class BodyValidator(BaseValidator):
         # Filter out empty lines
         non_empty_lines = [line.strip() for line in lines if line.strip()]
 
-        # If there's more than just the subject line, we have a body
+        # If there's more than just the subject line, we have a body. The
+        # message is stripped, so its first and last lines both carry text:
+        # any text after the subject is a second non-empty line.
         if len(non_empty_lines) > 1:
             return ValidationResult.PASS
-
-        # Check if there's content after the first line (even if separated by empty lines)
-        if len(lines) > 1:
-            body_content = "\n".join(lines[1:]).strip()
-            if body_content:
-                return ValidationResult.PASS
 
         self._print_failure(message)
         return ValidationResult.FAIL
