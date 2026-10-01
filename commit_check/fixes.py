@@ -17,7 +17,10 @@ from collections.abc import Mapping
 
 # type, optional scope, optional bang, optional colon, the rest. Lenient on
 # purpose: this is the shape of a subject that *tried* to be conventional.
-_HEADER = re.compile(r"^\s*([A-Za-z]+)(\([^)]*\))?(!)?(\s*:\s*|\s+)(\S.*?)\s*$")
+# The rest runs to its last non-blank character, matched greedily: a lazy
+# `.*?` retried the trailing `\s*$` after every character, which is
+# quadratic in a subject holding a long run of blanks.
+_HEADER = re.compile(r"^\s*([A-Za-z]+)(\([^)]*\))?(!)?(\s*:\s*|\s+)(\S(?:.*\S)?)\s*$")
 _CONVENTIONAL_PREFIX = re.compile(r"^(\w+(?:\([^)]*\))?!?:\s*)(.*)$")
 _WIP = re.compile(r"^\s*(?:\[wip\]|wip:|wip\b)\s*[-:]?\s*", re.IGNORECASE)
 

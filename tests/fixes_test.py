@@ -1,8 +1,13 @@
 """Tests for the deterministic corrections in commit_check.fixes."""
 
+import random
+import re
+import time
+
 import pytest
 
 from commit_check.fixes import (
+    _HEADER,
     append_trailer,
     fix_branch_type,
     fix_conventional_header,
@@ -64,6 +69,25 @@ class TestFixConventionalHeader:
     def test_swapped_letters_are_corrected(self):
         assert fix_conventional_header("feta: add x", TYPES) == "feat: add x"
         assert fix_conventional_header("fxi: add x", TYPES) == "fix: add x"
+
+    def test_a_subject_is_read_exactly_as_the_lazy_pattern_read_it(self):
+        """The linear header pattern splits every subject the same way."""
+        lazy = re.compile(r"^\s*([A-Za-z]+)(\([^)]*\))?(!)?(\s*:\s*|\s+)(\S.*?)\s*$")
+        rng = random.Random(3)
+        pieces = ["feat", "Fix", " ", "\t", ":", "(", ")", "!", "x", "y z", "1", "é"]
+        for _ in range(20_000):
+            subject = "".join(rng.choice(pieces) for _ in range(rng.randint(0, 10)))
+            old, new = lazy.match(subject), _HEADER.match(subject)
+            assert (old and old.groups()) == (new and new.groups()), repr(subject)
+
+    def test_a_long_run_of_blanks_takes_linear_time(self):
+        """Every subject CC001 rejects is read by this pattern, on by default."""
+        start = time.monotonic()
+        fixed = fix_conventional_header("Feat x" + " " * 50_000 + "y", TYPES)
+        elapsed = time.monotonic() - start
+
+        assert fixed == "feat: x" + " " * 50_000 + "y"
+        assert elapsed < 2
 
 
 class TestFixSubjectCase:

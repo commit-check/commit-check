@@ -178,7 +178,17 @@ COMMIT_RULES = [
     RuleCatalogEntry(
         rule_id="CC012",
         check="require_signed_off_by",
-        regex=r"Signed-off-by: .+ <.+@.+>",
+        # The shape of `Signed-off-by: .+ <.+@.+>`, accepting exactly the
+        # same messages: a name, " <", an address with an "@", then ">".
+        # Each part stops at the first delimiter that can end it, and only
+        # the first "Signed-off-by: " on a line is read (a later one that
+        # matches means the first one does too). Three free `.+` runs let a
+        # long line that never closes the address take time cubic in its
+        # length; this takes linear time.
+        regex=(
+            r"(?m)^(?:[^S\n]|S(?!igned-off-by: ))*Signed-off-by: "
+            r".(?:[^ \n]| (?!<))* <.[^@\n]*@.[^>\n]*>"
+        ),
         error="Signed-off-by trailer not found in the latest commit",
         suggest="git commit --amend --signoff or use --signoff on commit",
     ),

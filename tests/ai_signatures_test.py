@@ -1,5 +1,9 @@
 """Tests for commit_check.ai_signatures — the AI tool signature database."""
 
+import random
+import re
+import time
+
 import pytest
 from commit_check.ai_signatures import (
     detect_ai_signatures,
@@ -565,3 +569,26 @@ class TestFindTrailers:
         )
         assert find_trailers("feat: x\n\nAIxTool: yes", ["AI.Tool"]) == []
         assert find_trailers("feat: x\n\nAI.Tool: yes", []) == []
+
+    def test_values_are_read_exactly_as_the_lazy_pattern_read_them(self):
+        """The linear pattern finds the same lines, keys and values."""
+        keys = ["Assisted-by", "Generated-by"]
+        alternation = "|".join(re.escape(key) for key in keys)
+        lazy = re.compile(
+            rf"^({alternation}):[ \t]*([^\n]*?)[ \t\r]*$", re.IGNORECASE | re.MULTILINE
+        )
+        rng = random.Random(7)
+        pieces = ["Assisted-by:", "generated-BY:", " ", "\t", "\r", "\n", "x", "y z"]
+        for _ in range(20_000):
+            message = "".join(rng.choice(pieces) for _ in range(rng.randint(0, 12)))
+            expected = [(m[1], m[2], m[0]) for m in lazy.finditer(message)]
+            assert find_trailers(message, keys) == expected, repr(message)
+
+    def test_a_long_run_of_blanks_in_a_value_takes_linear_time(self):
+        value = "Claude" + " " * 50_000 + "Code"
+        start = time.monotonic()
+        found = find_trailers(f"feat: x\n\nAssisted-by: {value}  ", ["Assisted-by"])
+        elapsed = time.monotonic() - start
+
+        assert [v for _, v, _ in found] == [value]
+        assert elapsed < 2
