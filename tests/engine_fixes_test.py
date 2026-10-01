@@ -443,6 +443,26 @@ class TestDisclosePolicyInTheEngine:
         )
         assert out.fix == ""
 
+    def test_a_single_accepted_trailer_is_named_on_its_own(self):
+        out = _disclose_outcomes(
+            f"feat: add caching\n\n{CLAUDE_CO_AUTHOR}",
+            {"ai_disclosure_trailers": ["Assisted-by"]},
+        )["ai_disclosure"]
+        assert out.status == "fail"
+        assert out.error == (
+            "AI assistance is not disclosed with Assisted-by — detected: Claude Code"
+        )
+
+    def test_a_co_author_whose_fix_misses_the_pattern_gets_no_fix(self):
+        """A co-author line is still rejected when no compliant fix can be named."""
+        out = _disclose_outcomes(
+            f"feat: add caching\n\n{CLAUDE_CO_AUTHOR}",
+            {"ai_disclosure_pattern": r"^\S+/\S+$"},
+        )["ai_co_author"]
+        assert out.status == "fail"
+        assert out.error == "An AI tool is credited as a co-author: Claude Code"
+        assert out.fix == ""
+
     def test_an_empty_disclosure_is_named(self):
         out = _disclose_outcomes("feat: add caching\n\nAssisted-by:")["ai_disclosure"]
         assert out.status == "fail"

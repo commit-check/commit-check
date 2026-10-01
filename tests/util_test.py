@@ -1072,6 +1072,10 @@ class TestUtil:
             stdout, _ = capfd.readouterr()
             assert "Suggest:" in stdout
 
+        def test_an_empty_suggestion_prints_nothing(self, capfd):
+            print_suggestion("")
+            assert capfd.readouterr() == ("", "")
+
 
 class TestGetGitConfigValue:
     """Tests for get_git_config_value utility function."""
@@ -1201,6 +1205,13 @@ class TestGetTagsAt:
         monkeypatch.setenv("GITHUB_REF_TYPE", "tag")
         monkeypatch.setenv("GITHUB_REF_NAME", "v9.9.9")
         assert get_tags_at() == ["v1.0.0"]
+
+    def test_get_tags_at_blank_ref_name_is_not_a_tag(self, mocker, monkeypatch):
+        """A tag build that names no ref leaves nothing to stand in."""
+        self._git_result(mocker, 0, "")
+        monkeypatch.setenv("GITHUB_REF_TYPE", "tag")
+        monkeypatch.setenv("GITHUB_REF_NAME", "  ")
+        assert get_tags_at() == []
 
 
 class TestParseSize:
@@ -1464,6 +1475,24 @@ class TestPathspecBatches:
         )
         assert [len(b) for b in batches] == [1, 1, 1]
 
+    def test_no_paths_make_no_batches(self):
+        from commit_check.util import _pathspec_batches
+
+        assert _pathspec_batches([]) == []
+
+
+class TestBlobSizes:
+    def test_only_blobs_with_a_size_are_measured(self):
+        """A submodule carries "-" for a size and a tree is not a file."""
+        from commit_check.util import _blob_sizes
+
+        output = (
+            "160000 commit 1111111111111111111111111111111111111111       -\tvendor/lib\0"
+            "040000 tree 2222222222222222222222222222222222222222       -\tdocs\0"
+            "100644 blob 3333333333333333333333333333333333333333      12\tREADME.md\0"
+        )
+        assert _blob_sizes(output) == [("README.md", 12)]
+
 
 class TestGetPushCommits:
     _git = staticmethod(_run_git)
@@ -1556,6 +1585,16 @@ class TestIdentityLookups:
         from commit_check.util import get_git_user_identity
 
         assert get_git_user_identity() == ("", "jane@example.com")
+
+    @patch(
+        "commit_check.util.cmd_output",
+        return_value="fatal: not in a git directory\nuser.name Jane Doe\n",
+    )
+    def test_git_user_identity_ignores_a_git_diagnostic(self, _cmd):
+        """cmd_output hands back stderr on failure; it is not an identity."""
+        from commit_check.util import get_git_user_identity
+
+        assert get_git_user_identity() == ("Jane Doe", "")
 
     @patch("commit_check.util.cmd_output", return_value="Jane Doe\x1fjane@example.com")
     def test_commit_author_identity_splits_the_record(self, cmd):

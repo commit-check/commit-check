@@ -24,6 +24,7 @@ from commit_check.engine import (
     MergeBaseValidator,
     ForcePushValidator,
     AiAttributionValidator,
+    SubjectValidator,
 )
 from commit_check.rule_builder import ValidationRule, RuleBuilder
 
@@ -650,6 +651,35 @@ class TestAuthorValidator:
             author_value = validator._get_author_value(context)
             assert author_value == "test@example.com"
 
+    def test_no_identity_anywhere_leaves_nothing_to_judge(self):
+        """No configured identity and no commit author: the pattern is not applied."""
+        validator = AuthorValidator(
+            ValidationRule(check="author_name", regex=r"^never matches$")
+        )
+
+        with (
+            patch("commit_check.engine.has_commits", return_value=True),
+            patch(GIT_CONFIG_VALUE, return_value=""),
+            patch("commit_check.engine.get_commit_info", return_value=""),
+        ):
+            result = validator.validate(ValidationContext())
+
+        assert result == ValidationResult.PASS
+        assert validator._last_failure is None
+
+    def test_a_check_with_no_identity_source_reads_nothing(self):
+        """Only author_name and author_email map to a git config key and a log field."""
+        validator = AuthorValidator(ValidationRule(check="author_nickname"))
+
+        with (
+            patch(GIT_CONFIG_VALUE) as mock_config,
+            patch("commit_check.engine.get_commit_info") as mock_info,
+        ):
+            assert validator._get_author_value(ValidationContext()) == ""
+
+        mock_config.assert_not_called()
+        mock_info.assert_not_called()
+
 
 class TestAuthorPatternConfig:
     """Tests for configurable author_name_pattern / author_email_pattern.
@@ -812,6 +842,25 @@ class TestCommitTypeValidator:
 
         assert result == ValidationResult.SKIP
         assert validator._checked_value == ""
+
+    def test_ignore_authors_judges_an_author_not_on_the_list(self):
+        """An author the list does not name is judged, and the rule passes.
+
+        ignore_authors is not a commit type, so the type dispatch has no
+        branch for it and allows the message as it is.
+        """
+        rule = ValidationRule(check="ignore_authors", ignored=["dependabot[bot]"])
+        validator = CommitTypeValidator(rule)
+        context = ValidationContext(
+            stdin_text="feat: add caching",
+            config={"commit": {"ignore_authors": ["dependabot[bot]"]}},
+        )
+
+        with patch(GIT_CONFIG_VALUE, return_value="Ada Lovelace"):
+            result = validator.validate(context)
+
+        assert result == ValidationResult.PASS
+        assert validator._checked_value == "feat: add caching"
 
     @pytest.mark.benchmark
     def test_commit_type_validator_revert_commits(self):
@@ -1182,6 +1231,16 @@ class TestSignoffValidator:
             message = validator._get_commit_message(context)
             assert message == "test message"
 
+    def test_an_empty_message_has_no_trailer_to_look_for(self):
+        """An empty message is allow_empty_commits' to judge, not this rule's."""
+        validator = SignoffValidator(self._default_signoff_rule())
+
+        with patch("commit_check.engine.get_commit_info") as mock_get_info:
+            result = validator.validate(ValidationContext(stdin_text=""))
+
+        assert result == ValidationResult.PASS
+        mock_get_info.assert_not_called()
+
 
 class TestSubjectCapitalizationValidator:
     @pytest.mark.benchmark
@@ -1432,6 +1491,28 @@ class TestMergeBaseValidator:
         validator = MergeBaseValidator(ValidationRule(check="merge_base"))
         result = validator._find_target_branch("nonexistent-branch")
         assert result is None
+
+    def test_a_target_that_resolves_to_no_ref_is_not_compared(self):
+        """With neither the target nor origin/<target> on disk, nothing is compared.
+
+        A shallow checkout can lack both refs. The rule then passes without
+        asking git merge-base anything.
+        """
+        validator = MergeBaseValidator(
+            ValidationRule(check="merge_base", regex=r"^main$")
+        )
+
+        with (
+            patch.object(validator, "_find_target_branch", return_value=None),
+            patch("commit_check.engine.get_branch_name", return_value="feature/x"),
+            patch("commit_check.engine.has_commits", return_value=True),
+            patch("commit_check.engine.git_merge_base") as mock_merge_base,
+        ):
+            result = validator.validate(ValidationContext())
+
+        assert result == ValidationResult.PASS
+        assert validator._checked_value == "feature/x"
+        mock_merge_base.assert_not_called()
 
     def test_merge_base_against_a_real_pull_request_shaped_checkout(self, tmp_path):
         """A branch based on origin/main passes when no local main exists.
@@ -1743,6 +1824,20 @@ class TestValidationEngine:
             result == ValidationResult.PASS
         )  # Unknown validator skipped, remaining passes
 
+    def test_validate_all_detailed_reports_nothing_for_an_unknown_check(self):
+        """A rule no validator handles gets no outcome, not a pass."""
+        rules = [
+            ValidationRule(check="unknown_check_type", regex=r".*"),
+            ValidationRule(check="message", regex=r"^feat:"),
+        ]
+        engine = ValidationEngine(rules)
+
+        outcomes = engine.validate_all_detailed(
+            ValidationContext(stdin_text="feat: add feature")
+        )
+
+        assert [(o.check, o.status) for o in outcomes] == [("message", "pass")]
+
     @pytest.mark.benchmark
     def test_validate_all_mixed_results(self):
         """Test validation engine with mixed pass/fail results."""
@@ -1862,6 +1957,17 @@ class TestSubjectValidator:
 
         result = validator.validate(context)
         assert result == ValidationResult.PASS
+
+    def test_the_base_subject_rule_judges_nothing(self):
+        """The base class reads the subject; each subclass supplies the verdict."""
+        validator = SubjectValidator(ValidationRule(check="subject_imperative"))
+
+        result = validator.validate(
+            ValidationContext(stdin_text="added things\n\nBody")
+        )
+
+        assert result == ValidationResult.PASS
+        assert validator._checked_value == "added things"
 
 
 class TestSubjectImperativeValidator:
@@ -1994,6 +2100,17 @@ class TestSubjectImperativeValidator:
 
         # "resolve" is a valid imperative word with scope and breaking change notation
         result = validator.validate(context)
+        assert result == ValidationResult.PASS
+
+    @pytest.mark.parametrize(
+        "subject", ["- tidy the changelog", "🎉 first release", "[docs] spelling"]
+    )
+    def test_a_subject_without_a_leading_word_is_not_judged(self, subject):
+        """With no first word there is no verb form to reject."""
+        validator = SubjectImperativeValidator(
+            ValidationRule(check="subject_imperative")
+        )
+        result = validator.validate(ValidationContext(stdin_text=subject))
         assert result == ValidationResult.PASS
 
 
@@ -2172,6 +2289,23 @@ class TestCoAuthorSkip:
             result = validator.validate(context)
         # Skipped — fallback author (Developer Bot) is in ignore_authors
         assert result == ValidationResult.SKIP
+
+    def test_rev_reads_co_authors_from_that_commit(self):
+        """With a revision, the co-authors come from that commit's body."""
+        validator = BodyValidator(ValidationRule(check="require_body"))
+        context = ValidationContext(
+            rev="abc123", config={"commit": {"ignore_authors": ["Release Bot"]}}
+        )
+        commit = {"an": "Ada Lovelace", "b": "Co-authored-by: Release Bot <bot@x.org>"}
+
+        with patch(
+            "commit_check.engine.get_commit_info",
+            side_effect=lambda fmt, sha="HEAD": commit[fmt],
+        ) as mock_info:
+            result = validator.validate(context)
+
+        assert result == ValidationResult.SKIP
+        mock_info.assert_any_call("b", "abc123")
 
 
 class TestGetGitConfigValue:
@@ -2628,6 +2762,42 @@ class TestForcePushValidator:
                 result = validator.validate(context)
 
         assert result == ValidationResult.FAIL
+
+    @pytest.mark.parametrize("line", ["", "refs/heads/main abc1 refs/heads/main"])
+    def test_a_line_naming_no_ref_pair_asks_git_nothing(self, line):
+        """A line without all four fields is not a push to compare."""
+        validator = ForcePushValidator(self._make_rule())
+
+        with patch("commit_check.engine.git_merge_base") as mock_merge_base:
+            result = validator._check_push_line(line)
+
+        assert result == ValidationResult.PASS
+        mock_merge_base.assert_not_called()
+
+    def test_an_unknown_remote_sha_on_a_tag_is_not_fetched(self):
+        """Only a branch ref names something to fetch when the remote SHA is unknown.
+
+        With nothing fetched, git still cannot place the remote SHA, and the
+        line passes as an unresolvable one does.
+        """
+        validator = ForcePushValidator(self._make_rule())
+        push_info = "refs/tags/v1.0.0 abc1 refs/tags/v1.0.0 def2"
+
+        with (
+            patch(
+                "commit_check.engine.git_merge_base", return_value=128
+            ) as mock_merge_base,
+            patch(FETCH_REMOTE_REF) as mock_fetch,
+            patch(GET_GIT_REMOTES) as mock_remotes,
+            patch("commit_check.engine.get_upstream_branch") as mock_upstream,
+        ):
+            result = validator.validate(ValidationContext(stdin_text=push_info))
+
+        assert result == ValidationResult.PASS
+        mock_merge_base.assert_called_once_with("def2", "abc1")
+        mock_fetch.assert_not_called()
+        mock_remotes.assert_not_called()
+        mock_upstream.assert_not_called()
 
     @pytest.mark.benchmark
     def test_validation_engine_includes_force_push_validator(self):

@@ -1,3 +1,4 @@
+import argparse
 import json
 import subprocess
 import sys
@@ -8,6 +9,7 @@ import os
 from commit_check.main import (
     StdinReader,
     _build_pre_commit_push_input,
+    _resolve_stdin_for_non_message,
     main,
 )
 
@@ -422,6 +424,24 @@ class TestFixOption:
         rc, text = self._run(tmp_path, monkeypatch, "Fix: add x\n", "--dry-run")
         assert (rc, text) == (0, "Fix: add x\n")
 
+    def test_a_fix_that_never_satisfies_its_rule_is_not_written(
+        self, tmp_path, monkeypatch, mocker, capfd
+    ):
+        """A sign-off from an identity with no usable email never passes CC012.
+
+        The fix keeps being offered and keeps failing until the attempts run
+        out; the file is left as it was rather than written half-fixed.
+        """
+        mocker.patch(
+            "commit_check.engine.get_git_user_identity",
+            return_value=("Ada Lovelace", "ada"),
+        )
+        rc, text = self._run(
+            tmp_path, monkeypatch, "fix: add x\n", "--require-signed-off-by=true"
+        )
+        assert (rc, text) == (1, "fix: add x\n")
+        assert "✎" not in capfd.readouterr().err
+
     def test_needs_a_message_file(self, mocker, monkeypatch):
         mocker.patch("sys.stdin.isatty", return_value=False)
         mocker.patch("sys.stdin.read", return_value="Fix: add x")
@@ -523,6 +543,21 @@ class TestPipedMessageWithOtherChecks:
 
 class TestMainFunctionEdgeCases:
     """Test main function edge cases for better coverage."""
+
+    def test_stdin_is_not_read_without_a_check_that_takes_it(self, mocker):
+        """Only the branch, tag, file, author and push checks read stdin here."""
+        args = argparse.Namespace(
+            branch=False,
+            tag=False,
+            files=False,
+            author_name=False,
+            author_email=False,
+            no_force_push=False,
+        )
+        reader = mocker.Mock(spec=StdinReader)
+
+        assert _resolve_stdin_for_non_message(args, reader) is None
+        reader.read_piped_input.assert_not_called()
 
     @pytest.mark.benchmark
     def test_main_with_message_file_argument(self, monkeypatch):
@@ -1423,6 +1458,22 @@ class TestNoForcePushFlag:
             _build_pre_commit_push_input()
             == "refs/heads/feature/topic local-sha refs/heads/main remote-sha"
         )
+
+    def test_build_pre_commit_push_input_without_a_remote_tip_is_none(self, mocker):
+        """No remote to ask and no FROM_REF leaves nothing to compare against."""
+        mocker.patch.dict(
+            os.environ,
+            {
+                "PRE_COMMIT_LOCAL_BRANCH": FEATURE_TOPIC_BRANCH,
+                "PRE_COMMIT_REMOTE_BRANCH": "main",
+                "PRE_COMMIT_TO_REF": "local-sha",
+            },
+            clear=True,
+        )
+        mock_run = mocker.patch("subprocess.run")
+
+        assert _build_pre_commit_push_input() is None
+        mock_run.assert_not_called()
 
     @pytest.mark.benchmark
     def test_no_force_push_flag_in_help(self, capfd, monkeypatch):
