@@ -1,0 +1,31 @@
+tests/main_test.py
+  s_66212c309e21f0::t_8d0a82ba4139b3 1876-1910
+tests/api_test.py
+  s_66212c309e21f0::t_c2e9673dcdb281 13
+  s_66212c309e21f0::t_0b57e193a4a2f7 34-38
+  s_66212c309e21f0::t_39aeb819fb4f5e 39-49
+commit_check/rule_builder.py
+  s_66212c309e21f0::t_d739850f6af9ee 215-220
+  s_66212c309e21f0::t_4fca823c2efea9 147-201
+  s_66212c309e21f0::t_c3c1f3f8ace2eb 9
+README.md
+  s_66212c309e21f0::t_f9eabc7c076b54 190-191
+tests/rule_builder_test.py
+  s_66212c309e21f0::t_38adcff1be7306 4,1047-1131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "34a73c8858c00e29ab0a46429980f8320dc1a083",
+  "prompts": {},
+  "sessions": {
+    "s_66212c309e21f0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8763d161-5362-48a1-ae9b-11f7bcd83469",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
