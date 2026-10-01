@@ -1873,6 +1873,41 @@ class TestInvalidUserRegexIsAConfigError:
         assert "[tag] regex is not a valid regex" in err
 
 
+class TestWrongTypeIsAConfigError:
+    """A value of the wrong type is a broken policy (exit 2), not a verdict."""
+
+    def _run(self, mocker, monkeypatch, tmp_path, toml):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add x\n")
+        cfg = tmp_path / "cchk.toml"
+        cfg.write_text(toml)
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--config", str(cfg)])
+        return main(), cfg
+
+    def test_an_array_of_tables_names_the_file(
+        self, mocker, monkeypatch, tmp_path, capsys
+    ):
+        rc, cfg = self._run(
+            mocker, monkeypatch, tmp_path, "[[commit]]\nsubject_max_length = 72\n"
+        )
+        err = capsys.readouterr().err
+        assert rc == 2
+        assert f"Error: {cfg}: [commit] must be a table" in err
+
+    def test_a_string_for_a_list_names_the_setting(
+        self, mocker, monkeypatch, tmp_path, capsys
+    ):
+        """ignore_authors = "bot" used to skip any author named part of "bot"."""
+        rc, _ = self._run(
+            mocker, monkeypatch, tmp_path, '[commit]\nignore_authors = "bot"\n'
+        )
+        err = capsys.readouterr().err
+        assert rc == 2
+        assert (
+            "Error: [commit] ignore_authors must be a list of strings, got 'bot'" in err
+        )
+
+
 class TestAiDisclosurePolicy:
     """``--ai-attribution disclose`` end to end: the three rules, and their settings."""
 

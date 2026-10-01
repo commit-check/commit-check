@@ -1,6 +1,7 @@
 """Tests for commit_check.rule_builder module."""
 
 from commit_check.config import ConfigError
+from commit_check.config_merger import get_default_config
 from commit_check.rule_builder import ValidationRule, RuleBuilder
 from commit_check.rules_catalog import RuleCatalogEntry
 import pytest
@@ -1043,3 +1044,88 @@ class TestInvalidUserRegexNamesTheSetting:
         rules = RuleBuilder({"tag": {"regex": ""}}).build_all_rules()
         tag_rule = next(r for r in rules if r.check == "tag")
         assert tag_rule.regex is None
+
+
+class TestSettingTypes:
+    """A value of the wrong type is a config error that names the setting.
+
+    It used to crash with a Python error and exit code 1, or be read as
+    something else: a string list a character at a time, "false" as true.
+    """
+
+    @pytest.mark.parametrize(
+        "section, key, value, expected",
+        [
+            ("commit", "ignore_authors", "dependabot[bot]", "a list of strings"),
+            ("commit", "ignore_authors", 5, "a list of strings"),
+            ("commit", "ignore_authors", ["dependabot[bot]", 7], "a list of strings"),
+            ("branch", "ignore_authors", 5, "a list of strings"),
+            ("commit", "allow_commit_types", "feat,fix", "a list of strings"),
+            ("commit", "allow_commit_types", ["feat", 1], "a list of strings"),
+            ("branch", "allow_branch_types", 5, "a list of strings"),
+            ("branch", "ignore_authors", {"name": "bot"}, "a list of strings"),
+            ("commit", "message_pattern", ["^JIRA-"], "a string"),
+            ("commit", "author_email_pattern", 5, "a string"),
+            ("branch", "require_rebase_target", ["main"], "a string"),
+            ("commit", "subject_max_length", "72", "an integer"),
+            ("commit", "subject_min_length", True, "an integer"),
+            ("commit", "require_body", "false", "true or false"),
+            ("branch", "conventional_branch", 0, "true or false"),
+            ("push", "allow_force_push", "false", "true or false"),
+        ],
+    )
+    def test_a_wrong_type_names_the_setting(self, section, key, value, expected):
+        setting = f"[{section}] {key}"
+        with pytest.raises(ConfigError) as excinfo:
+            RuleBuilder({section: {key: value}}).build_all_rules()
+        assert str(excinfo.value) == f"{setting} must be {expected}, got {value!r}"
+        assert excinfo.value.setting == setting
+
+    @pytest.mark.parametrize("section", ["commit", "branch", "push"])
+    @pytest.mark.parametrize("value", [5, "x", [{"subject_max_length": 72}]])
+    def test_a_section_that_is_not_a_table_is_refused(self, section, value):
+        """[[commit]] parses as a list of tables, which is no table either."""
+        with pytest.raises(ConfigError) as excinfo:
+            RuleBuilder({section: value}).build_all_rules()
+        assert str(excinfo.value) == f"[{section}] must be a table, got {value!r}"
+        # Only the file can hold a section, so the CLI is free to name it.
+        assert excinfo.value.setting is None
+
+    def test_the_defaults_have_the_right_types(self):
+        assert RuleBuilder(get_default_config()).build_all_rules()
+
+    def test_lists_may_be_tuples_and_values_may_be_unset(self):
+        """Python callers of the API pass tuples, and None for "not set"."""
+        rules = RuleBuilder(
+            {"commit": {"allow_commit_types": ("feat", "fix"), "ignore_authors": None}}
+        ).build_all_rules()
+        message_rule = next(r for r in rules if r.check == "message")
+        assert message_rule.allowed == ["feat", "fix"]
+
+    def test_unknown_and_self_checked_settings_keep_their_own_handling(self):
+        """An unknown key is warned about elsewhere, and a trailer list may
+        still be one comma-separated string."""
+        rules = RuleBuilder(
+            {
+                "commit": {
+                    "subject_max_lenght": "72",
+                    "ai_attribution": "disclose",
+                    "ai_disclosure_trailers": "Assisted-by, Generated-by",
+                }
+            }
+        ).build_all_rules()
+        disclosure = next(r for r in rules if r.check == "ai_disclosure")
+        assert disclosure.allowed == ["Assisted-by", "Generated-by"]
+
+    def test_files_and_tag_stay_lenient(self, capsys):
+        """An unusable value there disables or defaults that one rule."""
+        rules = RuleBuilder(
+            {"files": {"max_path_length": "long"}, "tag": {"regex": 5}}
+        ).build_all_rules()
+        assert "path_length" not in {r.check for r in rules}
+        assert "max_path_length" in capsys.readouterr().err
+
+    def test_a_default_of_another_kind_is_not_type_checked(self):
+        from commit_check.rule_builder import _expected_type
+
+        assert _expected_type("anything", {"nested": "table"}) is None

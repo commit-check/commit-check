@@ -10,6 +10,7 @@ from commit_check.api import (
     validate_all,
     validate_push,
 )
+from commit_check.config import ConfigError
 from commit_check.config_merger import get_default_config
 
 
@@ -29,6 +30,22 @@ class TestValidateMessage:
         assert config == snapshot
         validate_message("chore: add thing", config=config)
         assert config == snapshot
+
+    def test_a_config_value_of_the_wrong_type_raises_config_error(self):
+        """Not an AttributeError from deep inside the rule builder."""
+        with pytest.raises(ConfigError, match=r"\[commit\] must be a table"):
+            validate_message("feat: add thing", config={"commit": "strict"})
+
+    @pytest.mark.parametrize("section", ["commit", "branch"])
+    def test_a_mistyped_ignore_list_is_refused_before_the_engine_reads_it(
+        self, section
+    ):
+        """The engine reads ignore_authors itself; 5 used to be a TypeError there."""
+        validate = validate_message if section == "commit" else validate_branch
+        value = "feat: add thing" if section == "commit" else "feature/x"
+        with pytest.raises(ConfigError) as excinfo:
+            validate(value, config={section: {"ignore_authors": 5}})
+        assert excinfo.value.setting == f"[{section}] ignore_authors"
 
     @pytest.mark.benchmark
     def test_valid_conventional_commit_passes(self):

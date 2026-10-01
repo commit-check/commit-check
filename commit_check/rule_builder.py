@@ -6,6 +6,7 @@ import sys
 from typing import Any
 from dataclasses import dataclass, replace
 from commit_check.config import ConfigError
+from commit_check.config_merger import get_default_config
 from commit_check.util import format_size, parse_size
 from commit_check.rules_catalog import (
     COMMIT_RULES,
@@ -143,6 +144,61 @@ def _checked_regex(pattern: str, setting: str) -> str:
     return pattern
 
 
+#: The tables whose settings must have the type of their default. [files] and
+#: [tag] keep their own handling: an unusable value there disables or
+#: defaults that one rule (see _build_files_rules and _build_tag_rules).
+_TYPED_SECTIONS = ("commit", "branch", "push")
+
+#: Settings whose own reader already refuses a bad value, in words that say
+#: more than a type would.
+_SELF_CHECKED_SETTINGS = frozenset(
+    {"ai_attribution", "ai_disclosure_trailers", "ai_disclosure_pattern"}
+)
+
+
+def _expected_type(value: Any, default: Any) -> str | None:
+    """What *value* should be, judged by its default's type; None when it is."""
+    if isinstance(default, bool):
+        return None if isinstance(value, bool) else "true or false"
+    if isinstance(default, int):
+        if isinstance(value, int) and not isinstance(value, bool):
+            return None
+        return "an integer"
+    if isinstance(default, str):
+        return None if isinstance(value, str) else "a string"
+    if isinstance(default, list):
+        if isinstance(value, (list, tuple)) and all(isinstance(v, str) for v in value):
+            return None
+        return "a list of strings"
+    return None
+
+
+def _check_setting_types(config: dict[str, Any]) -> None:
+    """Refuse a value of the wrong type in [commit], [branch] or [push].
+
+    A wrong type used to surface as a Python error and exit code 1, the code
+    a rejected commit gets, or not at all: a string where a list belongs was
+    read a character at a time, so ``ignore_authors = "bot"`` skipped any
+    author whose name is part of "bot", and a bool written as ``"false"``
+    counted as true.
+    """
+    defaults = get_default_config()
+    for section in _TYPED_SECTIONS:
+        table = config.get(section, {})
+        if not isinstance(table, dict):
+            raise ConfigError(f"[{section}] must be a table, got {table!r}")
+        for key, value in table.items():
+            default = defaults[section].get(key)
+            if value is None or default is None or key in _SELF_CHECKED_SETTINGS:
+                continue
+            expected = _expected_type(value, default)
+            if expected:
+                setting = f"[{section}] {key}"
+                raise ConfigError(
+                    f"{setting} must be {expected}, got {value!r}", setting=setting
+                )
+
+
 class RuleBuilder:
     """Builds validation rules from config and catalog entries."""
 
@@ -156,7 +212,12 @@ class RuleBuilder:
         self.warn_checks = self._resolve_warn_list(config.get("warn", []))
 
     def build_all_rules(self) -> list[ValidationRule]:
-        """Build all validation rules from config."""
+        """Build all validation rules from config.
+
+        :raises ConfigError: If a setting in [commit], [branch] or [push] has
+            the wrong type, or names something that does not exist.
+        """
+        _check_setting_types(self.config)
         rules = []
         rules.extend(self._build_commit_rules())
         rules.extend(self._build_branch_rules())
