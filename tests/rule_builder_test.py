@@ -1076,8 +1076,9 @@ class TestSettingTypes:
     )
     def test_a_wrong_type_names_the_setting(self, section, key, value, expected):
         setting = f"[{section}] {key}"
+        builder = RuleBuilder({section: {key: value}})
         with pytest.raises(ConfigError) as excinfo:
-            RuleBuilder({section: {key: value}}).build_all_rules()
+            builder.build_all_rules()
         assert str(excinfo.value) == f"{setting} must be {expected}, got {value!r}"
         assert excinfo.value.setting == setting
 
@@ -1085,8 +1086,9 @@ class TestSettingTypes:
     @pytest.mark.parametrize("value", [5, "x", [{"subject_max_length": 72}]])
     def test_a_section_that_is_not_a_table_is_refused(self, section, value):
         """[[commit]] parses as a list of tables, which is no table either."""
+        builder = RuleBuilder({section: value})
         with pytest.raises(ConfigError) as excinfo:
-            RuleBuilder({section: value}).build_all_rules()
+            builder.build_all_rules()
         assert str(excinfo.value) == f"[{section}] must be a table, got {value!r}"
         # Only the file can hold a section, so the CLI is free to name it.
         assert excinfo.value.setting is None
