@@ -1130,4 +1130,4 @@ class TestSettingTypes:
     def test_a_default_of_another_kind_is_not_type_checked(self):
         from commit_check.rule_builder import _expected_type
 
-        assert _expected_type("anything", {"nested": "table"}) is None
+        assert _expected_type("anything", dict) is None

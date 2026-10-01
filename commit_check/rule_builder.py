@@ -155,19 +155,32 @@ _SELF_CHECKED_SETTINGS = frozenset(
     {"ai_attribution", "ai_disclosure_trailers", "ai_disclosure_pattern"}
 )
 
+#: The type of each checked setting's default, by table. Worked out once:
+#: the check runs every time rules are built, once per API call.
+_SETTING_TYPES: dict[str, dict[str, type]] = {
+    section: {
+        key: type(default)
+        for key, default in get_default_config()[section].items()
+        if key not in _SELF_CHECKED_SETTINGS
+    }
+    for section in _TYPED_SECTIONS
+}
 
-def _expected_type(value: Any, default: Any) -> str | None:
+_is_str = str.__instancecheck__
+
+
+def _expected_type(value: Any, default_type: type) -> str | None:
     """What *value* should be, judged by its default's type; None when it is."""
-    if isinstance(default, bool):
+    if default_type is bool:
         return None if isinstance(value, bool) else "true or false"
-    if isinstance(default, int):
+    if default_type is int:
         if isinstance(value, int) and not isinstance(value, bool):
             return None
         return "an integer"
-    if isinstance(default, str):
+    if default_type is str:
         return None if isinstance(value, str) else "a string"
-    if isinstance(default, list):
-        if isinstance(value, (list, tuple)) and all(isinstance(v, str) for v in value):
+    if default_type is list:
+        if isinstance(value, (list, tuple)) and all(map(_is_str, value)):
             return None
         return "a list of strings"
     return None
@@ -182,16 +195,21 @@ def _check_setting_types(config: dict[str, Any]) -> None:
     author whose name is part of "bot", and a bool written as ``"false"``
     counted as true.
     """
-    defaults = get_default_config()
-    for section in _TYPED_SECTIONS:
+    for section, types in _SETTING_TYPES.items():
         table = config.get(section, {})
         if not isinstance(table, dict):
             raise ConfigError(f"[{section}] must be a table, got {table!r}")
         for key, value in table.items():
-            default = defaults[section].get(key)
-            if value is None or default is None or key in _SELF_CHECKED_SETTINGS:
+            default_type = types.get(key)
+            # A value of exactly its default's type is the common case, and
+            # costs one comparison (a list, one pass over its items).
+            value_type = type(value)
+            if value_type is default_type:
+                if value_type is not list or all(map(_is_str, value)):
+                    continue
+            elif default_type is None or value is None:
                 continue
-            expected = _expected_type(value, default)
+            expected = _expected_type(value, default_type)
             if expected:
                 setting = f"[{section}] {key}"
                 raise ConfigError(
