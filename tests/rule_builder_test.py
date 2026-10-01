@@ -1127,6 +1127,27 @@ class TestSettingTypes:
         assert "path_length" not in {r.check for r in rules}
         assert "max_path_length" in capsys.readouterr().err
 
+    def test_subclasses_of_the_expected_type_are_accepted(self):
+        """An int or str subclass from a Python caller is still the right type."""
+
+        class Length(int):
+            pass
+
+        class Pattern(str):
+            pass
+
+        rules = RuleBuilder(
+            {
+                "commit": {
+                    "subject_max_length": Length(72),
+                    "message_pattern": Pattern("^JIRA-"),
+                }
+            }
+        ).build_all_rules()
+        by_check = {r.check: r for r in rules}
+        assert by_check["subject_max_length"].value == 72
+        assert by_check["message"].regex == "^JIRA-"
+
     def test_a_default_of_another_kind_is_not_type_checked(self):
         from commit_check.rule_builder import _expected_type
 
