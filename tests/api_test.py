@@ -10,6 +10,7 @@ from commit_check.api import (
     validate_all,
     validate_push,
 )
+from commit_check.config_merger import get_default_config
 
 
 class TestValidateMessage:
@@ -212,6 +213,29 @@ class TestValidateAuthor:
         assert "author_name" in check_names
         assert "author_email" in check_names
 
+    def test_name_alone_is_the_only_check(self):
+        """A name without an email checks the name, and only the name."""
+        result = validate_author(name="  Ada Lovelace ")
+        assert [(c["check"], c["status"], c["value"]) for c in result["checks"]] == [
+            ("author_name", "pass", "Ada Lovelace")
+        ]
+        assert result["status"] == "pass"
+
+    def test_no_arguments_checks_the_configured_identity(self):
+        """With neither value given, both are read from git config."""
+        identity = {"user.name": "Ada Lovelace", "user.email": "ada@example.com"}
+        with (
+            patch("commit_check.engine.get_git_config_value", side_effect=identity.get),
+            patch("commit_check.engine.has_commits", return_value=True),
+        ):
+            result = validate_author()
+
+        assert {c["check"]: c["value"] for c in result["checks"]} == {
+            "author_name": "Ada Lovelace",
+            "author_email": "ada@example.com",
+        }
+        assert result["status"] == "pass"
+
 
 class TestValidateAll:
     """Tests for validate_all()."""
@@ -345,6 +369,19 @@ class TestValidatePush:
             config={"push": {"allow_force_push": True}},
         )
         assert result["status"] == "pass"
+
+    def test_a_config_without_a_push_table_still_builds_the_rule(self):
+        """validate_push does not rely on the defaults carrying a [push] table."""
+        defaults = get_default_config()
+        del defaults["push"]
+        push_info = f"refs/heads/main abc1 refs/heads/main {self.ZERO_SHA}"
+
+        with patch("commit_check.api.get_default_config", return_value=defaults):
+            result = validate_push(push_info)
+
+        assert [(c["check"], c["status"]) for c in result["checks"]] == [
+            ("no_force_push", "pass")
+        ]
 
     @pytest.mark.benchmark
     def test_result_has_expected_structure(self):

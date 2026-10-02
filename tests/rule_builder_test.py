@@ -80,6 +80,13 @@ class TestRuleBuilder:
         rule = builder._build_author_list_rule(catalog_entry, "ignore_authors")
         assert rule is None
 
+    def test_author_list_rule_is_built_for_ignore_authors_only(self):
+        """A list under any other key builds no author rule."""
+        builder = RuleBuilder({"commit": {"allow_authors": ["Ada Lovelace"]}})
+        catalog_entry = RuleCatalogEntry(check="allow_authors")
+
+        assert builder._build_author_list_rule(catalog_entry, "allow_authors") is None
+
     @pytest.mark.benchmark
     def test_rule_builder_length_rule_with_format(self):
         """Test RuleBuilder length rule with formatted error message (lines 154-160)."""
@@ -741,6 +748,14 @@ class TestFilesRules:
         err = capsys.readouterr().err
         assert "must be a table" in err
         assert "garbage" in err
+
+    def test_a_false_files_value_opts_out_quietly(self, capsys):
+        """files = false reads as "no file rules", which needs no warning."""
+        rules = RuleBuilder({"files": False}).build_all_rules()
+        assert not [
+            r for r in rules if r.check in ("file_size", "file_pattern", "path_length")
+        ]
+        assert capsys.readouterr().err == ""
 
     @pytest.mark.benchmark
     def test_unset_values_are_not_reported(self, capsys):

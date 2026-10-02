@@ -21,6 +21,19 @@ URLOPEN_MODULE = "commit_check.config._opener.open"
 EXAMPLE_CONFIG_URL = "https://example.com/cchk.toml"
 
 
+def _restore_config_attribute(module):
+    """Point ``commit_check.config`` back at *module* after a fresh import.
+
+    Re-importing the config module rebinds the attribute on the package as
+    well as the sys.modules entry, and restoring sys.modules alone leaves
+    the attribute on the copy. Python 3.10's patch() resolves a target such
+    as URLOPEN_MODULE through that attribute, so every later patch landed on
+    the copy and the tests behind it reached the network.
+    """
+    if module is not None:
+        setattr(sys.modules["commit_check"], "config", module)
+
+
 class TestConfig:
     @pytest.mark.benchmark
     def test_load_config_with_path_hint(self):
@@ -292,6 +305,7 @@ value = "works"
                 sys.modules["tomllib"] = original_tomllib
             if original_config is not None:
                 sys.modules["commit_check.config"] = original_config
+                _restore_config_attribute(original_config)
 
 
 class TestConfigEdgeCases:
@@ -432,6 +446,7 @@ class TestConfigFallback:
             # Restore original modules
             sys.modules.clear()
             sys.modules.update(original_modules)
+            _restore_config_attribute(original_modules.get("commit_check.config"))
 
 
 class TestConfigImport:

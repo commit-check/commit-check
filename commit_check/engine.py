@@ -210,7 +210,7 @@ class BaseValidator(ABC):
     @abstractmethod
     def validate(self, context: ValidationContext) -> ValidationResult:
         """Perform validation and return result."""
-        pass
+        pass  # pragma: no cover
 
     @staticmethod
     def _resolve_current_author(context: ValidationContext) -> str:
@@ -1097,7 +1097,9 @@ class BodyValidator(BaseValidator):
             return ValidationResult.PASS
 
         # Check if there's content after the first line (even if separated by empty lines)
-        if len(lines) > 1:
+        # Unreachable: the message is stripped, so two or more lines always
+        # hold two non-empty ones and have passed above.
+        if len(lines) > 1:  # pragma: no cover
             body_content = "\n".join(lines[1:]).strip()
             if body_content:
                 return ValidationResult.PASS
