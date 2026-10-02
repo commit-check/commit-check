@@ -43,6 +43,15 @@ _AI_CHECKS: frozenset[str] = frozenset().union(*_AI_CHECKS_BY_POLICY.values())
 #: A git trailer token: letters, digits and hyphens, and no colon.
 _TRAILER_KEY = re.compile(r"^[A-Za-z][A-Za-z0-9-]*$")
 
+#: The description grammar from conventionalbranch.org's spec.json, used when
+#: [branch] require_description_grammar is on; otherwise the description is ".+".
+_STRICT_BRANCH_DESCRIPTION = r"[a-z0-9]+(?:\.[a-z0-9]+)*(?:-[a-z0-9]+(?:\.[a-z0-9]+)*)*"
+_STRICT_BRANCH_SUGGEST = (
+    "Use <type>/<description> with an allowed type and a lowercase, "
+    "hyphen-separated description (e.g. feature/add-login), "
+    "or add the branch to allow_branch_names in config"
+)
+
 
 # Lookup tables for the top-level ``warn`` list, built once at import: a
 # check name or rule ID in any case maps to the catalog's check name.
@@ -481,12 +490,13 @@ class RuleBuilder:
         allowed_types = self._get_allowed_branch_types()
         allowed_names = self._get_allowed_branch_names()
         regex = self._build_conventional_branch_regex(allowed_types, allowed_names)
+        strict = self.branch_config.get("require_description_grammar", False)
 
         return ValidationRule(
             check=catalog_entry.check,
             regex=regex,
             error=catalog_entry.error,
-            suggest=catalog_entry.suggest,
+            suggest=_STRICT_BRANCH_SUGGEST if strict else catalog_entry.suggest,
             allowed=allowed_types,
         )
 
@@ -735,4 +745,9 @@ class RuleBuilder:
         names_pattern = "|".join(["master", "main", "HEAD", r"PR-.+"])
         if allowed_names:
             names_pattern += "|" + "|".join(allowed_names)
-        return rf"^(?:{types_pattern})/.+$|^(?:{names_pattern})$"
+        description_pattern = (
+            _STRICT_BRANCH_DESCRIPTION
+            if self.branch_config.get("require_description_grammar", False)
+            else ".+"
+        )
+        return rf"^(?:{types_pattern})/{description_pattern}$|^(?:{names_pattern})$"

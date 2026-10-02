@@ -953,6 +953,61 @@ class TestBranchRegexIsAnchored:
         assert not re.match(regex, "renovate-bot")
 
 
+class TestBranchDescriptionGrammar:
+    """Opt-in ``require_description_grammar`` holds the part after "/" to the spec."""
+
+    @pytest.mark.parametrize(
+        "branch",
+        [
+            "feature/add-login-page",
+            "release/v1.2.0",
+            "fix/issue-123",
+            "renovate/lodash-5.x",
+        ],
+    )
+    def test_conformant_descriptions_pass(self, branch):
+        assert re.match(_branch_regex(require_description_grammar=True), branch)
+
+    @pytest.mark.parametrize(
+        "branch",
+        [
+            "feature/Add-Login",
+            "fix/header_bug",
+            "feature/new--login",
+            "feature/-new-login",
+            "feature/new-login-",
+            "release/v1.-2.0",
+            "dependabot/npm_and_yarn/lodash-4.17.21",
+        ],
+    )
+    def test_non_conformant_descriptions_are_rejected(self, branch):
+        assert not re.match(_branch_regex(require_description_grammar=True), branch)
+
+    def test_off_by_default_the_regex_is_unchanged(self):
+        assert _branch_regex(require_description_grammar=False) == _branch_regex()
+        assert re.match(_branch_regex(), "dependabot/npm_and_yarn/lodash-4.17.21")
+
+    def test_allow_branch_names_readmits_a_bot(self):
+        regex = _branch_regex(
+            require_description_grammar=True, allow_branch_names=[r"dependabot/.+"]
+        )
+        assert re.match(regex, "dependabot/npm_and_yarn/lodash-4.17.21")
+
+    def test_the_suggestion_names_the_description_format(self):
+        builder = RuleBuilder(
+            {
+                "branch": {
+                    "conventional_branch": True,
+                    "require_description_grammar": True,
+                }
+            }
+        )
+        rule = builder._build_conventional_branch_rule(BRANCH_ENTRY)
+        assert rule is not None and "hyphen-separated description" in (
+            rule.suggest or ""
+        )
+
+
 class TestConventionalCommitGitPrefixes:
     """CC001 exempts exactly the subjects git writes itself.
 
