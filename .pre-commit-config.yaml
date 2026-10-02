@@ -17,17 +17,17 @@ repos:
     -   id: trailing-whitespace
     -   id: name-tests-test
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.22
+    rev: v0.15.20
     hooks:
     -   id: ruff-check
         args: [ --fix ]
     -   id: ruff-format
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.3.1
+    rev: v2.1.0
     hooks:
     -   id: mypy
 -   repo: https://github.com/codespell-project/codespell
-    rev: v2.4.3
+    rev: v2.4.2
     hooks:
     -   id: codespell
         # iTerm is a terminal emulator, named in the hyperlink support probe.
@@ -35,7 +35,7 @@ repos:
         # Quoted: an unquoted comma splits the flow sequence into two args.
         args: ["--ignore-words-list=iterm,sting"]
 -   repo: https://github.com/commit-check/commit-check
-    rev: v2.18.2
+    rev: v2.17.0
     hooks:
     -   id: check-message
         stages: [commit-msg]

@@ -125,9 +125,7 @@ class _LazyOpener:
 
     @property
     def handlers(self) -> list[urllib.request.BaseHandler]:
-        # OpenerDirector sets ``handlers`` in __init__, but typeshed does not
-        # declare it, and mypy reads through a getattr with a literal name.
-        return list(self._get().handlers)  # type: ignore[attr-defined]
+        return list(getattr(self._get(), "handlers"))
 
     def _get(self) -> urllib.request.OpenerDirector:
         if self._opener is None:
