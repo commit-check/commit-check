@@ -253,13 +253,9 @@ def find_trailers(message: str, keys: list[str]) -> list[tuple[str, str, str]]:
     if not keys:
         return []
     alternation = "|".join(re.escape(key) for key in keys)
-    # A carriage return before the newline is line ending, not value. The
-    # value ends at its last character that is not trailing whitespace; a
-    # lazy `[^\n]*?` found that end by retrying the tail after every
-    # character, which is quadratic in a line holding a long run of blanks.
+    # A carriage return before the newline is line ending, not value.
     pattern = re.compile(
-        rf"^({alternation}):[ \t]*((?:[^\n]*[^ \t\r\n])?)[ \t\r]*$",
-        re.IGNORECASE | re.MULTILINE,
+        rf"^({alternation}):[ \t]*([^\n]*?)[ \t\r]*$", re.IGNORECASE | re.MULTILINE
     )
     return [
         (match.group(1), match.group(2), match.group(0))

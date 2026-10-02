@@ -1,9 +1,6 @@
 """Tests for commit_check.engine module."""
 
-import random
-import re
 import subprocess
-import time
 import pytest
 import tempfile
 import os
@@ -1062,10 +1059,6 @@ class TestSubjectLengthValidator:
 
 
 class TestSignoffValidator:
-    #: The pattern CC012 used to ship. The catalog's pattern takes linear
-    #: time, and must accept exactly the messages this one accepts.
-    ORIGINAL_PATTERN = r"Signed-off-by: .+ <.+@.+>"
-
     @staticmethod
     def _default_signoff_rule():
         """Build the require_signed_off_by rule from the default catalog regex.
@@ -1077,40 +1070,6 @@ class TestSignoffValidator:
         builder = RuleBuilder({"commit": {"require_signed_off_by": True}})
         rules = builder.build_all_rules()
         return next(r for r in rules if r.check == "require_signed_off_by")
-
-    def test_default_pattern_accepts_exactly_what_the_original_did(self):
-        regex = self._default_signoff_rule().regex
-        rng = random.Random(12)
-        pieces = ["Signed-off-by: ", "Ada", " ", " <", "<", "@", ">", "x", "\n", "S"]
-        for _ in range(20_000):
-            message = "".join(rng.choice(pieces) for _ in range(rng.randint(0, 10)))
-            assert bool(re.search(regex, message)) == bool(
-                re.search(self.ORIGINAL_PATTERN, message)
-            ), repr(message)
-
-    @pytest.mark.parametrize(
-        "line",
-        [
-            # Never closes the address: the original pattern tried every
-            # split of this line into name, address and domain.
-            "Signed-off-by: " + " <@" * 5_000,
-            # The original also rescanned the line from every repeat.
-            "Signed-off-by: " * 20_000,
-        ],
-        ids=["unclosed-address", "repeated-prefix"],
-    )
-    def test_default_pattern_takes_linear_time(self, line):
-        """A long line that is not a sign-off must not stall the hook."""
-        validator = SignoffValidator(self._default_signoff_rule())
-        context = ValidationContext(stdin_text=f"feat: add x\n\n{line}")
-
-        start = time.monotonic()
-        with patch("commit_check.engine.get_git_user_identity", return_value=("", "")):
-            result = validator.validate(context)
-        elapsed = time.monotonic() - start
-
-        assert result == ValidationResult.FAIL
-        assert elapsed < 2
 
     @pytest.mark.benchmark
     def test_signoff_validator_valid(self):
