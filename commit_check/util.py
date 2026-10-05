@@ -6,12 +6,14 @@ A module containing utility functions.
 """
 
 from __future__ import annotations
+
 import os
 import subprocess
 import sys
-from subprocess import CalledProcessError
-from commit_check import RED, GREEN, YELLOW, RESET_COLOR
 from collections.abc import Iterable
+from subprocess import CalledProcessError
+
+from commit_check import GREEN, RED, RESET_COLOR, YELLOW
 from commit_check.rules_catalog import display_name
 
 

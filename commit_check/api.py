@@ -60,7 +60,6 @@ from commit_check.engine import (
 from commit_check.rule_builder import RuleBuilder
 from commit_check.rules_catalog import BRANCH_CHECKS, MESSAGE_CHECKS
 
-
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------

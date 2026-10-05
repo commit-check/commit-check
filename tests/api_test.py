@@ -1,14 +1,16 @@
 """Tests for commit_check.api – the public Python API."""
 
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from commit_check.api import (
-    validate_message,
-    validate_branch,
-    validate_tag,
-    validate_author,
     validate_all,
+    validate_author,
+    validate_branch,
+    validate_message,
     validate_push,
+    validate_tag,
 )
 from commit_check.config_merger import get_default_config
 

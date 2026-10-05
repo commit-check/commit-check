@@ -8,7 +8,7 @@ Exports:
 
 import os
 import sys
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError, version
 
 # Exit codes used across the package
 PASS = 0

@@ -1,11 +1,13 @@
 import argparse
 import json
+import os
 import subprocess
 import sys
-import pytest
 import tempfile
 import time
-import os
+
+import pytest
+
 from commit_check.main import (
     StdinReader,
     _build_pre_commit_push_input,
@@ -237,7 +239,7 @@ class TestStdinReader:
         reader = StdinReader()
 
         mocker.patch("sys.stdin.isatty", return_value=False)
-        mocker.patch("sys.stdin.read", side_effect=IOError("Input error"))
+        mocker.patch("sys.stdin.read", side_effect=OSError("Input error"))
         result = reader.read_piped_input()
         assert result is None
 
@@ -1536,8 +1538,8 @@ class TestTagFlag:
 
     def test_tag_regex_reaches_config(self):
         """--tag-regex overrides the [tag] section pattern."""
-        from commit_check.main import _get_parser
         from commit_check.config_merger import ConfigMerger
+        from commit_check.main import _get_parser
 
         args = _get_parser().parse_args(["-t", "--tag-regex", r"^rel-\d+$"])
         config = ConfigMerger.parse_cli_args(args)
@@ -1568,8 +1570,8 @@ class TestFilesFlag:
         }
 
     def test_files_cli_options_reach_config(self):
-        from commit_check.main import _get_parser
         from commit_check.config_merger import ConfigMerger
+        from commit_check.main import _get_parser
 
         args = _get_parser().parse_args(
             [
@@ -1728,7 +1730,7 @@ class TestDynamicWordingInJson:
         self, mocker, monkeypatch, tmp_path, capfd
     ):
         """Under the pre-commit framework --files checks the pushed sha, not HEAD."""
-        git = lambda *a: subprocess.run(  # noqa: E731
+        git = lambda *a: subprocess.run(
             ["git", *a], cwd=tmp_path, capture_output=True, encoding="utf-8"
         )
         git("init", "-q")

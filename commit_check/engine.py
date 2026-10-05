@@ -1,46 +1,21 @@
 """Clean validation engine following SOLID principles."""
 
 from __future__ import annotations
+
 import re
 import shlex
 import subprocess
 import sys
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import IntEnum
-from dataclasses import field
 from fnmatch import fnmatchcase
 
-from commit_check import DEFAULT_AI_DISCLOSURE_TRAILERS
-from commit_check import ai_policy
-from commit_check.rule_builder import ValidationRule
+from commit_check import DEFAULT_AI_DISCLOSURE_TRAILERS, ai_policy
 from commit_check.ai_signatures import (
     detect_ai_signatures,
 )
-from commit_check.util import (
-    _print_failure,
-    fetch_remote_ref,
-    fetch_upstream_ref,
-    get_commit_author_identity,
-    get_commit_info,
-    get_git_user_identity,
-    get_git_config_value,
-    get_branch_name,
-    get_commit_files,
-    get_push_commits,
-    get_git_remotes,
-    get_tags_at,
-    format_size,
-    get_upstream_branch,
-    get_upstream_remote_sha,
-    has_commits,
-    git_merge_base,
-    git_rev_parse_verify,
-    print_error_header,
-    rejection_headline,
-)
-from commit_check.imperatives import IMPERATIVES, NON_IMPERATIVE_LOOKALIKES
 from commit_check.fixes import (
     fix_branch_type,
     fix_conventional_header,
@@ -48,6 +23,30 @@ from commit_check.fixes import (
     fix_wip,
     signoff_trailer,
     strip_lines_containing,
+)
+from commit_check.imperatives import IMPERATIVES, NON_IMPERATIVE_LOOKALIKES
+from commit_check.rule_builder import ValidationRule
+from commit_check.util import (
+    _print_failure,
+    fetch_remote_ref,
+    fetch_upstream_ref,
+    format_size,
+    get_branch_name,
+    get_commit_author_identity,
+    get_commit_files,
+    get_commit_info,
+    get_git_config_value,
+    get_git_remotes,
+    get_git_user_identity,
+    get_push_commits,
+    get_tags_at,
+    get_upstream_branch,
+    get_upstream_remote_sha,
+    git_merge_base,
+    git_rev_parse_verify,
+    has_commits,
+    print_error_header,
+    rejection_headline,
 )
 
 
@@ -210,7 +209,7 @@ class BaseValidator(ABC):
     @abstractmethod
     def validate(self, context: ValidationContext) -> ValidationResult:
         """Perform validation and return result."""
-        pass  # pragma: no cover
+        # pragma: no cover
 
     @staticmethod
     def _resolve_current_author(context: ValidationContext) -> str:
@@ -314,7 +313,7 @@ class BaseValidator(ABC):
             try:
                 with open(context.commit_file, "r", encoding="utf-8") as f:
                     return f.read()
-            except (OSError, IOError):
+            except OSError:
                 pass
         if context.rev is not None:
             return get_commit_info("b", context.rev)

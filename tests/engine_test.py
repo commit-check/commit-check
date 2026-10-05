@@ -1,32 +1,34 @@
 """Tests for commit_check.engine module."""
 
-import subprocess
-import pytest
-import tempfile
 import os
+import subprocess
+import tempfile
 from unittest.mock import mock_open, patch
+
+import pytest
+
 from commit_check.engine import (
-    ValidationResult,
-    ValidationContext,
-    BaseValidator,
-    ValidationEngine,
-    CommitMessageValidator,
-    BranchValidator,
-    TagValidator,
-    FilesValidator,
+    AiAttributionValidator,
     AuthorValidator,
+    BaseValidator,
+    BodyValidator,
+    BranchValidator,
+    CommitMessageValidator,
     CommitTypeValidator,
-    SubjectImperativeValidator,
-    SubjectLengthValidator,
+    FilesValidator,
+    ForcePushValidator,
+    MergeBaseValidator,
     SignoffValidator,
     SubjectCapitalizationValidator,
-    BodyValidator,
-    MergeBaseValidator,
-    ForcePushValidator,
-    AiAttributionValidator,
+    SubjectImperativeValidator,
+    SubjectLengthValidator,
     SubjectValidator,
+    TagValidator,
+    ValidationContext,
+    ValidationEngine,
+    ValidationResult,
 )
-from commit_check.rule_builder import ValidationRule, RuleBuilder
+from commit_check.rule_builder import RuleBuilder, ValidationRule
 
 # String constants used across tests (defined once to avoid duplication)
 GIT_CONFIG_VALUE = "commit_check.engine.get_git_config_value"
@@ -1162,15 +1164,17 @@ class TestSignoffValidator:
             )
         )
         validator._suppress_output = True
-        with patch(
-            "commit_check.engine.get_git_user_identity",
-            return_value=("Jane Doe", "jane@example.com"),
-        ):
-            with patch(
+        with (
+            patch(
+                "commit_check.engine.get_git_user_identity",
+                return_value=("Jane Doe", "jane@example.com"),
+            ),
+            patch(
                 "commit_check.engine.get_commit_author_identity",
                 return_value=("Jane Doe", "jane@example.com"),
-            ):
-                assert validator.validate(context) == ValidationResult.FAIL
+            ),
+        ):
+            assert validator.validate(context) == ValidationResult.FAIL
         return validator._last_failure["error"]
 
     def test_missing_signoff_in_a_pending_message_names_the_message(self, tmp_path):
@@ -1186,7 +1190,7 @@ class TestSignoffValidator:
         )
 
     def test_missing_signoff_in_an_existing_commit_names_the_commit(self):
-        info = lambda fmt, rev=None: {"s": "feat: add x", "b": ""}[fmt]  # noqa: E731
+        info = lambda fmt, rev=None: {"s": "feat: add x", "b": ""}[fmt]
         with patch("commit_check.engine.get_commit_info", side_effect=info):
             with patch("commit_check.engine.has_commits", return_value=True):
                 assert self._signoff_error(ValidationContext()) == (
@@ -2159,8 +2163,8 @@ class TestCoAuthorSkip:
     @pytest.mark.benchmark
     def test_co_author_in_ignore_list_from_commit_file(self):
         """Test co-author skip logic when message comes from a commit file."""
-        import tempfile
         import os
+        import tempfile
 
         rule = ValidationRule(
             check="message",
@@ -2329,9 +2333,9 @@ class TestGetGitConfigValue:
                 GIT_CONFIG_VALUE,
                 return_value="01 Invalid Name",
             ),
+            patch("commit_check.engine._print_failure"),
         ):
-            with patch("commit_check.engine._print_failure"):
-                result = validator.validate(context)
+            result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
     @pytest.mark.benchmark
@@ -2439,14 +2443,14 @@ class TestForcePushValidator:
         validator = ForcePushValidator(rule)
         context = ValidationContext(push_upstream_fallback=True)
 
-        with patch(
-            "commit_check.engine.get_upstream_branch", return_value="origin/main"
+        with (
+            patch(
+                "commit_check.engine.get_upstream_branch", return_value="origin/main"
+            ),
+            patch("commit_check.engine.get_upstream_remote_sha", return_value="abc123"),
+            patch("commit_check.engine.git_merge_base", return_value=0),
         ):
-            with patch(
-                "commit_check.engine.get_upstream_remote_sha", return_value="abc123"
-            ):
-                with patch("commit_check.engine.git_merge_base", return_value=0):
-                    result = validator.validate(context)
+            result = validator.validate(context)
 
         assert result == ValidationResult.PASS
 
@@ -2457,15 +2461,15 @@ class TestForcePushValidator:
         validator = ForcePushValidator(rule)
         context = ValidationContext(push_upstream_fallback=True)
 
-        with patch(
-            "commit_check.engine.get_upstream_branch", return_value="origin/main"
+        with (
+            patch(
+                "commit_check.engine.get_upstream_branch", return_value="origin/main"
+            ),
+            patch("commit_check.engine.get_upstream_remote_sha", return_value="abc123"),
+            patch("commit_check.engine.git_merge_base", return_value=0),
         ):
-            with patch(
-                "commit_check.engine.get_upstream_remote_sha", return_value="abc123"
-            ):
-                with patch("commit_check.engine.git_merge_base", return_value=0):
-                    with patch("commit_check.engine.get_branch_name") as mock_branch:
-                        result = validator.validate(context)
+            with patch("commit_check.engine.get_branch_name") as mock_branch:
+                result = validator.validate(context)
 
         assert result == ValidationResult.PASS
         mock_branch.assert_not_called()
@@ -2478,17 +2482,15 @@ class TestForcePushValidator:
         validator._collect_value = True
         context = ValidationContext(push_upstream_fallback=True)
 
-        with patch(
-            "commit_check.engine.get_upstream_branch", return_value="origin/main"
+        with (
+            patch(
+                "commit_check.engine.get_upstream_branch", return_value="origin/main"
+            ),
+            patch("commit_check.engine.get_upstream_remote_sha", return_value="abc123"),
+            patch("commit_check.engine.git_merge_base", return_value=0),
+            patch("commit_check.engine.get_branch_name", return_value="main"),
         ):
-            with patch(
-                "commit_check.engine.get_upstream_remote_sha", return_value="abc123"
-            ):
-                with patch("commit_check.engine.git_merge_base", return_value=0):
-                    with patch(
-                        "commit_check.engine.get_branch_name", return_value="main"
-                    ):
-                        result = validator.validate(context)
+            result = validator.validate(context)
 
         assert result == ValidationResult.PASS
         assert validator._checked_value == "main -> origin/main"
@@ -2502,14 +2504,14 @@ class TestForcePushValidator:
         validator = ForcePushValidator(rule)
         context = ValidationContext(push_upstream_fallback=True)
 
-        with patch(
-            "commit_check.engine.get_upstream_branch", return_value="origin/main"
+        with (
+            patch(
+                "commit_check.engine.get_upstream_branch", return_value="origin/main"
+            ),
+            patch("commit_check.engine.get_upstream_remote_sha", return_value=""),
+            patch("commit_check.engine.git_merge_base", return_value=0) as mock_merge,
         ):
-            with patch("commit_check.engine.get_upstream_remote_sha", return_value=""):
-                with patch(
-                    "commit_check.engine.git_merge_base", return_value=0
-                ) as mock_merge:
-                    result = validator.validate(context)
+            result = validator.validate(context)
 
         mock_merge.assert_called_once_with("origin/main", "HEAD")
         assert result == ValidationResult.PASS
@@ -2521,18 +2523,18 @@ class TestForcePushValidator:
         validator = ForcePushValidator(rule)
         context = ValidationContext(push_upstream_fallback=True)
 
-        with patch(
-            "commit_check.engine.get_upstream_branch", return_value="origin/main"
-        ):
-            with patch(
+        with (
+            patch(
+                "commit_check.engine.get_upstream_branch", return_value="origin/main"
+            ),
+            patch(
                 "commit_check.engine.get_upstream_remote_sha", return_value="deadbeef"
-            ):
-                with patch("commit_check.engine.get_branch_name", return_value="main"):
-                    with patch(
-                        "commit_check.engine.git_merge_base", return_value=1
-                    ) as mock_merge:
-                        with patch("commit_check.engine._print_failure"):
-                            result = validator.validate(context)
+            ),
+            patch("commit_check.engine.get_branch_name", return_value="main"),
+            patch("commit_check.engine.git_merge_base", return_value=1) as mock_merge,
+            patch("commit_check.engine._print_failure"),
+        ):
+            result = validator.validate(context)
 
         mock_merge.assert_called_once_with("deadbeef", "HEAD")
         assert result == ValidationResult.FAIL
@@ -2544,21 +2546,23 @@ class TestForcePushValidator:
         validator = ForcePushValidator(rule)
         context = ValidationContext(push_upstream_fallback=True)
 
-        with patch(
-            "commit_check.engine.get_upstream_branch", return_value="origin/main"
-        ):
-            with patch(
+        with (
+            patch(
+                "commit_check.engine.get_upstream_branch", return_value="origin/main"
+            ),
+            patch(
                 "commit_check.engine.get_upstream_remote_sha", return_value="deadbeef"
-            ):
-                with patch("commit_check.engine.get_branch_name", return_value="main"):
-                    with patch(
-                        "commit_check.engine.git_merge_base", side_effect=[128, 1]
-                    ) as mock_merge:
-                        with patch(
-                            "commit_check.engine.fetch_upstream_ref", return_value=True
-                        ) as mock_fetch:
-                            with patch("commit_check.engine._print_failure"):
-                                result = validator.validate(context)
+            ),
+            patch("commit_check.engine.get_branch_name", return_value="main"),
+            patch(
+                "commit_check.engine.git_merge_base", side_effect=[128, 1]
+            ) as mock_merge,
+            patch(
+                "commit_check.engine.fetch_upstream_ref", return_value=True
+            ) as mock_fetch,
+            patch("commit_check.engine._print_failure"),
+        ):
+            result = validator.validate(context)
 
         mock_fetch.assert_called_once_with("origin/main")
         assert mock_merge.call_count == 2

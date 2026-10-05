@@ -1,15 +1,17 @@
 """Tests for config_merger module."""
 
-import os
-import pytest
 import argparse
+import os
+
+import pytest
+
 from commit_check.config_merger import (
-    parse_bool,
-    parse_list,
-    parse_int,
-    get_default_config,
-    deep_merge,
     ConfigMerger,
+    deep_merge,
+    get_default_config,
+    parse_bool,
+    parse_int,
+    parse_list,
     unknown_setting_warnings,
 )
 

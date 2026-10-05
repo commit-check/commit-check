@@ -8,9 +8,9 @@ import re
 
 import pytest
 
+from commit_check.rule_builder import RuleBuilder
 from commit_check.rules_catalog import (
     ALL_RULES,
-    RULES_BY_CHECK,
     BRANCH_CHECKS,
     BRANCH_RULES,
     COMMIT_RULES,
@@ -18,10 +18,10 @@ from commit_check.rules_catalog import (
     FILES_RULES,
     MESSAGE_CHECKS,
     PUSH_RULES,
+    RULES_BY_CHECK,
     RULES_DOCS_URL,
     RuleCatalogEntry,
 )
-from commit_check.rule_builder import RuleBuilder
 
 ALL_ENTRIES = [*COMMIT_RULES, *BRANCH_RULES, *PUSH_RULES]
 
