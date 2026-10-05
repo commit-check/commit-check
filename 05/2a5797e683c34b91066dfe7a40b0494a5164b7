@@ -1,0 +1,60 @@
+tests/integration_test.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 11-12
+  s_bf629527b40843::t_74e33d8fce103d 15
+commit_check/engine.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 10,12,15-17,28-30,32,34,37,43-51,213,317
+commit_check/util.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 13-14
+tests/util_test.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 5-6,10-14,23-25,30-31,33-34,1458,1471
+commit_check/config.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 4-5,10,128,154
+commit_check/main.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 8,11,19-26,74
+commit_check/api.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 63
+tests/engine_test.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 4,6,9-10,12,14-15,17-18,21-26,29,1165-1169,1172-1173,1189,2163,2333-2334,2442-2443,2445-2449,2460-2461,2463-2468,2481-2482,2484-2491,2505-2506,2508-2512,2524-2525,2527-2535,2547-2548,2550-2561
+pyproject.toml
+  s_bf629527b40843::t_5e045b4c98fba4 68-71
+commit_check/rule_builder.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 7,9,12,14,16,19-31
+tests/api_test.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 4,7,9-11
+tests/config_merger_test.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 5,9-12
+tests/config_test.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 3-4,8,12-16,34,481-482,485-489,864-866,868-869,875-878,881-882
+tests/rule_builder_test.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 4,6-7
+tests/rules_catalog_test.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 13,24
+tests/version_test.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 5-6
+commit_check/config_merger.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 7,11,13-17
+commit_check/__init__.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 11
+tests/main_test.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 5,8,240,1540,1572,1731
+tests/ai_signatures_test.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 10-11
+noxfile.py
+  s_bf629527b40843::t_e5a5f7a1288b0e 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "052a5797e683c34b91066dfe7a40b0494a5164b7",
+  "prompts": {},
+  "sessions": {
+    "s_bf629527b40843": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "808690ff-5268-4dc4-80b0-db34ecda847c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
