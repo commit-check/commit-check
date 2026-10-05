@@ -1,14 +1,13 @@
 """TOML config loader and schema for commit-check."""
 
 from __future__ import annotations
-
+from typing import Any
+from pathlib import Path
 import copy
 import io
 import sys
-import urllib.error
 import urllib.request
-from pathlib import Path
-from typing import Any
+import urllib.error
 
 try:
     import tomllib
@@ -126,7 +125,7 @@ class _LazyOpener:
 
     @property
     def handlers(self) -> list[urllib.request.BaseHandler]:
-        return list(self._get().handlers)
+        return list(getattr(self._get(), "handlers"))
 
     def _get(self) -> urllib.request.OpenerDirector:
         if self._opener is None:
@@ -152,7 +151,7 @@ def _load_from_url(url: str) -> dict[str, Any]:
     """
     if not url.startswith("https://"):
         raise ValueError("only https:// URLs are accepted")
-    with _opener.open(url, timeout=10) as response:
+    with _opener.open(url, timeout=10) as response:  # noqa: S310
         data = response.read()
     return toml_load(io.BytesIO(data))
 

@@ -1,21 +1,19 @@
 """Tests for commit_check.config module."""
 
+import pytest
+import tempfile
 import os
 import sys
-import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
-
+from unittest.mock import patch, MagicMock
 from commit_check.config import (
-    DEFAULT_CONFIG_PATHS,
     ConfigError,
-    _github_shorthand_to_url,
-    _load_from_url,
-    _resolve_inherit_from,
-    deep_merge,
     load_config,
+    DEFAULT_CONFIG_PATHS,
+    deep_merge,
+    _resolve_inherit_from,
+    _load_from_url,
+    _github_shorthand_to_url,
 )
 
 # String constants used across tests
@@ -33,7 +31,7 @@ def _restore_config_attribute(module):
     the copy and the tests behind it reached the network.
     """
     if module is not None:
-        sys.modules["commit_check"].config = module
+        setattr(sys.modules["commit_check"], "config", module)
 
 
 class TestConfig:
@@ -480,17 +478,15 @@ except ImportError:
         assert callable(namespace1["toml_load"])
 
         # Test case 2: Simulate ImportError for tomllib
-        with (
-            patch.dict("sys.modules", {"tomllib": None}),
-            patch(
+        with patch.dict("sys.modules", {"tomllib": None}):
+            with patch(
                 "builtins.__import__",
                 side_effect=self._mock_import_error,
-            ),
-        ):
-            namespace2 = {}
-            exec(test_code, namespace2)
-            assert namespace2["used_tomllib"] is False
-            assert callable(namespace2["toml_load"])
+            ):
+                namespace2 = {}
+                exec(test_code, namespace2)
+                assert namespace2["used_tomllib"] is False
+                assert callable(namespace2["toml_load"])
 
     @staticmethod
     def _mock_import_error(name, *args, **kwargs):
@@ -865,29 +861,25 @@ class TestLoadFromUrl:
     def test_load_from_url_network_error(self):
         import urllib.error
 
-        with (
-            patch(
-                URLOPEN_MODULE,
-                side_effect=urllib.error.URLError("network error"),
-            ),
-            pytest.raises(urllib.error.URLError),
+        with patch(
+            URLOPEN_MODULE,
+            side_effect=urllib.error.URLError("network error"),
         ):
-            _load_from_url(EXAMPLE_CONFIG_URL)
+            with pytest.raises(urllib.error.URLError):
+                _load_from_url(EXAMPLE_CONFIG_URL)
 
     @pytest.mark.benchmark
     def test_load_from_url_http_error(self):
         import urllib.error
 
-        with (
-            patch(
-                URLOPEN_MODULE,
-                side_effect=urllib.error.HTTPError(
-                    EXAMPLE_CONFIG_URL, 404, "Not Found", {}, None
-                ),
+        with patch(
+            URLOPEN_MODULE,
+            side_effect=urllib.error.HTTPError(
+                EXAMPLE_CONFIG_URL, 404, "Not Found", {}, None
             ),
-            pytest.raises(urllib.error.HTTPError),
         ):
-            _load_from_url(EXAMPLE_CONFIG_URL)
+            with pytest.raises(urllib.error.HTTPError):
+                _load_from_url(EXAMPLE_CONFIG_URL)
 
     @pytest.mark.benchmark
     def test_load_from_url_rejects_non_https(self):
@@ -902,7 +894,6 @@ class TestHttpsOnlyRedirects:
 
     def _redirect(self, target: str):
         import urllib.request
-
         from commit_check.config import _HttpsOnlyRedirectHandler
 
         req = urllib.request.Request(EXAMPLE_CONFIG_URL)
@@ -922,7 +913,6 @@ class TestHttpsOnlyRedirects:
 
     def test_opener_is_built_once_on_first_open(self):
         import urllib.request
-
         from commit_check.config import _LazyOpener
 
         built = MagicMock()

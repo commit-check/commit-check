@@ -19,7 +19,6 @@ Internal bookkeeping entries that never produce a diagnostic (such as
 """
 
 from __future__ import annotations
-
 from dataclasses import dataclass
 
 #: Base URL of the rules reference documentation.

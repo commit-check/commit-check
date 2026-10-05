@@ -6,14 +6,12 @@ catching regressions in git-interaction code paths.
 """
 
 from __future__ import annotations
-
-import subprocess
 import sys
-from pathlib import Path
-
 import pytest
-
+import subprocess
+from pathlib import Path
 from commit_check.main import main
+
 
 # ---------------------------------------------------------------------------
 # helpers

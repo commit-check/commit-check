@@ -1,15 +1,14 @@
 """Tests for commit_check.ai_signatures — the AI tool signature database."""
 
 import pytest
-
 from commit_check.ai_signatures import (
-    ALL_KNOWN_TOOLS,
-    ALL_PATTERNS,
     detect_ai_signatures,
     find_trailers,
     groups,
     has_ai_signature,
     tool_named_in,
+    ALL_KNOWN_TOOLS,
+    ALL_PATTERNS,
 )
 from commit_check.ai_signatures_data import (
     ROLE_CO_AUTHOR,

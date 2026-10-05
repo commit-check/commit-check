@@ -1,6 +1,5 @@
-import glob
-
 import nox
+import glob
 
 nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = ["lint"]

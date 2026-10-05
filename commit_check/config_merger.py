@@ -1,27 +1,25 @@
 """Configuration merger that combines CLI args, env vars, TOML config, and defaults."""
 
 from __future__ import annotations
-
-import argparse
 import difflib
 import os
 import sys
+import argparse
 from collections.abc import Callable
 from typing import Any
 
+from commit_check.config import deep_merge, load_config as load_toml_config
 from commit_check import (
+    DEFAULT_COMMIT_TYPES,
+    DEFAULT_BRANCH_TYPES,
+    DEFAULT_BRANCH_NAMES,
+    DEFAULT_BOOLEAN_RULES,
+    DEFAULT_PUSH_RULES,
     DEFAULT_AI_ATTRIBUTION,
     DEFAULT_AI_DISCLOSURE_PATTERN,
     DEFAULT_AI_DISCLOSURE_TRAILERS,
-    DEFAULT_BOOLEAN_RULES,
-    DEFAULT_BRANCH_NAMES,
-    DEFAULT_BRANCH_TYPES,
-    DEFAULT_COMMIT_TYPES,
-    DEFAULT_PUSH_RULES,
     DEFAULT_TAG_REGEX,
 )
-from commit_check.config import deep_merge
-from commit_check.config import load_config as load_toml_config
 
 
 def parse_bool(value: Any) -> bool:

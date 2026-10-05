@@ -1,38 +1,37 @@
 import importlib
 import os
-import subprocess
 import sys
-from subprocess import PIPE, CalledProcessError
-from unittest.mock import MagicMock, patch
-
 import pytest
-
+import subprocess
+from unittest.mock import patch
 import commit_check
 from commit_check import supports_color
 from commit_check.util import (
-    _print_failure,
-    cmd_output,
+    get_push_commits,
+    get_tags_at,
+    get_commit_files,
+    parse_size,
+    format_size,
     fetch_remote_ref,
     fetch_upstream_ref,
-    format_size,
     get_branch_name,
-    get_commit_files,
-    get_commit_info,
     get_git_remotes,
-    get_push_commits,
     get_remote_branch_sha,
-    get_tags_at,
     get_upstream_branch,
     get_upstream_remote_sha,
-    git_merge_base,
     has_commits,
-    hyperlink,
-    parse_size,
+    git_merge_base,
+    get_commit_info,
+    cmd_output,
     print_error_header,
     print_error_message,
     print_suggestion,
     supports_hyperlinks,
+    hyperlink,
+    _print_failure,
 )
+from subprocess import CalledProcessError, PIPE
+from unittest.mock import MagicMock
 
 # String constants used across tests
 REFS_HEADS_MAIN = "refs/heads/main"
@@ -1456,7 +1455,7 @@ class TestPathspecBatches:
     @pytest.mark.benchmark
     def test_long_paths_split_before_the_count_cap(self):
         """A few huge paths must not build a command line git cannot run."""
-        from commit_check.util import _LS_TREE_ARG_BUDGET, _pathspec_batches
+        from commit_check.util import _pathspec_batches, _LS_TREE_ARG_BUDGET
 
         batches = _pathspec_batches(["x" * 4000 for _ in range(20)])
         assert len(batches) > 1
@@ -1469,7 +1468,7 @@ class TestPathspecBatches:
 
     @pytest.mark.benchmark
     def test_one_oversized_path_is_its_own_batch(self):
-        from commit_check.util import _LS_TREE_ARG_BUDGET, _pathspec_batches
+        from commit_check.util import _pathspec_batches, _LS_TREE_ARG_BUDGET
 
         batches = _pathspec_batches(
             ["a.txt", "x" * (_LS_TREE_ARG_BUDGET + 10), "b.txt"]

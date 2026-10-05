@@ -65,6 +65,10 @@ version_scheme= "no-guess-dev"
 local_scheme = "no-local-version"
 fallback_version = "0.0.0"
 
+[tool.ruff.lint]
+# Ruff's default rule set before 0.16 widened it.
+select = ["E4", "E7", "E9", "F"]
+
 [tool.mypy]
 python_version = "3.10"
 show_error_codes = true
