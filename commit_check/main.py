@@ -1,14 +1,23 @@
 """Modern commit-check CLI with clean architecture and TOML support."""
 
 from __future__ import annotations
+
+import argparse
 import json
 import os
 import select
 import sys
-import argparse
 
 from commit_check.config import ConfigError, find_config_path
-from commit_check.config_merger import ConfigMerger, parse_bool, parse_list, parse_int
+from commit_check.config_merger import ConfigMerger, parse_bool, parse_int, parse_list
+from commit_check.engine import (
+    CheckOutcome,
+    ValidationContext,
+    ValidationEngine,
+    ValidationResult,
+    count_warnings,
+    overall_status,
+)
 from commit_check.rule_builder import RuleBuilder
 from commit_check.rules_catalog import BRANCH_CHECKS, FILES_CHECKS, MESSAGE_CHECKS
 from commit_check.util import (
@@ -16,14 +25,7 @@ from commit_check.util import (
     git_rev_parse_verify,
     print_error_header,
 )
-from commit_check.engine import (
-    ValidationEngine,
-    ValidationContext,
-    ValidationResult,
-    CheckOutcome,
-    count_warnings,
-    overall_status,
-)
+
 from . import AI_ATTRIBUTION_POLICIES, __version__
 
 # Exit codes. ``1`` is a verdict on the commit; ``2`` means the run could not
@@ -71,7 +73,7 @@ class StdinReader:
             if not sys.stdin.isatty() and cls._has_pending_data(timeout=0.1):
                 data = sys.stdin.read()
                 return data.strip() if data else None
-        except (OSError, IOError):
+        except OSError:
             return None
         return None
 
@@ -643,8 +645,10 @@ _UNCONFIGURED_HINTS = (
     (
         "branch",
         ("branch", "merge_base"),
-        "--branch requested but no branch rules are configured "
-        "(conventional_branch = false and no require_rebase_target)",
+        (
+            "--branch requested but no branch rules are configured "
+            "(conventional_branch = false and no require_rebase_target)"
+        ),
     ),
 )
 
@@ -801,7 +805,7 @@ def main() -> int:
         # Nothing was validated, so this is not a verdict on the commit.
         print(f"Error: {e}", file=sys.stderr)
         return EXIT_CONFIG_ERROR
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - last resort: report it, no traceback
         print(f"Error: {e}", file=sys.stderr)
         return EXIT_FAIL
 

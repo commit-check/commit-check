@@ -6,12 +6,14 @@ A module containing utility functions.
 """
 
 from __future__ import annotations
+
 import os
 import subprocess
 import sys
-from subprocess import CalledProcessError
-from commit_check import RED, GREEN, YELLOW, RESET_COLOR
 from collections.abc import Iterable
+from subprocess import CalledProcessError
+
+from commit_check import GREEN, RED, RESET_COLOR, YELLOW
 from commit_check.rules_catalog import display_name
 
 
@@ -102,8 +104,8 @@ def get_tags_at(rev: str = "HEAD") -> list[str]:
     # and a git diagnostic must not be parsed as a tag name.
     result = subprocess.run(
         ["git", "tag", "--points-at", rev],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
+        check=False,
         encoding="utf-8",
     )
     output = result.stdout if result.returncode == 0 else ""
@@ -250,8 +252,8 @@ def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
     # one, in a single call that also rejects an unresolvable revision.
     lineage = subprocess.run(
         ["git", "rev-list", "--parents", "-n", "1", rev],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
+        check=False,
         encoding="utf-8",
     )
     if lineage.returncode != 0:
@@ -272,8 +274,8 @@ def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
             "-z",
             *scope,
         ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
+        check=False,
         encoding="utf-8",
     )
     if diff.returncode != 0:
@@ -287,8 +289,8 @@ def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
         try:
             tree = subprocess.run(
                 ["git", "ls-tree", "-r", "-l", "-z", "--full-tree", rev, "--", *batch],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
+                check=False,
                 encoding="utf-8",
             )
         except OSError:
@@ -324,8 +326,8 @@ def get_push_commits(local_sha: str, remote_sha: str) -> list[str]:
         args = [f"{remote_sha}..{local_sha}"]
     result = subprocess.run(
         ["git", "rev-list", *args],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
+        check=False,
         encoding="utf-8",
     )
     if result.returncode != 0:
@@ -343,8 +345,8 @@ def get_upstream_branch() -> str:
     """
     result = subprocess.run(
         ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
+        check=False,
         encoding="utf-8",
     )
     if result.returncode == 0 and result.stdout:
@@ -378,8 +380,8 @@ def get_remote_branch_sha(remote_name: str, branch_name: str) -> str:
 
     result = subprocess.run(
         ["git", "ls-remote", "--exit-code", remote_name, f"refs/heads/{branch_name}"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
+        check=False,
         encoding="utf-8",
     )
     if result.returncode != 0 or not result.stdout:
@@ -401,8 +403,8 @@ def fetch_upstream_ref(upstream_ref: str) -> bool:
     remote_name, branch_name = parts
     result = subprocess.run(
         ["git", "fetch", "--quiet", "--no-tags", remote_name, branch_name],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
+        check=False,
         encoding="utf-8",
     )
     return result.returncode == 0
@@ -412,8 +414,8 @@ def get_git_remotes() -> list[str]:
     """Return configured git remote names."""
     result = subprocess.run(
         ["git", "remote"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
+        check=False,
         encoding="utf-8",
     )
     if result.returncode != 0 or not result.stdout:
@@ -433,8 +435,8 @@ def fetch_remote_ref(remote_name: str, remote_ref: str) -> bool:
 
     result = subprocess.run(
         ["git", "fetch", "--quiet", "--no-tags", remote_name, remote_ref],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
+        check=False,
         encoding="utf-8",
     )
     return result.returncode == 0
@@ -551,7 +553,7 @@ def git_merge_base(target_branch: str, current_branch: str) -> int:
             f"{current_branch}",
         ]
         result = subprocess.run(
-            commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8"
+            commands, capture_output=True, check=False, encoding="utf-8"
         )
         return result.returncode
     except CalledProcessError:
@@ -565,7 +567,7 @@ def cmd_output(commands: list) -> str:
     :returns: Get `str` output.
     """
     result = subprocess.run(
-        commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8"
+        commands, capture_output=True, check=False, encoding="utf-8"
     )
     if result.returncode == 0 and result.stdout is not None:
         return result.stdout

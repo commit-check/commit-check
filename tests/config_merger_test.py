@@ -1,15 +1,17 @@
 """Tests for config_merger module."""
 
-import os
-import pytest
 import argparse
+import os
+
+import pytest
+
 from commit_check.config_merger import (
-    parse_bool,
-    parse_list,
-    parse_int,
-    get_default_config,
-    deep_merge,
     ConfigMerger,
+    deep_merge,
+    get_default_config,
+    parse_bool,
+    parse_int,
+    parse_list,
     unknown_setting_warnings,
 )
 
@@ -416,8 +418,10 @@ class TestUnknownSettings:
             "pull_request": {"check": "squash"},
         }
         assert unknown_setting_warnings(config) == [
-            "⚠ unknown setting [commit] subject_max_lenght is ignored; "
-            "did you mean subject_max_length?",
+            (
+                "⚠ unknown setting [commit] subject_max_lenght is ignored; "
+                "did you mean subject_max_length?"
+            ),
             "⚠ unknown setting [branches] is ignored; did you mean branch?",
             "⚠ unknown setting [pull_requset] is ignored; did you mean pull_request?",
         ]

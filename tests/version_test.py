@@ -1,9 +1,11 @@
 """Tests for commit_check.__version__."""
 
 import importlib
-import pytest
-from unittest.mock import patch
 from importlib.metadata import PackageNotFoundError
+from unittest.mock import patch
+
+import pytest
+
 import commit_check
 
 

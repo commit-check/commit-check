@@ -1,34 +1,35 @@
 """Rule builder that creates validation rules from config and catalog."""
 
 from __future__ import annotations
+
 import re
 import sys
-from typing import Any
 from dataclasses import dataclass, replace
-from commit_check.config import ConfigError
-from commit_check.util import format_size, parse_size
-from commit_check.rules_catalog import (
-    COMMIT_RULES,
-    BRANCH_RULES,
-    PUSH_RULES,
-    FILES_RULES,
-    TAG_RULES,
-    RULES_BY_CHECK,
-    RuleCatalogEntry,
-)
+from typing import Any
+
 from commit_check import (
     AI_ATTRIBUTION_POLICIES,
-    DEFAULT_COMMIT_TYPES,
-    DEFAULT_BRANCH_TYPES,
-    DEFAULT_BRANCH_NAMES,
-    DEFAULT_BOOLEAN_RULES,
-    DEFAULT_PUSH_RULES,
     DEFAULT_AI_ATTRIBUTION,
     DEFAULT_AI_DISCLOSURE_PATTERN,
     DEFAULT_AI_DISCLOSURE_TRAILERS,
+    DEFAULT_BOOLEAN_RULES,
+    DEFAULT_BRANCH_NAMES,
+    DEFAULT_BRANCH_TYPES,
+    DEFAULT_COMMIT_TYPES,
+    DEFAULT_PUSH_RULES,
     DEFAULT_TAG_REGEX,
 )
-
+from commit_check.config import ConfigError
+from commit_check.rules_catalog import (
+    BRANCH_RULES,
+    COMMIT_RULES,
+    FILES_RULES,
+    PUSH_RULES,
+    RULES_BY_CHECK,
+    TAG_RULES,
+    RuleCatalogEntry,
+)
+from commit_check.util import format_size, parse_size
 
 #: The checks each ``ai_attribution`` policy builds. ``forbid`` rejects every
 #: AI signature under one rule; ``disclose`` asks for three things, one rule
@@ -732,7 +733,7 @@ class RuleBuilder:
         # config allows "create-pull-request/.+" that way. Every alternative
         # is anchored at both ends so a name has to match the whole branch
         # name, not merely its start ("main-backup" is not "main").
-        names_pattern = "|".join(["master", "main", "HEAD", r"PR-.+"])
+        names_pattern = "master|main|HEAD|PR-.+"
         if allowed_names:
             names_pattern += "|" + "|".join(allowed_names)
         return rf"^(?:{types_pattern})/.+$|^(?:{names_pattern})$"
