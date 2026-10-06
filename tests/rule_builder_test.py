@@ -1,10 +1,12 @@
 """Tests for commit_check.rule_builder module."""
 
-from commit_check.config import ConfigError
-from commit_check.rule_builder import ValidationRule, RuleBuilder
-from commit_check.rules_catalog import RuleCatalogEntry
-import pytest
 import re
+
+import pytest
+
+from commit_check.config import ConfigError
+from commit_check.rule_builder import RuleBuilder, ValidationRule
+from commit_check.rules_catalog import RuleCatalogEntry
 
 # String constants used across tests
 BAD_FORMAT_ERROR = "Bad format"
@@ -79,6 +81,13 @@ class TestRuleBuilder:
         # This should return None for invalid type
         rule = builder._build_author_list_rule(catalog_entry, "ignore_authors")
         assert rule is None
+
+    def test_author_list_rule_is_built_for_ignore_authors_only(self):
+        """A list under any other key builds no author rule."""
+        builder = RuleBuilder({"commit": {"allow_authors": ["Ada Lovelace"]}})
+        catalog_entry = RuleCatalogEntry(check="allow_authors")
+
+        assert builder._build_author_list_rule(catalog_entry, "allow_authors") is None
 
     @pytest.mark.benchmark
     def test_rule_builder_length_rule_with_format(self):
@@ -212,6 +221,7 @@ class TestRuleBuilder:
     def test_ai_agent_and_bot_branch_types_in_default(self):
         """AI agent and bot prefixes are valid by default."""
         import re
+
         from commit_check import DEFAULT_BRANCH_TYPES
 
         assert "ai" in DEFAULT_BRANCH_TYPES
@@ -664,6 +674,7 @@ class TestTagRules:
     def test_default_tag_regex_accepts_semver_forms(self):
         """The default accepts v-prefixed and bare SemVer, with suffixes."""
         import re
+
         from commit_check import DEFAULT_TAG_REGEX
 
         for good in [
@@ -741,6 +752,14 @@ class TestFilesRules:
         err = capsys.readouterr().err
         assert "must be a table" in err
         assert "garbage" in err
+
+    def test_a_false_files_value_opts_out_quietly(self, capsys):
+        """files = false reads as "no file rules", which needs no warning."""
+        rules = RuleBuilder({"files": False}).build_all_rules()
+        assert not [
+            r for r in rules if r.check in ("file_size", "file_pattern", "path_length")
+        ]
+        assert capsys.readouterr().err == ""
 
     @pytest.mark.benchmark
     def test_unset_values_are_not_reported(self, capsys):

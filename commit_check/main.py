@@ -1,14 +1,23 @@
 """Modern commit-check CLI with clean architecture and TOML support."""
 
 from __future__ import annotations
+
+import argparse
 import json
 import os
 import select
 import sys
-import argparse
 
 from commit_check.config import ConfigError, find_config_path
-from commit_check.config_merger import ConfigMerger, parse_bool, parse_list, parse_int
+from commit_check.config_merger import ConfigMerger, parse_bool, parse_int, parse_list
+from commit_check.engine import (
+    CheckOutcome,
+    ValidationContext,
+    ValidationEngine,
+    ValidationResult,
+    count_warnings,
+    overall_status,
+)
 from commit_check.rule_builder import RuleBuilder
 from commit_check.rules_catalog import BRANCH_CHECKS, FILES_CHECKS, MESSAGE_CHECKS
 from commit_check.util import (
@@ -16,14 +25,7 @@ from commit_check.util import (
     git_rev_parse_verify,
     print_error_header,
 )
-from commit_check.engine import (
-    ValidationEngine,
-    ValidationContext,
-    ValidationResult,
-    CheckOutcome,
-    count_warnings,
-    overall_status,
-)
+
 from . import AI_ATTRIBUTION_POLICIES, __version__
 
 # Exit codes. ``1`` is a verdict on the commit; ``2`` means the run could not
@@ -71,7 +73,7 @@ class StdinReader:
             if not sys.stdin.isatty() and cls._has_pending_data(timeout=0.1):
                 data = sys.stdin.read()
                 return data.strip() if data else None
-        except (OSError, IOError):
+        except OSError:
             return None
         return None
 
@@ -228,6 +230,14 @@ def _get_parser() -> argparse.ArgumentParser:
         "--dry-run",
         help="run every check and print the findings, but exit 0 even when "
         "one fails; a configuration error still exits 2",
+        action="store_true",
+        required=False,
+    )
+
+    parser.add_argument(
+        "--fix",
+        help="rewrite the commit message file when every failed message check "
+        "has a mechanical fix, such as a type's case or a missing colon",
         action="store_true",
         required=False,
     )
@@ -529,6 +539,41 @@ def _get_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _fix_message_file(path: str, rules: list, config: dict) -> None:
+    """Rewrite a commit message file when every failure in it has a fix.
+
+    A subject rule's fix is the corrected subject; every other rule's fix is
+    the corrected message. Fixes go in one at a time, re-checking after
+    each, and a failure no fix can reach leaves the file as it was.
+    """
+    with open(path, encoding="utf-8") as f:
+        original = f.read()
+    message = original.strip()
+    engine = ValidationEngine([r for r in rules if r.check in MESSAGE_CHECKS])
+    fixed = []
+    for _ in range(len(engine.rules) + 1):
+        context = ValidationContext(
+            stdin_text=message, stdin_is_message=True, config=config
+        )
+        outcomes = engine.validate_all_detailed(context)
+        failed = [o for o in outcomes if o.status == "fail"]
+        fixable = [o for o in failed if o.fix]
+        if not fixable:
+            break
+        first = fixable[0]
+        subject = message.split("\n", 1)[0]
+        if first.value == subject:
+            message = first.fix + message[len(subject) :]
+        else:
+            message = first.fix
+        fixed.append(f"{first.rule_id} {first.check.replace('_', '-')}")
+    if failed or not fixed:
+        return
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(original.replace(original.strip(), message, 1))
+    print(f"✎ fixed the commit message: {', '.join(fixed)}", file=sys.stderr)
+
+
 def _resolve_commit_message_source(
     args: argparse.Namespace,
     stdin_reader: StdinReader,
@@ -609,8 +654,10 @@ _UNCONFIGURED_HINTS = (
     (
         "branch",
         ("branch", "merge_base"),
-        "--branch requested but no branch rules are configured "
-        "(conventional_branch = false and no require_rebase_target)",
+        (
+            "--branch requested but no branch rules are configured "
+            "(conventional_branch = false and no require_rebase_target)"
+        ),
     ),
 )
 
@@ -720,6 +767,14 @@ def main() -> int:
             if not args.message:
                 stdin_content = _resolve_stdin_for_non_message(args, stdin_reader)
 
+        # Next to --message, piped stdin is the message; other checks read git.
+        stdin_is_message = args.message and stdin_content is not None
+
+        if args.fix and not commit_file_path:
+            parser.error("--fix rewrites a commit message file; pass one")
+        if args.fix and commit_file_path and not args.dry_run:
+            _fix_message_file(commit_file_path, filtered_rules, config_data)
+
         # Reset banner state for this run
         print_error_header.has_been_called = False
 
@@ -730,7 +785,9 @@ def main() -> int:
             config=config_data,
             no_banner=getattr(args, "no_banner", False),
             compact=getattr(args, "compact", False),
-            push_upstream_fallback=args.no_force_push and stdin_content is None,
+            push_upstream_fallback=args.no_force_push
+            and (stdin_content is None or stdin_is_message),
+            stdin_is_message=stdin_is_message,
         )
 
         # Run validation – choose output mode based on --format
@@ -757,7 +814,7 @@ def main() -> int:
         # Nothing was validated, so this is not a verdict on the commit.
         print(f"Error: {e}", file=sys.stderr)
         return EXIT_CONFIG_ERROR
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - last resort: report it, no traceback
         print(f"Error: {e}", file=sys.stderr)
         return EXIT_FAIL
 

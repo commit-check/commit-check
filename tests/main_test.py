@@ -1,13 +1,17 @@
+import argparse
 import json
+import os
 import subprocess
 import sys
-import pytest
 import tempfile
 import time
-import os
+
+import pytest
+
 from commit_check.main import (
     StdinReader,
     _build_pre_commit_push_input,
+    _resolve_stdin_for_non_message,
     main,
 )
 
@@ -235,7 +239,7 @@ class TestStdinReader:
         reader = StdinReader()
 
         mocker.patch("sys.stdin.isatty", return_value=False)
-        mocker.patch("sys.stdin.read", side_effect=IOError("Input error"))
+        mocker.patch("sys.stdin.read", side_effect=OSError("Input error"))
         result = reader.read_piped_input()
         assert result is None
 
@@ -372,8 +376,190 @@ class TestRevOption:
         assert any("updated the parser" in v for v in values)
 
 
+class TestFixOption:
+    """--fix rewrites a message file whose every failure has a mechanical fix."""
+
+    def _run(self, tmp_path, monkeypatch, message, *flags):
+        path = tmp_path / "COMMIT_EDITMSG"
+        path.write_text(message)
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.argv", [CMD, "--message", "--fix", *flags, str(path)])
+        return main(), path.read_text()
+
+    @pytest.mark.parametrize(
+        "message, flags, fixed",
+        [
+            ("Fix: add x\n", (), "fix: add x\n"),
+            # A subject fix keeps the body.
+            (
+                "Fix: add x\n\nbody\n",
+                ("--subject-capitalized=true",),
+                "fix: Add x\n\nbody\n",
+            ),
+            # CC001 has no fix for "WIP: ...", but dropping the marker is one.
+            ("WIP: fix: add x\n", ("--allow-wip-commits=false",), "fix: add x\n"),
+            # The value is the trailer; the fix is the whole message.
+            (
+                "fix: add x\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\n",
+                ("--ai-attribution=disclose",),
+                "fix: add x\n\nAssisted-by: Claude Opus 5\n",
+            ),
+        ],
+    )
+    def test_a_fixable_message_is_rewritten(
+        self, tmp_path, monkeypatch, capfd, message, flags, fixed
+    ):
+        rc, text = self._run(tmp_path, monkeypatch, message, *flags)
+        assert (rc, text) == (0, fixed)
+        assert "✎ fixed the commit message" in capfd.readouterr().err
+
+    def test_a_passing_message_is_not_touched(self, tmp_path, monkeypatch, capfd):
+        rc, text = self._run(tmp_path, monkeypatch, "fix: add x\n")
+        assert (rc, text) == (0, "fix: add x\n")
+        assert "✎" not in capfd.readouterr().err
+
+    def test_an_unfixable_message_is_left_alone(self, tmp_path, monkeypatch):
+        rc, text = self._run(tmp_path, monkeypatch, "add streaming support\n")
+        assert (rc, text) == (1, "add streaming support\n")
+
+    def test_dry_run_rewrites_nothing(self, tmp_path, monkeypatch):
+        rc, text = self._run(tmp_path, monkeypatch, "Fix: add x\n", "--dry-run")
+        assert (rc, text) == (0, "Fix: add x\n")
+
+    def test_a_fix_that_never_satisfies_its_rule_is_not_written(
+        self, tmp_path, monkeypatch, mocker, capfd
+    ):
+        """A sign-off from an identity with no usable email never passes CC012.
+
+        The fix keeps being offered and keeps failing until the attempts run
+        out; the file is left as it was rather than written half-fixed.
+        """
+        mocker.patch(
+            "commit_check.engine.get_git_user_identity",
+            return_value=("Ada Lovelace", "ada"),
+        )
+        rc, text = self._run(
+            tmp_path, monkeypatch, "fix: add x\n", "--require-signed-off-by=true"
+        )
+        assert (rc, text) == (1, "fix: add x\n")
+        assert "✎" not in capfd.readouterr().err
+
+    def test_needs_a_message_file(self, mocker, monkeypatch):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="Fix: add x")
+        monkeypatch.setattr("sys.argv", [CMD, "--message", "--fix"])
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 2
+
+
+class TestPipedMessageWithOtherChecks:
+    """Next to --message, piped stdin is the message; the other checks read git.
+
+    ``printf 'feat: ...' | commit-check -m -b`` used to fail CC201 on the
+    message text. Without --message, a check still reads what is piped to it.
+    """
+
+    MESSAGE = "feat: add streaming support\n\nSigned-off-by: Dev <dev@example.com>\n"
+
+    @pytest.fixture
+    def repo(self, tmp_path, monkeypatch):
+        """Git holds a valid branch, an identity and a tag, none of them the message."""
+        git = ["git", "-C", str(tmp_path)]
+        subprocess.run(
+            git + ["init", "-q", "-b", "feature/streaming-support"], check=True
+        )
+        subprocess.run(git + ["config", "user.name", "Good Author"], check=True)
+        subprocess.run(git + ["config", "user.email", "good@example.com"], check=True)
+        subprocess.run(
+            git + ["commit", "-q", "--allow-empty", "-m", "chore: x"], check=True
+        )
+        subprocess.run(git + ["tag", "v1.0.0"], check=True)
+        monkeypatch.chdir(tmp_path)
+        return tmp_path
+
+    def _run(self, mocker, monkeypatch, capsys, piped, *flags):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=piped)
+        monkeypatch.setattr("sys.argv", [CMD, *flags, "--format", "json"])
+        rc = main()
+        checks = json.loads(capsys.readouterr().out)["checks"]
+        return rc, {c["check"]: c for c in checks}
+
+    @pytest.mark.parametrize(
+        "flag, check, from_git",
+        [
+            ("--branch", "branch", "feature/streaming-support"),
+            ("--author-name", "author_name", "Good Author"),
+            ("--author-email", "author_email", "good@example.com"),
+            ("--tag", "tag", "v1.0.0"),
+        ],
+    )
+    def test_other_checks_read_git(
+        self, repo, mocker, monkeypatch, capsys, flag, check, from_git
+    ):
+        rc, checks = self._run(mocker, monkeypatch, capsys, self.MESSAGE, "-m", flag)
+        assert rc == 0
+        assert checks["message"]["value"] == self.MESSAGE.strip()
+        assert checks[check]["value"] == from_git
+
+    def test_a_bad_branch_still_fails(self, repo, mocker, monkeypatch, capsys):
+        subprocess.run(
+            ["git", "-C", str(repo), "checkout", "-q", "-b", "bad_branch"], check=True
+        )
+        rc, checks = self._run(mocker, monkeypatch, capsys, self.MESSAGE, "-m", "-b")
+        assert rc == 1
+        assert checks["branch"]["value"] == "bad_branch"
+
+    def test_no_force_push_compares_with_the_upstream(
+        self, repo, mocker, monkeypatch, capsys
+    ):
+        mocker.patch("commit_check.engine.get_upstream_branch", return_value="origin/x")
+        mocker.patch("commit_check.engine.get_upstream_remote_sha", return_value="")
+        mocker.patch("commit_check.engine.git_merge_base", return_value=1)
+        rc, checks = self._run(
+            mocker, monkeypatch, capsys, self.MESSAGE, "-m", "--no-force-push"
+        )
+        assert rc == 1
+        assert (
+            checks["no_force_push"]["value"] == "feature/streaming-support -> origin/x"
+        )
+
+    @pytest.mark.parametrize(
+        "flag, check, piped",
+        [
+            ("--message", "message", "feat: add streaming support"),
+            ("--branch", "branch", "feature/from-stdin"),
+            ("--author-name", "author_name", "Piped Author"),
+            ("--author-email", "author_email", "piped@example.com"),
+            ("--tag", "tag", "v9.9.9"),
+        ],
+    )
+    def test_a_lone_check_reads_what_is_piped(
+        self, repo, mocker, monkeypatch, capsys, flag, check, piped
+    ):
+        rc, checks = self._run(mocker, monkeypatch, capsys, piped, flag)
+        assert rc == 0
+        assert checks[check]["value"] == piped
+
+
 class TestMainFunctionEdgeCases:
     """Test main function edge cases for better coverage."""
+
+    def test_stdin_is_not_read_without_a_check_that_takes_it(self, mocker):
+        """Only the branch, tag, file, author and push checks read stdin here."""
+        args = argparse.Namespace(
+            branch=False,
+            tag=False,
+            files=False,
+            author_name=False,
+            author_email=False,
+            no_force_push=False,
+        )
+        reader = mocker.Mock(spec=StdinReader)
+
+        assert _resolve_stdin_for_non_message(args, reader) is None
+        reader.read_piped_input.assert_not_called()
 
     @pytest.mark.benchmark
     def test_main_with_message_file_argument(self, monkeypatch):
@@ -1221,8 +1407,8 @@ class TestNoForcePushFlag:
 
         mock_run.assert_called_once_with(
             ["git", "ls-remote", "--exit-code", "upstream", "refs/heads/main"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
+            check=False,
             encoding="utf-8",
         )
         mock_merge.assert_called_once_with("remote-sha", "local-sha")
@@ -1274,6 +1460,22 @@ class TestNoForcePushFlag:
             _build_pre_commit_push_input()
             == "refs/heads/feature/topic local-sha refs/heads/main remote-sha"
         )
+
+    def test_build_pre_commit_push_input_without_a_remote_tip_is_none(self, mocker):
+        """No remote to ask and no FROM_REF leaves nothing to compare against."""
+        mocker.patch.dict(
+            os.environ,
+            {
+                "PRE_COMMIT_LOCAL_BRANCH": FEATURE_TOPIC_BRANCH,
+                "PRE_COMMIT_REMOTE_BRANCH": "main",
+                "PRE_COMMIT_TO_REF": "local-sha",
+            },
+            clear=True,
+        )
+        mock_run = mocker.patch("subprocess.run")
+
+        assert _build_pre_commit_push_input() is None
+        mock_run.assert_not_called()
 
     @pytest.mark.benchmark
     def test_no_force_push_flag_in_help(self, capfd, monkeypatch):
@@ -1336,8 +1538,8 @@ class TestTagFlag:
 
     def test_tag_regex_reaches_config(self):
         """--tag-regex overrides the [tag] section pattern."""
-        from commit_check.main import _get_parser
         from commit_check.config_merger import ConfigMerger
+        from commit_check.main import _get_parser
 
         args = _get_parser().parse_args(["-t", "--tag-regex", r"^rel-\d+$"])
         config = ConfigMerger.parse_cli_args(args)
@@ -1368,8 +1570,8 @@ class TestFilesFlag:
         }
 
     def test_files_cli_options_reach_config(self):
-        from commit_check.main import _get_parser
         from commit_check.config_merger import ConfigMerger
+        from commit_check.main import _get_parser
 
         args = _get_parser().parse_args(
             [
@@ -1528,8 +1730,12 @@ class TestDynamicWordingInJson:
         self, mocker, monkeypatch, tmp_path, capfd
     ):
         """Under the pre-commit framework --files checks the pushed sha, not HEAD."""
-        git = lambda *a: subprocess.run(  # noqa: E731
-            ["git", *a], cwd=tmp_path, capture_output=True, encoding="utf-8"
+        git = lambda *a: subprocess.run(
+            ["git", *a],
+            cwd=tmp_path,
+            capture_output=True,
+            check=False,
+            encoding="utf-8",
         )
         git("init", "-q")
         git("config", "user.name", "T")

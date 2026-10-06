@@ -1,46 +1,22 @@
 """Clean validation engine following SOLID principles."""
 
 from __future__ import annotations
+
 import re
 import shlex
 import subprocess
 import sys
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import IntEnum
-from dataclasses import field
 from fnmatch import fnmatchcase
+from typing import ClassVar
 
-from commit_check import DEFAULT_AI_DISCLOSURE_TRAILERS
-from commit_check import ai_policy
-from commit_check.rule_builder import ValidationRule
+from commit_check import DEFAULT_AI_DISCLOSURE_TRAILERS, ai_policy
 from commit_check.ai_signatures import (
     detect_ai_signatures,
 )
-from commit_check.util import (
-    _print_failure,
-    fetch_remote_ref,
-    fetch_upstream_ref,
-    get_commit_author_identity,
-    get_commit_info,
-    get_git_user_identity,
-    get_git_config_value,
-    get_branch_name,
-    get_commit_files,
-    get_push_commits,
-    get_git_remotes,
-    get_tags_at,
-    format_size,
-    get_upstream_branch,
-    get_upstream_remote_sha,
-    has_commits,
-    git_merge_base,
-    git_rev_parse_verify,
-    print_error_header,
-    rejection_headline,
-)
-from commit_check.imperatives import IMPERATIVES, NON_IMPERATIVE_LOOKALIKES
 from commit_check.fixes import (
     fix_branch_type,
     fix_conventional_header,
@@ -48,6 +24,30 @@ from commit_check.fixes import (
     fix_wip,
     signoff_trailer,
     strip_lines_containing,
+)
+from commit_check.imperatives import IMPERATIVES, NON_IMPERATIVE_LOOKALIKES
+from commit_check.rule_builder import ValidationRule
+from commit_check.util import (
+    _print_failure,
+    fetch_remote_ref,
+    fetch_upstream_ref,
+    format_size,
+    get_branch_name,
+    get_commit_author_identity,
+    get_commit_files,
+    get_commit_info,
+    get_git_config_value,
+    get_git_remotes,
+    get_git_user_identity,
+    get_push_commits,
+    get_tags_at,
+    get_upstream_branch,
+    get_upstream_remote_sha,
+    git_merge_base,
+    git_rev_parse_verify,
+    has_commits,
+    print_error_header,
+    rejection_headline,
 )
 
 
@@ -93,6 +93,14 @@ class ValidationContext:
     files_cache: dict[str, list[tuple[str, int]]] = field(
         default_factory=dict, repr=False, compare=False
     )
+    # Set when stdin_text is a piped commit message: checks with a value of
+    # their own (branch, author, tags, push refs) then read git instead.
+    stdin_is_message: bool = False
+
+    @property
+    def piped_value(self) -> str | None:
+        """stdin_text as a check's own value, or None when it is the message."""
+        return None if self.stdin_is_message else self.stdin_text
 
 
 @dataclass
@@ -202,7 +210,6 @@ class BaseValidator(ABC):
     @abstractmethod
     def validate(self, context: ValidationContext) -> ValidationResult:
         """Perform validation and return result."""
-        pass
 
     @staticmethod
     def _resolve_current_author(context: ValidationContext) -> str:
@@ -306,7 +313,7 @@ class BaseValidator(ABC):
             try:
                 with open(context.commit_file, "r", encoding="utf-8") as f:
                     return f.read()
-            except (OSError, IOError):
+            except OSError:
                 pass
         if context.rev is not None:
             return get_commit_info("b", context.rev)
@@ -334,14 +341,14 @@ class BaseValidator(ABC):
         Determine if branch validation should be skipped.
 
         Skip if the current author is in the ignore_authors list for branches,
-        or if no stdin_text and no commits exist.
+        or if no branch name was supplied and no commits exist.
         """
         ignore_authors = context.config.get("branch", {}).get("ignore_authors", [])
         if ignore_authors:
             current_author = self._resolve_current_author(context)
             if current_author and current_author in ignore_authors:
                 return True
-        return context.stdin_text is None and not has_commits()
+        return context.piped_value is None and not has_commits()
 
     def _print_failure(
         self,
@@ -614,8 +621,9 @@ class AuthorValidator(BaseValidator):
         Checks git config first (for pre-commit validation of the configured identity),
         then falls back to the last commit's author info.
         """
-        if context.stdin_text is not None:
-            return context.stdin_text.strip()
+        supplied = context.piped_value
+        if supplied is not None:
+            return supplied.strip()
 
         git_config_map = {
             "author_name": "user.name",
@@ -669,11 +677,8 @@ class BranchValidator(BaseValidator):
     def validate(self, context: ValidationContext) -> ValidationResult:
         if self._should_skip_branch_validation(context):
             return ValidationResult.SKIP
-        branch_name = (
-            context.stdin_text.strip()
-            if context.stdin_text is not None
-            else get_branch_name()
-        )
+        supplied = context.piped_value
+        branch_name = supplied.strip() if supplied is not None else get_branch_name()
         self._checked_value = branch_name
 
         if not self.rule.regex:
@@ -730,8 +735,9 @@ class TagValidator(BaseValidator):
         return lines
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        if context.stdin_text is not None:
-            tags = self._tags_from_stdin(context.stdin_text)
+        supplied = context.piped_value
+        if supplied is not None:
+            tags = self._tags_from_stdin(supplied)
         else:
             tags = get_tags_at(context.rev or "HEAD")
 
@@ -814,8 +820,9 @@ class FilesValidator(BaseValidator):
         or commits the remote already has — which the caller reports as a
         skip rather than a pass.
         """
-        if context.stdin_text is not None:
-            revs = self._push_revs_from_stdin(context.stdin_text)
+        supplied = context.piped_value
+        if supplied is not None:
+            revs = self._push_revs_from_stdin(supplied)
             if revs is not None:
                 return revs or None
         return [context.rev or "HEAD"]
@@ -1089,7 +1096,9 @@ class BodyValidator(BaseValidator):
             return ValidationResult.PASS
 
         # Check if there's content after the first line (even if separated by empty lines)
-        if len(lines) > 1:
+        # Unreachable: the message is stripped, so two or more lines always
+        # hold two non-empty ones and have passed above.
+        if len(lines) > 1:  # pragma: no cover
             body_content = "\n".join(lines[1:]).strip()
             if body_content:
                 return ValidationResult.PASS
@@ -1121,13 +1130,14 @@ class ForcePushValidator(BaseValidator):
         # branch name, stdin_text carries a *list* of refs, and no refs means
         # there is nothing to check either way. So this one stays a truth test
         # while the single-value readers above distinguish "" from None.
-        if not context.stdin_text:
+        push_refs = context.piped_value
+        if not push_refs:
             if context.push_upstream_fallback:
                 return self._check_current_branch_against_upstream()
             return ValidationResult.SKIP
 
         checked_any = False
-        for line in context.stdin_text.splitlines():
+        for line in push_refs.splitlines():
             line = line.strip()
             # A blank or malformed line names no ref, so it judges nothing.
             if len(line.split()) < 4:
@@ -1315,9 +1325,8 @@ class CommitTypeValidator(BaseValidator):
         """Check if WIP commits are allowed."""
         upper_msg = message.upper()
         is_wip = (
-            upper_msg.startswith("WIP:")  # wip: / WIP:
-            or upper_msg.startswith("[WIP]")  # [wip] / [WIP]
-            or upper_msg.startswith("WIP ")  # WIP at start with space
+            # wip: / [wip] / "wip " at the start, in any case
+            upper_msg.startswith(("WIP:", "[WIP]", "WIP "))
             or upper_msg == "WIP"  # exact WIP
         )
         return not is_wip or self.rule.value
@@ -1501,7 +1510,7 @@ class AiAttributionValidator(BaseValidator):
 class ValidationEngine:
     """Main validation engine that orchestrates all validations."""
 
-    VALIDATOR_MAP: dict[str, type[BaseValidator]] = {
+    VALIDATOR_MAP: ClassVar[dict[str, type[BaseValidator]]] = {
         "message": CommitMessageValidator,
         "subject_capitalized": SubjectCapitalizationValidator,
         "subject_imperative": SubjectImperativeValidator,
