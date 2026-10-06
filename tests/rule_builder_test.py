@@ -1,10 +1,12 @@
 """Tests for commit_check.rule_builder module."""
 
-from commit_check.config import ConfigError
-from commit_check.rule_builder import ValidationRule, RuleBuilder
-from commit_check.rules_catalog import RuleCatalogEntry
-import pytest
 import re
+
+import pytest
+
+from commit_check.config import ConfigError
+from commit_check.rule_builder import RuleBuilder, ValidationRule
+from commit_check.rules_catalog import RuleCatalogEntry
 
 # String constants used across tests
 BAD_FORMAT_ERROR = "Bad format"
@@ -219,6 +221,7 @@ class TestRuleBuilder:
     def test_ai_agent_and_bot_branch_types_in_default(self):
         """AI agent and bot prefixes are valid by default."""
         import re
+
         from commit_check import DEFAULT_BRANCH_TYPES
 
         assert "ai" in DEFAULT_BRANCH_TYPES
@@ -671,6 +674,7 @@ class TestTagRules:
     def test_default_tag_regex_accepts_semver_forms(self):
         """The default accepts v-prefixed and bare SemVer, with suffixes."""
         import re
+
         from commit_check import DEFAULT_TAG_REGEX
 
         for good in [

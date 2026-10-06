@@ -1,14 +1,17 @@
 """Tests for commit_check.api – the public Python API."""
 
-import pytest
+from typing import ClassVar
 from unittest.mock import patch
+
+import pytest
+
 from commit_check.api import (
-    validate_message,
-    validate_branch,
-    validate_tag,
-    validate_author,
     validate_all,
+    validate_author,
+    validate_branch,
+    validate_message,
     validate_push,
+    validate_tag,
 )
 from commit_check.config_merger import get_default_config
 
@@ -407,7 +410,7 @@ class TestSkippedStatus:
     an agent reading the JSON) announced success for unchecked commits.
     """
 
-    IGNORED = {"commit": {"ignore_authors": ["dependabot[bot]"]}}
+    IGNORED: ClassVar[dict] = {"commit": {"ignore_authors": ["dependabot[bot]"]}}
 
     @pytest.mark.benchmark
     def test_ignored_author_reports_skip_not_pass(self):

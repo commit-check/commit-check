@@ -8,7 +8,7 @@ Exports:
 
 import os
 import sys
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError, version
 
 # Exit codes used across the package
 PASS = 0
@@ -40,9 +40,7 @@ def supports_color() -> bool:
         return False
     if not sys.stdout.isatty():
         return False
-    if os.environ.get("TERM") in ("", "dumb"):
-        return False
-    return True
+    return os.environ.get("TERM") not in ("", "dumb")
 
 
 # ANSI color codes used for CLI output, empty when stdout cannot render color.

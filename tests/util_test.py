@@ -1,37 +1,38 @@
 import importlib
 import os
-import sys
-import pytest
 import subprocess
-from unittest.mock import patch
+import sys
+from subprocess import CalledProcessError
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 import commit_check
 from commit_check import supports_color
 from commit_check.util import (
-    get_push_commits,
-    get_tags_at,
-    get_commit_files,
-    parse_size,
-    format_size,
+    _print_failure,
+    cmd_output,
     fetch_remote_ref,
     fetch_upstream_ref,
+    format_size,
     get_branch_name,
+    get_commit_files,
+    get_commit_info,
     get_git_remotes,
+    get_push_commits,
     get_remote_branch_sha,
+    get_tags_at,
     get_upstream_branch,
     get_upstream_remote_sha,
-    has_commits,
     git_merge_base,
-    get_commit_info,
-    cmd_output,
+    has_commits,
+    hyperlink,
+    parse_size,
     print_error_header,
     print_error_message,
     print_suggestion,
     supports_hyperlinks,
-    hyperlink,
-    _print_failure,
 )
-from subprocess import CalledProcessError, PIPE
-from unittest.mock import MagicMock
 
 # String constants used across tests
 REFS_HEADS_MAIN = "refs/heads/main"
@@ -171,8 +172,8 @@ class TestUtil:
                     "--symbolic-full-name",
                     "@{upstream}",
                 ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
+                check=False,
                 encoding="utf-8",
             )
             assert result == "origin/main"
@@ -214,8 +215,8 @@ class TestUtil:
 
             mock_run.assert_called_once_with(
                 ["git", "ls-remote", "--exit-code", "origin", REFS_HEADS_MAIN],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
+                check=False,
                 encoding="utf-8",
             )
             assert result == "abc123"
@@ -277,8 +278,8 @@ class TestUtil:
 
             mock_run.assert_called_once_with(
                 ["git", "ls-remote", "--exit-code", "origin", REFS_HEADS_MAIN],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
+                check=False,
                 encoding="utf-8",
             )
             assert result == "abc123"
@@ -314,8 +315,8 @@ class TestUtil:
             assert fetch_upstream_ref("origin/main") is True
             mock_run.assert_called_once_with(
                 ["git", "fetch", "--quiet", "--no-tags", "origin", "main"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
+                check=False,
                 encoding="utf-8",
             )
 
@@ -381,8 +382,8 @@ class TestUtil:
             assert fetch_remote_ref("origin", REFS_HEADS_MAIN) is True
             mock_run.assert_called_once_with(
                 ["git", "fetch", "--quiet", "--no-tags", "origin", REFS_HEADS_MAIN],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
+                check=False,
                 encoding="utf-8",
             )
 
@@ -437,8 +438,8 @@ class TestUtil:
 
             mock_run.assert_called_once_with(
                 ["git", "merge-base", "--is-ancestor", "main", "feature"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
+                check=False,
                 encoding="utf-8",
             )
 
@@ -549,9 +550,9 @@ class TestUtil:
             assert retval == stderr
             assert m_subprocess_run.call_args[0][0] == dummy_cmd
             assert m_subprocess_run.call_args[1] == {
+                "capture_output": True,
+                "check": False,
                 "encoding": "utf-8",
-                "stderr": PIPE,
-                "stdout": PIPE,
             }
 
         @pytest.mark.benchmark
@@ -578,9 +579,9 @@ class TestUtil:
             assert retval == ""
             assert m_subprocess_run.call_args[0][0] == dummy_cmd
             assert m_subprocess_run.call_args[1] == {
+                "capture_output": True,
+                "check": False,
                 "encoding": "utf-8",
-                "stderr": PIPE,
-                "stdout": PIPE,
             }
 
     class TestPrintErrorMessage:
@@ -1011,10 +1012,13 @@ class TestUtil:
                 [
                     sys.executable,
                     "-c",
-                    "from commit_check.util import print_error_message;"
-                    "print_error_message('message', 'err', 'value', rule_id='CC001')",
+                    (
+                        "from commit_check.util import print_error_message;"
+                        "print_error_message('message', 'err', 'value', rule_id='CC001')"
+                    ),
                 ],
                 capture_output=True,
+                check=False,
                 encoding="utf-8",
                 env={**os.environ, "FORCE_COLOR": "1"},
             )
@@ -1049,6 +1053,7 @@ class TestUtil:
             colored = subprocess.run(
                 [sys.executable, "-c", self._TTY_CHILD],
                 capture_output=True,
+                check=False,
                 encoding="utf-8",
                 env=env,
             )
@@ -1058,6 +1063,7 @@ class TestUtil:
             plain = subprocess.run(
                 [sys.executable, "-c", self._TTY_CHILD],
                 capture_output=True,
+                check=False,
                 encoding="utf-8",
                 env={**env, "NO_COLOR": "1"},
             )
@@ -1243,7 +1249,7 @@ class TestFormatSize:
 def _run_git(tmp_path, *args):
     """Run git in *tmp_path*, failing the test on a non-zero exit."""
     result = subprocess.run(
-        ["git", *args], cwd=tmp_path, capture_output=True, encoding="utf-8"
+        ["git", *args], cwd=tmp_path, capture_output=True, check=False, encoding="utf-8"
     )
     assert result.returncode == 0, result.stderr
     return result.stdout.strip()
@@ -1455,7 +1461,7 @@ class TestPathspecBatches:
     @pytest.mark.benchmark
     def test_long_paths_split_before_the_count_cap(self):
         """A few huge paths must not build a command line git cannot run."""
-        from commit_check.util import _pathspec_batches, _LS_TREE_ARG_BUDGET
+        from commit_check.util import _LS_TREE_ARG_BUDGET, _pathspec_batches
 
         batches = _pathspec_batches(["x" * 4000 for _ in range(20)])
         assert len(batches) > 1
@@ -1468,7 +1474,7 @@ class TestPathspecBatches:
 
     @pytest.mark.benchmark
     def test_one_oversized_path_is_its_own_batch(self):
-        from commit_check.util import _pathspec_batches, _LS_TREE_ARG_BUDGET
+        from commit_check.util import _LS_TREE_ARG_BUDGET, _pathspec_batches
 
         batches = _pathspec_batches(
             ["a.txt", "x" * (_LS_TREE_ARG_BUDGET + 10), "b.txt"]

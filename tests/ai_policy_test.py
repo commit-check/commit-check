@@ -1,5 +1,7 @@
 """The ``disclose`` policy: what a message says about AI, and how to fix it."""
 
+from typing import ClassVar
+
 import pytest
 
 from commit_check.ai_policy import analyze, propose_fix
@@ -99,7 +101,7 @@ class TestLineEndings:
 class TestCoAuthorAsDisclosure:
     """A project that lists Co-authored-by accepts the tool as a co-author."""
 
-    ACCEPTED = ["Assisted-by", "Co-authored-by"]
+    ACCEPTED: ClassVar[list[str]] = ["Assisted-by", "Co-authored-by"]
 
     def test_an_ai_co_author_line_is_the_disclosure(self):
         report = analyze(f"fix: x\n\n{COPILOT_CO_AUTHOR}", self.ACCEPTED)
