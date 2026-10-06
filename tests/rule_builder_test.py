@@ -1007,9 +1007,8 @@ class TestBranchDescriptionGrammar:
             }
         )
         rule = builder._build_conventional_branch_rule(BRANCH_ENTRY)
-        assert rule is not None and "hyphen-separated description" in (
-            rule.suggest or ""
-        )
+        assert rule is not None
+        assert "hyphen-separated description" in (rule.suggest or "")
 
 
 class TestConventionalCommitGitPrefixes:
