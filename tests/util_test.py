@@ -108,6 +108,98 @@ class TestUtil:
             )
             assert get_branch_name() == "feature-branch"
 
+        @pytest.mark.benchmark
+        @pytest.mark.parametrize(
+            "env,expected",
+            [
+                pytest.param(
+                    {
+                        "CI_MERGE_REQUEST_SOURCE_BRANCH_NAME": "feature/login",
+                        "CI_COMMIT_REF_NAME": "feature/login",
+                    },
+                    "feature/login",
+                    id="gitlab-merge-request",
+                ),
+                pytest.param(
+                    {"CI_COMMIT_BRANCH": "bugfix/crash"},
+                    "bugfix/crash",
+                    id="gitlab-branch-pipeline",
+                ),
+                pytest.param(
+                    # A tag pipeline sets no branch variable at all.
+                    {"CI_COMMIT_REF_NAME": "v1.0.0", "CI_COMMIT_TAG": "v1.0.0"},
+                    "HEAD",
+                    id="gitlab-tag-pipeline",
+                ),
+                pytest.param(
+                    {"BITBUCKET_BRANCH": "feature/pipes"},
+                    "feature/pipes",
+                    id="bitbucket",
+                ),
+                pytest.param(
+                    {
+                        "SYSTEM_PULLREQUEST_SOURCEBRANCH": "refs/heads/feature/z",
+                        "BUILD_SOURCEBRANCH": "refs/pull/7/merge",
+                    },
+                    "feature/z",
+                    id="azure-pull-request-azure-repos",
+                ),
+                pytest.param(
+                    {
+                        "SYSTEM_PULLREQUEST_SOURCEBRANCH": "feature/z",
+                        "BUILD_SOURCEBRANCH": "refs/pull/7/merge",
+                    },
+                    "feature/z",
+                    id="azure-pull-request-github",
+                ),
+                pytest.param(
+                    {
+                        "BUILD_SOURCEBRANCH": "refs/heads/feature/tools",
+                        "BUILD_SOURCEBRANCHNAME": "tools",
+                    },
+                    "feature/tools",
+                    id="azure-branch-build",
+                ),
+                pytest.param(
+                    {"BUILD_SOURCEBRANCH": "refs/tags/v1.0.0"},
+                    "HEAD",
+                    id="azure-tag-build",
+                ),
+                pytest.param(
+                    {
+                        "JENKINS_URL": "https://ci.example.com/",
+                        "CHANGE_BRANCH": "feature/a",
+                        "BRANCH_NAME": "PR-24",
+                    },
+                    "feature/a",
+                    id="jenkins-pull-request",
+                ),
+                pytest.param(
+                    {"JENKINS_URL": "https://ci.example.com/", "BRANCH_NAME": "fix/b"},
+                    "fix/b",
+                    id="jenkins-branch-build",
+                ),
+                pytest.param(
+                    {"BRANCH_NAME": "fix/b", "CHANGE_BRANCH": "feature/a"},
+                    "HEAD",
+                    id="jenkins-names-outside-jenkins",
+                ),
+                pytest.param(
+                    {
+                        "CI_MERGE_REQUEST_SOURCE_BRANCH_NAME": "  ",
+                        "CI_COMMIT_BRANCH": "",
+                    },
+                    "HEAD",
+                    id="blank-values",
+                ),
+            ],
+        )
+        def test_get_branch_name_fallback_other_ci(self, mocker, env, expected):
+            """A detached CI checkout takes the branch from that CI's variables."""
+            mocker.patch("commit_check.util.cmd_output", return_value="")
+            mocker.patch("commit_check.util.os.getenv", lambda key: env.get(key))
+            assert get_branch_name() == expected
+
     class TestHasCommits:
         @pytest.mark.benchmark
         def test_has_commits_true(self, mocker):
