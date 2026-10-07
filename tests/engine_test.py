@@ -3390,14 +3390,20 @@ class TestTagValidator:
         result = validator.validate(ValidationContext(stdin_text=stdin))
         assert result == ValidationResult.SKIP
 
+    @patch("commit_check.engine.get_push_commits")
     @patch("commit_check.engine.get_tags_at")
     @pytest.mark.benchmark
-    def test_tag_validator_pre_commit_branch_push_reads_the_pushed_commit(
-        self, mock_get_tags_at
+    def test_tag_validator_pre_commit_branch_push_reads_the_pushed_commits(
+        self, mock_get_tags_at, mock_range
     ):
         """pre-commit names only the branch of a ``--follow-tags`` push, so
-        the tags on the commit it pushes stand in for the tag it leaves out."""
-        mock_get_tags_at.return_value = ["bad_tag"]
+        the tags on the commits it pushes stand in for the tag it leaves out
+        -- including one on a commit before the tip."""
+        mock_range.return_value = ["tip", "earlier"]
+        mock_get_tags_at.side_effect = lambda rev: {
+            "tip": [],
+            "earlier": ["bad_tag"],
+        }[rev]
         rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
         validator = TagValidator(rule)
         validator._suppress_output = True
@@ -3407,7 +3413,7 @@ class TestTagValidator:
         )
         assert validator.validate(context) == ValidationResult.FAIL
         assert validator._checked_value == "bad_tag"
-        mock_get_tags_at.assert_called_once_with("abc123")
+        mock_range.assert_called_once_with("abc123", "def456")
 
     @patch("commit_check.engine.get_tags_at")
     @pytest.mark.benchmark

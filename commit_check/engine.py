@@ -722,7 +722,7 @@ class TagValidator(BaseValidator):
     violation. Piped input (or an API-supplied value) names the tags to check
     directly, one per line, without consulting git. In a pre-push hook the
     tags under push are checked instead; under pre-commit, which names only
-    one ref of a push, a branch push checks the tags on the commit it pushes.
+    one ref of a push, a branch push checks the tags on the commits it pushes.
     """
 
     @staticmethod
@@ -752,13 +752,19 @@ class TagValidator(BaseValidator):
         return lines
 
     @staticmethod
-    def _tags_at_pushed_commits(text: str) -> list[str]:
-        """The tags pointing at the commits pre-push lines push."""
+    def _tags_on_pushed_commits(text: str) -> list[str]:
+        """The tags pointing at any commit pre-push lines carry.
+
+        Every commit of the push counts, not only the tip: a release commit
+        is often followed by another before the push, and
+        ``git push --follow-tags`` still sends the tag on the earlier one.
+        """
         tags = []
         for ln in text.splitlines():
             fields = ln.split()
             if len(fields) == 4 and set(fields[1]) != {"0"}:
-                tags.extend(get_tags_at(fields[1]))
+                for rev in get_push_commits(fields[1], fields[3]):
+                    tags.extend(get_tags_at(rev))
         return list(dict.fromkeys(tags))
 
     def validate(self, context: ValidationContext) -> ValidationResult:
@@ -768,9 +774,9 @@ class TagValidator(BaseValidator):
             if not tags and context.push_from_pre_commit:
                 # A branch push, as pre-commit tells it: any tag pushed with
                 # the branch is missing from the line, so the tags on the
-                # pushed commit stand in for it. Reading HEAD instead would
+                # pushed commits stand in for it. Reading HEAD instead would
                 # judge whatever is checked out, which need not be pushed.
-                tags = self._tags_at_pushed_commits(supplied)
+                tags = self._tags_on_pushed_commits(supplied)
         else:
             tags = get_tags_at(context.rev or "HEAD")
 

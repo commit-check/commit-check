@@ -1829,6 +1829,23 @@ class TestPushChecksUnderPreCommit:
         out, _ = capfd.readouterr()
         assert "release_1" in out
 
+    def test_tag_on_an_earlier_commit_of_a_branch_push_is_checked(
+        self, mocker, monkeypatch, tmp_path, capfd
+    ):
+        """A release commit followed by another before the push still has
+        its tag sent by ``git push --follow-tags``, so the tags on every
+        commit the push carries are checked, not only the tip's."""
+        git, base, tagged = self._repo(tmp_path)
+        git("tag", "-a", "-m", "release", "release_1", tagged)
+        tip = git("rev-parse", "HEAD")
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.argv", [CMD, "--tag"])
+        self._pre_commit_env(mocker, monkeypatch, "refs/heads/feature/topic", tip, base)
+
+        assert main() == 1
+        out, _ = capfd.readouterr()
+        assert "release_1" in out
+
     def test_tag_on_a_tag_push_checks_the_pushed_tag(
         self, mocker, monkeypatch, tmp_path
     ):
