@@ -96,11 +96,26 @@ class ValidationContext:
     # Set when stdin_text is a piped commit message: checks with a value of
     # their own (branch, author, tags, push refs) then read git instead.
     stdin_is_message: bool = False
+    # Set when stdin_text is the pre-push line rebuilt from pre-commit's
+    # environment. pre-commit names one ref per push, the first that carries
+    # commits the remote lacks, so a ref pushed alongside it -- a tag that
+    # ``git push --follow-tags`` sends after a branch -- is not in the line.
+    push_from_pre_commit: bool = False
 
     @property
     def piped_value(self) -> str | None:
         """stdin_text as a check's own value, or None when it is the message."""
         return None if self.stdin_is_message else self.stdin_text
+
+    @property
+    def piped_name(self) -> str | None:
+        """piped_value as the one name a branch or author check reads.
+
+        None as well when stdin_text is the pre-push line rebuilt from
+        pre-commit's environment: that names refs for the push checks run
+        alongside, not a branch or an author, so these read git instead.
+        """
+        return None if self.push_from_pre_commit else self.piped_value
 
 
 @dataclass
@@ -348,7 +363,7 @@ class BaseValidator(ABC):
             current_author = self._resolve_current_author(context)
             if current_author and current_author in ignore_authors:
                 return True
-        return context.piped_value is None and not has_commits()
+        return context.piped_name is None and not has_commits()
 
     def _print_failure(
         self,
@@ -621,7 +636,7 @@ class AuthorValidator(BaseValidator):
         Checks git config first (for pre-commit validation of the configured identity),
         then falls back to the last commit's author info.
         """
-        supplied = context.piped_value
+        supplied = context.piped_name
         if supplied is not None:
             return supplied.strip()
 
@@ -677,7 +692,7 @@ class BranchValidator(BaseValidator):
     def validate(self, context: ValidationContext) -> ValidationResult:
         if self._should_skip_branch_validation(context):
             return ValidationResult.SKIP
-        supplied = context.piped_value
+        supplied = context.piped_name
         branch_name = supplied.strip() if supplied is not None else get_branch_name()
         self._checked_value = branch_name
 
@@ -705,7 +720,9 @@ class TagValidator(BaseValidator):
     ``HEAD``). A commit with no tag is a skip, not a failure: the rule
     validates how tags are named, and the absence of one is not a naming
     violation. Piped input (or an API-supplied value) names the tags to check
-    directly, one per line, without consulting git.
+    directly, one per line, without consulting git. In a pre-push hook the
+    tags under push are checked instead; under pre-commit, which names only
+    one ref of a push, a branch push checks the tags on the commit it pushes.
     """
 
     @staticmethod
@@ -734,10 +751,26 @@ class TagValidator(BaseValidator):
             return list(dict.fromkeys(tags))
         return lines
 
+    @staticmethod
+    def _tags_at_pushed_commits(text: str) -> list[str]:
+        """The tags pointing at the commits pre-push lines push."""
+        tags = []
+        for ln in text.splitlines():
+            fields = ln.split()
+            if len(fields) == 4 and set(fields[1]) != {"0"}:
+                tags.extend(get_tags_at(fields[1]))
+        return list(dict.fromkeys(tags))
+
     def validate(self, context: ValidationContext) -> ValidationResult:
         supplied = context.piped_value
         if supplied is not None:
             tags = self._tags_from_stdin(supplied)
+            if not tags and context.push_from_pre_commit:
+                # A branch push, as pre-commit tells it: any tag pushed with
+                # the branch is missing from the line, so the tags on the
+                # pushed commit stand in for it. Reading HEAD instead would
+                # judge whatever is checked out, which need not be pushed.
+                tags = self._tags_at_pushed_commits(supplied)
         else:
             tags = get_tags_at(context.rev or "HEAD")
 

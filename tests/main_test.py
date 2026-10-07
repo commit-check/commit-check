@@ -558,7 +558,7 @@ class TestMainFunctionEdgeCases:
         )
         reader = mocker.Mock(spec=StdinReader)
 
-        assert _resolve_stdin_for_non_message(args, reader) is None
+        assert _resolve_stdin_for_non_message(args, reader) == (None, False)
         reader.read_piped_input.assert_not_called()
 
     @pytest.mark.benchmark
@@ -1766,6 +1766,98 @@ class TestDynamicWordingInJson:
         assert main() == 1
         out, _ = capfd.readouterr()
         assert "big.bin" in out
+
+
+class TestPushChecksUnderPreCommit:
+    """Push checks under the pre-commit framework, which consumes git's stdin.
+
+    pre-commit passes on one ref of a push through its PRE_COMMIT_*
+    variables: the first that carries commits the remote lacks.
+    """
+
+    @staticmethod
+    def _repo(tmp_path):
+        """A branch with a commit to push and a later one left behind."""
+
+        def git(*a):
+            return subprocess.run(
+                ["git", *a],
+                cwd=tmp_path,
+                capture_output=True,
+                check=False,
+                encoding="utf-8",
+            ).stdout.strip()
+
+        git("init", "-q")
+        git("config", "user.name", "T")
+        git("config", "user.email", "t@example.com")
+        git("commit", "-q", "--allow-empty", "-m", "feat: base")
+        git("checkout", "-q", "-b", "feature/topic")
+        base = git("rev-parse", "HEAD")
+        git("commit", "-q", "--allow-empty", "-m", "feat: pushed")
+        pushed = git("rev-parse", "HEAD")
+        git("commit", "-q", "--allow-empty", "-m", "feat: not pushed")
+        return git, base, pushed
+
+    @staticmethod
+    def _pre_commit_env(mocker, monkeypatch, ref, to_ref, from_ref):
+        # The framework consumed git's stdin; only the environment remains.
+        mocker.patch.object(StdinReader, "read_piped_input", return_value=None)
+        monkeypatch.setenv("PRE_COMMIT_LOCAL_BRANCH", ref)
+        monkeypatch.setenv("PRE_COMMIT_REMOTE_BRANCH", ref)
+        monkeypatch.setenv("PRE_COMMIT_TO_REF", to_ref)
+        monkeypatch.setenv("PRE_COMMIT_FROM_REF", from_ref)
+        monkeypatch.delenv("PRE_COMMIT_REMOTE_NAME", raising=False)
+        monkeypatch.delenv("PRE_COMMIT_REMOTE_URL", raising=False)
+
+    def test_tag_on_a_branch_push_checks_the_pushed_commit(
+        self, mocker, monkeypatch, tmp_path, capfd
+    ):
+        """``git push --follow-tags`` sends the tag after the branch, so
+        pre-commit names only the branch. The tags on the commit it pushes
+        are checked, not those on HEAD, which this push leaves behind."""
+        git, base, pushed = self._repo(tmp_path)
+        git("tag", "-a", "-m", "release", "release_1", pushed)
+        git("tag", "v1.0.0")
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.argv", [CMD, "--tag"])
+        self._pre_commit_env(
+            mocker, monkeypatch, "refs/heads/feature/topic", pushed, base
+        )
+
+        assert main() == 1
+        out, _ = capfd.readouterr()
+        assert "release_1" in out
+
+    def test_tag_on_a_tag_push_checks_the_pushed_tag(
+        self, mocker, monkeypatch, tmp_path
+    ):
+        """A tag that carries commits the remote lacks is the ref pre-commit
+        names, and it is the tag checked: not another tag on its commit, and
+        not a tag on HEAD."""
+        git, base, pushed = self._repo(tmp_path)
+        git("tag", "v1.0.0", pushed)
+        git("tag", "wip", pushed)
+        git("tag", "wip_head")
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.argv", [CMD, "--tag"])
+        self._pre_commit_env(mocker, monkeypatch, "refs/tags/v1.0.0", pushed, base)
+
+        assert main() == 0
+
+    @pytest.mark.parametrize("push_flag", ["--tag", "--files"])
+    def test_branch_beside_a_push_check_reads_git(
+        self, mocker, monkeypatch, tmp_path, push_flag
+    ):
+        """The push line rebuilt for the push check is no branch name."""
+        _git, base, pushed = self._repo(tmp_path)
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.argv", [CMD, "--branch", push_flag])
+        self._pre_commit_env(
+            mocker, monkeypatch, "refs/heads/feature/topic", pushed, base
+        )
+
+        assert main() == 0
 
 
 class TestWarnLevel:
