@@ -125,6 +125,30 @@ class TestIntegration:
         monkeypatch.setattr(sys, "argv", ["commit-check", "--branch"])
         assert main() == 1
 
+    @pytest.mark.benchmark
+    def test_branch_detached_ci_checkout_reads_ci_variable(
+        self,
+        repo: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
+        """A detached GitLab checkout is judged by the branch GitLab names.
+
+        git reports no branch on a detached HEAD; without the CI variable the
+        name would fall back to ``HEAD``, which is always allowed, and a bad
+        branch would pass unnoticed.
+        """
+        _git("checkout", "--detach", cwd=repo)
+        # Variables read ahead of CI_COMMIT_BRANCH, which the host CI may set.
+        for name in (
+            "GITHUB_HEAD_REF",
+            "GITHUB_REF_NAME",
+            "CI_MERGE_REQUEST_SOURCE_BRANCH_NAME",
+        ):
+            monkeypatch.delenv(name, raising=False)
+        monkeypatch.setenv("CI_COMMIT_BRANCH", "wrong-branch-name")
+        monkeypatch.setattr(sys, "argv", ["commit-check", "--branch"])
+        assert main() == 1
+
     # ── author validation ───────────────────────────────────────────────
 
     @pytest.mark.benchmark

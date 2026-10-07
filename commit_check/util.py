@@ -65,12 +65,61 @@ def _print_failure(
     print()
 
 
+# Where CI systems name the branch under test. Their checkouts are usually a
+# detached HEAD, where git has no branch to report. Tried in order: within
+# one system, a pull or merge request's source branch comes first, because
+# the plain branch variable of such a build names something else.
+_CI_BRANCH_VARIABLES = (
+    "GITHUB_HEAD_REF",  # GitHub Actions, pull request
+    "GITHUB_REF_NAME",  # GitHub Actions, push
+    "CI_MERGE_REQUEST_SOURCE_BRANCH_NAME",  # GitLab CI, merge request pipeline
+    "CI_COMMIT_BRANCH",  # GitLab CI, branch pipeline
+    "BITBUCKET_BRANCH",  # Bitbucket Pipelines
+    "SYSTEM_PULLREQUEST_SOURCEBRANCH",  # Azure Pipelines, pull request
+    "BUILD_SOURCEBRANCH",  # Azure Pipelines, branch build
+)
+
+# Jenkins multibranch names are generic enough to be set by hand elsewhere,
+# so they are read only inside a Jenkins build, and not in a tag build, where
+# BRANCH_NAME is the tag (TAG_NAME is set too).
+_JENKINS_BRANCH_VARIABLES = (
+    "CHANGE_BRANCH",  # pull request source branch
+    "BRANCH_NAME",  # branch build; "PR-24" on a pull request
+)
+
+
+def _ci_branch_name() -> str:
+    """The branch a CI system says it is building, or ``""``.
+
+    Azure Pipelines gives full refs (``refs/heads/feature/tools``); the branch
+    is what follows ``refs/heads/``. Any other ref — a tag, a pull request's
+    merge ref — names no branch and is passed over.
+    """
+    names: tuple[str, ...] = _CI_BRANCH_VARIABLES
+    if os.getenv("JENKINS_URL") and not os.getenv("TAG_NAME"):
+        names += _JENKINS_BRANCH_VARIABLES
+    for name in names:
+        value = (os.getenv(name) or "").strip()
+        if value.startswith("refs/heads/"):
+            value = value.removeprefix("refs/heads/")
+        elif value.startswith("refs/"):
+            continue
+        if value:
+            return value
+    return ""
+
+
 def get_branch_name() -> str:
     """Identify current branch name.
     .. note::
         With Git 2.22 and above supports `git branch --show-current`
         Please open an issue at https://github.com/commit-check/commit-check/issues
         if you encounter any issue.
+
+    On a detached HEAD — the usual CI checkout — git reports no branch, so
+    the name comes from the CI system's environment (GitHub Actions, GitLab
+    CI, Bitbucket Pipelines, Azure Pipelines, Jenkins), and is ``HEAD``
+    when none names one.
 
     :returns: A `str` describing the current branch name.
     """
@@ -82,10 +131,7 @@ def get_branch_name() -> str:
         branch_name = ""
 
     if not branch_name:
-        # Fallback to environment variables (GitHub Actions)
-        branch_name = (
-            os.getenv("GITHUB_HEAD_REF") or os.getenv("GITHUB_REF_NAME") or "HEAD"
-        )
+        branch_name = _ci_branch_name() or "HEAD"
     return branch_name.strip()
 
 
