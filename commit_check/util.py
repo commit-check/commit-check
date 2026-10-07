@@ -80,7 +80,8 @@ _CI_BRANCH_VARIABLES = (
 )
 
 # Jenkins multibranch names are generic enough to be set by hand elsewhere,
-# so they are read only inside a Jenkins build.
+# so they are read only inside a Jenkins build, and not in a tag build, where
+# BRANCH_NAME is the tag (TAG_NAME is set too).
 _JENKINS_BRANCH_VARIABLES = (
     "CHANGE_BRANCH",  # pull request source branch
     "BRANCH_NAME",  # branch build; "PR-24" on a pull request
@@ -95,7 +96,7 @@ def _ci_branch_name() -> str:
     merge ref — names no branch and is passed over.
     """
     names: tuple[str, ...] = _CI_BRANCH_VARIABLES
-    if os.getenv("JENKINS_URL"):
+    if os.getenv("JENKINS_URL") and not os.getenv("TAG_NAME"):
         names += _JENKINS_BRANCH_VARIABLES
     for name in names:
         value = (os.getenv(name) or "").strip()

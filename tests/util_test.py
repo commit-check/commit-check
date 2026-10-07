@@ -180,6 +180,15 @@ class TestUtil:
                     id="jenkins-branch-build",
                 ),
                 pytest.param(
+                    {
+                        "JENKINS_URL": "https://ci.example.com/",
+                        "BRANCH_NAME": "v1.2.0",
+                        "TAG_NAME": "v1.2.0",
+                    },
+                    "HEAD",
+                    id="jenkins-tag-build",
+                ),
+                pytest.param(
                     {"BRANCH_NAME": "fix/b", "CHANGE_BRANCH": "feature/a"},
                     "HEAD",
                     id="jenkins-names-outside-jenkins",

@@ -138,7 +138,12 @@ class TestIntegration:
         branch would pass unnoticed.
         """
         _git("checkout", "--detach", cwd=repo)
-        for name in ("GITHUB_HEAD_REF", "GITHUB_REF_NAME"):
+        # Variables read ahead of CI_COMMIT_BRANCH, which the host CI may set.
+        for name in (
+            "GITHUB_HEAD_REF",
+            "GITHUB_REF_NAME",
+            "CI_MERGE_REQUEST_SOURCE_BRANCH_NAME",
+        ):
             monkeypatch.delenv(name, raising=False)
         monkeypatch.setenv("CI_COMMIT_BRANCH", "wrong-branch-name")
         monkeypatch.setattr(sys, "argv", ["commit-check", "--branch"])
