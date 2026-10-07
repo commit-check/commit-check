@@ -92,7 +92,9 @@ class TestUtil:
         def test_get_branch_name_fallback_head(self, mocker):
             """Test fallback to HEAD."""
             mocker.patch("commit_check.util.cmd_output", return_value="")
-            mocker.patch("commit_check.util.os.getenv", return_value=None)
+            # A plain function rather than a MagicMock, so the benchmark
+            # times the fallback and not the mock's per-call bookkeeping.
+            mocker.patch("commit_check.util.os.getenv", lambda key: None)
             assert get_branch_name() == "HEAD"
 
         @pytest.mark.benchmark
