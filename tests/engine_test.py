@@ -552,6 +552,9 @@ class TestBranchValidator:
             result = validator.validate(context)
         # Skipped — the commit's author (dependabot[bot]) is in ignore_authors
         assert result == ValidationResult.SKIP
+        assert validator._skip_reason == (
+            "author dependabot[bot] is in [branch].ignore_authors"
+        )
 
 
 class TestAuthorValidator:
@@ -1722,6 +1725,29 @@ class TestValidationEngine:
         outcomes = engine.validate_all_detailed(context)
         assert outcomes[0].status == "pass"
         assert outcomes[0].value == "feature/add-login"
+        assert outcomes[0].reason == ""
+
+    @pytest.mark.benchmark
+    def test_validate_all_detailed_skip_reports_ignored_author(self):
+        """A check skipped for an ignored author says so, not just "skip"."""
+        rules = [ValidationRule(check="message", regex=r"^feat:")]
+        engine = ValidationEngine(rules)
+        context = ValidationContext(
+            rev="HEAD",
+            config={"commit": {"ignore_authors": ["dependabot[bot]"]}},
+        )
+
+        with patch(
+            "commit_check.engine.get_commit_info", return_value="dependabot[bot]"
+        ):
+            outcomes = engine.validate_all_detailed(context)
+
+        assert outcomes[0].status == "skip"
+        assert outcomes[0].value == ""
+        assert outcomes[0].reason == (
+            "author dependabot[bot] is in [commit].ignore_authors"
+        )
+        assert outcomes[0].to_dict()["reason"] == outcomes[0].reason
 
     @pytest.mark.benchmark
     def test_validation_engine_validate_all_fail(self):
@@ -2193,6 +2219,9 @@ class TestCoAuthorSkip:
         with patch("commit_check.engine.get_commit_info", return_value="other-author"):
             result = validator.validate(context)
         assert result == ValidationResult.SKIP
+        assert validator._skip_reason == (
+            "co-author coderabbitai[bot] is in [commit].ignore_authors"
+        )
 
     @pytest.mark.benchmark
     def test_co_author_not_in_ignore_list_does_not_skip(self):

@@ -29,6 +29,7 @@ Return-value schema (all functions)::
                 "error":   "<error description>",
                 "suggest": "<how to fix>",
                 "fix":     "<the corrected value when the fix is unambiguous; else empty>",
+                "reason":  "<why a skipped check did not run, when known; else empty>",
             },
             ...
         ]
