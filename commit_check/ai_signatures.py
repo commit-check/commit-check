@@ -52,10 +52,10 @@ class _Group:
     """One compiled scan, and what each of its alternatives means.
 
     Every pattern that reads the same trailer key is compiled into a single
-    alternation whose branches are numbered capturing groups, in catalog
-    order, so a trailer line is read once however many tools the catalog
-    knows and the most specific pattern still wins. A body marker has no
-    key, and its group is the pattern by itself.
+    alternation whose branches each end in a numbered capturing group, in
+    catalog order, so a trailer line is read once however many tools the
+    catalog knows and the most specific pattern still wins. A body marker
+    has no key, and its group is the pattern by itself.
     """
 
     keys: frozenset[str]
@@ -91,7 +91,10 @@ def _build_groups() -> list[_Group]:
     groups = []
     for keys, (values, members) in keyed.items():
         alternation = "|".join(re.escape(key) for key in sorted(keys))
-        branches = "|".join(f"(?P<s{i}>{value})" for i, value in enumerate(values))
+        # The group is empty and closes the branch. Wrapped around the value
+        # instead, it is entered on every line the branch rejects, at a cost
+        # that grows with each tool added to the catalog.
+        branches = "|".join(f"(?:{value})(?P<s{i}>)" for i, value in enumerate(values))
         regex = re.compile(
             rf"^(?:{alternation}):[ \t]*(?:{branches})[ \t]*$",
             re.IGNORECASE | re.MULTILINE,
