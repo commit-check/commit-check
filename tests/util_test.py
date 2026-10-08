@@ -115,6 +115,17 @@ class TestUtil:
             "env,expected",
             [
                 pytest.param(
+                    {"GITHUB_REF_TYPE": "branch", "GITHUB_REF_NAME": "feature/x"},
+                    "feature/x",
+                    id="github-branch-push",
+                ),
+                pytest.param(
+                    # GITHUB_REF_NAME holds the tag, which is no branch.
+                    {"GITHUB_REF_TYPE": "tag", "GITHUB_REF_NAME": "v1.2.0"},
+                    "HEAD",
+                    id="github-tag-push",
+                ),
+                pytest.param(
                     {
                         "CI_MERGE_REQUEST_SOURCE_BRANCH_NAME": "feature/login",
                         "CI_COMMIT_REF_NAME": "feature/login",

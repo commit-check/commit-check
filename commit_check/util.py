@@ -71,7 +71,7 @@ def _print_failure(
 # the plain branch variable of such a build names something else.
 _CI_BRANCH_VARIABLES = (
     "GITHUB_HEAD_REF",  # GitHub Actions, pull request
-    "GITHUB_REF_NAME",  # GitHub Actions, push
+    "GITHUB_REF_NAME",  # GitHub Actions, push; the tag, on a tag push
     "CI_MERGE_REQUEST_SOURCE_BRANCH_NAME",  # GitLab CI, merge request pipeline
     "CI_COMMIT_BRANCH",  # GitLab CI, branch pipeline
     "BITBUCKET_BRANCH",  # Bitbucket Pipelines
@@ -93,9 +93,13 @@ def _ci_branch_name() -> str:
 
     Azure Pipelines gives full refs (``refs/heads/feature/tools``); the branch
     is what follows ``refs/heads/``. Any other ref — a tag, a pull request's
-    merge ref — names no branch and is passed over.
+    merge ref — names no branch and is passed over. So is ``GITHUB_REF_NAME``
+    in a GitHub Actions tag build (``GITHUB_REF_TYPE=tag``), where it holds
+    the tag.
     """
     names: tuple[str, ...] = _CI_BRANCH_VARIABLES
+    if os.getenv("GITHUB_REF_TYPE") == "tag":
+        names = tuple(name for name in names if name != "GITHUB_REF_NAME")
     if os.getenv("JENKINS_URL") and not os.getenv("TAG_NAME"):
         names += _JENKINS_BRANCH_VARIABLES
     for name in names:

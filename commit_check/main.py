@@ -585,8 +585,12 @@ def _resolve_commit_message_source(
 
 def _resolve_stdin_for_non_message(
     args: argparse.Namespace, stdin_reader: StdinReader
-) -> str | None:
-    """Resolve stdin content for non-message validation types."""
+) -> tuple[str | None, bool]:
+    """Resolve stdin content for non-message validation types.
+
+    Returns the content, and whether it is the pre-push line rebuilt from
+    pre-commit's environment rather than anything piped.
+    """
     has_non_message_check = any(
         [
             args.branch,
@@ -598,15 +602,16 @@ def _resolve_stdin_for_non_message(
         ]
     )
     if not has_non_message_check:
-        return None
+        return None, False
 
     stdin_content = stdin_reader.read_piped_input()
-    # Both push-shaped checks need the pre-push ref lines. Under the
+    # The push-shaped checks need the pre-push ref lines. Under the
     # pre-commit framework git's native stdin is consumed, so the same data
     # is rebuilt from the PRE_COMMIT_* environment.
-    if (args.no_force_push or args.files) and stdin_content is None:
-        return _build_pre_commit_push_input()
-    return stdin_content
+    if (args.no_force_push or args.files or args.tag) and stdin_content is None:
+        push_input = _build_pre_commit_push_input()
+        return push_input, push_input is not None
+    return stdin_content, False
 
 
 def _get_requested_checks(args: argparse.Namespace) -> set[str]:
@@ -749,6 +754,7 @@ def main() -> int:
         # Resolve validation context inputs. With --rev the commit itself is
         # the thing under test, so stdin is never consulted: piping and a
         # revision would name two different subjects for the same checks.
+        push_from_pre_commit = False
         if args.rev is not None:
             stdin_content, commit_file_path = None, None
         else:
@@ -756,7 +762,9 @@ def main() -> int:
                 args, stdin_reader
             )
             if not args.message:
-                stdin_content = _resolve_stdin_for_non_message(args, stdin_reader)
+                stdin_content, push_from_pre_commit = _resolve_stdin_for_non_message(
+                    args, stdin_reader
+                )
 
         # Next to --message, piped stdin is the message; other checks read git.
         stdin_is_message = args.message and stdin_content is not None
@@ -779,6 +787,7 @@ def main() -> int:
             push_upstream_fallback=args.no_force_push
             and (stdin_content is None or stdin_is_message),
             stdin_is_message=stdin_is_message,
+            push_from_pre_commit=push_from_pre_commit,
         )
 
         # Run validation – choose output mode based on --format

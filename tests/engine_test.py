@@ -372,6 +372,25 @@ class TestBranchValidator:
     @patch("commit_check.engine.has_commits")
     @patch("commit_check.engine.get_branch_name")
     @pytest.mark.benchmark
+    def test_pre_commit_push_line_is_not_the_branch(
+        self, mock_get_branch_name, mock_has_commits
+    ):
+        """The line rebuilt from pre-commit's environment is for the push
+        checks run alongside; the branch name still comes from git."""
+        mock_has_commits.return_value = True
+        mock_get_branch_name.return_value = "feature/topic"
+        rule = ValidationRule(check="branch", regex=r"^feature/.+")
+        validator = BranchValidator(rule)
+        context = ValidationContext(
+            stdin_text="refs/heads/feature/topic abc123 refs/heads/feature/topic def456",
+            push_from_pre_commit=True,
+        )
+        assert validator.validate(context) == ValidationResult.PASS
+        assert validator._checked_value == "feature/topic"
+
+    @patch("commit_check.engine.has_commits")
+    @patch("commit_check.engine.get_branch_name")
+    @pytest.mark.benchmark
     def test_branch_validator_develop_branch_allowed(
         self, mock_get_branch_name, mock_has_commits
     ):
@@ -583,6 +602,27 @@ class TestAuthorValidator:
         assert mock_get_commit_info.call_count == 3
         assert mock_get_commit_info.call_args_list[0][0][0] == "an"
         assert mock_get_commit_info.call_args_list[2][0][0] == "ae"
+
+    @patch("commit_check.engine.has_commits")
+    @patch(GIT_CONFIG_VALUE)
+    @patch("commit_check.engine.get_commit_info")
+    @pytest.mark.benchmark
+    def test_pre_commit_push_line_is_not_the_author(
+        self, mock_get_commit_info, mock_get_git_config_value, mock_has_commits
+    ):
+        """The line rebuilt from pre-commit's environment names refs, not an
+        author; the configured identity is checked as it is without it."""
+        mock_has_commits.return_value = True
+        mock_get_commit_info.return_value = ""
+        mock_get_git_config_value.return_value = "John Doe"
+        rule = ValidationRule(check="author_name", regex=r"^[A-Z][a-z]+ [A-Z][a-z]+$")
+        validator = AuthorValidator(rule)
+        context = ValidationContext(
+            stdin_text="refs/heads/main abc123 refs/heads/main def456",
+            push_from_pre_commit=True,
+        )
+        assert validator.validate(context) == ValidationResult.PASS
+        assert validator._checked_value == "John Doe"
 
     @patch("commit_check.engine.get_git_config_value")
     @patch("commit_check.engine.get_commit_info")
@@ -3349,6 +3389,45 @@ class TestTagValidator:
         stdin = "refs/heads/main abc123 refs/heads/main def456\n"
         result = validator.validate(ValidationContext(stdin_text=stdin))
         assert result == ValidationResult.SKIP
+
+    @patch("commit_check.engine.get_push_commits")
+    @patch("commit_check.engine.get_tags_at")
+    @pytest.mark.benchmark
+    def test_tag_validator_pre_commit_branch_push_reads_the_pushed_commits(
+        self, mock_get_tags_at, mock_range
+    ):
+        """pre-commit names only the branch of a ``--follow-tags`` push, so
+        the tags on the commits it pushes stand in for the tag it leaves out
+        -- including one on a commit before the tip."""
+        mock_range.return_value = ["tip", "earlier"]
+        mock_get_tags_at.side_effect = lambda rev: {
+            "tip": [],
+            "earlier": ["bad_tag"],
+        }[rev]
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(
+            stdin_text="refs/heads/main abc123 refs/heads/main def456",
+            push_from_pre_commit=True,
+        )
+        assert validator.validate(context) == ValidationResult.FAIL
+        assert validator._checked_value == "bad_tag"
+        mock_range.assert_called_once_with("abc123", "def456")
+
+    @patch("commit_check.engine.get_tags_at")
+    @pytest.mark.benchmark
+    def test_tag_validator_pre_commit_tag_push_reads_the_line(self, mock_get_tags_at):
+        """A tag pre-commit names is the one checked; git is not asked."""
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        context = ValidationContext(
+            stdin_text="refs/tags/v1.2.3 abc123 refs/tags/v1.2.3 def456",
+            push_from_pre_commit=True,
+        )
+        assert validator.validate(context) == ValidationResult.PASS
+        assert validator._checked_value == "v1.2.3"
+        mock_get_tags_at.assert_not_called()
 
     @pytest.mark.benchmark
     def test_tag_validator_pre_push_tag_deletion_skips(self):
