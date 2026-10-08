@@ -274,6 +274,11 @@ class TestHumanNameFalsePositives:
             "Co-authored-by: Gemini Rossi <gemini@rossi.it>",
             "Co-authored-by: gpt <someone@example.com>",
             "Co-authored-by: Claude Monet <claude@monet.fr>",
+            "Co-authored-by: Jules Verne <jules@example.com>",
+            "Co-authored-by: Jules <jules@example.com>",
+            "Co-authored-by: Amp <amp@example.com>",
+            # Same domain as the OpenHands agent, but a person's address.
+            "Co-authored-by: Graham Neubig <graham@all-hands.dev>",
         ],
     )
     def test_bare_human_name_not_detected(self, trailer):
@@ -404,6 +409,39 @@ class TestRoles:
             ("Generated-by: GitHub Copilot", "GitHub Copilot", ROLE_DISCLOSURE),
             ("assisted-by: LLM", "Generic AI", ROLE_DISCLOSURE),
             ("Claude-Session: sess_abc123", "Claude Code", ROLE_STAMP),
+            ("Co-authored-by: Amp <amp@ampcode.com>", "Amp", ROLE_CO_AUTHOR),
+            (
+                "Amp-Thread-ID: https://ampcode.com/threads/T-5b2c9a1e-0f4d-4c3a",
+                "Amp",
+                ROLE_STAMP,
+            ),
+            (
+                "Co-authored-by: openhands <openhands@all-hands.dev>",
+                "OpenHands",
+                ROLE_CO_AUTHOR,
+            ),
+            (
+                "Signed-off-by: openhands <openhands@all-hands.dev>",
+                "OpenHands",
+                ROLE_SIGNOFF,
+            ),
+            (
+                (
+                    "Co-authored-by: factory-droid[bot] "
+                    "<138933559+factory-droid[bot]@users.noreply.github.com>"
+                ),
+                "Factory Droid",
+                ROLE_CO_AUTHOR,
+            ),
+            (
+                (
+                    "Co-authored-by: google-labs-jules[bot] "
+                    "<12345+google-labs-jules[bot]@users.noreply.github.com>"
+                ),
+                "Jules",
+                ROLE_CO_AUTHOR,
+            ),
+            ("Assisted-by: OpenHands", "OpenHands", ROLE_DISCLOSURE),
         ],
     )
     def test_trailer(self, trailer, tool, role):
@@ -456,12 +494,19 @@ class TestToolNamedIn:
             ("codex/gpt-5", "OpenAI Codex"),
             ("copilot/fix-42", "GitHub Copilot"),
             ("(aider)", "Aider"),
+            ("Amp", "Amp"),
+            ("ampcode.com", "Amp"),
+            ("OpenHands", "OpenHands"),
+            ("factory-droid[bot]", "Factory Droid"),
+            ("google-labs-jules[bot]", "Jules"),
             ("LLM coccinelle sparse", None),
             ("", None),
             # A name inside a longer word is a different word: "Raider" was
             # read as Aider before the patterns were bounded.
             ("Raider", None),
             ("Claudette", None),
+            ("Example", None),
+            ("android", None),
         ],
     )
     def test_names(self, text, tool):

@@ -265,6 +265,59 @@ TABBY = KnownAiTool(
     ],
 )
 
+# --- Amp (Sourcegraph) ---
+# Both trailers are on by default and switched off in Amp's settings:
+# https://ampcode.com/docs/cli/settings
+AMP = KnownAiTool(
+    name="Amp",
+    name_pattern=_names(r"amp|ampcode"),
+    patterns=[
+        # "Amp" is a short word, so when an address is present it must be
+        # Amp's own.
+        *_identity(r"Amp(?:[ \t]*<amp@ampcode\.com>)?", "Amp <amp@ampcode.com>"),
+        _stamp_trailer("Amp-Thread-ID", "``Amp-Thread-ID:`` trailer"),
+    ],
+)
+
+# --- OpenHands (All Hands AI) ---
+# Commits as openhands <openhands@all-hands.dev> by default, and stays on as
+# a co-author when the user sets their own identity:
+# https://docs.openhands.dev/openhands/usage/settings/application-settings
+OPENHANDS = KnownAiTool(
+    name="OpenHands",
+    name_pattern=_names(r"openhands|all-hands"),
+    patterns=[
+        # By name only: the people who work at All Hands share the agent's
+        # all-hands.dev domain.
+        *_identity(r"OpenHands[ \t]*(?:<[^>\n]*>)?", "OpenHands"),
+    ],
+)
+
+# --- Factory Droid ---
+# Adds itself as a co-author by default (includeCoAuthoredByDroid):
+# https://docs.factory.com/droid-cli/settings.md
+FACTORY_DROID = KnownAiTool(
+    name="Factory Droid",
+    name_pattern=_names(r"factory-droid|droid"),
+    patterns=[
+        *_identity(r"factory-droid\[bot\][ \t]*(?:<[^>\n]*>)?", "factory-droid[bot]"),
+    ],
+)
+
+# --- Jules (Google) ---
+# Commits as the google-labs-jules[bot] app, or co-authors with the user
+# when Commit Authoring says so: https://jules.google/docs/changelog/2026-02-19
+# "Jules" alone is a person's name, so only the app's name counts.
+JULES = KnownAiTool(
+    name="Jules",
+    name_pattern=_names(r"google-labs-jules|jules"),
+    patterns=[
+        *_identity(
+            r"google-labs-jules\[bot\][ \t]*(?:<[^>\n]*>)?", "google-labs-jules[bot]"
+        ),
+    ],
+)
+
 # --- Generic / catch-all AI patterns ---
 GENERIC_AI = KnownAiTool(
     name="Generic AI",
@@ -321,5 +374,9 @@ ALL_KNOWN_TOOLS: list[KnownAiTool] = [
     AIDER,
     WINDSURF,
     TABBY,
+    AMP,
+    OPENHANDS,
+    FACTORY_DROID,
+    JULES,
     GENERIC_AI,
 ]
