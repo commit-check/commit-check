@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "commit-check"
-description = "Check commit message formatting, branch naming, commit author, email, and more."
+description = "Commit policy as code for teams and AI agents: check commit messages, branch names, authors, tags, files and AI attribution."
 readme = "README.md"
-keywords = ["commit conventions", "conventional commits", "conventional branch", "branch naming", "commit-check", "message", "lint message", "devops"]
+keywords = ["commit conventions", "conventional commits", "conventional branch", "branch naming", "commit-check", "message", "lint message", "devops", "policy as code", "ai agents"]
 license = "MIT"
 authors = [
     { name = "Xianpeng Shen", email = "xianpeng.shen@gmail.com" },
