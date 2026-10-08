@@ -21,10 +21,11 @@
 
 </div>
 
-**Commit Check** validates commit messages, branch names, authors, sign-offs,
-tags, committed files and AI attribution against one `cchk.toml` — in your
-commit hook, in CI, on every pull request and inside your AI agent. When the
-fix is obvious, it hands you the line.
+**Commit Check** is commit policy as code for teams and AI agents. It validates
+commit messages, branch names, authors, sign-offs, tags, committed files and AI
+attribution against one `cchk.toml` — in your commit hook, in CI, on every
+pull request and inside your AI agent. When the fix is obvious, it hands you
+the line.
 
 ![commit-check demo](https://github.com/commit-check/commit-check/raw/main/assets/demo.gif)
 
