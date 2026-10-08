@@ -147,6 +147,9 @@ class CheckOutcome:
     fix: str = ""
     rule_id: str = ""
     docs_url: str = ""
+    # Why a skipped check did not run, when commit-check knows (the author
+    # is on an ``ignore_authors`` list); empty otherwise.
+    reason: str = ""
 
     def to_dict(self) -> dict[str, str]:
         """Serialise to a plain dict (suitable for JSON encoding)."""
@@ -159,6 +162,7 @@ class CheckOutcome:
             "suggest": self.suggest,
             "fix": self.fix,
             "docs_url": self.docs_url,
+            "reason": self.reason,
         }
 
 
@@ -221,6 +225,10 @@ class BaseValidator(ABC):
         # collection. Text-mode validation skips the extra lookups (e.g. a
         # git subprocess for the branch name) and keeps values empty.
         self._collect_value: bool = False
+        # Why the rule declined to run, when the reason is something the
+        # user configured (an ignored author). A bare "skipped" leaves the
+        # reader guessing whether the policy was bypassed on purpose.
+        self._skip_reason: str = ""
 
     @abstractmethod
     def validate(self, context: ValidationContext) -> ValidationResult:
@@ -300,6 +308,7 @@ class BaseValidator(ABC):
 
         current_author = self._resolve_current_author(context)
         if current_author and current_author in ignore_authors:
+            self._skip_reason = f"author {current_author} is in [commit].ignore_authors"
             return True
 
         # Check co-authors from the commit message body
@@ -312,7 +321,13 @@ class BaseValidator(ABC):
             message,
             re.MULTILINE,
         )
-        return any(co_author.strip() in ignore_authors for co_author in co_authors)
+        for co_author in co_authors:
+            if co_author.strip() in ignore_authors:
+                self._skip_reason = (
+                    f"co-author {co_author.strip()} is in [commit].ignore_authors"
+                )
+                return True
+        return False
 
     @staticmethod
     def _get_commit_body(context: ValidationContext) -> str:
@@ -362,6 +377,9 @@ class BaseValidator(ABC):
         if ignore_authors:
             current_author = self._resolve_current_author(context)
             if current_author and current_author in ignore_authors:
+                self._skip_reason = (
+                    f"author {current_author} is in [branch].ignore_authors"
+                )
                 return True
         return context.piped_name is None and not has_commits()
 
@@ -1727,6 +1745,7 @@ class ValidationEngine:
                         value="" if skipped else (validator._checked_value or ""),
                         rule_id=rule.rule_id or "",
                         docs_url=rule.docs_url or "",
+                        reason=validator._skip_reason if skipped else "",
                     )
                 )
 
