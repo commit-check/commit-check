@@ -230,6 +230,7 @@ cchk --help  # Verify alias works
 - **Conventional Branches**: Enforces patterns like `feature/`, `bugfix/`, etc.
 - **Default prefixes**: feature, bugfix, hotfix, release, chore, feat, fix, build, ci, docs, perf, refactor, test, style, ai, claude, codex, copilot, cursor, dependabot, renovate (branch.allow_branch_types)
 - **Special branches**: master, main, HEAD, PR-* are allowed
+- **Description grammar**: opt-in `branch.require_description_grammar` holds the part after `<type>/` to the Conventional Branch grammar (lowercase words joined by single hyphens, dots inside a word); off by default because bot branches such as `dependabot/npm_and_yarn/...` do not follow it
 
 ### Author Validation
 - **Author name**: Checks for valid name format
