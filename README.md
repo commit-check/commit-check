@@ -46,7 +46,7 @@ Stop bad commits before they exist. In `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.18.3
+    rev: v2.19.0
     hooks:
       - id: check-message
       - id: check-branch
@@ -170,9 +170,13 @@ The failing entry of its `checks` array:
   "error": "The commit message should follow Conventional Commits. See https://www.conventionalcommits.org",
   "suggest": "Use \"fix: add streaming support\"",
   "fix": "fix: add streaming support",
-  "docs_url": "https://commit-check.com/rules/#cc001"
+  "docs_url": "https://commit-check.com/rules/#cc001",
+  "reason": ""
 }
 ```
+
+A check that did not run has status `skip`, and `reason` says why when the
+author is on an `ignore_authors` list: `"author dependabot[bot] is in [commit].ignore_authors"`.
 
 The same result, without a subprocess:
 
