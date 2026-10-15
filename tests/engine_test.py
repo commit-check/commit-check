@@ -2942,6 +2942,22 @@ class TestAiAttributionValidator:
         result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
+    @pytest.mark.parametrize(
+        "trailer",
+        [
+            "Co-authored-by : Claude <noreply@anthropic.com>",
+            "Co-authored-by: Cursor Agent <cursoragent@cursor.com>",
+        ],
+    )
+    def test_forbid_policy_rejects_trailers_git_reads(self, trailer):
+        """A blank before the colon, and Cursor's own co-author line, are
+        trailers git reads as attribution, so forbid rejects them too."""
+        rule = ValidationRule(check="ai_attribution", value="forbid")
+        validator = AiAttributionValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(stdin_text=f"feat: add feature\n\n{trailer}")
+        assert validator.validate(context) == ValidationResult.FAIL
+
     @pytest.mark.benchmark
     def test_forbid_policy_allows_clean_commit(self):
         """forbid policy allows commits without AI signatures."""
