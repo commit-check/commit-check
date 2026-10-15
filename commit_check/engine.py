@@ -752,7 +752,10 @@ class TagValidator(BaseValidator):
         pre-push hook receives. For push lines the tags under push are the
         ``refs/tags/*`` refs — a push carrying no tag ref yields nothing to
         validate, and a deletion (all-zero local sha) removes a tag rather
-        than naming a new one, so neither can fail the check.
+        than naming a new one, so neither can fail the check. The remote ref
+        is the name checked, because it is the one the remote receives:
+        ``git push origin v1.0.0:refs/tags/anything`` creates ``anything``.
+        The local ref stands in only when the remote side is not a tag.
         """
         lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
         push_lines = [ln for ln in lines if len(ln.split()) == 4 and "refs/" in ln]
@@ -762,7 +765,7 @@ class TagValidator(BaseValidator):
                 local_ref, local_sha, remote_ref, _ = ln.split()
                 if set(local_sha) == {"0"}:
                     continue
-                for ref in (local_ref, remote_ref):
+                for ref in (remote_ref, local_ref):
                     if ref.startswith("refs/tags/"):
                         tags.append(ref.removeprefix("refs/tags/"))
                         break
