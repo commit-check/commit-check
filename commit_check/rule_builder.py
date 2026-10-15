@@ -18,6 +18,7 @@ from commit_check import (
     DEFAULT_COMMIT_TYPES,
     DEFAULT_PUSH_RULES,
     DEFAULT_TAG_REGEX,
+    GIT_MERGE_SUBJECT_PATTERN,
 )
 from commit_check.config import ConfigError
 from commit_check.rules_catalog import (
@@ -726,9 +727,11 @@ class RuleBuilder:
         # Subjects git writes itself are exempt from the format rule; whether
         # they are allowed at all is CC006/CC007/CC009's call. Git writes each
         # prefix exactly as below, trailing space or quote included, so author
-        # prose such as "Merged ..." or "fixup!! ..." is still held to the
-        # format.
-        git_prefixes = r'^(?:Merge |Revert "|fixup! |squash! |amend! )'
+        # prose such as "Merged ...", "Merge the parser tables" or
+        # "fixup!! ..." is still held to the format.
+        git_prefixes = (
+            rf'^(?:{GIT_MERGE_SUBJECT_PATTERN}|Revert "|fixup! |squash! |amend! )'
+        )
         return (
             rf"^({types_pattern})(\([\w\-\.]+\))?(!)?: [^\n]+([\s\S]*)|{git_prefixes}"
         )

@@ -28,6 +28,7 @@ from commit_check.engine import (
     ValidationContext,
     ValidationEngine,
     ValidationResult,
+    is_merge_subject,
 )
 from commit_check.rule_builder import RuleBuilder, ValidationRule
 
@@ -3306,6 +3307,79 @@ class TestImperativeMorphology:
         not judged, and SKIP keeps that distinct from having passed."""
         assert self._verdict("Merge branch 'main' into topic") == ValidationResult.SKIP
         assert self._verdict("fixup! fixed the parser") == ValidationResult.SKIP
+
+    @pytest.mark.benchmark
+    def test_author_subject_starting_with_merge_is_judged(self):
+        """Only a merge tool's own subject bypasses the rule; an author's
+        "Merge ..." prose is judged like any other subject, and "Merge" is
+        an imperative, so it passes rather than skips."""
+        assert self._verdict("Merge the parser tables") == ValidationResult.PASS
+
+
+class TestIsMergeSubject:
+    """Only the subjects merge tools write count as merge subjects."""
+
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "Merge branch 'feature'",
+            "Merge branch 'feature' into main",
+            "Merge branch 'main' of https://github.com/org/repo",
+            "Merge branches 'a' and 'b'",
+            "Merge remote-tracking branch 'origin/main'",
+            "Merge remote-tracking branches 'origin/a' and 'origin/b'",
+            "Merge tag 'v1.2.3'",
+            "Merge tags 'v1' and 'v2'",
+            "Merge commit 'abc1234'",
+            "Merge commits 'abc1234' and 'def5678'",
+            "Merge pull request #12 from org/feature",
+            "Merge branch 'feature' into 'main'",
+            "Merge 1a2b3c4d into 5e6f7a8b",
+            "Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net",
+            "Merge https://github.com/org/repo",
+            "Merge git@github.com:org/repo",
+        ],
+    )
+    def test_tool_written_subject(self, subject):
+        assert is_merge_subject(subject)
+
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "Merge lowercase added stuff that is far too long for any limit",
+            "Merge the parser tables",
+            "Merge branch feature",
+            "Merge pull request from org/feature",
+            "Merge abc into def",
+            "Merged branch 'feature'",
+            "merge branch 'feature'",
+            "feat: Merge branch 'x'",
+        ],
+    )
+    def test_author_prose(self, subject):
+        assert not is_merge_subject(subject)
+
+    @pytest.mark.parametrize(
+        "check, value, expected",
+        [
+            ("subject_capitalized", None, ValidationResult.PASS),
+            ("subject_imperative", None, ValidationResult.PASS),
+            ("subject_max_length", 20, ValidationResult.FAIL),
+            ("subject_min_length", 80, ValidationResult.FAIL),
+        ],
+    )
+    def test_author_merge_prose_is_held_to_subject_rules(self, check, value, expected):
+        """The reported case: an author subject starting "Merge " used to
+        skip every subject rule. It is judged now, while a merge tool's own
+        subject still skips."""
+        rule = ValidationRule(check=check, value=value)
+        validators = ValidationEngine.VALIDATOR_MAP
+        validator = validators[check](rule)
+        prose = ValidationContext(stdin_text="Merge lowercase added stuff")
+        with patch("commit_check.engine._print_failure"):
+            assert validator.validate(prose) == expected
+        merge = ValidationContext(stdin_text="Merge branch 'a-long-name' into main")
+        assert validator.validate(merge) == ValidationResult.SKIP
 
 
 class TestTagValidator:
