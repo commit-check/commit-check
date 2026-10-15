@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import io
+import os
 import sys
 import urllib.error
 import urllib.request
@@ -271,11 +272,16 @@ def _config_search_root() -> Path | None:
     submodule. Looking for it costs a few ``stat`` calls where ``git
     rev-parse --show-toplevel`` cost a process on every run without a config.
     """
-    cwd = Path.cwd()
-    for directory in (cwd, *cwd.parents):
-        if (directory / ".git").exists():
-            return directory
-    return None
+    # os.path rather than pathlib: this runs on every run without a config,
+    # and building a Path per parent costs several times the stat calls.
+    directory = os.getcwd()
+    while True:
+        if os.path.exists(os.path.join(directory, ".git")):
+            return Path(directory)
+        parent = os.path.dirname(directory)
+        if parent == directory:
+            return None
+        directory = parent
 
 
 def find_config_path(path_hint: str = "") -> Path | None:
@@ -296,7 +302,8 @@ def find_config_path(path_hint: str = "") -> Path | None:
         if candidate.exists():
             return candidate
     root = _config_search_root()
-    if root is None:
+    if root is None or root == Path.cwd():
+        # The current directory was searched above.
         return None
     for candidate in DEFAULT_CONFIG_PATHS:
         if (root / candidate).exists():
