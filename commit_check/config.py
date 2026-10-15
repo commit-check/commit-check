@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import io
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -157,8 +158,15 @@ def _load_from_url(url: str) -> dict[str, Any]:
     return toml_load(io.BytesIO(data))
 
 
-def _load_parent_config(inherit_from: str) -> dict[str, Any]:
+def _load_parent_config(
+    inherit_from: str, base_dir: Path | None = None
+) -> dict[str, Any]:
     """Load the parent config named by an ``inherit_from`` value.
+
+    A relative local path is looked for next to the config file that names
+    it (*base_dir*) first, so the reference holds wherever the CLI is run
+    from, and then in the current directory, where it used to be resolved
+    alone; configs written against that keep working.
 
     :raises ValueError: For a malformed ``github:`` shorthand, a non-HTTPS URL,
         or a parent that is not valid TOML (``TOMLDecodeError``).
@@ -171,11 +179,16 @@ def _load_parent_config(inherit_from: str) -> dict[str, Any]:
         return _load_from_url(url)
     if inherit_from.startswith(("https://", "http://")):
         return _load_from_url(inherit_from)
-    with open(Path(inherit_from), "rb") as f:
+    path = Path(inherit_from)
+    if base_dir is not None and not path.is_absolute() and (base_dir / path).exists():
+        path = base_dir / path
+    with open(path, "rb") as f:
         return toml_load(f)
 
 
-def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
+def _resolve_inherit_from(
+    config: dict[str, Any], base_dir: Path | None = None
+) -> dict[str, Any]:
     """Resolve ``inherit_from`` directive, merging parent config with local.
 
     The ``inherit_from`` key at the top level of a config file may be:
@@ -187,7 +200,11 @@ def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
     HTTP (non-TLS) URLs are rejected to prevent MITM attacks.  The parent
     config is loaded first; local settings override the parent.
 
+    Only one level is followed: an ``inherit_from`` in the parent itself is
+    dropped with a notice rather than fetched.
+
     :param config: Already-parsed local TOML dict (may contain ``inherit_from``).
+    :param base_dir: Directory of the config file, for a relative local path.
     :returns: Merged config with parent settings applied as base.
     """
     inherit_from = config.pop("inherit_from", None)
@@ -200,7 +217,7 @@ def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
     # TOMLDecodeError (tomllib and tomli alike) is a ValueError; URLError is
     # an OSError.
     try:
-        parent = _load_parent_config(inherit_from)
+        parent = _load_parent_config(inherit_from, base_dir)
     except (OSError, ValueError) as e:
         print(
             f'⊘ inherit_from "{inherit_from}" could not be loaded: {e}; '
@@ -208,6 +225,16 @@ def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
             file=sys.stderr,
         )
         parent = {}
+
+    # Left in place it would reach the merged config and be reported as an
+    # unknown setting, which reads as a typo rather than a limit.
+    if "inherit_from" in parent:
+        nested = parent.pop("inherit_from")
+        print(
+            f'⊘ inherit_from "{nested}" in the parent config "{inherit_from}" is '
+            "ignored: only one level of inherit_from is followed",
+            file=sys.stderr,
+        )
 
     if parent:
         deep_merge(parent, config)
@@ -233,13 +260,36 @@ def _load_toml_file(path: Path, shown_as: str | None = None) -> dict[str, Any]:
             raise ConfigError(f"{shown_as or path}: {e}") from e
 
 
+def _config_search_root() -> Path | None:
+    """The top of the git work tree, or ``None`` outside one.
+
+    The default config paths are repository locations: run from a
+    subdirectory, a search relative to the current directory found nothing
+    and the run went ahead on the built-in defaults without a word.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            check=False,
+            encoding="utf-8",
+        )
+    except OSError:  # git is not installed
+        return None
+    top = result.stdout.strip() if result.returncode == 0 else ""
+    return Path(top) if top else None
+
+
 def find_config_path(path_hint: str = "") -> Path | None:
     """The config file a run reads, or ``None`` when there is none.
 
     With ``path_hint`` that is the hint, canonicalised, if it exists. Without
-    one it is the first of :data:`DEFAULT_CONFIG_PATHS` that exists. Kept
-    separate from :func:`load_config` so an error found later, in a setting
-    the merged dict no longer attributes to a file, can still name the file.
+    one it is the first of :data:`DEFAULT_CONFIG_PATHS` that exists in the
+    current directory, as before, or failing that at the top of the git work
+    tree, given in full. A package in a monorepo with a config of its own
+    keeps using it. Kept separate from :func:`load_config` so an error found
+    later, in a setting the merged dict no longer attributes to a file, can
+    still name the file.
     """
     if path_hint:
         p = Path(path_hint).resolve()
@@ -247,6 +297,12 @@ def find_config_path(path_hint: str = "") -> Path | None:
     for candidate in DEFAULT_CONFIG_PATHS:
         if candidate.exists():
             return candidate
+    root = _config_search_root()
+    if root is None:
+        return None
+    for candidate in DEFAULT_CONFIG_PATHS:
+        if (root / candidate).exists():
+            return root / candidate
     return None
 
 
@@ -266,4 +322,6 @@ def load_config(path_hint: str = "") -> dict[str, Any]:
             raise FileNotFoundError(f"Specified config file not found: {path_hint}")
         # No default config file: run on the built-in defaults.
         return {}
-    return _resolve_inherit_from(_load_toml_file(path, shown_as=path_hint or None))
+    return _resolve_inherit_from(
+        _load_toml_file(path, shown_as=path_hint or None), path.parent
+    )
