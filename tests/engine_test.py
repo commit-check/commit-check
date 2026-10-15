@@ -1552,8 +1552,9 @@ class TestMergeBaseValidator:
     def test_a_target_that_resolves_to_no_ref_is_not_compared(self):
         """With neither the target nor origin/<target> on disk, nothing is compared.
 
-        A shallow checkout can lack both refs. The rule then passes without
-        asking git merge-base anything.
+        A shallow checkout can lack both refs. The rule then skips, with the
+        missing target as the reason, without asking git merge-base anything.
+        It must not pass: the branch was never compared with anything.
         """
         validator = MergeBaseValidator(
             ValidationRule(check="merge_base", regex=r"^main$")
@@ -1567,8 +1568,8 @@ class TestMergeBaseValidator:
         ):
             result = validator.validate(ValidationContext())
 
-        assert result == ValidationResult.PASS
-        assert validator._checked_value == "feature/x"
+        assert result == ValidationResult.SKIP
+        assert validator._skip_reason == "rebase target 'main' not found"
         mock_merge_base.assert_not_called()
 
     def test_merge_base_against_a_real_pull_request_shaped_checkout(self, tmp_path):
