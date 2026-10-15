@@ -609,9 +609,18 @@ def split_message_comments(text: str) -> tuple[str, str]:
     lines = text.split("\n")
     if lines[-1] == "":
         lines.pop()
+    tail: list[str] = []
+    # A message with no line that starts with punctuation holds nothing git
+    # strips, whatever the comment character (git's are punctuation), so the
+    # git call is skipped. That covers a file written by ``git commit -m``.
+    if not any(
+        line[:1] and not (line[0].isalnum() or line[0].isspace()) for line in lines
+    ):
+        while lines and not lines[-1].strip():
+            lines.pop()
+        return "\n".join(lines), ""
     comment = _comment_char(lines)
     scissors = f"{comment} {SCISSORS_LINE}"
-    tail: list[str] = []
     if scissors in lines:
         cut = lines.index(scissors)
         lines, tail = lines[:cut], lines[cut:]

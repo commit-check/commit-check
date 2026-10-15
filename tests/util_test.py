@@ -1275,6 +1275,14 @@ class TestSplitMessageComments:
     def test_a_message_without_comments_is_unchanged(self, mocker):
         assert self._split(mocker, "feat: x\n\nbody\n") == ("feat: x\n\nbody", "")
 
+    def test_a_message_with_no_punctuation_line_skips_git(self, mocker):
+        m_config = mocker.patch("commit_check.util.get_git_config_value")
+        assert split_message_comments("feat: x\n\n  body\n\n\n") == (
+            "feat: x\n\n  body",
+            "",
+        )
+        m_config.assert_not_called()
+
     def test_the_configured_comment_char_is_used(self, mocker):
         text = "feat: x\n\n#123 is fixed\n; a comment\n"
         assert self._split(mocker, text, ";")[0] == "feat: x\n\n#123 is fixed"
