@@ -1422,6 +1422,84 @@ class TestBodyValidator:
         assert result == ValidationResult.PASS
 
 
+class TestMessageFileComments:
+    """git runs the commit-msg hook before it strips the editor's comments.
+
+    The file then still holds git's comment block and, under ``git commit
+    -v``, the scissors line and the diff; none of it is part of the message.
+    """
+
+    TEMPLATE = (
+        "\n"
+        "# Please enter the commit message for your changes. Lines starting\n"
+        "# with '#' will be ignored, and an empty message aborts the commit.\n"
+        "#\n"
+        "# On branch main\n"
+        "# Changes to be committed:\n"
+        "#\tnew file:   thing.py\n"
+        "#\n"
+    )
+    SCISSORS = (
+        "# ------------------------ >8 ------------------------\n"
+        "# Do not modify or remove the line above.\n"
+        "# Everything below it will be ignored.\n"
+        "diff --git a/thing.py b/thing.py\n"
+        "+# Signed-off-by: Bob <bob@example.com>\n"
+        "+Signed-off-by: Bob <bob@example.com>\n"
+    )
+
+    @staticmethod
+    def _validate(validator, tmp_path, text):
+        path = tmp_path / "COMMIT_EDITMSG"
+        path.write_text(text)
+        validator._suppress_output = True
+        context = ValidationContext(commit_file=str(path))
+        with (
+            patch("commit_check.util.get_git_config_value", return_value=""),
+            patch(
+                "commit_check.engine.get_git_user_identity",
+                return_value=("Bob", "bob@example.com"),
+            ),
+        ):
+            return validator.validate(context)
+
+    def _signoff(self, tmp_path, text):
+        rule = TestSignoffValidator._default_signoff_rule()
+        return self._validate(SignoffValidator(rule), tmp_path, text)
+
+    def test_comment_lines_are_not_a_body(self, tmp_path):
+        text = "feat: add thing\n" + self.TEMPLATE
+        validator = BodyValidator(ValidationRule(check="require_body"))
+        result = self._validate(validator, tmp_path, text)
+        assert result == ValidationResult.FAIL
+
+    def test_a_body_above_the_comments_still_counts(self, tmp_path):
+        text = "feat: add thing\n\nWhy it is needed.\n" + self.TEMPLATE
+        validator = BodyValidator(ValidationRule(check="require_body"))
+        result = self._validate(validator, tmp_path, text)
+        assert result == ValidationResult.PASS
+
+    def test_a_sign_off_in_the_verbose_diff_is_not_a_sign_off(self, tmp_path):
+        text = "feat: add thing\n" + self.TEMPLATE + self.SCISSORS
+        assert self._signoff(tmp_path, text) == ValidationResult.FAIL
+
+    def test_a_sign_off_above_the_scissors_still_counts(self, tmp_path):
+        text = (
+            "feat: add thing\n\nSigned-off-by: Bob <bob@example.com>\n"
+            + self.TEMPLATE
+            + self.SCISSORS
+        )
+        assert self._signoff(tmp_path, text) == ValidationResult.PASS
+
+    def test_a_comment_line_is_not_the_subject(self, tmp_path):
+        text = "# a leading comment\nfeat: add thing\n" + self.TEMPLATE
+        validator = SubjectLengthValidator(
+            ValidationRule(check="subject_max_length", value=15)
+        )
+        assert self._validate(validator, tmp_path, text) == ValidationResult.PASS
+        assert validator._checked_value == "feat: add thing"
+
+
 class TestMergeBaseValidator:
     @patch("commit_check.engine.git_merge_base")
     @pytest.mark.benchmark

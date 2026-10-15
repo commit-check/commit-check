@@ -566,6 +566,72 @@ def get_git_config_value(key: str) -> str:
         return ""
 
 
+# git's scissors line, after the comment character and a space. ``git commit
+# -v`` writes it above the diff, and git drops it and everything below it.
+SCISSORS_LINE = "------------------------ >8 ------------------------"
+
+# The characters ``core.commentChar = auto`` chooses from, in git's order.
+_AUTO_COMMENT_CHARS = "#;@!$%^&|:"
+
+
+def _comment_char(lines: list[str]) -> str:
+    """The comment character git used when it wrote these message lines.
+
+    ``core.commentChar`` names it, ``#`` when unset. ``auto`` lets git pick
+    a character no line of the message starts with, and the file does not
+    say which: its scissors line names it when there is one, and otherwise
+    the comment block git appends ends the file, so the last non-blank line
+    names it if it starts with one of the characters git picks from.
+    """
+    configured = get_git_config_value("core.commentChar")
+    if configured != "auto":
+        return configured or "#"
+    for line in lines:
+        if line[:1] in _AUTO_COMMENT_CHARS and line[1:] == f" {SCISSORS_LINE}":
+            return line[0]
+    last = next((line for line in reversed(lines) if line.strip()), "")
+    return last[0] if last[:1] in _AUTO_COMMENT_CHARS else "#"
+
+
+def split_message_comments(text: str) -> tuple[str, str]:
+    """Split a commit message file into the message git will store and the rest.
+
+    git runs the commit-msg hook before it cleans the message, so the file
+    still holds the comment block written for the editor and, under ``git
+    commit -v``, a scissors line followed by the whole diff. Checking that as
+    the message lets a comment satisfy ``require_body`` and a sign-off in the
+    diff satisfy ``require_signed_off_by``. The message is what git's default
+    cleanup leaves: everything from the scissors line on goes, every line
+    that starts with the comment character goes, and so do the blank lines
+    left at the end. The rest is those comment lines and the scissors block,
+    in order, for a caller that writes the file back.
+    """
+    lines = text.split("\n")
+    if lines[-1] == "":
+        lines.pop()
+    comment = _comment_char(lines)
+    scissors = f"{comment} {SCISSORS_LINE}"
+    tail: list[str] = []
+    if scissors in lines:
+        cut = lines.index(scissors)
+        lines, tail = lines[:cut], lines[cut:]
+    kept = [line for line in lines if not line.startswith(comment)]
+    while kept and not kept[-1].strip():
+        kept.pop()
+    rest = [line for line in lines if line.startswith(comment)] + tail
+    return "\n".join(kept), "".join(f"{line}\n" for line in rest)
+
+
+def read_commit_message_file(path: str) -> str:
+    """Read a commit message file and return the message git will store.
+
+    See :func:`split_message_comments`. Errors from opening the file are
+    left to the caller.
+    """
+    with open(path, encoding="utf-8") as f:
+        return split_message_comments(f.read())[0]
+
+
 def get_git_user_identity() -> tuple[str, str]:
     """The configured ``user.name`` and ``user.email``, in one git call.
 
