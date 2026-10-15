@@ -1,5 +1,7 @@
 """Tests for the deterministic corrections in commit_check.fixes."""
 
+import time
+
 import pytest
 
 from commit_check.fixes import (
@@ -239,3 +241,12 @@ class TestAppendTrailer:
             "feat: init\n\nAssisted-by: LLM"
         )
         assert append_trailer("", "Assisted-by: LLM") == "Assisted-by: LLM"
+
+
+def test_header_fix_is_linear_in_a_long_run_of_spaces():
+    """A lazy description before ``\\s*$`` took seconds on 50 KB of spaces."""
+    subject = "Feat x" + " " * 50_000 + "y"
+    start = time.monotonic()
+    fixed = fix_conventional_header(subject, TYPES)
+    assert time.monotonic() - start < 1
+    assert fixed == "feat: x" + " " * 50_000 + "y"
