@@ -51,6 +51,11 @@ from commit_check.util import (
     rejection_headline,
 )
 
+# A work-in-progress marker at the start of the subject (CC010). "^" without
+# re.MULTILINE and "[ \t]*" rather than "\s*" keep the match on the first
+# line, so a body that merely mentions WIP is not a WIP commit.
+_WIP_MARKER = re.compile(r"^[ \t]*(?:\[wip\]|wip\b)", re.IGNORECASE)
+
 
 class ValidationResult(IntEnum):
     """Validation result codes.
@@ -1378,12 +1383,11 @@ class CommitTypeValidator(BaseValidator):
 
     def _is_wip_commit_allowed(self, message: str) -> bool:
         """Check if WIP commits are allowed."""
-        upper_msg = message.upper()
-        is_wip = (
-            # wip: / [wip] / "wip " at the start, in any case
-            upper_msg.startswith(("WIP:", "[WIP]", "WIP "))
-            or upper_msg == "WIP"  # exact WIP
-        )
+        # [wip] or the word "wip" opening the subject, in any case and
+        # whatever follows it: "WIP:", "WIP add", "WIP-", "WIP\t", or "WIP"
+        # alone on the subject line. The word boundary keeps "wipe ..." out;
+        # this is the marker fix_wip knows how to drop.
+        is_wip = _WIP_MARKER.match(message) is not None
         return not is_wip or self.rule.value
 
 
