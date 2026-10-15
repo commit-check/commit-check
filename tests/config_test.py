@@ -11,6 +11,7 @@ import pytest
 
 from commit_check.config import (
     DEFAULT_CONFIG_PATHS,
+    MAX_PARENT_CONFIG_BYTES,
     ConfigError,
     _github_shorthand_to_url,
     _load_from_url,
@@ -833,6 +834,50 @@ class TestInheritFromFailuresAreReported:
         with patch(URLOPEN_MODULE, return_value=mock_response):
             result, _err = self._resolve(EXAMPLE_CONFIG_URL, capsys)
         assert result == self.LOCAL
+
+    @pytest.mark.skipif(
+        not os.path.exists("/dev/zero"), reason="needs a /dev/zero device"
+    )
+    def test_device_path_is_refused_without_reading(self, capsys):
+        with patch("builtins.open") as mock_open:
+            result, err = self._resolve("/dev/zero", capsys)
+            mock_open.assert_not_called()
+        assert result == self.LOCAL
+        assert "not a regular file" in err
+
+    def test_directory_path_is_refused(self, capsys, tmp_path):
+        result, err = self._resolve(str(tmp_path), capsys)
+        assert result == self.LOCAL
+        assert "not a regular file" in err
+
+    def test_oversized_local_parent(self, capsys, tmp_path):
+        parent = tmp_path / "parent.toml"
+        parent.write_bytes(b"#" * (MAX_PARENT_CONFIG_BYTES + 1))
+        result, err = self._resolve(str(parent), capsys)
+        assert result == self.LOCAL
+        assert "1 MiB limit" in err
+
+    def test_local_parent_at_the_limit_is_read(self, capsys, tmp_path):
+        body = b"[commit]\nsubject_max_length = 100\n"
+        parent = tmp_path / "parent.toml"
+        parent.write_bytes(body + b"#" * (MAX_PARENT_CONFIG_BYTES - len(body)))
+        config = {"inherit_from": str(parent), "commit": {"subject_min_length": 5}}
+        result = _resolve_inherit_from(config)
+        assert result["commit"] == {"subject_max_length": 100, "subject_min_length": 5}
+        assert capsys.readouterr().err == ""
+
+    def test_oversized_fetched_parent(self, capsys):
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"#" * (MAX_PARENT_CONFIG_BYTES + 1)
+        mock_response.__enter__ = lambda s: s
+        mock_response.__exit__ = MagicMock(return_value=False)
+
+        with patch(URLOPEN_MODULE, return_value=mock_response):
+            result, err = self._resolve(EXAMPLE_CONFIG_URL, capsys)
+        # The body is read with a bound, never all at once.
+        mock_response.read.assert_called_once_with(MAX_PARENT_CONFIG_BYTES + 1)
+        assert result == self.LOCAL
+        assert "1 MiB limit" in err
 
     def test_successful_load_prints_nothing(self, capsys, tmp_path):
         parent = tmp_path / "parent.toml"

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import copy
 import io
+import os
+import stat
 import sys
 import urllib.error
 import urllib.request
@@ -140,20 +142,44 @@ class _LazyOpener:
 _opener = _LazyOpener()
 
 
+# The largest parent config ``inherit_from`` will read, from a URL or a file.
+# A real policy file is a few kilobytes; the cap is there so that a path such
+# as ``/dev/zero``, or a URL that never stops sending, fails like any other
+# parent that cannot be loaded instead of filling memory.
+MAX_PARENT_CONFIG_BYTES = 1024 * 1024
+
+
+def _read_capped(f: Any) -> bytes:
+    """Read at most :data:`MAX_PARENT_CONFIG_BYTES` from *f*.
+
+    One byte more than the cap is requested, so a body that is exactly at
+    the cap is accepted and anything longer is told apart from it.
+
+    :raises ValueError: If *f* holds more than the cap.
+    """
+    data = f.read(MAX_PARENT_CONFIG_BYTES + 1)
+    if len(data) > MAX_PARENT_CONFIG_BYTES:
+        raise ValueError(
+            f"larger than the {MAX_PARENT_CONFIG_BYTES // (1024 * 1024)} MiB limit"
+        )
+    return data
+
+
 def _load_from_url(url: str) -> dict[str, Any]:
     """Load TOML config from an HTTPS URL.
 
     :param url: HTTPS URL pointing to a TOML config file.
     :returns: Parsed config dict.
-    :raises ValueError: If the URL does not use HTTPS, or the fetched body is
-        not valid TOML (``TOMLDecodeError``).
+    :raises ValueError: If the URL does not use HTTPS, the body is larger than
+        :data:`MAX_PARENT_CONFIG_BYTES`, or it is not valid TOML
+        (``TOMLDecodeError``).
     :raises OSError: If the URL cannot be fetched, or redirects off HTTPS
         (``urllib.error.URLError`` is an ``OSError``).
     """
     if not url.startswith("https://"):
         raise ValueError("only https:// URLs are accepted")
     with _opener.open(url, timeout=10) as response:
-        data = response.read()
+        data = _read_capped(response)
     return toml_load(io.BytesIO(data))
 
 
@@ -161,7 +187,9 @@ def _load_parent_config(inherit_from: str) -> dict[str, Any]:
     """Load the parent config named by an ``inherit_from`` value.
 
     :raises ValueError: For a malformed ``github:`` shorthand, a non-HTTPS URL,
-        or a parent that is not valid TOML (``TOMLDecodeError``).
+        a local path that is not a regular file, a parent larger than
+        :data:`MAX_PARENT_CONFIG_BYTES`, or one that is not valid TOML
+        (``TOMLDecodeError``).
     :raises OSError: For an unreachable URL or an unreadable local file.
     """
     if inherit_from.startswith("github:"):
@@ -171,8 +199,14 @@ def _load_parent_config(inherit_from: str) -> dict[str, Any]:
         return _load_from_url(url)
     if inherit_from.startswith(("https://", "http://")):
         return _load_from_url(inherit_from)
-    with open(Path(inherit_from), "rb") as f:
-        return toml_load(f)
+    # Checked before opening: a device such as /dev/zero never ends, and
+    # opening a FIFO blocks until something writes to it.
+    path = Path(inherit_from)
+    if not stat.S_ISREG(os.stat(path).st_mode):
+        raise ValueError("not a regular file")
+    with open(path, "rb") as f:
+        data = _read_capped(f)
+    return toml_load(io.BytesIO(data))
 
 
 def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
