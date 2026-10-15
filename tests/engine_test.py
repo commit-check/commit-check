@@ -996,6 +996,28 @@ class TestCommitTypeValidator:
                 assert result == ValidationResult.FAIL
 
     @pytest.mark.benchmark
+    @pytest.mark.parametrize(
+        "message", ["fixup! feat: x", "squash! feat: x", "amend! feat: x"]
+    )
+    def test_every_autosquash_prefix_is_a_fixup_commit(self, message):
+        """git --autosquash folds fixup!, squash! and amend! alike; CC009
+        has to reject all three, not only fixup!."""
+        rule = ValidationRule(check="allow_fixup_commits", value=False)
+        context = ValidationContext(stdin_text=message)
+        with patch("commit_check.engine._print_failure"):
+            assert CommitTypeValidator(rule).validate(context) == ValidationResult.FAIL
+        allowed = ValidationRule(check="allow_fixup_commits", value=True)
+        assert CommitTypeValidator(allowed).validate(context) == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    @pytest.mark.parametrize("message", ["squashed: feat x", "amended the docs"])
+    def test_words_like_squash_are_not_fixup_commits(self, message):
+        """Only git's own "<prefix>!" marker counts, not the word in prose."""
+        rule = ValidationRule(check="allow_fixup_commits", value=False)
+        context = ValidationContext(stdin_text=message)
+        assert CommitTypeValidator(rule).validate(context) == ValidationResult.PASS
+
+    @pytest.mark.benchmark
     def test_validate_wip_commit_allowed(self):
         """Test WIP commit validation when allowed."""
         rule = ValidationRule(check="allow_wip_commits", value=True)

@@ -1374,8 +1374,14 @@ class CommitTypeValidator(BaseValidator):
         return not is_empty or self.rule.value
 
     def _is_fixup_commit_allowed(self, message: str) -> bool:
-        """Check if fixup commits are allowed."""
-        is_fixup = message.startswith("fixup!")
+        """Check if fixup commits are allowed.
+
+        ``git commit --fixup`` writes ``fixup!``, ``--squash`` writes
+        ``squash!`` and ``--fixup=amend:``/``--fixup=reword:`` write
+        ``amend!``. ``git rebase --autosquash`` folds all three away, so all
+        three are the commits this rule is about.
+        """
+        is_fixup = message.startswith(("fixup!", "squash!", "amend!"))
         return not is_fixup or self.rule.value
 
     def _is_wip_commit_allowed(self, message: str) -> bool:
