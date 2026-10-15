@@ -473,7 +473,7 @@ class TestBranchValidator:
     def test_branch_validator_develop_branch_not_allowed(
         self, mock_get_branch_name, mock_has_commits
     ):
-        """Test BranchValidator with develop branch when it's NOT in allow_branch_names."""
+        """Test BranchValidator rejects develop when the rule's regex leaves it out."""
         mock_has_commits.return_value = True
         mock_get_branch_name.return_value = "develop"
         # Regex pattern that does NOT include develop as an allowed branch name
