@@ -91,10 +91,12 @@ def _trailer(
 
     The match is case-insensitive and anchors the key at the start of a line.
     Horizontal whitespace only around the value: ``\\s`` would let a match run
-    on to the next trailer line and report two lines as one.
+    on to the next trailer line and report two lines as one. The value starts
+    and ends on a non-blank character, so a long run of spaces around it can
+    be read only one way; see ``ai_signatures._build_groups``.
     """
     alternation = "|".join(re.escape(key) for key in keys)
-    raw = rf"^(?:{alternation}):[ \t]*{value_pattern}[ \t]*$"
+    raw = rf"^(?:{alternation}):[ \t]*(?=\S)(?:{value_pattern})(?<![ \t])[ \t]*$"
     return AiSignaturePattern(
         regex=re.compile(raw, re.IGNORECASE | re.MULTILINE),
         kind="trailer",

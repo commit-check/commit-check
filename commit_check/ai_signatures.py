@@ -95,8 +95,13 @@ def _build_groups() -> list[_Group]:
         # instead, it is entered on every line the branch rejects, at a cost
         # that grows with each tool added to the catalog.
         branches = "|".join(f"(?:{value})(?P<s{i}>)" for i, value in enumerate(values))
+        # The value starts and ends on a non-blank character, so the spaces
+        # around it belong to the ``[ \t]*`` beside it and nowhere else.
+        # Values that open with ``[^<\n]*`` or close with ``[ \t]*`` could
+        # otherwise share them, and a long run of spaces was tried every way
+        # it splits: seconds for a 30 KB line.
         regex = re.compile(
-            rf"^(?:{alternation}):[ \t]*(?:{branches})[ \t]*$",
+            rf"^(?:{alternation}):[ \t]*(?=\S)(?:{branches})(?<![ \t])[ \t]*$",
             re.IGNORECASE | re.MULTILINE,
         )
         groups.append(_Group(keys, regex, tuple(members)))
@@ -256,11 +261,13 @@ def find_trailers(message: str, keys: list[str]) -> list[tuple[str, str, str]]:
     if not keys:
         return []
     alternation = "|".join(re.escape(key) for key in keys)
-    # A carriage return before the newline is line ending, not value.
+    # The value runs to the end of the line and is trimmed afterwards: a lazy
+    # value before ``[ \t\r]*$`` re-scans trailing spaces at every step. A
+    # carriage return before the newline is line ending, not value.
     pattern = re.compile(
-        rf"^({alternation}):[ \t]*([^\n]*?)[ \t\r]*$", re.IGNORECASE | re.MULTILINE
+        rf"^({alternation}):[ \t]*([^\n]*)$", re.IGNORECASE | re.MULTILINE
     )
     return [
-        (match.group(1), match.group(2), match.group(0))
+        (match.group(1), match.group(2).rstrip(" \t\r"), match.group(0))
         for match in pattern.finditer(message)
     ]
