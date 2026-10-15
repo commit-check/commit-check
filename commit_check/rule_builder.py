@@ -165,21 +165,32 @@ def _string_setting(value: Any, setting: str) -> str:
     return value.strip()
 
 
-def _string_list(value: Any, setting: str) -> list[str]:
-    """*value* as a list of strings, a comma-separated string split.
+def _string_list(
+    section: dict[str, Any], key: str, default: list[str], setting: str
+) -> list[str]:
+    """``section[key]`` as a list of strings, a comma-separated string split.
 
     ``--allow-commit-types`` and ``CCHK_ALLOW_COMMIT_TYPES`` already split
     on commas; the same string in the TOML file was iterated letter by
     letter, so ``"feat,fix"`` allowed a type called ``f``. Anything else
     that is not a list of strings is refused rather than guessed at.
     """
-    if isinstance(value, str):
+    value = section.get(key, default)
+    # The built-in default needs no checking, and this runs on every rule
+    # set built, so it is returned as is.
+    if value is default:
+        return value
+    if isinstance(value, list):
+        for item in value:
+            if not isinstance(item, str):
+                break
+        else:
+            return value
+    elif isinstance(value, str):
         return [item.strip() for item in value.split(",") if item.strip()]
-    if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
-        raise ConfigError(
-            f"{setting} must be a list of strings, got {value!r}", setting=setting
-        )
-    return value
+    raise ConfigError(
+        f"{setting} must be a list of strings, got {value!r}", setting=setting
+    )
 
 
 class RuleBuilder:
@@ -745,7 +756,9 @@ class RuleBuilder:
     def _get_allowed_commit_types(self) -> list[str]:
         """Get deduplicated list of allowed commit types."""
         types = _string_list(
-            self.commit_config.get("allow_commit_types", DEFAULT_COMMIT_TYPES),
+            self.commit_config,
+            "allow_commit_types",
+            DEFAULT_COMMIT_TYPES,
             "[commit] allow_commit_types",
         )
         return list(dict.fromkeys(types))  # Preserve order, remove duplicates
@@ -753,7 +766,9 @@ class RuleBuilder:
     def _get_allowed_branch_types(self) -> list[str]:
         """Get deduplicated list of allowed branch types."""
         types = _string_list(
-            self.branch_config.get("allow_branch_types", DEFAULT_BRANCH_TYPES),
+            self.branch_config,
+            "allow_branch_types",
+            DEFAULT_BRANCH_TYPES,
             "[branch] allow_branch_types",
         )
         return list(dict.fromkeys(types))  # Preserve order, remove duplicates
@@ -761,7 +776,9 @@ class RuleBuilder:
     def _get_allowed_branch_names(self) -> list[str]:
         """Get deduplicated list of allowed branch names."""
         names = _string_list(
-            self.branch_config.get("allow_branch_names", DEFAULT_BRANCH_NAMES),
+            self.branch_config,
+            "allow_branch_names",
+            DEFAULT_BRANCH_NAMES,
             "[branch] allow_branch_names",
         )
         return list(dict.fromkeys(names))  # Preserve order, remove duplicates
