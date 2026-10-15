@@ -179,7 +179,11 @@ COMMIT_RULES = [
     RuleCatalogEntry(
         rule_id="CC012",
         check="require_signed_off_by",
-        regex=r"Signed-off-by: .+ <.+@.+>",
+        # A whole line, so the words in a subject or a sentence of the body
+        # are not a sign-off, and with the key's case ignored, as git does.
+        # No two parts can match the same characters, which keeps matching
+        # linear: overlapping ``.+`` runs took seconds on a 6 KB line.
+        regex=r"(?mi)^Signed-off-by:[ \t]*[^<\s][^<\n]*<[^>@\n]+@[^>\n]+>[ \t\r]*$",
         error="Signed-off-by trailer not found in the latest commit",
         suggest="git commit --amend --signoff or use --signoff on commit",
     ),

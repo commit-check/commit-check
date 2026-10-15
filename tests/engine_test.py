@@ -3,6 +3,7 @@
 import os
 import subprocess
 import tempfile
+import time
 from typing import ClassVar
 from unittest.mock import mock_open, patch
 
@@ -30,6 +31,7 @@ from commit_check.engine import (
     ValidationResult,
 )
 from commit_check.rule_builder import RuleBuilder, ValidationRule
+from commit_check.rules_catalog import RULES_BY_CHECK
 
 # String constants used across tests (defined once to avoid duplication)
 GIT_CONFIG_VALUE = "commit_check.engine.get_git_config_value"
@@ -1172,6 +1174,44 @@ class TestSignoffValidator:
             result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
+    @pytest.mark.parametrize(
+        "message, expected",
+        [
+            # Named in the subject or mid-sentence, it is not a trailer.
+            (
+                "feat: document the Signed-off-by: A <a@b.c> trailer",
+                ValidationResult.FAIL,
+            ),
+            (
+                "feat: x\n\nAdd a Signed-off-by: A <a@b.c> line.",
+                ValidationResult.FAIL,
+            ),
+            # A trailer needs a name and an address.
+            ("feat: x\n\nSigned-off-by:  <a@b.c>", ValidationResult.FAIL),
+            ("feat: x\n\nSigned-off-by: A <ab.c>", ValidationResult.FAIL),
+            # git reads the key without regard to case.
+            ("feat: x\n\nsigned-off-by: A <a@b.c>", ValidationResult.PASS),
+            (
+                "feat: x\n\nSigned-off-by: A <a@b.c>\r\nReviewed-by: B <b@c.d>",
+                ValidationResult.PASS,
+            ),
+        ],
+    )
+    def test_default_signoff_needs_a_trailer_line(self, message, expected):
+        validator = SignoffValidator(self._default_signoff_rule())
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext(stdin_text=message)) == expected
+
+    def test_default_signoff_regex_is_linear(self):
+        """Overlapping ``.+`` runs made a 6 KB line take seconds."""
+        validator = SignoffValidator(self._default_signoff_rule())
+        validator._suppress_output = True
+        message = "feat: x\n\nSigned-off-by: " + "a <@" * 12500
+        start = time.monotonic()
+        result = validator.validate(ValidationContext(stdin_text=message))
+        assert result == ValidationResult.FAIL
+        assert time.monotonic() - start < 1
+
     @patch(GIT_CONFIG_VALUE)
     @patch("commit_check.engine.get_commit_info")
     @pytest.mark.benchmark
@@ -1210,7 +1250,7 @@ class TestSignoffValidator:
         validator = SignoffValidator(
             ValidationRule(
                 check="require_signed_off_by",
-                regex=r"Signed-off-by: .+ <.+@.+>",
+                regex=RULES_BY_CHECK["require_signed_off_by"].regex,
                 error="static catalog error",
             )
         )
