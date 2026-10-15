@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import io
-import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -266,18 +265,17 @@ def _config_search_root() -> Path | None:
     The default config paths are repository locations: run from a
     subdirectory, a search relative to the current directory found nothing
     and the run went ahead on the built-in defaults without a word.
+
+    The top is the nearest directory up from the current one that holds a
+    ``.git`` directory, or a ``.git`` file as in a linked worktree or a
+    submodule. Looking for it costs a few ``stat`` calls where ``git
+    rev-parse --show-toplevel`` cost a process on every run without a config.
     """
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            check=False,
-            encoding="utf-8",
-        )
-    except OSError:  # git is not installed
-        return None
-    top = result.stdout.strip() if result.returncode == 0 else ""
-    return Path(top) if top else None
+    cwd = Path.cwd()
+    for directory in (cwd, *cwd.parents):
+        if (directory / ".git").exists():
+            return directory
+    return None
 
 
 def find_config_path(path_hint: str = "") -> Path | None:

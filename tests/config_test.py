@@ -1010,9 +1010,9 @@ class TestConfigIsFoundFromASubdirectory:
         (pkg / ".github").mkdir(parents=True)
         (pkg / ".github" / "cchk.toml").write_text("")
         monkeypatch.chdir(pkg)
-        with patch("commit_check.config.subprocess.run") as mock_run:
+        with patch("commit_check.config._config_search_root") as mock_root:
             assert find_config_path() == Path(".github/cchk.toml")
-            mock_run.assert_not_called()
+            mock_root.assert_not_called()
 
     def test_a_repository_without_a_config_has_none(self, tmp_path, monkeypatch):
         _git_init(tmp_path)
@@ -1026,18 +1026,15 @@ class TestConfigIsFoundFromASubdirectory:
         (tmp_path / "sub").mkdir()
         (tmp_path / "cchk.toml").write_text("")
         monkeypatch.chdir(tmp_path / "sub")
-        with patch(
-            "commit_check.config.subprocess.run",
-            return_value=subprocess.CompletedProcess([], 128, "", "not a repo"),
-        ):
-            assert find_config_path() is None
+        # pytest's temporary directories are not inside a repository.
+        assert find_config_path() is None
 
-    def test_without_git_installed_there_is_no_config(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        with patch(
-            "commit_check.config.subprocess.run", side_effect=FileNotFoundError("git")
-        ):
-            assert find_config_path() is None
+    def test_a_git_file_marks_the_top_of_a_linked_worktree(self, tmp_path, monkeypatch):
+        (tmp_path / ".git").write_text("gitdir: /elsewhere/.git/worktrees/x\n")
+        (tmp_path / "cchk.toml").write_text("")
+        (tmp_path / "sub").mkdir()
+        monkeypatch.chdir(tmp_path / "sub")
+        assert find_config_path().resolve() == (tmp_path / "cchk.toml").resolve()
 
 
 class TestRelativeInheritFrom:
