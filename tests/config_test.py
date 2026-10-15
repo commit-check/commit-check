@@ -1071,9 +1071,13 @@ class TestRelativeInheritFrom:
             "[commit]\nsubject_max_length = 50\n"
         )
         (github / "cchk.toml").write_text('inherit_from = "policy/base.toml"\n')
-        monkeypatch.chdir(tmp_path)
-        assert load_config()["commit"] == {"subject_max_length": 50}
-        assert capsys.readouterr().err == ""
+        sub = tmp_path / "sub"
+        sub.mkdir()
+        # From a subdirectory the same path is read from the repository top.
+        for cwd in (tmp_path, sub):
+            monkeypatch.chdir(cwd)
+            assert load_config()["commit"] == {"subject_max_length": 50}
+            assert capsys.readouterr().err == ""
 
     def test_a_nested_inherit_from_is_reported_not_followed(self, tmp_path, capsys):
         grandparent = tmp_path / "grandparent.toml"

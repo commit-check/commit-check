@@ -165,8 +165,10 @@ def _load_parent_config(
 
     A relative local path is looked for next to the config file that names
     it (*base_dir*) first, so the reference holds wherever the CLI is run
-    from, and then in the current directory, where it used to be resolved
-    alone; configs written against that keep working.
+    from, then in the current directory, where it used to be resolved alone,
+    and last at the top of the git work tree, which is where the current
+    directory was for a config written against that before a run from a
+    subdirectory could find it.
 
     :raises ValueError: For a malformed ``github:`` shorthand, a non-HTTPS URL,
         or a parent that is not valid TOML (``TOMLDecodeError``).
@@ -180,8 +182,13 @@ def _load_parent_config(
     if inherit_from.startswith(("https://", "http://")):
         return _load_from_url(inherit_from)
     path = Path(inherit_from)
-    if base_dir is not None and not path.is_absolute() and (base_dir / path).exists():
-        path = base_dir / path
+    if not path.is_absolute():
+        if base_dir is not None and (base_dir / path).exists():
+            path = base_dir / path
+        elif not path.exists():
+            root = _config_search_root()
+            if root is not None and (root / path).exists():
+                path = root / path
     with open(path, "rb") as f:
         return toml_load(f)
 
