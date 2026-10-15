@@ -697,12 +697,24 @@ class RuleBuilder:
         ):
             return None
 
+        # The case and mood rules judge the description, so they look past a
+        # "type(scope)!:" prefix -- but only a prefix that is one: a type the
+        # team allows, under Conventional Commits. With those off, "Added:
+        # support" or "oops: lowercase" is the subject itself and is judged
+        # from its first word. An empty list tells the validator to strip
+        # nothing.
+        allowed = None
+        if check in ("subject_capitalized", "subject_imperative"):
+            conventional = self.commit_config.get("conventional_commits", True)
+            allowed = self._get_allowed_commit_types() if conventional else []
+
         return ValidationRule(
             check=catalog_entry.check,
             regex=catalog_entry.regex,
             error=catalog_entry.error,
             suggest=catalog_entry.suggest,
             value=config_value,
+            allowed=allowed,
         )
 
     def _get_allowed_commit_types(self) -> list[str]:

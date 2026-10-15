@@ -496,6 +496,23 @@ class SubjectValidator(BaseValidator):
         """Override in subclasses for specific validation logic."""
         return ValidationResult.PASS
 
+    def _description(self, subject: str) -> str:
+        """*subject* past its Conventional Commits ``type(scope)!:`` prefix.
+
+        The rule's ``allowed`` list says which words are types: the builder
+        sets it to ``allow_commit_types`` under Conventional Commits and to
+        an empty list without them, where "Added: support" or "oops: x" is
+        not a type but the subject itself. ``None``, from a rule built by
+        hand, keeps the old reading of any ``word:`` as a type.
+        """
+        match = re.match(r"^(\w+)(?:\([^)]*\))?!?:\s*(.*)", subject)
+        if not match:
+            return subject
+        allowed = self.rule.allowed
+        if allowed is not None and match.group(1) not in allowed:
+            return subject
+        return match.group(2)
+
 
 class SubjectCapitalizationValidator(SubjectValidator):
     """Validates that subject starts with capital letter."""
@@ -516,8 +533,7 @@ class SubjectCapitalizationValidator(SubjectValidator):
         self._print_failure(subject, fix=fix)
         return ValidationResult.FAIL
 
-    @staticmethod
-    def _is_capitalized(subject: str) -> bool:
+    def _is_capitalized(self, subject: str) -> bool:
         """Whether the description starts upper-case, after any Conventional Commits prefix.
 
         Only a prefix that ends in a colon is a type. Without one, the first
@@ -525,8 +541,7 @@ class SubjectCapitalizationValidator(SubjectValidator):
         "A" and not on the "f" that follows, and "Update" alone is judged at
         all.
         """
-        match = re.match(r"^\w+(?:\([^)]*\))?!?:\s*(.*)", subject)
-        description = match.group(1).strip() if match else subject
+        description = self._description(subject).strip()
         return bool(description) and description[0].isupper()
 
 
@@ -553,9 +568,9 @@ class SubjectImperativeValidator(SubjectValidator):
         if subject.startswith(("Merge ", "fixup! ")):
             return ValidationResult.SKIP
 
-        # Extract first word (ignore conventional commit prefixes)
-        # support breaking changes (feat!:)
-        match = re.match(r"^(?:\w+(?:\([^)]*\))?!?:\s*)?(\w+)", subject)
+        # Extract first word, past a Conventional Commits prefix (including
+        # a breaking "feat!:") when there is one.
+        match = re.match(r"(\w+)", self._description(subject))
         if not match:
             return ValidationResult.PASS
 
