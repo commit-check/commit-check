@@ -2086,3 +2086,41 @@ class TestAiDisclosurePolicy:
         err = capsys.readouterr().err
         assert rc == 2
         assert "Error: [commit] ai_disclosure_pattern is not a valid regex: '^('" in err
+
+
+class TestWrongTypeSettingIsAConfigError:
+    """A setting of the wrong type exits 2 and names the setting."""
+
+    def test_numeric_message_pattern_exits_two(
+        self, mocker, capsys, monkeypatch, tmp_path
+    ):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add x\n")
+        cfg = tmp_path / "cchk.toml"
+        cfg.write_text("[commit]\nmessage_pattern = 5\n")
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--config", str(cfg)])
+        rc = main()
+        err = capsys.readouterr().err
+        assert rc == 2
+        assert "Error: [commit] message_pattern must be a string, got 5" in err
+
+
+class TestLastResortErrorIsNeverBlank:
+    """An exception with no text is reported by its type, not as "Error: "."""
+
+    @pytest.mark.parametrize(
+        ("exc", "expected"),
+        [
+            (MemoryError(), "Error: MemoryError\n"),
+            (RuntimeError("boom"), "Error: boom\n"),
+        ],
+    )
+    def test_the_message_or_the_type_is_printed(
+        self, mocker, capsys, monkeypatch, exc, expected
+    ):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add x\n")
+        mocker.patch("commit_check.main.RuleBuilder.build_all_rules", side_effect=exc)
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "--no-banner"])
+        assert main() == 1
+        assert capsys.readouterr().err == expected
