@@ -180,10 +180,10 @@ class TestRuleBuilder:
 
         rule = builder._build_conventional_branch_rule(catalog_entry)
         assert rule is not None
-        # Should include default branch names: master, main, HEAD, PR-*.
+        # Should include default branch names: master, main, develop, HEAD, PR-*.
         # (Whether they match is TestBranchRegexIsAnchored's job; this
         # benchmark measures the builder, not the regex engine.)
-        assert "^(?:master|main|HEAD|PR-.+)$" in rule.regex
+        assert "^(?:master|main|develop|HEAD|PR-.+)$" in rule.regex
 
     @pytest.mark.benchmark
     def test_rule_builder_allow_branch_names_custom(self):
@@ -191,7 +191,7 @@ class TestRuleBuilder:
         config = {
             "branch": {
                 "conventional_branch": True,
-                "allow_branch_names": ["develop", "staging", "production"],
+                "allow_branch_names": ["staging", "production"],
             }
         }
 
@@ -201,7 +201,7 @@ class TestRuleBuilder:
         rule = builder._build_conventional_branch_rule(catalog_entry)
         assert rule is not None
         # Should include both default and custom branch names
-        assert "^(?:master|main|HEAD|PR-.+|develop|staging|production)$" in rule.regex
+        assert "^(?:master|main|develop|HEAD|PR-.+|staging|production)$" in rule.regex
 
     @pytest.mark.benchmark
     def test_rule_builder_allow_branch_names_empty_list(self):
@@ -214,8 +214,8 @@ class TestRuleBuilder:
         rule = builder._build_conventional_branch_rule(catalog_entry)
         assert rule is not None
         # Should only include default branch names
-        assert "^(?:master|main|HEAD|PR-.+)$" in rule.regex
-        assert "develop" not in rule.regex
+        assert "^(?:master|main|develop|HEAD|PR-.+)$" in rule.regex
+        assert "staging" not in rule.regex
 
     @pytest.mark.benchmark
     def test_ai_agent_and_bot_branch_types_in_default(self):
@@ -917,25 +917,28 @@ def _branch_regex(**branch_config) -> str:
 class TestBranchRegexIsAnchored:
     """An allowed name must match the whole branch name, not just its start."""
 
-    @pytest.mark.parametrize("branch", ["main-backup", "master2", "HEADless"])
+    @pytest.mark.parametrize(
+        "branch", ["main-backup", "master2", "HEADless", "developer"]
+    )
     def test_prefix_of_a_default_name_is_rejected(self, branch):
         assert not re.match(_branch_regex(), branch)
 
     def test_prefix_of_a_custom_name_is_rejected(self):
-        regex = _branch_regex(allow_branch_names=["develop"])
-        assert re.match(regex, "develop")
-        assert not re.match(regex, "develop-x")
+        regex = _branch_regex(allow_branch_names=["staging"])
+        assert re.match(regex, "staging")
+        assert not re.match(regex, "staging-x")
 
     @pytest.mark.parametrize(
-        "branch", ["main", "master", "HEAD", "PR-12", "feature/x", "chore/a/b"]
+        "branch",
+        ["main", "master", "develop", "HEAD", "PR-12", "feature/x", "chore/a/b"],
     )
     def test_default_names_and_typed_branches_still_pass(self, branch):
         assert re.match(_branch_regex(), branch)
 
     def test_custom_names_still_pass(self):
-        regex = _branch_regex(allow_branch_names=["develop", "staging"])
-        assert re.match(regex, "develop")
+        regex = _branch_regex(allow_branch_names=["staging", "production"])
         assert re.match(regex, "staging")
+        assert re.match(regex, "production")
 
     def test_type_alone_without_a_description_is_rejected(self):
         assert not re.match(_branch_regex(), "feature")

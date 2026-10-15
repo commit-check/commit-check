@@ -742,8 +742,9 @@ class RuleBuilder:
         # always been: the built-in "PR-.+" is one, and the Action's own
         # config allows "create-pull-request/.+" that way. Every alternative
         # is anchored at both ends so a name has to match the whole branch
-        # name, not merely its start ("main-backup" is not "main").
-        names_pattern = "master|main|HEAD|PR-.+"
+        # name, not merely its start ("main-backup" is not "main"). develop
+        # is the specification's third trunk branch, beside main and master.
+        names_pattern = "master|main|develop|HEAD|PR-.+"
         if allowed_names:
             names_pattern += "|" + "|".join(allowed_names)
         description_pattern = (

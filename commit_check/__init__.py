@@ -90,7 +90,7 @@ DEFAULT_BRANCH_TYPES = [
     "dependabot",
     "renovate",
 ]
-# Additional allowed branch names (e.g., develop, staging)
+# Additional allowed branch names (e.g., staging, production)
 DEFAULT_BRANCH_NAMES: list[str] = []
 
 # Tag naming default: SemVer, with an optional leading "v" (v1.2.3 or 1.2.3),

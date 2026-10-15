@@ -150,6 +150,11 @@ class TestValidateBranch:
         result = validate_branch("main")
         assert result["status"] == "pass"
 
+    def test_develop_branch_passes(self):
+        """'develop', the spec's third trunk branch, is always allowed."""
+        result = validate_branch("develop")
+        assert result["status"] == "pass"
+
     @pytest.mark.benchmark
     def test_invalid_branch_fails(self):
         """Branch name without a conventional prefix fails."""
