@@ -824,7 +824,9 @@ def main() -> int:
         print(f"Error: {e}", file=sys.stderr)
         return EXIT_CONFIG_ERROR
     except Exception as e:  # noqa: BLE001 - last resort: report it, no traceback
-        print(f"Error: {e}", file=sys.stderr)
+        # Some exceptions carry no text (MemoryError, a bare KeyError()), and
+        # "Error: " on its own says nothing; name the type instead.
+        print(f"Error: {str(e) or type(e).__name__}", file=sys.stderr)
         return EXIT_FAIL
 
 
