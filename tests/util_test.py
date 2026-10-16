@@ -10,6 +10,7 @@ import pytest
 import commit_check
 from commit_check import supports_color
 from commit_check.util import (
+    SCISSORS_LINE,
     _print_failure,
     cmd_output,
     fetch_remote_ref,
@@ -31,6 +32,7 @@ from commit_check.util import (
     print_error_header,
     print_error_message,
     print_suggestion,
+    split_message_comments,
     supports_hyperlinks,
 )
 
@@ -1240,6 +1242,68 @@ class TestGetGitConfigValue:
         mocker.patch("commit_check.util.cmd_output", return_value="alice@example.com\n")
         result = get_git_config_value("user.email")
         assert result == "alice@example.com"
+
+
+class TestSplitMessageComments:
+    """A commit message file is cleaned the way git's default cleanup does."""
+
+    @staticmethod
+    def _split(mocker, text, comment_char=""):
+        mocker.patch(
+            "commit_check.util.get_git_config_value", return_value=comment_char
+        )
+        return split_message_comments(text)
+
+    def test_comment_lines_and_trailing_blanks_go(self, mocker):
+        text = "feat: x\n\nbody\n\n# Please enter the commit message\n#\n"
+        assert self._split(mocker, text) == (
+            "feat: x\n\nbody",
+            "# Please enter the commit message\n#\n",
+        )
+
+    def test_everything_from_the_scissors_line_on_goes(self, mocker):
+        text = (
+            "feat: x\n"
+            "# ------------------------ >8 ------------------------\n"
+            "diff --git a/f b/f\n"
+            "+Signed-off-by: Bob <b@c.d>\n"
+        )
+        message, rest = self._split(mocker, text)
+        assert message == "feat: x"
+        assert rest == text[len("feat: x\n") :]
+
+    def test_a_message_without_comments_is_unchanged(self, mocker):
+        assert self._split(mocker, "feat: x\n\nbody\n") == ("feat: x\n\nbody", "")
+
+    def test_a_message_with_no_punctuation_line_skips_git(self, mocker):
+        m_config = mocker.patch("commit_check.util.get_git_config_value")
+        assert split_message_comments("feat: x\n\n  body\n\n\n") == (
+            "feat: x\n\n  body",
+            "",
+        )
+        m_config.assert_not_called()
+
+    def test_the_configured_comment_char_is_used(self, mocker):
+        text = "feat: x\n\n#123 is fixed\n; a comment\n"
+        assert self._split(mocker, text, ";")[0] == "feat: x\n\n#123 is fixed"
+
+    @pytest.mark.parametrize(
+        "text, message",
+        [
+            # The scissors line names the character git picked.
+            (
+                "feat: x\n\n#1\n; c\n; " + SCISSORS_LINE + "\ndiff\n",
+                "feat: x\n\n#1",
+            ),
+            # Otherwise the comment block git appends ends the file.
+            ("feat: x\n\n#1\n\n; c\n;\n", "feat: x\n\n#1"),
+            ("feat: x\n\n# c\n", "feat: x"),
+            # No comment block at all: nothing is taken for one.
+            ("feat: x\n\nbody\n", "feat: x\n\nbody"),
+        ],
+    )
+    def test_auto_comment_char_is_read_from_the_file(self, mocker, text, message):
+        assert self._split(mocker, text, "auto")[0] == message
 
 
 class TestGetTagsAt:
