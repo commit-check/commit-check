@@ -101,7 +101,7 @@ def _build_groups() -> list[_Group]:
         # otherwise share them, and a long run of spaces was tried every way
         # it splits: seconds for a 30 KB line.
         regex = re.compile(
-            rf"^(?:{alternation}):[ \t]*(?=\S)(?:{branches})(?<![ \t])[ \t]*$",
+            rf"^(?:{alternation})[ \t]*:[ \t]*(?=\S)(?:{branches})(?<![ \t])[ \t]*$",
             re.IGNORECASE | re.MULTILINE,
         )
         groups.append(_Group(keys, regex, tuple(members)))
@@ -127,7 +127,7 @@ def _scans() -> tuple[re.Pattern[str], ...]:
 
 #: The key of a trailer-shaped line, e.g. ``Co-authored-by`` in
 #: ``Co-authored-by: Claude``.
-_TRAILER_KEY = re.compile(r"([A-Za-z][A-Za-z0-9-]*):")
+_TRAILER_KEY = re.compile(r"([A-Za-z][A-Za-z0-9-]*)[ \t]*:")
 
 
 def _trailer_lines(message: str) -> list[tuple[str, str]]:
@@ -253,7 +253,8 @@ def find_trailers(message: str, keys: list[str]) -> list[tuple[str, str, str]]:
     """Every trailer line in *message* whose key is one of *keys*.
 
     Keys match case-insensitively, at the start of any line — the reading
-    the signature scanner and the sign-off rule take too.
+    the signature scanner and the sign-off rule take too. Blanks may precede
+    the colon, as git allows.
 
     :returns: ``(key as written, value, line)`` per match, in message order;
         the value is empty for a trailer that names nothing.
@@ -265,7 +266,7 @@ def find_trailers(message: str, keys: list[str]) -> list[tuple[str, str, str]]:
     # value before ``[ \t\r]*$`` re-scans trailing spaces at every step. A
     # carriage return before the newline is line ending, not value.
     pattern = re.compile(
-        rf"^({alternation}):[ \t]*([^\n]*)$", re.IGNORECASE | re.MULTILINE
+        rf"^({alternation})[ \t]*:[ \t]*([^\n]*)$", re.IGNORECASE | re.MULTILINE
     )
     return [
         (match.group(1), match.group(2).rstrip(" \t\r"), match.group(0))

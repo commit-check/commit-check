@@ -28,6 +28,7 @@ from commit_check.engine import (
     ValidationContext,
     ValidationEngine,
     ValidationResult,
+    is_merge_subject,
 )
 from commit_check.rule_builder import RuleBuilder, ValidationRule
 
@@ -1011,6 +1012,44 @@ class TestCommitTypeValidator:
 
             result = validator.validate(context)
             assert result == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "WIP",
+            "WIP\n\nhalf done",
+            "WIP\tstuff",
+            "WIP- stuff",
+            "WIP: stuff",
+            "wip stuff",
+            "[WIP] stuff",
+            "[wip]stuff",
+        ],
+    )
+    def test_wip_marker_rejected_whatever_follows_it(self, message):
+        """A WIP marker counts however the subject goes on after it: a
+        newline, a tab or a dash as much as a colon or a space."""
+        rule = ValidationRule(check="allow_wip_commits", value=False)
+        context = ValidationContext(stdin_text=message)
+        with patch("commit_check.engine._print_failure"):
+            assert CommitTypeValidator(rule).validate(context) == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "wipe the cache",
+            "Wiping stale entries",
+            "feat: add x\n\nWIP until the API lands",
+        ],
+    )
+    def test_words_and_body_mentions_are_not_wip(self, message):
+        """Only the marker on the subject line counts: not a word that starts
+        with "wip", and not WIP written further down the message."""
+        rule = ValidationRule(check="allow_wip_commits", value=False)
+        context = ValidationContext(stdin_text=message)
+        assert CommitTypeValidator(rule).validate(context) == ValidationResult.PASS
 
 
 class TestSubjectLengthValidator:
@@ -2942,6 +2981,22 @@ class TestAiAttributionValidator:
         result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
+    @pytest.mark.parametrize(
+        "trailer",
+        [
+            "Co-authored-by : Claude <noreply@anthropic.com>",
+            "Co-authored-by: Cursor Agent <cursoragent@cursor.com>",
+        ],
+    )
+    def test_forbid_policy_rejects_trailers_git_reads(self, trailer):
+        """A blank before the colon, and Cursor's own co-author line, are
+        trailers git reads as attribution, so forbid rejects them too."""
+        rule = ValidationRule(check="ai_attribution", value="forbid")
+        validator = AiAttributionValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(stdin_text=f"feat: add feature\n\n{trailer}")
+        assert validator.validate(context) == ValidationResult.FAIL
+
     @pytest.mark.benchmark
     def test_forbid_policy_allows_clean_commit(self):
         """forbid policy allows commits without AI signatures."""
@@ -3306,6 +3361,144 @@ class TestImperativeMorphology:
         not judged, and SKIP keeps that distinct from having passed."""
         assert self._verdict("Merge branch 'main' into topic") == ValidationResult.SKIP
         assert self._verdict("fixup! fixed the parser") == ValidationResult.SKIP
+
+    @pytest.mark.benchmark
+    def test_author_subject_starting_with_merge_is_judged(self):
+        """Only a merge tool's own subject bypasses the rule; an author's
+        "Merge ..." prose is judged like any other subject, and "Merge" is
+        an imperative, so it passes rather than skips."""
+        assert self._verdict("Merge the parser tables") == ValidationResult.PASS
+
+
+class TestIsMergeSubject:
+    """Only the subjects merge tools write count as merge subjects."""
+
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "Merge branch 'feature'",
+            "Merge branch 'feature' into main",
+            "Merge branch 'main' of https://github.com/org/repo",
+            "Merge branches 'a' and 'b'",
+            "Merge remote-tracking branch 'origin/main'",
+            "Merge remote-tracking branches 'origin/a' and 'origin/b'",
+            "Merge tag 'v1.2.3'",
+            "Merge tags 'v1' and 'v2'",
+            "Merge commit 'abc1234'",
+            "Merge commits 'abc1234' and 'def5678'",
+            "Merge pull request #12 from org/feature",
+            "Merge branch 'feature' into 'main'",
+            "Merge 1a2b3c4d into 5e6f7a8b",
+            "Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net",
+            "Merge https://github.com/org/repo",
+            "Merge git@github.com:org/repo",
+        ],
+    )
+    def test_tool_written_subject(self, subject):
+        assert is_merge_subject(subject)
+
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "Merge lowercase added stuff that is far too long for any limit",
+            "Merge the parser tables",
+            "Merge branch feature",
+            "Merge pull request from org/feature",
+            "Merge abc into def",
+            "Merged branch 'feature'",
+            "merge branch 'feature'",
+            "feat: Merge branch 'x'",
+        ],
+    )
+    def test_author_prose(self, subject):
+        assert not is_merge_subject(subject)
+
+    @pytest.mark.parametrize(
+        "check, value, expected",
+        [
+            ("subject_capitalized", None, ValidationResult.PASS),
+            ("subject_imperative", None, ValidationResult.PASS),
+            ("subject_max_length", 20, ValidationResult.FAIL),
+            ("subject_min_length", 80, ValidationResult.FAIL),
+        ],
+    )
+    def test_author_merge_prose_is_held_to_subject_rules(self, check, value, expected):
+        """The reported case: an author subject starting "Merge " used to
+        skip every subject rule. It is judged now, while a merge tool's own
+        subject still skips."""
+        rule = ValidationRule(check=check, value=value)
+        validators = ValidationEngine.VALIDATOR_MAP
+        validator = validators[check](rule)
+        prose = ValidationContext(stdin_text="Merge lowercase added stuff")
+        with patch("commit_check.engine._print_failure"):
+            assert validator.validate(prose) == expected
+        merge = ValidationContext(stdin_text="Merge branch 'a-long-name' into main")
+        assert validator.validate(merge) == ValidationResult.SKIP
+
+
+class TestTypePrefixOnlyUnderConventionalCommits:
+    """CC002 and CC003 look past a "type:" prefix only when it is one: an
+    allowed type with Conventional Commits on. Otherwise "Added: x" is the
+    subject itself and is judged from its first word."""
+
+    @staticmethod
+    def _verdict(check, subject, **commit_config):
+        commit_config[check] = True
+        rules = RuleBuilder({"commit": commit_config}).build_all_rules()
+        rule = next(r for r in rules if r.check == check)
+        validator = ValidationEngine.VALIDATOR_MAP[check](rule)
+        validator._suppress_output = True
+        return validator.validate(ValidationContext(stdin_text=subject))
+
+    @pytest.mark.parametrize(
+        "check, subject",
+        [
+            ("subject_imperative", "Added: support for X"),
+            ("subject_capitalized", "oops: Lowercase subject"),
+        ],
+    )
+    def test_word_colon_is_the_subject_without_conventional_commits(
+        self, check, subject
+    ):
+        verdict = self._verdict(check, subject, conventional_commits=False)
+        assert verdict == ValidationResult.FAIL
+
+    @pytest.mark.parametrize(
+        "check, subject",
+        [
+            ("subject_imperative", "Added: support for X"),
+            ("subject_capitalized", "oops: Lowercase subject"),
+        ],
+    )
+    def test_word_that_is_not_an_allowed_type_is_not_stripped(self, check, subject):
+        assert self._verdict(check, subject) == ValidationResult.FAIL
+
+    @pytest.mark.parametrize(
+        "check, subject, expected",
+        [
+            ("subject_imperative", "feat: add support", ValidationResult.PASS),
+            ("subject_imperative", "feat(api)!: added support", ValidationResult.FAIL),
+            ("subject_capitalized", "fix: Handle nulls", ValidationResult.PASS),
+            ("subject_capitalized", "fix: handle nulls", ValidationResult.FAIL),
+        ],
+    )
+    def test_allowed_type_is_stripped_by_default(self, check, subject, expected):
+        """The defaults are unchanged: an allowed type is looked past."""
+        assert self._verdict(check, subject) == expected
+
+    def test_custom_allowed_types_are_the_ones_stripped(self):
+        verdict = self._verdict(
+            "subject_capitalized", "task: Do it", allow_commit_types=["task"]
+        )
+        assert verdict == ValidationResult.PASS
+
+    def test_hand_built_rule_keeps_reading_any_word_as_a_type(self):
+        """A rule built without ``allowed`` (API callers) behaves as before."""
+        validator = SubjectCapitalizationValidator(
+            ValidationRule(check="subject_capitalized")
+        )
+        context = ValidationContext(stdin_text="anything: Capitalised")
+        assert validator.validate(context) == ValidationResult.PASS
 
 
 class TestTagValidator:
