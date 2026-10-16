@@ -90,11 +90,13 @@ def _trailer(
     """Build a trailer pattern for a structured ``Key: value`` line.
 
     The match is case-insensitive and anchors the key at the start of a line.
-    Horizontal whitespace only around the value: ``\\s`` would let a match run
-    on to the next trailer line and report two lines as one.
+    Blanks may precede the colon, because git reads ``Key : value`` as the
+    trailer ``Key: value``. Horizontal whitespace only around the value:
+    ``\\s`` would let a match run on to the next trailer line and report two
+    lines as one.
     """
     alternation = "|".join(re.escape(key) for key in keys)
-    raw = rf"^(?:{alternation}):[ \t]*{value_pattern}[ \t]*$"
+    raw = rf"^(?:{alternation})[ \t]*:[ \t]*{value_pattern}[ \t]*$"
     return AiSignaturePattern(
         regex=re.compile(raw, re.IGNORECASE | re.MULTILINE),
         kind="trailer",
@@ -223,7 +225,10 @@ CURSOR = KnownAiTool(
     name="Cursor",
     name_pattern=_names(r"cursor"),
     patterns=[
-        *_identity(r"Cursor[ \t]*(?:<[^>\n]*>)?", "Cursor"),
+        *_identity(r"Cursor(?: Agent)?[ \t]*(?:<[^>\n]*>)?", "Cursor"),
+        # Cursor's agent signs as ``Cursor Agent <cursoragent@cursor.com>``;
+        # the address catches it under any display name.
+        *_identity(r"[^<\n]*<cursoragent@cursor\.com>", "... <cursoragent@cursor.com>"),
     ],
 )
 
