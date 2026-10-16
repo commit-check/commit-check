@@ -279,6 +279,10 @@ class TestHumanNameFalsePositives:
             "Co-authored-by: Amp <amp@example.com>",
             # Same domain as the OpenHands agent, but a person's address.
             "Co-authored-by: Graham Neubig <graham@all-hands.dev>",
+            # A person's GitHub noreply address, and a name that only
+            # contains Copilot.
+            "Co-authored-by: Jane Dev <12345+jane@users.noreply.github.com>",
+            "Co-authored-by: Copilot Fan <copilot@example.com>",
         ],
     )
     def test_bare_human_name_not_detected(self, trailer):
@@ -460,6 +464,24 @@ class TestRoles:
                 "Cursor",
                 ROLE_CO_AUTHOR,
             ),
+            # What Copilot's coding agent leaves: its session-log link on
+            # each commit, and its bot account when the PR is squash-merged.
+            (
+                (
+                    "Agent-Logs-Url: https://github.com/octo/repo/sessions/"
+                    "6155349e-f665-47fa-a156-cd1c84dd40c3"
+                ),
+                "GitHub Copilot",
+                ROLE_STAMP,
+            ),
+            (
+                (
+                    "Co-authored-by: copilot-swe-agent[bot] "
+                    "<198982749+Copilot@users.noreply.github.com>"
+                ),
+                "GitHub Copilot",
+                ROLE_CO_AUTHOR,
+            ),
         ],
     )
     def test_trailer(self, trailer, tool, role):
@@ -551,6 +573,11 @@ class TestPatternIndex:
             "feat: x\n\nClaude-Session: abc\nCo-developed-by: Copilot",
             "feat: x\n\nNot-a-trailer here: still prose",
             "feat: x\n\nCo-authored-by : Cursor Agent <cursoragent@cursor.com>",
+            (
+                "feat: x\n\nAgent-Logs-Url: https://github.com/o/r/sessions/1\n"
+                "Co-authored-by: copilot-swe-agent[bot] "
+                "<198982749+Copilot@users.noreply.github.com>"
+            ),
         ],
     )
     def test_the_grouped_scan_finds_what_every_pattern_would(self, message):
