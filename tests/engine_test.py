@@ -1013,6 +1013,44 @@ class TestCommitTypeValidator:
             result = validator.validate(context)
             assert result == ValidationResult.PASS
 
+    @pytest.mark.benchmark
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "WIP",
+            "WIP\n\nhalf done",
+            "WIP\tstuff",
+            "WIP- stuff",
+            "WIP: stuff",
+            "wip stuff",
+            "[WIP] stuff",
+            "[wip]stuff",
+        ],
+    )
+    def test_wip_marker_rejected_whatever_follows_it(self, message):
+        """A WIP marker counts however the subject goes on after it: a
+        newline, a tab or a dash as much as a colon or a space."""
+        rule = ValidationRule(check="allow_wip_commits", value=False)
+        context = ValidationContext(stdin_text=message)
+        with patch("commit_check.engine._print_failure"):
+            assert CommitTypeValidator(rule).validate(context) == ValidationResult.FAIL
+
+    @pytest.mark.benchmark
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "wipe the cache",
+            "Wiping stale entries",
+            "feat: add x\n\nWIP until the API lands",
+        ],
+    )
+    def test_words_and_body_mentions_are_not_wip(self, message):
+        """Only the marker on the subject line counts: not a word that starts
+        with "wip", and not WIP written further down the message."""
+        rule = ValidationRule(check="allow_wip_commits", value=False)
+        context = ValidationContext(stdin_text=message)
+        assert CommitTypeValidator(rule).validate(context) == ValidationResult.PASS
+
 
 class TestSubjectLengthValidator:
     @pytest.mark.benchmark
