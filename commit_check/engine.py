@@ -51,6 +51,7 @@ from commit_check.util import (
     git_rev_parse_verify,
     has_commits,
     print_error_header,
+    read_commit_message_file,
     rejection_headline,
 )
 
@@ -308,8 +309,7 @@ class BaseValidator(ABC):
 
         if context.commit_file:
             try:
-                with open(context.commit_file, "r", encoding="utf-8") as f:
-                    return f.read().strip()
+                return read_commit_message_file(context.commit_file).strip()
             except FileNotFoundError:
                 pass
 
@@ -363,8 +363,7 @@ class BaseValidator(ABC):
             return context.stdin_text
         if context.commit_file:
             try:
-                with open(context.commit_file, "r", encoding="utf-8") as f:
-                    return f.read()
+                return read_commit_message_file(context.commit_file)
             except OSError:
                 pass
         if context.rev is not None:
@@ -504,9 +503,8 @@ class SubjectValidator(BaseValidator):
 
         if context.commit_file:
             try:
-                with open(context.commit_file, "r", encoding="utf-8") as f:
-                    message = f.read().strip()
-                    return message.split("\n")[0]
+                message = read_commit_message_file(context.commit_file).strip()
+                return message.split("\n")[0]
             except FileNotFoundError:
                 pass
 
