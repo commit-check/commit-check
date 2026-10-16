@@ -13,7 +13,11 @@ from enum import IntEnum
 from fnmatch import fnmatchcase
 from typing import ClassVar
 
-from commit_check import DEFAULT_AI_DISCLOSURE_TRAILERS, ai_policy
+from commit_check import (
+    DEFAULT_AI_DISCLOSURE_TRAILERS,
+    GIT_MERGE_SUBJECT_PATTERN,
+    ai_policy,
+)
 from commit_check.ai_signatures import (
     detect_ai_signatures,
 )
@@ -49,6 +53,19 @@ from commit_check.util import (
     print_error_header,
     rejection_headline,
 )
+
+_GIT_MERGE_SUBJECT = re.compile(GIT_MERGE_SUBJECT_PATTERN)
+
+
+def is_merge_subject(subject: str) -> bool:
+    """Whether *subject* is one a merge tool wrote, not the author.
+
+    The subject rules decline to judge these. A subject that merely starts
+    with the word ("Merge lowercase parser tables") is the author's, and is
+    judged like any other.
+    """
+    return _GIT_MERGE_SUBJECT.match(subject) is not None
+
 
 # A work-in-progress marker at the start of the subject (CC010). "^" without
 # re.MULTILINE and "[ \t]*" rather than "\s*" keep the match on the first
@@ -524,8 +541,9 @@ class SubjectCapitalizationValidator(SubjectValidator):
 
     def _validate_subject(self, subject: str) -> ValidationResult:
         # A merge subject is machine-written; the rule declines to judge it.
-        # Git writes "Merge " exactly, so anything else is author prose.
-        if subject.startswith("Merge "):
+        # Only the subjects merge tools write count, so anything else is
+        # author prose.
+        if is_merge_subject(subject):
             return ValidationResult.SKIP
 
         if self._is_capitalized(subject):
@@ -568,9 +586,9 @@ class SubjectImperativeValidator(SubjectValidator):
 
     def _validate_subject(self, subject: str) -> ValidationResult:
         # Merge and fixup subjects are machine-written; decline to judge them.
-        # Git writes "Merge " and "fixup! " exactly, so anything else is
-        # author prose.
-        if subject.startswith(("Merge ", "fixup! ")):
+        # Only the subjects merge tools write, and git's exact "fixup! ",
+        # count, so anything else is author prose.
+        if is_merge_subject(subject) or subject.startswith("fixup! "):
             return ValidationResult.SKIP
 
         # Extract first word, past a Conventional Commits prefix (including
@@ -626,7 +644,7 @@ class SubjectLengthValidator(SubjectValidator):
 
     def _validate_subject(self, subject: str) -> ValidationResult:
         # A merge subject's length is git's doing, not the author's.
-        if subject.startswith("Merge "):
+        if is_merge_subject(subject):
             return ValidationResult.SKIP
 
         length = len(subject)
