@@ -444,6 +444,24 @@ class TestRoles:
                 ROLE_CO_AUTHOR,
             ),
             ("Assisted-by: OpenHands", "OpenHands", ROLE_DISCLOSURE),
+            # git reads a blank before the colon as the same trailer.
+            (
+                "Co-authored-by : Claude <noreply@anthropic.com>",
+                "Claude Code",
+                ROLE_CO_AUTHOR,
+            ),
+            ("Assisted-by\t: LLM", "Generic AI", ROLE_DISCLOSURE),
+            # What Cursor's agent writes, and its address under another name.
+            (
+                "Co-authored-by: Cursor Agent <cursoragent@cursor.com>",
+                "Cursor",
+                ROLE_CO_AUTHOR,
+            ),
+            (
+                "Co-authored-by: cursor-bot <cursoragent@cursor.com>",
+                "Cursor",
+                ROLE_CO_AUTHOR,
+            ),
         ],
     )
     def test_trailer(self, trailer, tool, role):
@@ -534,6 +552,7 @@ class TestPatternIndex:
             "feat: x\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)",
             "feat: x\n\nClaude-Session: abc\nCo-developed-by: Copilot",
             "feat: x\n\nNot-a-trailer here: still prose",
+            "feat: x\n\nCo-authored-by : Cursor Agent <cursoragent@cursor.com>",
         ],
     )
     def test_the_grouped_scan_finds_what_every_pattern_would(self, message):
@@ -594,6 +613,12 @@ class TestFindTrailers:
             ("assisted-by", "LLM", "assisted-by: LLM"),
             ("Generated-by", "GitHub Copilot", "Generated-by:   GitHub Copilot   "),
             ("Assisted-by", "", "Assisted-by:"),
+        ]
+
+    def test_a_blank_before_the_colon_is_still_the_trailer(self):
+        """git reads ``Assisted-by : LLM`` as ``Assisted-by: LLM``."""
+        assert find_trailers("feat: x\n\nAssisted-by \t: LLM", ["Assisted-by"]) == [
+            ("Assisted-by", "LLM", "Assisted-by \t: LLM")
         ]
 
     def test_a_carriage_return_is_line_ending_not_value(self):
