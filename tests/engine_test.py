@@ -3137,6 +3137,33 @@ class TestAiAttributionValidator:
         context = ValidationContext(stdin_text=f"feat: add feature\n\n{trailer}")
         assert validator.validate(context) == ValidationResult.FAIL
 
+    @pytest.mark.parametrize(
+        "message",
+        [
+            # A commit the agent makes on its pull request branch.
+            (
+                "feat: add flag\n\n"
+                "Agent-Logs-Url: https://github.com/o/r/sessions/1\n\n"
+                "Co-authored-by: Jane Dev <12345+jane@users.noreply.github.com>"
+            ),
+            # The squash merge of that pull request.
+            (
+                "feat: add flag (#1)\n\n"
+                "Co-authored-by: copilot-swe-agent[bot] "
+                "<198982749+Copilot@users.noreply.github.com>\n"
+                "Co-authored-by: Jane Dev <12345+jane@users.noreply.github.com>"
+            ),
+        ],
+    )
+    def test_forbid_policy_rejects_copilot_coding_agent_commits(self, message):
+        """Copilot's coding agent leaves a log link on its own commits and
+        its bot account on the squash merge; forbid rejects both."""
+        rule = ValidationRule(check="ai_attribution", value="forbid")
+        validator = AiAttributionValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(stdin_text=message)
+        assert validator.validate(context) == ValidationResult.FAIL
+
     @pytest.mark.benchmark
     def test_forbid_policy_allows_clean_commit(self):
         """forbid policy allows commits without AI signatures."""
