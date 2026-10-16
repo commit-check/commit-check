@@ -3346,6 +3346,71 @@ class TestImperativeMorphology:
         assert self._verdict("fixup! fixed the parser") == ValidationResult.SKIP
 
 
+class TestTypePrefixOnlyUnderConventionalCommits:
+    """CC002 and CC003 look past a "type:" prefix only when it is one: an
+    allowed type with Conventional Commits on. Otherwise "Added: x" is the
+    subject itself and is judged from its first word."""
+
+    @staticmethod
+    def _verdict(check, subject, **commit_config):
+        commit_config[check] = True
+        rules = RuleBuilder({"commit": commit_config}).build_all_rules()
+        rule = next(r for r in rules if r.check == check)
+        validator = ValidationEngine.VALIDATOR_MAP[check](rule)
+        validator._suppress_output = True
+        return validator.validate(ValidationContext(stdin_text=subject))
+
+    @pytest.mark.parametrize(
+        "check, subject",
+        [
+            ("subject_imperative", "Added: support for X"),
+            ("subject_capitalized", "oops: Lowercase subject"),
+        ],
+    )
+    def test_word_colon_is_the_subject_without_conventional_commits(
+        self, check, subject
+    ):
+        verdict = self._verdict(check, subject, conventional_commits=False)
+        assert verdict == ValidationResult.FAIL
+
+    @pytest.mark.parametrize(
+        "check, subject",
+        [
+            ("subject_imperative", "Added: support for X"),
+            ("subject_capitalized", "oops: Lowercase subject"),
+        ],
+    )
+    def test_word_that_is_not_an_allowed_type_is_not_stripped(self, check, subject):
+        assert self._verdict(check, subject) == ValidationResult.FAIL
+
+    @pytest.mark.parametrize(
+        "check, subject, expected",
+        [
+            ("subject_imperative", "feat: add support", ValidationResult.PASS),
+            ("subject_imperative", "feat(api)!: added support", ValidationResult.FAIL),
+            ("subject_capitalized", "fix: Handle nulls", ValidationResult.PASS),
+            ("subject_capitalized", "fix: handle nulls", ValidationResult.FAIL),
+        ],
+    )
+    def test_allowed_type_is_stripped_by_default(self, check, subject, expected):
+        """The defaults are unchanged: an allowed type is looked past."""
+        assert self._verdict(check, subject) == expected
+
+    def test_custom_allowed_types_are_the_ones_stripped(self):
+        verdict = self._verdict(
+            "subject_capitalized", "task: Do it", allow_commit_types=["task"]
+        )
+        assert verdict == ValidationResult.PASS
+
+    def test_hand_built_rule_keeps_reading_any_word_as_a_type(self):
+        """A rule built without ``allowed`` (API callers) behaves as before."""
+        validator = SubjectCapitalizationValidator(
+            ValidationRule(check="subject_capitalized")
+        )
+        context = ValidationContext(stdin_text="anything: Capitalised")
+        assert validator.validate(context) == ValidationResult.PASS
+
+
 class TestTagValidator:
     @patch("commit_check.engine.get_tags_at")
     @pytest.mark.benchmark
