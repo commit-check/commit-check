@@ -9,7 +9,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/commit-check?labelColor=0b1620&logo=pypi&logoColor=white&color=2c9ccd)](https://pypi.org/project/commit-check/)
 [![Downloads](https://img.shields.io/pepy/dt/commit-check?labelColor=0b1620&color=2c9ccd)](https://pepy.tech/projects/commit-check)
-[![CI](https://img.shields.io/github/actions/workflow/status/commit-check/commit-check/main.yml?branch=main&labelColor=0b1620&label=CI)](https://github.com/commit-check/commit-check/actions/workflows/main.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/commit-check/commit-check/ci.yml?branch=main&labelColor=0b1620&label=CI)](https://github.com/commit-check/commit-check/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/codecov/c/github/commit-check/commit-check?labelColor=0b1620&color=2c9ccd&label=coverage)](https://codecov.io/gh/commit-check/commit-check)
 [![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/commit-check/commit-check?labelColor=0b1620&color=2c9ccd&label=OpenSSF%20Scorecard)](https://scorecard.dev/viewer/?uri=github.com/commit-check/commit-check)
 
