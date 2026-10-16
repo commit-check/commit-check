@@ -1,6 +1,7 @@
 """Tests for commit_check.config module."""
 
 import os
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -16,6 +17,7 @@ from commit_check.config import (
     _load_from_url,
     _resolve_inherit_from,
     deep_merge,
+    find_config_path,
     load_config,
 )
 
@@ -978,3 +980,114 @@ subject_max_length = 72
                 assert config["commit"]["subject_max_length"] == 72
             finally:
                 os.chdir(original_cwd)
+
+
+def _git_init(path):
+    subprocess.run(["git", "init", "-q", str(path)], check=True)
+
+
+class TestConfigIsFoundFromASubdirectory:
+    """The default paths are repository locations, not cwd-relative ones.
+
+    Run from a subdirectory, the search used to find nothing and the run
+    went ahead on the built-in defaults without saying so.
+    """
+
+    def test_a_root_config_is_found_from_a_subdirectory(self, tmp_path, monkeypatch):
+        _git_init(tmp_path)
+        (tmp_path / "cchk.toml").write_text("[commit]\nsubject_max_length = 10\n")
+        sub = tmp_path / "pkg" / "src"
+        sub.mkdir(parents=True)
+        monkeypatch.chdir(sub)
+        assert find_config_path().resolve() == (tmp_path / "cchk.toml").resolve()
+        assert load_config()["commit"]["subject_max_length"] == 10
+
+    def test_a_config_in_the_current_directory_comes_first(self, tmp_path, monkeypatch):
+        # A package in a monorepo with a config of its own keeps using it.
+        _git_init(tmp_path)
+        (tmp_path / "cchk.toml").write_text("")
+        pkg = tmp_path / "pkg"
+        (pkg / ".github").mkdir(parents=True)
+        (pkg / ".github" / "cchk.toml").write_text("")
+        monkeypatch.chdir(pkg)
+        with patch("commit_check.config._config_search_root") as mock_root:
+            assert find_config_path() == Path(".github/cchk.toml")
+            mock_root.assert_not_called()
+
+    def test_a_repository_without_a_config_has_none(self, tmp_path, monkeypatch):
+        _git_init(tmp_path)
+        (tmp_path / "sub").mkdir()
+        monkeypatch.chdir(tmp_path / "sub")
+        assert find_config_path() is None
+
+    def test_outside_a_repository_nothing_above_is_searched(
+        self, tmp_path, monkeypatch
+    ):
+        (tmp_path / "sub").mkdir()
+        (tmp_path / "cchk.toml").write_text("")
+        monkeypatch.chdir(tmp_path / "sub")
+        # pytest's temporary directories are not inside a repository.
+        assert find_config_path() is None
+
+    def test_a_git_file_marks_the_top_of_a_linked_worktree(self, tmp_path, monkeypatch):
+        (tmp_path / ".git").write_text("gitdir: /elsewhere/.git/worktrees/x\n")
+        (tmp_path / "cchk.toml").write_text("")
+        (tmp_path / "sub").mkdir()
+        monkeypatch.chdir(tmp_path / "sub")
+        assert find_config_path().resolve() == (tmp_path / "cchk.toml").resolve()
+
+
+class TestRelativeInheritFrom:
+    """A relative ``inherit_from`` is read next to the file that names it."""
+
+    def test_next_to_the_config_file_from_any_directory(self, tmp_path, monkeypatch):
+        _git_init(tmp_path)
+        github = tmp_path / ".github"
+        github.mkdir()
+        (github / "base.toml").write_text("[commit]\nsubject_max_length = 50\n")
+        (github / "cchk.toml").write_text(
+            'inherit_from = "base.toml"\n[commit]\nsubject_min_length = 3\n'
+        )
+        sub = tmp_path / "sub"
+        sub.mkdir()
+        for cwd in (tmp_path, sub):
+            monkeypatch.chdir(cwd)
+            config = load_config()
+            assert config["commit"] == {
+                "subject_max_length": 50,
+                "subject_min_length": 3,
+            }
+
+    def test_relative_to_the_current_directory_still_works(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        # Written against the old behaviour: the path is from the repository
+        # root, where the CLI is run, not from .github/.
+        _git_init(tmp_path)
+        github = tmp_path / ".github"
+        github.mkdir()
+        (tmp_path / "policy").mkdir()
+        (tmp_path / "policy" / "base.toml").write_text(
+            "[commit]\nsubject_max_length = 50\n"
+        )
+        (github / "cchk.toml").write_text('inherit_from = "policy/base.toml"\n')
+        sub = tmp_path / "sub"
+        sub.mkdir()
+        # From a subdirectory the same path is read from the repository top.
+        for cwd in (tmp_path, sub):
+            monkeypatch.chdir(cwd)
+            assert load_config()["commit"] == {"subject_max_length": 50}
+            assert capsys.readouterr().err == ""
+
+    def test_a_nested_inherit_from_is_reported_not_followed(self, tmp_path, capsys):
+        grandparent = tmp_path / "grandparent.toml"
+        grandparent.write_text("[commit]\nsubject_min_length = 9\n")
+        parent = tmp_path / "parent.toml"
+        parent.write_text(
+            f'inherit_from = "{grandparent}"\n[commit]\nsubject_max_length = 50\n'
+        )
+        result = _resolve_inherit_from({"inherit_from": str(parent)}, tmp_path)
+        assert result == {"commit": {"subject_max_length": 50}}
+        err = capsys.readouterr().err
+        assert f'inherit_from "{grandparent}" in the parent config "{parent}"' in err
+        assert "only one level of inherit_from is followed" in err
