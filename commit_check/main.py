@@ -356,7 +356,7 @@ def _get_parser() -> argparse.ArgumentParser:
         type=parse_bool,
         default=None,
         metavar="BOOL",
-        help="allow fixup commits (true/false)",
+        help="allow fixup!, squash! and amend! commits (true/false)",
     )
 
     commit_group.add_argument(

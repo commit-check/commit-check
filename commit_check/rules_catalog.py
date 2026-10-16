@@ -134,7 +134,7 @@ COMMIT_RULES = [
         check="allow_fixup_commits",
         regex=None,
         error="Fixup commits are not allowed",
-        suggest="Use interactive rebase to clean up fixup commits",
+        suggest="Fold fixup!, squash! and amend! commits with git rebase -i --autosquash",
     ),
     RuleCatalogEntry(
         rule_id="CC010",
