@@ -2,7 +2,9 @@
 # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 #
 # Same shape in every commit-check repository: monthly, one grouped pull
-# request per ecosystem, `chore(deps)` commit subjects.
+# request per ecosystem, `chore(deps)` commit subjects. Labels are set
+# explicitly: left to its defaults, Dependabot also adds a major, minor or
+# patch label whenever the repository has one.
 
 version: 2
 updates:
@@ -13,6 +15,9 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    labels:
+      - dependencies
+      - github_actions
     groups:
       github-actions:
         patterns:
@@ -25,6 +30,9 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    labels:
+      - dependencies
+      - python
     groups:
       pip:
         patterns:
