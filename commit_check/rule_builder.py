@@ -45,12 +45,13 @@ _AI_CHECKS: frozenset[str] = frozenset().union(*_AI_CHECKS_BY_POLICY.values())
 #: A git trailer token: letters, digits and hyphens, and no colon.
 _TRAILER_KEY = re.compile(r"^[A-Za-z][A-Za-z0-9-]*$")
 
-#: The description grammar from conventionalbranch.org's spec.json, used when
+#: The description grammar from conventionalbranch.org's spec.json (1.2.0), used when
 #: [branch] require_description_grammar is on; otherwise the description is ".+".
-_STRICT_BRANCH_DESCRIPTION = r"[a-z0-9]+(?:\.[a-z0-9]+)*(?:-[a-z0-9]+(?:\.[a-z0-9]+)*)*"
+_STRICT_BRANCH_DESCRIPTION = r"(?:[A-Z][A-Z0-9]*-[0-9]+|[a-z0-9]+(?:\.[a-z0-9]+)*)(?:-[a-z0-9]+(?:\.[a-z0-9]+)*)*"
 _STRICT_BRANCH_SUGGEST = (
     "Use <type>/<description> with an allowed type and a lowercase, "
-    "hyphen-separated description (e.g. feature/add-login), "
+    "hyphen-separated description (e.g. feature/add-login), which may open "
+    "with an uppercase ticket key (e.g. feature/PROJ-123-add-login), "
     "or add the branch to allow_branch_names in config"
 )
 
