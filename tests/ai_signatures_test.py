@@ -1,5 +1,7 @@
 """Tests for commit_check.ai_signatures — the AI tool signature database."""
 
+import time
+
 import pytest
 
 from commit_check.ai_signatures import (
@@ -663,3 +665,41 @@ class TestFindTrailers:
         )
         assert find_trailers("feat: x\n\nAIxTool: yes", ["AI.Tool"]) == []
         assert find_trailers("feat: x\n\nAI.Tool: yes", []) == []
+
+
+class TestLinearMatching:
+    """Long runs of spaces in a trailer line are read one way, not every way.
+
+    Each of these took several seconds before; a second is a generous bound
+    for what is now a few milliseconds.
+    """
+
+    SPACES = " " * 50_000
+
+    @pytest.mark.parametrize(
+        "line",
+        [
+            "Co-authored-by:" + SPACES + "x",
+            "Co-authored-by: Codex" + SPACES + "x",
+            "Co-authored-by: a (aider)" + SPACES + "x",
+            "Assisted-by: a" + SPACES + "b",
+        ],
+    )
+    def test_detection(self, line):
+        message = f"feat: x\n\n{line}"
+        start = time.monotonic()
+        detect_ai_signatures(message)
+        for regex, *_ in ALL_PATTERNS:
+            regex.search(message)
+        assert time.monotonic() - start < 1
+
+    def test_find_trailers(self):
+        message = "feat: x\n\nAssisted-by: a" + self.SPACES + "b" + self.SPACES
+        start = time.monotonic()
+        found = find_trailers(message, ["Assisted-by"])
+        assert time.monotonic() - start < 1
+        assert [value for _, value, _ in found] == ["a" + self.SPACES + "b"]
+
+    def test_spaces_around_a_value_still_match(self):
+        found = detect_ai_signatures("feat: x\n\nCo-authored-by:   Codex   \n")
+        assert [s["tool"] for s in found] == ["OpenAI Codex"]
