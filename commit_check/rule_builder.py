@@ -154,6 +154,46 @@ def _checked_regex(pattern: str, setting: str) -> str:
     return pattern
 
 
+def _string_setting(value: Any, setting: str) -> str:
+    """*value*, once it is known to be a string, stripped.
+
+    A number or a boolean used to reach ``.strip()`` and come back from
+    main's catch-all as "'int' object has no attribute 'strip'" under exit
+    code 1, the code a rejected commit gets.
+    """
+    if not isinstance(value, str):
+        raise ConfigError(f"{setting} must be a string, got {value!r}", setting=setting)
+    return value.strip()
+
+
+def _string_list(
+    section: dict[str, Any], key: str, default: list[str], setting: str
+) -> list[str]:
+    """``section[key]`` as a list of strings, a comma-separated string split.
+
+    ``--allow-commit-types`` and ``CCHK_ALLOW_COMMIT_TYPES`` already split
+    on commas; the same string in the TOML file was iterated letter by
+    letter, so ``"feat,fix"`` allowed a type called ``f``. Anything else
+    that is not a list of strings is refused rather than guessed at.
+    """
+    value = section.get(key, default)
+    # The built-in default needs no checking, and this runs on every rule
+    # set built, so it is returned as is.
+    if value is default:
+        return value
+    if isinstance(value, list):
+        for item in value:
+            if not isinstance(item, str):
+                break
+        else:
+            return value
+    elif isinstance(value, str):
+        return [item.strip() for item in value.split(",") if item.strip()]
+    raise ConfigError(
+        f"{setting} must be a list of strings, got {value!r}", setting=setting
+    )
+
+
 class RuleBuilder:
     """Builds validation rules from config and catalog entries."""
 
@@ -446,7 +486,9 @@ class RuleBuilder:
         enforce custom formats such as JIRA smart commits
         (``PROJ-123: description``).
         """
-        custom_pattern = self.commit_config.get("message_pattern", "").strip()
+        custom_pattern = _string_setting(
+            self.commit_config.get("message_pattern", ""), "[commit] message_pattern"
+        )
         if custom_pattern:
             custom_pattern = _checked_regex(custom_pattern, "[commit] message_pattern")
             # A team that opted out of Conventional Commits must not be told
@@ -507,8 +549,14 @@ class RuleBuilder:
     ) -> ValidationRule | None:
         """Build subject length validation rule."""
         length = self.commit_config.get(config_key)
-        if not isinstance(length, int):
+        if length is None:
             return None
+        # bool is an int: ``true`` used to become a limit of 1 character.
+        if isinstance(length, bool) or not isinstance(length, int):
+            setting = f"[commit] {config_key}"
+            raise ConfigError(
+                f"{setting} must be a whole number, got {length!r}", setting=setting
+            )
 
         # The suggestion is templated on the same values as the error: naming
         # the configured length is the whole point of the advice, and "the
@@ -548,10 +596,10 @@ class RuleBuilder:
     ) -> ValidationRule | None:
         """Build author name or email validation rule."""
         regex = catalog_entry.regex
-        if self.commit_config.get(config_key, ""):
-            regex = _checked_regex(
-                self.commit_config.get(config_key, "").strip(), f"[commit] {config_key}"
-            )
+        setting = f"[commit] {config_key}"
+        configured = _string_setting(self.commit_config.get(config_key, ""), setting)
+        if configured:
+            regex = _checked_regex(configured, setting)
 
         return ValidationRule(
             check=catalog_entry.check,
@@ -720,17 +768,32 @@ class RuleBuilder:
 
     def _get_allowed_commit_types(self) -> list[str]:
         """Get deduplicated list of allowed commit types."""
-        types = self.commit_config.get("allow_commit_types", DEFAULT_COMMIT_TYPES)
+        types = _string_list(
+            self.commit_config,
+            "allow_commit_types",
+            DEFAULT_COMMIT_TYPES,
+            "[commit] allow_commit_types",
+        )
         return list(dict.fromkeys(types))  # Preserve order, remove duplicates
 
     def _get_allowed_branch_types(self) -> list[str]:
         """Get deduplicated list of allowed branch types."""
-        types = self.branch_config.get("allow_branch_types", DEFAULT_BRANCH_TYPES)
+        types = _string_list(
+            self.branch_config,
+            "allow_branch_types",
+            DEFAULT_BRANCH_TYPES,
+            "[branch] allow_branch_types",
+        )
         return list(dict.fromkeys(types))  # Preserve order, remove duplicates
 
     def _get_allowed_branch_names(self) -> list[str]:
         """Get deduplicated list of allowed branch names."""
-        names = self.branch_config.get("allow_branch_names", DEFAULT_BRANCH_NAMES)
+        names = _string_list(
+            self.branch_config,
+            "allow_branch_names",
+            DEFAULT_BRANCH_NAMES,
+            "[branch] allow_branch_names",
+        )
         return list(dict.fromkeys(names))  # Preserve order, remove duplicates
 
     def _build_conventional_commit_regex(self, allowed_types: list[str]) -> str:

@@ -1110,3 +1110,62 @@ class TestInvalidUserRegexNamesTheSetting:
         rules = RuleBuilder({"tag": {"regex": ""}}).build_all_rules()
         tag_rule = next(r for r in rules if r.check == "tag")
         assert tag_rule.regex is None
+
+
+class TestWrongTypeSettings:
+    """A setting of the wrong type is a broken policy, not a bad commit.
+
+    A number where a pattern belongs reached ``.strip()`` and crashed under
+    exit code 1; ``true`` as a length became a limit of 1; and a string of
+    commit types was iterated letter by letter.
+    """
+
+    @pytest.mark.parametrize(
+        "key", ["message_pattern", "author_name_pattern", "author_email_pattern"]
+    )
+    @pytest.mark.parametrize("value", [5, True, ["^feat"]])
+    def test_a_non_string_pattern_names_the_setting(self, key, value):
+        setting = f"[commit] {key}"
+        with pytest.raises(ConfigError, match="must be a string") as excinfo:
+            RuleBuilder({"commit": {key: value}}).build_all_rules()
+        assert setting in str(excinfo.value)
+        assert excinfo.value.setting == setting
+
+    @pytest.mark.parametrize("key", ["subject_max_length", "subject_min_length"])
+    @pytest.mark.parametrize("value", [True, False, "50", 5.5])
+    def test_a_non_integer_length_names_the_setting(self, key, value):
+        with pytest.raises(ConfigError, match="must be a whole number") as excinfo:
+            RuleBuilder({"commit": {key: value}}).build_all_rules()
+        assert excinfo.value.setting == f"[commit] {key}"
+
+    def test_an_unset_length_builds_no_rule(self):
+        checks = {r.check for r in RuleBuilder({"commit": {}}).build_all_rules()}
+        assert "subject_max_length" not in checks
+        assert "subject_min_length" not in checks
+
+    @pytest.mark.parametrize(
+        ("section", "key", "check"),
+        [
+            ("commit", "allow_commit_types", "message"),
+            ("branch", "allow_branch_types", "branch"),
+            ("branch", "allow_branch_names", "branch"),
+        ],
+    )
+    def test_a_comma_separated_string_is_split_like_the_flag(self, section, key, check):
+        from_string = RuleBuilder({section: {key: "feat, fix"}}).build_all_rules()
+        from_list = RuleBuilder({section: {key: ["feat", "fix"]}}).build_all_rules()
+        rule = next(r for r in from_string if r.check == check)
+        assert rule == next(r for r in from_list if r.check == check)
+
+    def test_a_string_of_commit_types_no_longer_allows_single_letters(self):
+        rules = RuleBuilder({"commit": {"allow_commit_types": "feat,fix"}})
+        rule = next(r for r in rules.build_all_rules() if r.check == "message")
+        assert rule.allowed == ["feat", "fix"]
+        assert re.match(rule.regex, "feat: add x")
+        assert not re.match(rule.regex, "f: add x")
+
+    @pytest.mark.parametrize("value", [5, ["feat", 1], {"feat": True}])
+    def test_a_list_setting_of_another_type_names_the_setting(self, value):
+        with pytest.raises(ConfigError, match="must be a list of strings") as excinfo:
+            RuleBuilder({"commit": {"allow_commit_types": value}}).build_all_rules()
+        assert excinfo.value.setting == "[commit] allow_commit_types"
