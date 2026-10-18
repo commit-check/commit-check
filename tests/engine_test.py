@@ -3,6 +3,7 @@
 import os
 import subprocess
 import tempfile
+import time
 from typing import ClassVar
 from unittest.mock import mock_open, patch
 
@@ -31,6 +32,7 @@ from commit_check.engine import (
     is_merge_subject,
 )
 from commit_check.rule_builder import RuleBuilder, ValidationRule
+from commit_check.rules_catalog import RULES_BY_CHECK
 
 # String constants used across tests (defined once to avoid duplication)
 GIT_CONFIG_VALUE = "commit_check.engine.get_git_config_value"
@@ -997,6 +999,28 @@ class TestCommitTypeValidator:
                 assert result == ValidationResult.FAIL
 
     @pytest.mark.benchmark
+    @pytest.mark.parametrize(
+        "message", ["fixup! feat: x", "squash! feat: x", "amend! feat: x"]
+    )
+    def test_every_autosquash_prefix_is_a_fixup_commit(self, message):
+        """git --autosquash folds fixup!, squash! and amend! alike; CC009
+        has to reject all three, not only fixup!."""
+        rule = ValidationRule(check="allow_fixup_commits", value=False)
+        context = ValidationContext(stdin_text=message)
+        with patch("commit_check.engine._print_failure"):
+            assert CommitTypeValidator(rule).validate(context) == ValidationResult.FAIL
+        allowed = ValidationRule(check="allow_fixup_commits", value=True)
+        assert CommitTypeValidator(allowed).validate(context) == ValidationResult.PASS
+
+    @pytest.mark.benchmark
+    @pytest.mark.parametrize("message", ["squashed: feat x", "amended the docs"])
+    def test_words_like_squash_are_not_fixup_commits(self, message):
+        """Only git's own "<prefix>!" marker counts, not the word in prose."""
+        rule = ValidationRule(check="allow_fixup_commits", value=False)
+        context = ValidationContext(stdin_text=message)
+        assert CommitTypeValidator(rule).validate(context) == ValidationResult.PASS
+
+    @pytest.mark.benchmark
     def test_validate_wip_commit_allowed(self):
         """Test WIP commit validation when allowed."""
         rule = ValidationRule(check="allow_wip_commits", value=True)
@@ -1211,6 +1235,44 @@ class TestSignoffValidator:
             result = validator.validate(context)
         assert result == ValidationResult.FAIL
 
+    @pytest.mark.parametrize(
+        "message, expected",
+        [
+            # Named in the subject or mid-sentence, it is not a trailer.
+            (
+                "feat: document the Signed-off-by: A <a@b.c> trailer",
+                ValidationResult.FAIL,
+            ),
+            (
+                "feat: x\n\nAdd a Signed-off-by: A <a@b.c> line.",
+                ValidationResult.FAIL,
+            ),
+            # A trailer needs a name and an address.
+            ("feat: x\n\nSigned-off-by:  <a@b.c>", ValidationResult.FAIL),
+            ("feat: x\n\nSigned-off-by: A <ab.c>", ValidationResult.FAIL),
+            # git reads the key without regard to case.
+            ("feat: x\n\nsigned-off-by: A <a@b.c>", ValidationResult.PASS),
+            (
+                "feat: x\n\nSigned-off-by: A <a@b.c>\r\nReviewed-by: B <b@c.d>",
+                ValidationResult.PASS,
+            ),
+        ],
+    )
+    def test_default_signoff_needs_a_trailer_line(self, message, expected):
+        validator = SignoffValidator(self._default_signoff_rule())
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext(stdin_text=message)) == expected
+
+    def test_default_signoff_regex_is_linear(self):
+        """Overlapping ``.+`` runs made a 6 KB line take seconds."""
+        validator = SignoffValidator(self._default_signoff_rule())
+        validator._suppress_output = True
+        message = "feat: x\n\nSigned-off-by: " + "a <@" * 12500
+        start = time.monotonic()
+        result = validator.validate(ValidationContext(stdin_text=message))
+        assert result == ValidationResult.FAIL
+        assert time.monotonic() - start < 1
+
     @patch(GIT_CONFIG_VALUE)
     @patch("commit_check.engine.get_commit_info")
     @pytest.mark.benchmark
@@ -1249,7 +1311,7 @@ class TestSignoffValidator:
         validator = SignoffValidator(
             ValidationRule(
                 check="require_signed_off_by",
-                regex=r"Signed-off-by: .+ <.+@.+>",
+                regex=RULES_BY_CHECK["require_signed_off_by"].regex,
                 error="static catalog error",
             )
         )
@@ -3073,6 +3135,33 @@ class TestAiAttributionValidator:
         validator = AiAttributionValidator(rule)
         validator._suppress_output = True
         context = ValidationContext(stdin_text=f"feat: add feature\n\n{trailer}")
+        assert validator.validate(context) == ValidationResult.FAIL
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            # A commit the agent makes on its pull request branch.
+            (
+                "feat: add flag\n\n"
+                "Agent-Logs-Url: https://github.com/o/r/sessions/1\n\n"
+                "Co-authored-by: Jane Dev <12345+jane@users.noreply.github.com>"
+            ),
+            # The squash merge of that pull request.
+            (
+                "feat: add flag (#1)\n\n"
+                "Co-authored-by: copilot-swe-agent[bot] "
+                "<198982749+Copilot@users.noreply.github.com>\n"
+                "Co-authored-by: Jane Dev <12345+jane@users.noreply.github.com>"
+            ),
+        ],
+    )
+    def test_forbid_policy_rejects_copilot_coding_agent_commits(self, message):
+        """Copilot's coding agent leaves a log link on its own commits and
+        its bot account on the squash merge; forbid rejects both."""
+        rule = ValidationRule(check="ai_attribution", value="forbid")
+        validator = AiAttributionValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(stdin_text=message)
         assert validator.validate(context) == ValidationResult.FAIL
 
     @pytest.mark.benchmark

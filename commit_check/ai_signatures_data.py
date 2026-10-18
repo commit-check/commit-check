@@ -193,6 +193,10 @@ CLAUDE_CODE = KnownAiTool(
 )
 
 # --- GitHub Copilot ---
+# The coding agent links each of its commits to the session logs with an
+# ``Agent-Logs-Url`` trailer, and a squash merge of its pull request credits
+# it as ``copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>``:
+# https://github.blog/changelog/2026-03-20-trace-any-copilot-coding-agent-commit-to-its-session-logs
 COPILOT = KnownAiTool(
     name="GitHub Copilot",
     name_pattern=_names(r"copilot"),
@@ -201,6 +205,13 @@ COPILOT = KnownAiTool(
             r"Copilot(?:[ \t]*<\d+\+Copilot@users\.noreply\.github\.com>)?",
             "Copilot",
         ),
+        # Only the Copilot account has this address, so it catches the agent
+        # under any display name.
+        *_identity(
+            r"[^<\n]*<\d+\+Copilot@users\.noreply\.github\.com>",
+            "... <N+Copilot@users.noreply.github.com>",
+        ),
+        _stamp_trailer("Agent-Logs-Url", "``Agent-Logs-Url:`` trailer"),
     ],
 )
 
