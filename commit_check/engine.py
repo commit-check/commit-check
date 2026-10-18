@@ -1027,7 +1027,12 @@ class MergeBaseValidator(BaseValidator):
         # Find target branch matching the pattern
         target_branch = self._find_target_branch(target_pattern)
         if not target_branch:
-            return ValidationResult.PASS
+            # A target that resolves to no ref (a typo, or a shallow CI clone
+            # without origin/<target>) leaves nothing to compare. That is a
+            # skip, not a pass: the branch was never judged against it.
+            name = target_pattern.lstrip("^").rstrip("$").strip()
+            self._skip_reason = f"rebase target '{name}' not found"
+            return ValidationResult.SKIP
 
         result = git_merge_base(target_branch, current_branch)
         if result == 128:
