@@ -46,7 +46,7 @@ Stop bad commits before they exist. In `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.19.0
+    rev: v2.19.2
     hooks:
       - id: check-message
       - id: check-branch
@@ -193,8 +193,10 @@ shape. Unlike the CLI they do not read `cchk.toml`: pass the policy as a
 page covers each function and how to load a repository's file.
 
 Exit codes: `0` passed · `1` a check failed · `2` nothing was checked — bad
-usage, or a config that is missing, is not valid TOML, names an unknown rule or
-holds a regex that does not compile. `--dry-run` reports everything and exits `0`. More output formats: [examples](https://commit-check.com/example/).
+usage, or a config that is missing, is not valid TOML, names an unknown rule,
+holds a regex that does not compile or gives a `[commit]` or `[branch]` setting
+a value of the wrong type (`subject_max_length = "abc"`). A `[files]` value it
+cannot use turns that rule off with a notice instead. `--dry-run` reports everything and exits `0`. More output formats: [examples](https://commit-check.com/example/).
 
 ## Why Commit Check
 
