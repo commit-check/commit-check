@@ -36,6 +36,8 @@ def printable(text: str) -> str:
     broken up the same way. JSON output is escaped by the encoder and does
     not pass through here.
     """
+    if text.isprintable() and "::" not in text and "##[" not in text:
+        return text  # nothing to escape: the common case
     text = _CONTROL_CHARS.sub(lambda m: f"\\x{ord(m.group()):02x}", text)
     text = text.replace("##[", "#\\#[")
     return "\n".join(
