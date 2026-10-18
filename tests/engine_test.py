@@ -3772,6 +3772,29 @@ class TestTagValidator:
         assert result == ValidationResult.FAIL
 
     @pytest.mark.benchmark
+    def test_tag_validator_pre_push_checks_the_remote_tag_name(self):
+        """``git push origin v1.0.0:refs/tags/bad-name`` creates ``bad-name``
+        on the remote, so that is the name checked, not the local one."""
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        validator._suppress_output = True
+        stdin = "refs/tags/v1.0.0 abc123 refs/tags/bad-name def456\n"
+        result = validator.validate(ValidationContext(stdin_text=stdin))
+        assert result == ValidationResult.FAIL
+        assert validator._checked_value == "bad-name"
+
+    @pytest.mark.benchmark
+    def test_tag_validator_pre_push_local_tag_to_non_tag_ref(self):
+        """When the remote side is not a tag, the local tag name stands in."""
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        stdin = "refs/tags/bad_tag abc123 refs/heads/release def456\n"
+        validator._suppress_output = True
+        result = validator.validate(ValidationContext(stdin_text=stdin))
+        assert result == ValidationResult.FAIL
+        assert validator._checked_value == "bad_tag"
+
+    @pytest.mark.benchmark
     def test_tag_validator_pre_push_branch_only_skips(self):
         """A push carrying no tag refs has nothing to validate."""
         rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
