@@ -1,4 +1,4 @@
-name: publish package
+name: Publish
 
 on:
   release:
@@ -6,12 +6,13 @@ on:
     types: [published]
   workflow_dispatch:
 
-permissions:
-  id-token: write
-  attestations: write
+permissions: {}
 
 jobs:
   publish:
+    permissions:
+      id-token: write
+      attestations: write
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
