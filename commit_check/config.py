@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import copy
 import io
+import os
+import stat
 import sys
 import urllib.error
 import urllib.request
@@ -140,28 +142,63 @@ class _LazyOpener:
 _opener = _LazyOpener()
 
 
+# The largest parent config ``inherit_from`` will read, from a URL or a file.
+# A real policy file is a few kilobytes; the cap is there so that a path such
+# as ``/dev/zero``, or a URL that never stops sending, fails like any other
+# parent that cannot be loaded instead of filling memory.
+MAX_PARENT_CONFIG_BYTES = 1024 * 1024
+
+
+def _read_capped(f: Any) -> bytes:
+    """Read at most :data:`MAX_PARENT_CONFIG_BYTES` from *f*.
+
+    One byte more than the cap is requested, so a body that is exactly at
+    the cap is accepted and anything longer is told apart from it.
+
+    :raises ValueError: If *f* holds more than the cap.
+    """
+    data = f.read(MAX_PARENT_CONFIG_BYTES + 1)
+    if len(data) > MAX_PARENT_CONFIG_BYTES:
+        raise ValueError(
+            f"larger than the {MAX_PARENT_CONFIG_BYTES // (1024 * 1024)} MiB limit"
+        )
+    return data
+
+
 def _load_from_url(url: str) -> dict[str, Any]:
     """Load TOML config from an HTTPS URL.
 
     :param url: HTTPS URL pointing to a TOML config file.
     :returns: Parsed config dict.
-    :raises ValueError: If the URL does not use HTTPS, or the fetched body is
-        not valid TOML (``TOMLDecodeError``).
+    :raises ValueError: If the URL does not use HTTPS, the body is larger than
+        :data:`MAX_PARENT_CONFIG_BYTES`, or it is not valid TOML
+        (``TOMLDecodeError``).
     :raises OSError: If the URL cannot be fetched, or redirects off HTTPS
         (``urllib.error.URLError`` is an ``OSError``).
     """
     if not url.startswith("https://"):
         raise ValueError("only https:// URLs are accepted")
     with _opener.open(url, timeout=10) as response:
-        data = response.read()
+        data = _read_capped(response)
     return toml_load(io.BytesIO(data))
 
 
-def _load_parent_config(inherit_from: str) -> dict[str, Any]:
+def _load_parent_config(
+    inherit_from: str, base_dir: Path | None = None
+) -> dict[str, Any]:
     """Load the parent config named by an ``inherit_from`` value.
 
+    A relative local path is looked for next to the config file that names
+    it (*base_dir*) first, so the reference holds wherever the CLI is run
+    from, then in the current directory, where it used to be resolved alone,
+    and last at the top of the git work tree, which is where the current
+    directory was for a config written against that before a run from a
+    subdirectory could find it.
+
     :raises ValueError: For a malformed ``github:`` shorthand, a non-HTTPS URL,
-        or a parent that is not valid TOML (``TOMLDecodeError``).
+        a local path that is not a regular file, a parent larger than
+        :data:`MAX_PARENT_CONFIG_BYTES`, or one that is not valid TOML
+        (``TOMLDecodeError``).
     :raises OSError: For an unreachable URL or an unreadable local file.
     """
     if inherit_from.startswith("github:"):
@@ -171,11 +208,26 @@ def _load_parent_config(inherit_from: str) -> dict[str, Any]:
         return _load_from_url(url)
     if inherit_from.startswith(("https://", "http://")):
         return _load_from_url(inherit_from)
-    with open(Path(inherit_from), "rb") as f:
-        return toml_load(f)
+    path = Path(inherit_from)
+    if not path.is_absolute():
+        if base_dir is not None and (base_dir / path).exists():
+            path = base_dir / path
+        elif not path.exists():
+            root = _config_search_root()
+            if root is not None and (root / path).exists():
+                path = root / path
+    # Checked before opening: a device such as /dev/zero never ends, and
+    # opening a FIFO blocks until something writes to it.
+    if not stat.S_ISREG(os.stat(path).st_mode):
+        raise ValueError("not a regular file")
+    with open(path, "rb") as f:
+        data = _read_capped(f)
+    return toml_load(io.BytesIO(data))
 
 
-def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
+def _resolve_inherit_from(
+    config: dict[str, Any], base_dir: Path | None = None
+) -> dict[str, Any]:
     """Resolve ``inherit_from`` directive, merging parent config with local.
 
     The ``inherit_from`` key at the top level of a config file may be:
@@ -187,7 +239,11 @@ def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
     HTTP (non-TLS) URLs are rejected to prevent MITM attacks.  The parent
     config is loaded first; local settings override the parent.
 
+    Only one level is followed: an ``inherit_from`` in the parent itself is
+    dropped with a notice rather than fetched.
+
     :param config: Already-parsed local TOML dict (may contain ``inherit_from``).
+    :param base_dir: Directory of the config file, for a relative local path.
     :returns: Merged config with parent settings applied as base.
     """
     inherit_from = config.pop("inherit_from", None)
@@ -200,7 +256,7 @@ def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
     # TOMLDecodeError (tomllib and tomli alike) is a ValueError; URLError is
     # an OSError.
     try:
-        parent = _load_parent_config(inherit_from)
+        parent = _load_parent_config(inherit_from, base_dir)
     except (OSError, ValueError) as e:
         print(
             f'⊘ inherit_from "{inherit_from}" could not be loaded: {e}; '
@@ -208,6 +264,16 @@ def _resolve_inherit_from(config: dict[str, Any]) -> dict[str, Any]:
             file=sys.stderr,
         )
         parent = {}
+
+    # Left in place it would reach the merged config and be reported as an
+    # unknown setting, which reads as a typo rather than a limit.
+    if "inherit_from" in parent:
+        nested = parent.pop("inherit_from")
+        print(
+            f'⊘ inherit_from "{nested}" in the parent config "{inherit_from}" is '
+            "ignored: only one level of inherit_from is followed",
+            file=sys.stderr,
+        )
 
     if parent:
         deep_merge(parent, config)
@@ -233,13 +299,40 @@ def _load_toml_file(path: Path, shown_as: str | None = None) -> dict[str, Any]:
             raise ConfigError(f"{shown_as or path}: {e}") from e
 
 
+def _config_search_root() -> Path | None:
+    """The top of the git work tree, or ``None`` outside one.
+
+    The default config paths are repository locations: run from a
+    subdirectory, a search relative to the current directory found nothing
+    and the run went ahead on the built-in defaults without a word.
+
+    The top is the nearest directory up from the current one that holds a
+    ``.git`` directory, or a ``.git`` file as in a linked worktree or a
+    submodule. Looking for it costs a few ``stat`` calls where ``git
+    rev-parse --show-toplevel`` cost a process on every run without a config.
+    """
+    # os.path rather than pathlib: this runs on every run without a config,
+    # and building a Path per parent costs several times the stat calls.
+    directory = os.getcwd()
+    while True:
+        if os.path.exists(os.path.join(directory, ".git")):
+            return Path(directory)
+        parent = os.path.dirname(directory)
+        if parent == directory:
+            return None
+        directory = parent
+
+
 def find_config_path(path_hint: str = "") -> Path | None:
     """The config file a run reads, or ``None`` when there is none.
 
     With ``path_hint`` that is the hint, canonicalised, if it exists. Without
-    one it is the first of :data:`DEFAULT_CONFIG_PATHS` that exists. Kept
-    separate from :func:`load_config` so an error found later, in a setting
-    the merged dict no longer attributes to a file, can still name the file.
+    one it is the first of :data:`DEFAULT_CONFIG_PATHS` that exists in the
+    current directory, as before, or failing that at the top of the git work
+    tree, given in full. A package in a monorepo with a config of its own
+    keeps using it. Kept separate from :func:`load_config` so an error found
+    later, in a setting the merged dict no longer attributes to a file, can
+    still name the file.
     """
     if path_hint:
         p = Path(path_hint).resolve()
@@ -247,6 +340,13 @@ def find_config_path(path_hint: str = "") -> Path | None:
     for candidate in DEFAULT_CONFIG_PATHS:
         if candidate.exists():
             return candidate
+    root = _config_search_root()
+    if root is None or root == Path.cwd():
+        # The current directory was searched above.
+        return None
+    for candidate in DEFAULT_CONFIG_PATHS:
+        if (root / candidate).exists():
+            return root / candidate
     return None
 
 
@@ -266,4 +366,6 @@ def load_config(path_hint: str = "") -> dict[str, Any]:
             raise FileNotFoundError(f"Specified config file not found: {path_hint}")
         # No default config file: run on the built-in defaults.
         return {}
-    return _resolve_inherit_from(_load_toml_file(path, shown_as=path_hint or None))
+    return _resolve_inherit_from(
+        _load_toml_file(path, shown_as=path_hint or None), path.parent
+    )

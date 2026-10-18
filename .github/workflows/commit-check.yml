@@ -14,7 +14,7 @@ on:
   #
   # No `paths:` filter either. A subject, a branch name or an author address is
   # wrong regardless of which files the change touches, and the filter on
-  # main.yml is why nothing ran on #530 at all: it changed only assets/.
+  # ci.yml is why nothing ran on #530 at all: it changed only assets/.
   #
   # `edited` matters: a squash merge turns the title into the commit subject,
   # so retitling a pull request changes what will be committed.
