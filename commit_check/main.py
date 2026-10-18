@@ -24,6 +24,7 @@ from commit_check.util import (
     get_remote_branch_sha,
     git_rev_parse_verify,
     print_error_header,
+    split_message_comments,
 )
 
 from . import AI_ATTRIBUTION_POLICIES, __version__
@@ -355,7 +356,7 @@ def _get_parser() -> argparse.ArgumentParser:
         type=parse_bool,
         default=None,
         metavar="BOOL",
-        help="allow fixup commits (true/false)",
+        help="allow fixup!, squash! and amend! commits (true/false)",
     )
 
     commit_group.add_argument(
@@ -548,7 +549,8 @@ def _fix_message_file(path: str, rules: list, config: dict) -> None:
     """
     with open(path, encoding="utf-8") as f:
         original = f.read()
-    message = original.strip()
+    message, comments = split_message_comments(original)
+    message = message.strip()
     engine = ValidationEngine([r for r in rules if r.check in MESSAGE_CHECKS])
     fixed = []
     for _ in range(len(engine.rules) + 1):
@@ -569,8 +571,15 @@ def _fix_message_file(path: str, rules: list, config: dict) -> None:
         fixed.append(f"{first.rule_id} {first.check.replace('_', '-')}")
     if failed or not fixed:
         return
+    # The comment block and a scissors line with the diff below it stay in
+    # the file, after the message where git's own template puts them, so
+    # git's cleanup after the hook still finds and removes them.
+    if comments:
+        rewritten = f"{message}\n\n{comments}"
+    else:
+        rewritten = original.replace(original.strip(), message, 1)
     with open(path, "w", encoding="utf-8") as f:
-        f.write(original.replace(original.strip(), message, 1))
+        f.write(rewritten)
     print(f"✎ fixed the commit message: {', '.join(fixed)}", file=sys.stderr)
 
 

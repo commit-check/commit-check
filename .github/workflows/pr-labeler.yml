@@ -1,4 +1,4 @@
-name: PR Auto-labeler
+name: PR Labeler
 
 on:
   # pull_request_target event is required for auto-labeler on fork PRs
@@ -8,7 +8,7 @@ on:
 permissions: {}
 
 jobs:
-  draft-release:
+  label:
     permissions:
       pull-requests: write
       contents: read

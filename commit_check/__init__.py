@@ -104,6 +104,21 @@ DEFAULT_TAG_REGEX = (
     r"(?:\+[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*)?$"
 )
 
+# The subjects merge tools write themselves, which no subject rule judges and
+# CC006 alone decides on. git's fmt-merge-msg writes "Merge branch 'x'" (and
+# "branches", "remote-tracking branch", "tag", "commit", each possibly
+# plural), or "Merge <url>" when pulling a remote's HEAD; GitLab writes
+# "Merge branch 'x' into 'y'", GitHub and Bitbucket "Merge pull request #N
+# ...", and the merge refs CI checks out read "Merge <sha> into <sha>".
+# Anything else starting "Merge " is author prose and is held to the rules
+# like any other subject. Unanchored, so it can be embedded in a larger
+# pattern; match it with re.match.
+GIT_MERGE_SUBJECT_PATTERN = (
+    r"Merge (?:(?:remote-tracking )?branch(?:es)? '|tags? '|commits? '"
+    r"|pull request #|[0-9a-f]{7,64} into [0-9a-f]{7,64}\b"
+    r"|[a-z][a-z0-9+.-]*://|[\w.-]+@[\w.-]+:)"
+)
+
 # Push-related defaults
 DEFAULT_PUSH_RULES = {
     "allow_force_push": True,

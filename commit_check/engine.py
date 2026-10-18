@@ -13,7 +13,11 @@ from enum import IntEnum
 from fnmatch import fnmatchcase
 from typing import ClassVar
 
-from commit_check import DEFAULT_AI_DISCLOSURE_TRAILERS, ai_policy
+from commit_check import (
+    DEFAULT_AI_DISCLOSURE_TRAILERS,
+    GIT_MERGE_SUBJECT_PATTERN,
+    ai_policy,
+)
 from commit_check.ai_signatures import (
     detect_ai_signatures,
 )
@@ -47,8 +51,27 @@ from commit_check.util import (
     git_rev_parse_verify,
     has_commits,
     print_error_header,
+    read_commit_message_file,
     rejection_headline,
 )
+
+_GIT_MERGE_SUBJECT = re.compile(GIT_MERGE_SUBJECT_PATTERN)
+
+
+def is_merge_subject(subject: str) -> bool:
+    """Whether *subject* is one a merge tool wrote, not the author.
+
+    The subject rules decline to judge these. A subject that merely starts
+    with the word ("Merge lowercase parser tables") is the author's, and is
+    judged like any other.
+    """
+    return _GIT_MERGE_SUBJECT.match(subject) is not None
+
+
+# A work-in-progress marker at the start of the subject (CC010). "^" without
+# re.MULTILINE and "[ \t]*" rather than "\s*" keep the match on the first
+# line, so a body that merely mentions WIP is not a WIP commit.
+_WIP_MARKER = re.compile(r"^[ \t]*(?:\[wip\]|wip\b)", re.IGNORECASE)
 
 
 class ValidationResult(IntEnum):
@@ -286,8 +309,7 @@ class BaseValidator(ABC):
 
         if context.commit_file:
             try:
-                with open(context.commit_file, "r", encoding="utf-8") as f:
-                    return f.read().strip()
+                return read_commit_message_file(context.commit_file).strip()
             except FileNotFoundError:
                 pass
 
@@ -341,8 +363,7 @@ class BaseValidator(ABC):
             return context.stdin_text
         if context.commit_file:
             try:
-                with open(context.commit_file, "r", encoding="utf-8") as f:
-                    return f.read()
+                return read_commit_message_file(context.commit_file)
             except OSError:
                 pass
         if context.rev is not None:
@@ -482,9 +503,8 @@ class SubjectValidator(BaseValidator):
 
         if context.commit_file:
             try:
-                with open(context.commit_file, "r", encoding="utf-8") as f:
-                    message = f.read().strip()
-                    return message.split("\n")[0]
+                message = read_commit_message_file(context.commit_file).strip()
+                return message.split("\n")[0]
             except FileNotFoundError:
                 pass
 
@@ -496,14 +516,32 @@ class SubjectValidator(BaseValidator):
         """Override in subclasses for specific validation logic."""
         return ValidationResult.PASS
 
+    def _description(self, subject: str) -> str:
+        """*subject* past its Conventional Commits ``type(scope)!:`` prefix.
+
+        The rule's ``allowed`` list says which words are types: the builder
+        sets it to ``allow_commit_types`` under Conventional Commits and to
+        an empty list without them, where "Added: support" or "oops: x" is
+        not a type but the subject itself. ``None``, from a rule built by
+        hand, keeps the old reading of any ``word:`` as a type.
+        """
+        match = re.match(r"^(\w+)(?:\([^)]*\))?!?:\s*(.*)", subject)
+        if not match:
+            return subject
+        allowed = self.rule.allowed
+        if allowed is not None and match.group(1) not in allowed:
+            return subject
+        return match.group(2)
+
 
 class SubjectCapitalizationValidator(SubjectValidator):
     """Validates that subject starts with capital letter."""
 
     def _validate_subject(self, subject: str) -> ValidationResult:
         # A merge subject is machine-written; the rule declines to judge it.
-        # Git writes "Merge " exactly, so anything else is author prose.
-        if subject.startswith("Merge "):
+        # Only the subjects merge tools write count, so anything else is
+        # author prose.
+        if is_merge_subject(subject):
             return ValidationResult.SKIP
 
         if self._is_capitalized(subject):
@@ -516,8 +554,7 @@ class SubjectCapitalizationValidator(SubjectValidator):
         self._print_failure(subject, fix=fix)
         return ValidationResult.FAIL
 
-    @staticmethod
-    def _is_capitalized(subject: str) -> bool:
+    def _is_capitalized(self, subject: str) -> bool:
         """Whether the description starts upper-case, after any Conventional Commits prefix.
 
         Only a prefix that ends in a colon is a type. Without one, the first
@@ -525,8 +562,7 @@ class SubjectCapitalizationValidator(SubjectValidator):
         "A" and not on the "f" that follows, and "Update" alone is judged at
         all.
         """
-        match = re.match(r"^\w+(?:\([^)]*\))?!?:\s*(.*)", subject)
-        description = match.group(1).strip() if match else subject
+        description = self._description(subject).strip()
         return bool(description) and description[0].isupper()
 
 
@@ -548,14 +584,14 @@ class SubjectImperativeValidator(SubjectValidator):
 
     def _validate_subject(self, subject: str) -> ValidationResult:
         # Merge and fixup subjects are machine-written; decline to judge them.
-        # Git writes "Merge " and "fixup! " exactly, so anything else is
-        # author prose.
-        if subject.startswith(("Merge ", "fixup! ")):
+        # Only the subjects merge tools write, and git's exact "fixup! ",
+        # count, so anything else is author prose.
+        if is_merge_subject(subject) or subject.startswith("fixup! "):
             return ValidationResult.SKIP
 
-        # Extract first word (ignore conventional commit prefixes)
-        # support breaking changes (feat!:)
-        match = re.match(r"^(?:\w+(?:\([^)]*\))?!?:\s*)?(\w+)", subject)
+        # Extract first word, past a Conventional Commits prefix (including
+        # a breaking "feat!:") when there is one.
+        match = re.match(r"(\w+)", self._description(subject))
         if not match:
             return ValidationResult.PASS
 
@@ -606,7 +642,7 @@ class SubjectLengthValidator(SubjectValidator):
 
     def _validate_subject(self, subject: str) -> ValidationResult:
         # A merge subject's length is git's doing, not the author's.
-        if subject.startswith("Merge "):
+        if is_merge_subject(subject):
             return ValidationResult.SKIP
 
         length = len(subject)
@@ -1377,18 +1413,23 @@ class CommitTypeValidator(BaseValidator):
         return not is_empty or self.rule.value
 
     def _is_fixup_commit_allowed(self, message: str) -> bool:
-        """Check if fixup commits are allowed."""
-        is_fixup = message.startswith("fixup!")
+        """Check if fixup commits are allowed.
+
+        ``git commit --fixup`` writes ``fixup!``, ``--squash`` writes
+        ``squash!`` and ``--fixup=amend:``/``--fixup=reword:`` write
+        ``amend!``. ``git rebase --autosquash`` folds all three away, so all
+        three are the commits this rule is about.
+        """
+        is_fixup = message.startswith(("fixup!", "squash!", "amend!"))
         return not is_fixup or self.rule.value
 
     def _is_wip_commit_allowed(self, message: str) -> bool:
         """Check if WIP commits are allowed."""
-        upper_msg = message.upper()
-        is_wip = (
-            # wip: / [wip] / "wip " at the start, in any case
-            upper_msg.startswith(("WIP:", "[WIP]", "WIP "))
-            or upper_msg == "WIP"  # exact WIP
-        )
+        # [wip] or the word "wip" opening the subject, in any case and
+        # whatever follows it: "WIP:", "WIP add", "WIP-", "WIP\t", or "WIP"
+        # alone on the subject line. The word boundary keeps "wipe ..." out;
+        # this is the marker fix_wip knows how to drop.
+        is_wip = _WIP_MARKER.match(message) is not None
         return not is_wip or self.rule.value
 
 

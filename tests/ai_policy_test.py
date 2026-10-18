@@ -162,6 +162,14 @@ class TestProposeFix:
             f"fix: x\n\n{CLAUDE_STAMP}\n\nAssisted-by: Claude Code"
         )
 
+    def test_a_copilot_agent_commit_gets_the_disclosure_appended(self):
+        """The agent's log link stays, and says which tool to disclose."""
+        message = (
+            "fix: x\n\nAgent-Logs-Url: https://github.com/o/r/sessions/1\n\n"
+            "Co-authored-by: Jane Dev <12345+jane@users.noreply.github.com>"
+        )
+        assert fix_for(message) == f"{message}\nAssisted-by: GitHub Copilot"
+
     def test_two_tools_give_two_disclosures(self):
         message = f"fix: x\n\n{CLAUDE_CO_AUTHOR}\n{COPILOT_CO_AUTHOR}"
         assert fix_for(message) == (
@@ -190,6 +198,11 @@ class TestProposeFix:
             "fix: x\n\nSigned-off-by: Claude <noreply@anthropic.com>",
             f"fix: x\n\n{CLAUDE_STAMP}\n\n{HUMAN_SIGNOFF}",
             "fix: x\n\nGenerated-by: GitHub Copilot",
+            (
+                "fix: x (#1)\n\nCo-authored-by: copilot-swe-agent[bot] "
+                "<198982749+Copilot@users.noreply.github.com>\n"
+                "Co-authored-by: Jane Dev <12345+jane@users.noreply.github.com>"
+            ),
         ]
         for message in messages:
             fixed = fix_for(message, ["Assisted-by"])
