@@ -194,8 +194,9 @@ page covers each function and how to load a repository's file.
 
 Exit codes: `0` passed · `1` a check failed · `2` nothing was checked — bad
 usage, or a config that is missing, is not valid TOML, names an unknown rule,
-holds a regex that does not compile or gives a key a value of the wrong type
-(`subject_max_length = "abc"`). `--dry-run` reports everything and exits `0`. More output formats: [examples](https://commit-check.com/example/).
+holds a regex that does not compile or gives a `[commit]` or `[branch]` setting
+a value of the wrong type (`subject_max_length = "abc"`). A `[files]` value it
+cannot use turns that rule off with a notice instead. `--dry-run` reports everything and exits `0`. More output formats: [examples](https://commit-check.com/example/).
 
 ## Why Commit Check
 
