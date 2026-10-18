@@ -8,6 +8,7 @@ A module containing utility functions.
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 from collections.abc import Iterable
@@ -15,6 +16,34 @@ from subprocess import CalledProcessError
 
 from commit_check import GREEN, RED, RESET_COLOR, YELLOW
 from commit_check.rules_catalog import display_name
+
+# C0 and C1 control characters, and DEL, except the newline and tab that a
+# multi-line commit message legitimately carries.
+_CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
+
+
+def printable(text: str) -> str:
+    """Make commit-controlled text safe to print as terminal or CI-log text.
+
+    The values printed on failure come from whoever wrote the commit, branch
+    or tag. Printed raw, an escape sequence in them drives the reader's
+    terminal (OSC 52 can write the clipboard), and a line beginning with
+    ``::`` is a GitHub Actions workflow command, able to forge annotations
+    or mask log text. So control characters are shown as ``\\xNN`` escapes,
+    and such a line gets a backslash before its ``::`` — the runner ignores
+    leading whitespace, so indenting it would not be enough. The runner also
+    reads the older ``##[command]`` form anywhere in a line, so ``##[`` is
+    broken up the same way. JSON output is escaped by the encoder and does
+    not pass through here.
+    """
+    if text.isprintable() and "::" not in text and "##[" not in text:
+        return text  # nothing to escape: the common case
+    text = _CONTROL_CHARS.sub(lambda m: f"\\x{ord(m.group()):02x}", text)
+    text = text.replace("##[", "#\\#[")
+    return "\n".join(
+        line.replace("::", "\\::", 1) if line.lstrip().startswith("::") else line
+        for line in text.split("\n")
+    )
 
 
 def _print_failure(
@@ -32,7 +61,7 @@ def _print_failure(
     rule_id = check.get("rule_id", "")
     warn = check.get("severity") == "warn"
     if compact:
-        compact_value = actual.splitlines()[0] if actual else actual
+        compact_value = printable(actual.splitlines()[0]) if actual else actual
         name = display_name(check["check"])
         label = f"{rule_id} {name}" if rule_id else name
         print(f"[{'WARN' if warn else 'FAIL'}] {label}: {compact_value}")
@@ -41,10 +70,12 @@ def _print_failure(
     if not warn and not no_banner and not print_error_header.has_been_called:
         print_error_header(rejection_headline([check["check"]]))
     docs_url = check.get("docs_url", "") or ""
+    # The value, and an error or suggestion built from it, are the commit's
+    # text; see printable() for why they are not printed raw.
     print_error_message(
         check["check"],
-        check.get("error", ""),
-        actual,
+        printable(check.get("error", "")),
+        printable(actual),
         rule_id=rule_id,
         docs_url=docs_url,
         warn=warn,
@@ -52,7 +83,7 @@ def _print_failure(
         spec_url=check.get("spec_url", "") or "",
     )
     if check.get("suggest"):
-        print_suggestion(check["suggest"])
+        print_suggestion(printable(check["suggest"]))
     # When the ID above is already a link, repeating the URL only adds a line
     # to read. Without hyperlink support — a pipe, a CI log — it is the only
     # way the reader gets the address at all, so it stays.

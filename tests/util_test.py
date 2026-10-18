@@ -1823,3 +1823,52 @@ class TestPrintFailureWarnSeverity:
 
         _print_failure(self.check(), "Feature/x", compact=True)
         assert capfd.readouterr().out == "[WARN] CC201 branch: Feature/x\n"
+
+
+class TestPrintableFailureText:
+    """Commit-controlled text is printed inert: no terminal escape sequence
+    reaches the reader's terminal, and no line of it can be read as a GitHub
+    Actions workflow command."""
+
+    @pytest.mark.parametrize(
+        "raw, shown",
+        [
+            ("a\x1b[2Kb", "a\\x1b[2Kb"),
+            ("osc\x1b]52;c;eA==\x07", "osc\\x1b]52;c;eA==\\x07"),
+            ("cr\roverwrite", "cr\\x0doverwrite"),
+            ("c1\x9bcsi", "c1\\x9bcsi"),
+            ("del\x7f", "del\\x7f"),
+            # A multi-line message keeps its newlines and tabs.
+            ("subject\n\n\tbody", "subject\n\n\tbody"),
+            ("x\n::error file=a::spoof", "x\n\\::error file=a::spoof"),
+            # The runner trims leading whitespace before looking for "::".
+            ("x\n  ::add-mask::secret", "x\n  \\::add-mask::secret"),
+            ("not a::command", "not a::command"),
+            ("old ##[error]form", "old #\\#[error]form"),
+        ],
+    )
+    def test_printable(self, raw, shown):
+        from commit_check.util import printable
+
+        assert printable(raw) == shown
+
+    def test_failure_block_prints_the_value_inert(self, capfd, monkeypatch):
+        monkeypatch.setattr(print_error_header, "has_been_called", True)
+        monkeypatch.setenv("FORCE_HYPERLINK", "0")
+        _print_failure(
+            {"check": "branch", "error": "Bad", "suggest": 'Use "x\x1b[31m"'},
+            "bad\x1b]52;c;eA==\x07\n::add-mask::x",
+        )
+        out = capfd.readouterr().out
+        assert "\x1b]52" not in out
+        assert "bad\\x1b]52;c;eA==\\x07" in out
+        assert "\n\\::add-mask::x" in out
+        assert 'Use "x\\x1b[31m"' in out
+
+    def test_compact_line_prints_the_value_inert(self, capfd):
+        _print_failure(
+            {"check": "branch", "rule_id": "CC201"},
+            "bad\x1b[2K\nsecond",
+            compact=True,
+        )
+        assert capfd.readouterr().out == "[FAIL] CC201 branch: bad\\x1b[2K\n"
