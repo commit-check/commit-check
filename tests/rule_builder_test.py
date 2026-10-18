@@ -969,6 +969,8 @@ class TestBranchDescriptionGrammar:
             "feature/add-login-page",
             "release/v1.2.0",
             "fix/issue-123",
+            "feature/PROJ-123-add-login",
+            "release/PROJ-1234",
             "renovate/lodash-5.x",
         ],
     )
@@ -984,6 +986,8 @@ class TestBranchDescriptionGrammar:
             "feature/-new-login",
             "feature/new-login-",
             "release/v1.-2.0",
+            "feature/add-login-PROJ-123",
+            "feature/Proj-123-add-login",
             "dependabot/npm_and_yarn/lodash-4.17.21",
         ],
     )

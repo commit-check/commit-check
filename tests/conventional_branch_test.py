@@ -1,7 +1,7 @@
 """commit-check against the Conventional Branch specification's own test cases.
 
 ``conventional_branch_fixtures.json`` is ``tests/fixtures.json`` from
-https://github.com/conventional-branch/conventional-branch at tag v1.1.0,
+https://github.com/conventional-branch/conventional-branch at tag v1.2.0,
 copied unchanged: each case is a branch name, whether the specification
 accepts it, and why. When the specification publishes a new version, copy its
 file over this one; a case that fails here is a place where commit-check and
@@ -35,7 +35,7 @@ def _case_id(case: dict) -> str:
 
 def test_the_fixtures_are_the_version_named_above():
     assert _FIXTURES["spec"] == "Conventional Branch"
-    assert _FIXTURES["version"] == "1.1.0"
+    assert _FIXTURES["version"] == "1.2.0"
 
 
 @pytest.mark.parametrize("case", _VALID_CASES, ids=_case_id)
