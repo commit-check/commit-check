@@ -12,6 +12,7 @@ from commit_check.engine import (
     overall_status,
 )
 from commit_check.rule_builder import RuleBuilder, ValidationRule
+from commit_check.rules_catalog import RULES_BY_CHECK
 
 CONVENTIONAL = (
     r"^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(.+\))?!?: \S.*"
@@ -153,7 +154,7 @@ class TestSignoffFix:
     def rule(self):
         return ValidationRule(
             check="require_signed_off_by",
-            regex=r"Signed-off-by: .+ <.+@.+>",
+            regex=RULES_BY_CHECK["require_signed_off_by"].regex,
             error="Missing sign-off",
             suggest="Run git commit --signoff",
         )

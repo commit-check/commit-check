@@ -18,6 +18,7 @@ from commit_check import (
     DEFAULT_COMMIT_TYPES,
     DEFAULT_PUSH_RULES,
     DEFAULT_TAG_REGEX,
+    GIT_MERGE_SUBJECT_PATTERN,
 )
 from commit_check.config import ConfigError
 from commit_check.rules_catalog import (
@@ -697,12 +698,24 @@ class RuleBuilder:
         ):
             return None
 
+        # The case and mood rules judge the description, so they look past a
+        # "type(scope)!:" prefix -- but only a prefix that is one: a type the
+        # team allows, under Conventional Commits. With those off, "Added:
+        # support" or "oops: lowercase" is the subject itself and is judged
+        # from its first word. An empty list tells the validator to strip
+        # nothing.
+        allowed = None
+        if check in ("subject_capitalized", "subject_imperative"):
+            conventional = self.commit_config.get("conventional_commits", True)
+            allowed = self._get_allowed_commit_types() if conventional else []
+
         return ValidationRule(
             check=catalog_entry.check,
             regex=catalog_entry.regex,
             error=catalog_entry.error,
             suggest=catalog_entry.suggest,
             value=config_value,
+            allowed=allowed,
         )
 
     def _get_allowed_commit_types(self) -> list[str]:
@@ -726,9 +739,11 @@ class RuleBuilder:
         # Subjects git writes itself are exempt from the format rule; whether
         # they are allowed at all is CC006/CC007/CC009's call. Git writes each
         # prefix exactly as below, trailing space or quote included, so author
-        # prose such as "Merged ..." or "fixup!! ..." is still held to the
-        # format.
-        git_prefixes = r'^(?:Merge |Revert "|fixup! |squash! |amend! )'
+        # prose such as "Merged ...", "Merge the parser tables" or
+        # "fixup!! ..." is still held to the format.
+        git_prefixes = (
+            rf'^(?:{GIT_MERGE_SUBJECT_PATTERN}|Revert "|fixup! |squash! |amend! )'
+        )
         return (
             rf"^({types_pattern})(\([\w\-\.]+\))?(!)?: [^\n]+([\s\S]*)|{git_prefixes}"
         )

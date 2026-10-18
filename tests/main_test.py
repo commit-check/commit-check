@@ -413,6 +413,19 @@ class TestFixOption:
         assert (rc, text) == (0, fixed)
         assert "✎ fixed the commit message" in capfd.readouterr().err
 
+    def test_the_comment_block_and_diff_are_kept(self, tmp_path, monkeypatch, mocker):
+        """git strips them after the hook, so they stay; none are checked."""
+        mocker.patch("commit_check.util.get_git_config_value", return_value="")
+        comments = (
+            "# Please enter the commit message for your changes.\n"
+            "#\n"
+            "# ------------------------ >8 ------------------------\n"
+            "diff --git a/f b/f\n"
+            "+Fix: not the subject\n"
+        )
+        rc, text = self._run(tmp_path, monkeypatch, f"Fix: add x\n\n{comments}")
+        assert (rc, text) == (0, f"fix: add x\n\n{comments}")
+
     def test_a_passing_message_is_not_touched(self, tmp_path, monkeypatch, capfd):
         rc, text = self._run(tmp_path, monkeypatch, "fix: add x\n")
         assert (rc, text) == (0, "fix: add x\n")
