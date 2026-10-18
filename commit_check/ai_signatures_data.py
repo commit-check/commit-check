@@ -93,10 +93,12 @@ def _trailer(
     Blanks may precede the colon, because git reads ``Key : value`` as the
     trailer ``Key: value``. Horizontal whitespace only around the value:
     ``\\s`` would let a match run on to the next trailer line and report two
-    lines as one.
+    lines as one. The value starts and ends on a non-blank character, so a
+    long run of spaces around it can be read only one way; see
+    ``ai_signatures._build_groups``.
     """
     alternation = "|".join(re.escape(key) for key in keys)
-    raw = rf"^(?:{alternation})[ \t]*:[ \t]*{value_pattern}[ \t]*$"
+    raw = rf"^(?:{alternation})[ \t]*:[ \t]*(?=\S)(?:{value_pattern})(?<![ \t])[ \t]*$"
     return AiSignaturePattern(
         regex=re.compile(raw, re.IGNORECASE | re.MULTILINE),
         kind="trailer",
