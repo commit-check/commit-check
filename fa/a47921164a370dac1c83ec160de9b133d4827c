@@ -1,0 +1,21 @@
+commit_check/rule_builder.py
+  s_c9ff1dd8ec7ab0::t_bc59257ca4990c 24,198-223,234
+tests/rule_builder_test.py
+  s_c9ff1dd8ec7ab0::t_bc59257ca4990c 1141-1150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "faa47921164a370dac1c83ec160de9b133d4827c",
+  "prompts": {},
+  "sessions": {
+    "s_c9ff1dd8ec7ab0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3cbf841f-445c-4e4f-beb3-41d0a54476d5",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "shenxianpeng <xianpeng.shen@gmail.com>"
+    }
+  }
+}
