@@ -27,6 +27,10 @@ attribution against one `cchk.toml` — in your commit hook, in CI, on every
 pull request and inside your AI agent. When the fix is obvious, it hands you
 the line.
 
+**On GitHub?** [Install the Commit Check App](https://github.com/apps/commit-check)
+and every push and pull request gets a check run, with no workflow file. It is
+free for public repositories and personal accounts.
+
 ![commit-check demo](https://github.com/commit-check/commit-check/raw/main/assets/demo.gif)
 
 ## Quick start
@@ -64,8 +68,8 @@ The same `cchk.toml` drives all of them:
 
 | Run it in | How |
 |---|---|
-| GitHub Actions | `uses: commit-check/commit-check-action@v2` — see [commit-check-action](https://github.com/commit-check/commit-check-action) |
 | GitHub, no workflow | [Install the GitHub App](https://github.com/apps/commit-check) — one check run per commit |
+| GitHub Actions | `uses: commit-check/commit-check-action@v2` — see [commit-check-action](https://github.com/commit-check/commit-check-action) |
 | AI agents | `--format json`, the [Python API](#ai-native-usage), or the [MCP server](https://github.com/commit-check/commit-check-mcp) |
 
 ## What it checks
