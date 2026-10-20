@@ -1138,6 +1138,16 @@ class TestWrongTypeSettings:
             RuleBuilder({"commit": {key: value}}).build_all_rules()
         assert excinfo.value.setting == f"[commit] {key}"
 
+    @pytest.mark.parametrize(
+        "section, key",
+        [("commit", "conventional_commits"), ("branch", "conventional_branch")],
+    )
+    @pytest.mark.parametrize("value", ["false", 0, "yes"])
+    def test_a_non_boolean_switch_names_the_setting(self, section, key, value):
+        with pytest.raises(ConfigError, match="must be true or false") as excinfo:
+            RuleBuilder({section: {key: value}}).build_all_rules()
+        assert excinfo.value.setting == f"[{section}] {key}"
+
     def test_an_unset_length_builds_no_rule(self):
         checks = {r.check for r in RuleBuilder({"commit": {}}).build_all_rules()}
         assert "subject_max_length" not in checks

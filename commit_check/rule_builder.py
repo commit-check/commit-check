@@ -21,6 +21,7 @@ from commit_check import (
     GIT_MERGE_SUBJECT_PATTERN,
 )
 from commit_check.config import ConfigError
+from commit_check.config_merger import get_default_config
 from commit_check.rules_catalog import (
     BRANCH_RULES,
     COMMIT_RULES,
@@ -194,6 +195,32 @@ def _string_list(
     )
 
 
+#: The settings that take ``true`` or ``false``, as (section, key).
+_BOOLEAN_SETTINGS = tuple(
+    (section, key)
+    for section, defaults in get_default_config().items()
+    for key, default in defaults.items()
+    if isinstance(default, bool)
+)
+
+
+def _check_booleans(config: dict[str, Any]) -> None:
+    """Refuse a boolean setting given anything but ``true`` or ``false``.
+
+    ``"false"`` is a non-empty string, so it used to turn the rule on.
+    """
+    for section, key in _BOOLEAN_SETTINGS:
+        values = config.get(section)
+        if not isinstance(values, dict):
+            continue
+        value = values.get(key)
+        if value is not None and not isinstance(value, bool):
+            setting = f"[{section}] {key}"
+            raise ConfigError(
+                f"{setting} must be true or false, got {value!r}", setting=setting
+            )
+
+
 class RuleBuilder:
     """Builds validation rules from config and catalog entries."""
 
@@ -204,6 +231,7 @@ class RuleBuilder:
         self.push_config = config.get("push", {})
         self.tag_config = config.get("tag", {})
         self.files_config = config.get("files", {})
+        _check_booleans(config)
         self.warn_checks = self._resolve_warn_list(config.get("warn", []))
 
     def build_all_rules(self) -> list[ValidationRule]:
