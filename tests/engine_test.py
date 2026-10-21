@@ -3165,6 +3165,19 @@ class TestAiAttributionValidator:
         context = ValidationContext(stdin_text=message)
         assert validator.validate(context) == ValidationResult.FAIL
 
+    def test_forbid_policy_rejects_devin_default_co_author(self):
+        """Devin credits itself as "Devin AI" with its app's address."""
+        rule = ValidationRule(check="ai_attribution", value="forbid")
+        validator = AiAttributionValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(
+            stdin_text=(
+                "feat: add flag\n\nCo-Authored-By: Devin AI "
+                "<158243242+devin-ai-integration[bot]@users.noreply.github.com>"
+            )
+        )
+        assert validator.validate(context) == ValidationResult.FAIL
+
     @pytest.mark.benchmark
     def test_forbid_policy_allows_clean_commit(self):
         """forbid policy allows commits without AI signatures."""
