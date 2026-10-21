@@ -246,11 +246,26 @@ CURSOR = KnownAiTool(
 )
 
 # --- Devin ---
+# Devin credits itself as ``Devin AI`` with its GitHub App's address,
+# ``158243242+devin-ai-integration[bot]@users.noreply.github.com``.
+# "Devin" alone is a person's name, so with an address it counts only when
+# the address is the app's.
 DEVIN = KnownAiTool(
     name="Devin",
     name_pattern=_names(r"devin"),
     patterns=[
-        *_identity(r"Devin[ \t]*(?:<[^>\n]*>)?", "Devin"),
+        *_identity(r"Devin AI[ \t]*(?:<[^>\n]*>)?", "Devin AI"),
+        *_identity(
+            r"Devin(?:[ \t]*<(?:\d+\+)?devin-ai-integration\[bot\]"
+            r"@users\.noreply\.github\.com>)?",
+            "Devin",
+        ),
+        # The app's address catches it under any display name.
+        *_identity(
+            r"[^<\n]*<(?:\d+\+)?devin-ai-integration\[bot\]"
+            r"@users\.noreply\.github\.com>",
+            "... <N+devin-ai-integration[bot]@users.noreply.github.com>",
+        ),
     ],
 )
 

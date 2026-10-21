@@ -170,6 +170,13 @@ class TestProposeFix:
         )
         assert fix_for(message) == f"{message}\nAssisted-by: GitHub Copilot"
 
+    def test_a_devin_co_author_becomes_the_disclosure(self):
+        message = (
+            "fix: x\n\nCo-Authored-By: Devin AI "
+            "<158243242+devin-ai-integration[bot]@users.noreply.github.com>"
+        )
+        assert fix_for(message) == "fix: x\n\nAssisted-by: Devin AI"
+
     def test_two_tools_give_two_disclosures(self):
         message = f"fix: x\n\n{CLAUDE_CO_AUTHOR}\n{COPILOT_CO_AUTHOR}"
         assert fix_for(message) == (

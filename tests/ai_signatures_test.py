@@ -285,6 +285,9 @@ class TestHumanNameFalsePositives:
             # contains Copilot.
             "Co-authored-by: Jane Dev <12345+jane@users.noreply.github.com>",
             "Co-authored-by: Copilot Fan <copilot@example.com>",
+            # A person who signs with the first name alone.
+            "Co-authored-by: Devin <devin@example.org>",
+            "Signed-off-by: Devin <devin@example.org>",
         ],
     )
     def test_bare_human_name_not_detected(self, trailer):
@@ -466,6 +469,24 @@ class TestRoles:
                 "Cursor",
                 ROLE_CO_AUTHOR,
             ),
+            # What Devin writes, and its app's address under another name.
+            (
+                (
+                    "Co-Authored-By: Devin AI "
+                    "<158243242+devin-ai-integration[bot]@users.noreply.github.com>"
+                ),
+                "Devin",
+                ROLE_CO_AUTHOR,
+            ),
+            (
+                (
+                    "Co-authored-by: devin-ai-integration[bot] "
+                    "<158243242+devin-ai-integration[bot]@users.noreply.github.com>"
+                ),
+                "Devin",
+                ROLE_CO_AUTHOR,
+            ),
+            ("Signed-off-by: Devin AI <devin@example.com>", "Devin", ROLE_SIGNOFF),
             # What Copilot's coding agent leaves: its session-log link on
             # each commit, and its bot account when the PR is squash-merged.
             (
@@ -580,6 +601,11 @@ class TestPatternIndex:
                 "Co-authored-by: copilot-swe-agent[bot] "
                 "<198982749+Copilot@users.noreply.github.com>"
             ),
+            (
+                "feat: x\n\nCo-Authored-By: Devin AI "
+                "<158243242+devin-ai-integration[bot]@users.noreply.github.com>"
+            ),
+            "feat: x\n\nCo-authored-by: Devin <devin@example.org>",
         ],
     )
     def test_the_grouped_scan_finds_what_every_pattern_would(self, message):
