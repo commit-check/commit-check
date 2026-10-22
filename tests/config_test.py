@@ -1124,6 +1124,24 @@ class TestRelativeInheritFrom:
             assert load_config()["commit"] == {"subject_max_length": 50}
             assert capsys.readouterr().err == ""
 
+    def test_a_relative_path_found_nowhere_is_reported(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        # Not next to the config, not in the current directory and not at
+        # the repository top: the parent is skipped with a warning rather
+        # than read from some other place.
+        _git_init(tmp_path)
+        github = tmp_path / ".github"
+        github.mkdir()
+        (github / "cchk.toml").write_text(
+            'inherit_from = "policy/missing.toml"\n[commit]\nsubject_min_length = 3\n'
+        )
+        sub = tmp_path / "sub"
+        sub.mkdir()
+        monkeypatch.chdir(sub)
+        assert load_config()["commit"] == {"subject_min_length": 3}
+        assert '"policy/missing.toml"' in capsys.readouterr().err
+
     def test_a_nested_inherit_from_is_reported_not_followed(self, tmp_path, capsys):
         grandparent = tmp_path / "grandparent.toml"
         grandparent.write_text("[commit]\nsubject_min_length = 9\n")
