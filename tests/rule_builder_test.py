@@ -720,6 +720,27 @@ class TestTagRules:
         tag_rule = next(r for r in builder.build_all_rules() if r.check == "tag")
         assert tag_rule.regex == DEFAULT_TAG_REGEX
 
+    @pytest.mark.benchmark
+    def test_only_the_tag_check_reads_the_tag_section(self, monkeypatch):
+        """A tag catalog entry with another check gets no tag rule built.
+
+        The [tag] regex belongs to the ``tag`` check alone; a second entry
+        added to the catalog must not pick it up by accident.
+        """
+        from commit_check import rule_builder
+
+        monkeypatch.setattr(
+            rule_builder,
+            "TAG_RULES",
+            [
+                *rule_builder.TAG_RULES,
+                RuleCatalogEntry(check="tag_signed", error="", suggest=""),
+            ],
+        )
+        builder = RuleBuilder({"tag": {"regex": r"^rel-\d+$"}})
+        rules = builder._build_tag_rules()
+        assert [(r.check, r.regex) for r in rules] == [("tag", r"^rel-\d+$")]
+
 
 class TestFilesRules:
     @pytest.mark.benchmark

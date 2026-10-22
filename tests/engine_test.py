@@ -3855,6 +3855,30 @@ class TestTagValidator:
         assert validator._checked_value == "v1.2.3"
         mock_get_tags_at.assert_not_called()
 
+    @patch("commit_check.engine.get_push_commits")
+    @patch("commit_check.engine.get_tags_at")
+    @pytest.mark.benchmark
+    def test_tag_validator_pre_commit_branch_deletion_adds_no_commits(
+        self, mock_get_tags_at, mock_range
+    ):
+        """A deleted branch pushes no commits, so it brings no tags along;
+        only the branch pushed beside it is read."""
+        mock_range.return_value = ["tip"]
+        mock_get_tags_at.return_value = ["bad_tag"]
+        rule = ValidationRule(check="tag", regex=r"^v\d+\.\d+\.\d+$")
+        validator = TagValidator(rule)
+        validator._suppress_output = True
+        zero = "0" * 40
+        context = ValidationContext(
+            stdin_text=(
+                f"(delete) {zero} refs/heads/old abc123\n"
+                "refs/heads/main def456 refs/heads/main 789abc\n"
+            ),
+            push_from_pre_commit=True,
+        )
+        assert validator.validate(context) == ValidationResult.FAIL
+        mock_range.assert_called_once_with("def456", "789abc")
+
     @pytest.mark.benchmark
     def test_tag_validator_pre_push_tag_deletion_skips(self):
         """Deleting a tag removes a name rather than creating one."""
