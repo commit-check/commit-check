@@ -3178,6 +3178,14 @@ class TestAiAttributionValidator:
         )
         assert validator.validate(context) == ValidationResult.FAIL
 
+    def test_forbid_policy_rejects_made_with_cursor(self):
+        """Cursor marks the commits it writes with a Made-with trailer."""
+        rule = ValidationRule(check="ai_attribution", value="forbid")
+        validator = AiAttributionValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(stdin_text="feat: add flag\n\nMade-with: Cursor")
+        assert validator.validate(context) == ValidationResult.FAIL
+
     @pytest.mark.benchmark
     def test_forbid_policy_allows_clean_commit(self):
         """forbid policy allows commits without AI signatures."""

@@ -177,6 +177,11 @@ class TestProposeFix:
         )
         assert fix_for(message) == "fix: x\n\nAssisted-by: Devin AI"
 
+    def test_a_made_with_cursor_commit_gets_the_disclosure_appended(self):
+        """Cursor's own trailer stays, and says which tool to disclose."""
+        message = "fix: x\n\nMade-with: Cursor"
+        assert fix_for(message) == f"{message}\nAssisted-by: Cursor"
+
     def test_two_tools_give_two_disclosures(self):
         message = f"fix: x\n\n{CLAUDE_CO_AUTHOR}\n{COPILOT_CO_AUTHOR}"
         assert fix_for(message) == (

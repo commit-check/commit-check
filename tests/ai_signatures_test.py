@@ -288,6 +288,9 @@ class TestHumanNameFalsePositives:
             # A person who signs with the first name alone.
             "Co-authored-by: Devin <devin@example.org>",
             "Signed-off-by: Devin <devin@example.org>",
+            # Made-with names other things too; only Cursor is Cursor's mark.
+            "Made-with: love",
+            "Made-with: Cursors and arrows",
         ],
     )
     def test_bare_human_name_not_detected(self, trailer):
@@ -497,6 +500,8 @@ class TestRoles:
                 "GitHub Copilot",
                 ROLE_STAMP,
             ),
+            # The trailer Cursor adds to the commits it writes.
+            ("Made-with: Cursor", "Cursor", ROLE_STAMP),
             (
                 (
                     "Co-authored-by: copilot-swe-agent[bot] "
@@ -596,6 +601,7 @@ class TestPatternIndex:
             "feat: x\n\nClaude-Session: abc\nCo-developed-by: Copilot",
             "feat: x\n\nNot-a-trailer here: still prose",
             "feat: x\n\nCo-authored-by : Cursor Agent <cursoragent@cursor.com>",
+            "feat: x\n\nMade-with: Cursor\nCo-authored-by: Cursor <cursoragent@cursor.com>",
             (
                 "feat: x\n\nAgent-Logs-Url: https://github.com/o/r/sessions/1\n"
                 "Co-authored-by: copilot-swe-agent[bot] "
