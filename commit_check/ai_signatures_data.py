@@ -242,6 +242,11 @@ CURSOR = KnownAiTool(
         # Cursor's agent signs as ``Cursor Agent <cursoragent@cursor.com>``;
         # the address catches it under any display name.
         *_identity(r"[^<\n]*<cursoragent@cursor\.com>", "... <cursoragent@cursor.com>"),
+        # Cursor's own mark on commits it writes:
+        # https://forum.cursor.com/t/allow-disabling-made-with-cursor-commit-trailer/154494
+        _trailer(
+            ("Made-with",), r"Cursor", ROLE_STAMP, "``Made-with: Cursor`` trailer"
+        ),
     ],
 )
 
