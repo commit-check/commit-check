@@ -86,6 +86,10 @@ DEFAULT_BRANCH_TYPES = [
     "codex",
     "copilot",
     "cursor",
+    # VS Code's Agents window hard-codes this prefix and users cannot change
+    # it; the spec will accept it as an alias of "ai"
+    # (https://github.com/conventional-branch/conventional-branch/issues/196).
+    "agents",
     # Automation/bot prefixes
     "dependabot",
     "renovate",

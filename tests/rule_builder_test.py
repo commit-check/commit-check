@@ -229,6 +229,7 @@ class TestRuleBuilder:
         assert "codex" in DEFAULT_BRANCH_TYPES
         assert "copilot" in DEFAULT_BRANCH_TYPES
         assert "cursor" in DEFAULT_BRANCH_TYPES
+        assert "agents" in DEFAULT_BRANCH_TYPES
         assert "dependabot" in DEFAULT_BRANCH_TYPES
         assert "renovate" in DEFAULT_BRANCH_TYPES
         assert "build" in DEFAULT_BRANCH_TYPES
@@ -261,6 +262,7 @@ class TestRuleBuilder:
             "codex/optimize-query",
             "copilot/add-login-page",
             "cursor/fix-header-bug",
+            "agents/add-dark-mode-toggle",
             # Bot/automation branches
             "dependabot/go_modules/go-deps-c57c3fe1e0",
             "dependabot/npm_and_yarn/lodash-4.17.21",
