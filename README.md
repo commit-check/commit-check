@@ -50,7 +50,7 @@ Stop bad commits before they exist. In `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.19.3
+    rev: v2.19.4
     hooks:
       - id: check-message
       - id: check-branch
@@ -137,7 +137,7 @@ Priority: CLI > env > TOML > default. Booleans accept `true/false`, `yes/no`,
 | `commit.author_name_pattern` | `""` | `--author-name-pattern` | `CCHK_AUTHOR_NAME_PATTERN` | Regex the author name must match (CC101, with `--author-name`) |
 | `branch.conventional_branch` | `true` | `--conventional-branch` | `CCHK_CONVENTIONAL_BRANCH` | Enforce `<type>/<description>` branch names (CC201) |
 | `branch.require_description_grammar` | `false` | `--require-description-grammar` | `CCHK_REQUIRE_DESCRIPTION_GRAMMAR` | Also hold the description after `<type>/` to the Conventional Branch grammar: lowercase alphanumeric words joined by single hyphens, dots allowed inside a word (CC201). Off by default, since bot branches such as `dependabot/npm_and_yarn/lodash-4.17.21` do not follow it |
-| `branch.allow_branch_types` | `feature, bugfix, hotfix, release, chore, feat, fix, build, ci, docs, perf, refactor, test, style, ai, claude, codex, copilot, cursor, dependabot, renovate` | `--allow-branch-types` | `CCHK_ALLOW_BRANCH_TYPES` | Allowed branch `<type>` prefixes; each entry is a regex matched against the whole type |
+| `branch.allow_branch_types` | `feature, bugfix, hotfix, release, chore, feat, fix, build, ci, docs, perf, refactor, test, style, ai, claude, codex, copilot, cursor, agents, dependabot, renovate` | `--allow-branch-types` | `CCHK_ALLOW_BRANCH_TYPES` | Allowed branch `<type>` prefixes; each entry is a regex matched against the whole type |
 | `branch.allow_branch_names` | `[]` | `--allow-branch-names` | `CCHK_ALLOW_BRANCH_NAMES` | Extra branch names allowed besides `main`, `master`, `develop`, `HEAD`, `PR-.+`; each entry is a regex matched against the whole branch name, so `create-pull-request/.+` allows a family of them |
 | `branch.require_rebase_target` | `""` | `--require-rebase-target` | `CCHK_REQUIRE_REBASE_TARGET` | Branch the current branch must be rebased onto (CC202); empty disables |
 | `branch.ignore_authors` | `[]` | `--branch-ignore-authors` | `CCHK_BRANCH_IGNORE_AUTHORS` | Authors whose branches skip the branch checks |
