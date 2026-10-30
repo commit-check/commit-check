@@ -850,7 +850,10 @@ class RuleBuilder:
         # is anchored at both ends so a name has to match the whole branch
         # name, not merely its start ("main-backup" is not "main"). develop
         # is the specification's third trunk branch, beside main and master.
-        names_pattern = "master|main|develop|HEAD|PR-.+"
+        # release-please names its release pull request branch
+        # release-please--branches--<target>[--components--<name>] and the
+        # name cannot be configured, so it is accepted like PR-.+.
+        names_pattern = "master|main|develop|HEAD|PR-.+|release-please--branches--.+"
         if allowed_names:
             names_pattern += "|" + "|".join(allowed_names)
         description_pattern = (

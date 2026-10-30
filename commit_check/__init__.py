@@ -93,6 +93,9 @@ DEFAULT_BRANCH_TYPES = [
     # Automation/bot prefixes
     "dependabot",
     "renovate",
+    # changesets/action opens its release pull request from
+    # changeset-release/<base branch>
+    "changeset-release",
 ]
 # Additional allowed branch names (e.g., staging, production)
 DEFAULT_BRANCH_NAMES: list[str] = []

@@ -180,10 +180,14 @@ class TestRuleBuilder:
 
         rule = builder._build_conventional_branch_rule(catalog_entry)
         assert rule is not None
-        # Should include default branch names: master, main, develop, HEAD, PR-*.
+        # Should include default branch names: master, main, develop, HEAD,
+        # PR-* and release-please's release branches.
         # (Whether they match is TestBranchRegexIsAnchored's job; this
         # benchmark measures the builder, not the regex engine.)
-        assert "^(?:master|main|develop|HEAD|PR-.+)$" in rule.regex
+        assert (
+            "^(?:master|main|develop|HEAD|PR-.+|release-please--branches--.+)$"
+            in rule.regex
+        )
 
     @pytest.mark.benchmark
     def test_rule_builder_allow_branch_names_custom(self):
@@ -201,7 +205,10 @@ class TestRuleBuilder:
         rule = builder._build_conventional_branch_rule(catalog_entry)
         assert rule is not None
         # Should include both default and custom branch names
-        assert "^(?:master|main|develop|HEAD|PR-.+|staging|production)$" in rule.regex
+        assert (
+            "^(?:master|main|develop|HEAD|PR-.+|release-please--branches--.+|staging|production)$"
+            in rule.regex
+        )
 
     @pytest.mark.benchmark
     def test_rule_builder_allow_branch_names_empty_list(self):
@@ -214,7 +221,10 @@ class TestRuleBuilder:
         rule = builder._build_conventional_branch_rule(catalog_entry)
         assert rule is not None
         # Should only include default branch names
-        assert "^(?:master|main|develop|HEAD|PR-.+)$" in rule.regex
+        assert (
+            "^(?:master|main|develop|HEAD|PR-.+|release-please--branches--.+)$"
+            in rule.regex
+        )
         assert "staging" not in rule.regex
 
     @pytest.mark.benchmark
@@ -232,6 +242,7 @@ class TestRuleBuilder:
         assert "agents" in DEFAULT_BRANCH_TYPES
         assert "dependabot" in DEFAULT_BRANCH_TYPES
         assert "renovate" in DEFAULT_BRANCH_TYPES
+        assert "changeset-release" in DEFAULT_BRANCH_TYPES
         assert "build" in DEFAULT_BRANCH_TYPES
         assert "ci" in DEFAULT_BRANCH_TYPES
         assert "docs" in DEFAULT_BRANCH_TYPES
@@ -269,6 +280,10 @@ class TestRuleBuilder:
             "dependabot/pip/certifi-2022.12.7",
             "renovate/lodash-5.x",
             "renovate/major-lodash-5.x",
+            # Release tools' pull request branches
+            "release-please--branches--main",
+            "release-please--branches--main--components--api",
+            "changeset-release/main",
         ]
         for branch in valid_branches:
             assert re.match(rule.regex, branch), f"Branch '{branch}' should be valid"
@@ -941,7 +956,15 @@ class TestBranchRegexIsAnchored:
     """An allowed name must match the whole branch name, not just its start."""
 
     @pytest.mark.parametrize(
-        "branch", ["main-backup", "master2", "HEADless", "developer"]
+        "branch",
+        [
+            "main-backup",
+            "master2",
+            "HEADless",
+            "developer",
+            "release-please--branches--",
+            "my-release-please--branches--main",
+        ],
     )
     def test_prefix_of_a_default_name_is_rejected(self, branch):
         assert not re.match(_branch_regex(), branch)
@@ -953,7 +976,16 @@ class TestBranchRegexIsAnchored:
 
     @pytest.mark.parametrize(
         "branch",
-        ["main", "master", "develop", "HEAD", "PR-12", "feature/x", "chore/a/b"],
+        [
+            "main",
+            "master",
+            "develop",
+            "HEAD",
+            "PR-12",
+            "release-please--branches--main",
+            "feature/x",
+            "chore/a/b",
+        ],
     )
     def test_default_names_and_typed_branches_still_pass(self, branch):
         assert re.match(_branch_regex(), branch)
