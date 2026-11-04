@@ -280,6 +280,10 @@ AIDER = KnownAiTool(
     name_pattern=_names(r"aider"),
     patterns=[
         *_identity(r"Aider[ \t]*(?:<[^>\n]*>)?", "Aider"),
+        # aider's own trailer names the model, on by default since v0.85:
+        # "Co-authored-by: aider (<model>) <aider@aider.chat>", see
+        # https://github.com/Aider-AI/aider/blob/main/aider/repo.py
+        *_identity(r"[^<\n]*<aider@aider\.chat>", "... <aider@aider.chat>"),
         # aider appends "(aider)" to the author name
         *_identity(r"[^<\n]+\(aider\)[ \t]*(?:<[^>\n]*>)?", "... (aider)"),
     ],

@@ -3186,6 +3186,18 @@ class TestAiAttributionValidator:
         context = ValidationContext(stdin_text="feat: add flag\n\nMade-with: Cursor")
         assert validator.validate(context) == ValidationResult.FAIL
 
+    def test_forbid_policy_rejects_aider_default_trailer(self):
+        """aider credits itself and the model it ran as a co-author."""
+        rule = ValidationRule(check="ai_attribution", value="forbid")
+        validator = AiAttributionValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(
+            stdin_text=(
+                "feat: add flag\n\nCo-authored-by: aider (gpt-4o) <aider@aider.chat>"
+            )
+        )
+        assert validator.validate(context) == ValidationResult.FAIL
+
     @pytest.mark.benchmark
     def test_forbid_policy_allows_clean_commit(self):
         """forbid policy allows commits without AI signatures."""
