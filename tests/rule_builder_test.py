@@ -180,10 +180,11 @@ class TestRuleBuilder:
 
         rule = builder._build_conventional_branch_rule(catalog_entry)
         assert rule is not None
-        # Should include default branch names: master, main, develop, HEAD, PR-*.
+        # Should include default branch names: master, main, develop, HEAD, PR-*,
+        # and the merge queue's gh-readonly-queue/*.
         # (Whether they match is TestBranchRegexIsAnchored's job; this
         # benchmark measures the builder, not the regex engine.)
-        assert "^(?:master|main|develop|HEAD|PR-.+)$" in rule.regex
+        assert "^(?:master|main|develop|HEAD|PR-.+|gh-readonly-queue/.+)$" in rule.regex
 
     @pytest.mark.benchmark
     def test_rule_builder_allow_branch_names_custom(self):
@@ -201,7 +202,10 @@ class TestRuleBuilder:
         rule = builder._build_conventional_branch_rule(catalog_entry)
         assert rule is not None
         # Should include both default and custom branch names
-        assert "^(?:master|main|develop|HEAD|PR-.+|staging|production)$" in rule.regex
+        assert (
+            "^(?:master|main|develop|HEAD|PR-.+|gh-readonly-queue/.+|staging|production)$"
+            in rule.regex
+        )
 
     @pytest.mark.benchmark
     def test_rule_builder_allow_branch_names_empty_list(self):
@@ -214,7 +218,7 @@ class TestRuleBuilder:
         rule = builder._build_conventional_branch_rule(catalog_entry)
         assert rule is not None
         # Should only include default branch names
-        assert "^(?:master|main|develop|HEAD|PR-.+)$" in rule.regex
+        assert "^(?:master|main|develop|HEAD|PR-.+|gh-readonly-queue/.+)$" in rule.regex
         assert "staging" not in rule.regex
 
     @pytest.mark.benchmark
@@ -957,6 +961,22 @@ class TestBranchRegexIsAnchored:
     )
     def test_default_names_and_typed_branches_still_pass(self, branch):
         assert re.match(_branch_regex(), branch)
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {},
+            {"allow_branch_types": ["feature"]},
+            {"allow_branch_names": ["staging"]},
+        ],
+    )
+    def test_merge_queue_branch_passes_whatever_is_configured(self, kwargs):
+        # GitHub's merge queue runs merge_group checks on a branch it names
+        # itself, so a required check would otherwise fail every queue entry.
+        regex = _branch_regex(**kwargs)
+        assert re.match(regex, "gh-readonly-queue/main/pr-12-0123456789abcdef")
+        assert not re.match(regex, "gh-readonly-queue")
+        assert not re.match(regex, "x-gh-readonly-queue/main/pr-1-a")
 
     def test_custom_names_still_pass(self):
         regex = _branch_regex(allow_branch_names=["staging", "production"])
