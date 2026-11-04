@@ -26,6 +26,7 @@ from commit_check.util import (
     get_upstream_branch,
     get_upstream_remote_sha,
     git_merge_base,
+    git_repository_error,
     has_commits,
     hyperlink,
     parse_size,
@@ -265,6 +266,28 @@ class TestUtil:
                 "check": True,
             }
             assert retval is False
+
+    class TestGitRepositoryError:
+        def test_a_repository_without_commits_is_readable(self, tmp_path, monkeypatch):
+            subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+            monkeypatch.chdir(tmp_path)
+            assert git_repository_error() is None
+
+        def test_outside_a_repository_git_says_why(self, tmp_path, monkeypatch):
+            monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
+            monkeypatch.chdir(tmp_path)
+            assert "not a git repository" in (git_repository_error() or "")
+
+        def test_a_refusal_without_text_still_reads_as_one(self, mocker):
+            mocker.patch(
+                "subprocess.run",
+                return_value=subprocess.CompletedProcess([], 128, "", ""),
+            )
+            assert git_repository_error() == "git rev-parse exited 128"
+
+        def test_git_that_cannot_run_is_reported(self, mocker):
+            mocker.patch("subprocess.run", side_effect=FileNotFoundError("git"))
+            assert git_repository_error() == "git could not be run: git"
 
     class TestGetUpstreamBranch:
         @pytest.mark.benchmark

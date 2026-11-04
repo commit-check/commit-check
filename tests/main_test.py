@@ -1414,6 +1414,7 @@ class TestNoForcePushFlag:
             ),
         )
         mock_merge = mocker.patch("commit_check.engine.git_merge_base", return_value=0)
+        mocker.patch("commit_check.main.git_repository_error", return_value=None)
 
         monkeypatch.setattr("sys.argv", [CMD, "--no-force-push"])
         assert main() == 0
@@ -1606,6 +1607,7 @@ class TestFilesFlag:
 
     def test_files_unconfigured_prints_hint(self, capfd, monkeypatch, tmp_path):
         """--files with an empty [files] section says so instead of passing silently."""
+        subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
         monkeypatch.chdir(tmp_path)
         monkeypatch.setattr("sys.argv", [CMD, "--files"])
         assert main() == 0
@@ -2116,6 +2118,78 @@ class TestWrongTypeSettingIsAConfigError:
         err = capsys.readouterr().err
         assert rc == 2
         assert "Error: [commit] message_pattern must be a string, got 5" in err
+
+
+class TestUnreadableRepository:
+    """A check that reads git exits 2 when git cannot read the repository.
+
+    Each check used to read the git failure as "nothing to check" and skip,
+    so a CI job in a directory git refuses (not a repository, or "dubious
+    ownership" in a container) exited 0 having checked nothing.
+    """
+
+    @pytest.fixture
+    def outside_a_repository(self, tmp_path, monkeypatch, mocker):
+        monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
+        monkeypatch.chdir(tmp_path)
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        return tmp_path
+
+    @pytest.mark.parametrize(
+        "flags",
+        [
+            ["-m"],
+            ["-b"],
+            ["-n"],
+            ["-e"],
+            ["-t"],
+            ["-f", "--files-max-size=1MB"],
+            ["--no-force-push"],
+            ["--rev", "HEAD", "-m"],
+        ],
+    )
+    def test_a_check_that_reads_git_exits_two(
+        self, outside_a_repository, capsys, monkeypatch, flags
+    ):
+        monkeypatch.setattr("sys.argv", [CMD, *flags])
+        assert main() == 2
+        err = capsys.readouterr().err
+        assert "Error: git cannot read a repository here" in err
+        assert "not a git repository" in err
+
+    def test_git_reason_is_printed_as_given(self, mocker, capsys, monkeypatch):
+        reason = "fatal: detected dubious ownership in repository at '/src'"
+        mocker.patch("commit_check.main.git_repository_error", return_value=reason)
+        mocker.patch("sys.stdin.isatty", return_value=True)
+        monkeypatch.setattr("sys.argv", [CMD, "-b"])
+        assert main() == 2
+        assert reason in capsys.readouterr().err
+
+    def test_a_message_file_needs_no_repository(
+        self, outside_a_repository, monkeypatch, pinned_author
+    ):
+        msg = outside_a_repository / "msg.txt"
+        msg.write_text("feat: add x\n")
+        monkeypatch.setattr("sys.argv", [CMD, str(msg)])
+        assert main() == 0
+
+    def test_a_piped_branch_name_needs_no_repository(
+        self, outside_a_repository, mocker, monkeypatch
+    ):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="bad_branch\n")
+        monkeypatch.setattr(
+            "sys.argv", [CMD, "-b", "--conventional-branch=true", "--compact"]
+        )
+        assert main() == 1
+
+    def test_beside_a_piped_message_the_branch_still_reads_git(
+        self, outside_a_repository, mocker, monkeypatch
+    ):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add x\n")
+        monkeypatch.setattr("sys.argv", [CMD, "-m", "-b"])
+        assert main() == 2
 
 
 class TestLastResortErrorIsNeverBlank:
