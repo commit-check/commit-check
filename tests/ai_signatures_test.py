@@ -182,6 +182,18 @@ class TestDetectAiSignatures:
         assert len(result) >= 1
         assert any(s["tool"] == "Aider" for s in result)
 
+    @pytest.mark.parametrize(
+        "trailer",
+        [
+            "Co-authored-by: aider (gpt-4o) <aider@aider.chat>",
+            "Co-authored-by: aider (anthropic/claude-sonnet-4) <aider@aider.chat>",
+        ],
+    )
+    def test_aider_default_co_author_trailer(self, trailer):
+        """aider's default trailer names the model between name and address."""
+        result = detect_ai_signatures(f"feat: add feature\n\n{trailer}")
+        assert [s["tool"] for s in result] == ["Aider"]
+
     @pytest.mark.benchmark
     def test_generic_model_name_detected(self):
         """Model names like claude-sonnet-4 in Co-authored-by are detected."""
@@ -502,6 +514,12 @@ class TestRoles:
             ),
             # The trailer Cursor adds to the commits it writes.
             ("Made-with: Cursor", "Cursor", ROLE_STAMP),
+            # aider's default trailer, with the model it ran.
+            (
+                "Co-authored-by: aider (gpt-4o) <aider@aider.chat>",
+                "Aider",
+                ROLE_CO_AUTHOR,
+            ),
             (
                 (
                     "Co-authored-by: copilot-swe-agent[bot] "
@@ -714,6 +732,7 @@ class TestLinearMatching:
             "Co-authored-by:" + SPACES + "x",
             "Co-authored-by: Codex" + SPACES + "x",
             "Co-authored-by: a (aider)" + SPACES + "x",
+            "Co-authored-by: aider (" + SPACES + "<aider@aider.chat>x",
             "Assisted-by: a" + SPACES + "b",
         ],
     )

@@ -182,6 +182,10 @@ class TestProposeFix:
         message = "fix: x\n\nMade-with: Cursor"
         assert fix_for(message) == f"{message}\nAssisted-by: Cursor"
 
+    def test_an_aider_co_author_becomes_a_disclosure_naming_the_model(self):
+        message = "fix: x\n\nCo-authored-by: aider (gpt-4o) <aider@aider.chat>"
+        assert fix_for(message) == "fix: x\n\nAssisted-by: aider (gpt-4o)"
+
     def test_two_tools_give_two_disclosures(self):
         message = f"fix: x\n\n{CLAUDE_CO_AUTHOR}\n{COPILOT_CO_AUTHOR}"
         assert fix_for(message) == (
