@@ -850,7 +850,9 @@ class RuleBuilder:
         # is anchored at both ends so a name has to match the whole branch
         # name, not merely its start ("main-backup" is not "main"). develop
         # is the specification's third trunk branch, beside main and master.
-        names_pattern = "master|main|develop|HEAD|PR-.+"
+        # gh-readonly-queue/<base>/pr-<N>-<sha> is the branch GitHub's merge
+        # queue creates and runs merge_group checks on; nobody names it.
+        names_pattern = "master|main|develop|HEAD|PR-.+|gh-readonly-queue/.+"
         if allowed_names:
             names_pattern += "|" + "|".join(allowed_names)
         description_pattern = (
