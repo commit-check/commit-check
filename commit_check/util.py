@@ -539,6 +539,35 @@ def has_commits() -> bool:
         return False
 
 
+def git_repository_error() -> str | None:
+    """Why git cannot read a repository here, or ``None`` when it can.
+
+    git refuses outright outside a work tree, and in one owned by another
+    user unless ``safe.directory`` allows it (a mounted checkout in a
+    container, say). Every git call then fails, and each check would read
+    that as "nothing to check" and pass the run as skipped, so the reason
+    git gives is what the caller reports instead.
+
+    A repository with no commits yet is readable: this asks for the git
+    directory, not for HEAD.
+
+    :returns: git's own message, or a sentence saying git could not run.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--git-dir"],
+            capture_output=True,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except OSError as e:
+        return f"git could not be run: {e}"
+    if result.returncode == 0:
+        return None
+    return result.stderr.strip() or f"git rev-parse exited {result.returncode}"
+
+
 def git_rev_parse_verify(rev: str) -> bool:
     """Check whether a revision resolves in the current repository.
     :param rev: any revision expression, e.g. ``HEAD^2``

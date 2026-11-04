@@ -22,6 +22,7 @@ from commit_check.rule_builder import RuleBuilder
 from commit_check.rules_catalog import BRANCH_CHECKS, FILES_CHECKS, MESSAGE_CHECKS
 from commit_check.util import (
     get_remote_branch_sha,
+    git_repository_error,
     git_rev_parse_verify,
     print_error_header,
     split_message_comments,
@@ -136,8 +137,8 @@ def _get_parser() -> argparse.ArgumentParser:
             "exit codes:\n"
             "  0  every enforced check passed, or --dry-run was given\n"
             "  1  a check failed\n"
-            "  2  the run could not start: bad usage, or a missing or "
-            "invalid config file"
+            "  2  the run could not start: bad usage, a missing or invalid "
+            "config file, or git cannot read the repository"
         ),
     )
 
@@ -601,6 +602,38 @@ def _resolve_commit_message_source(
     return stdin_content or None, None
 
 
+def _reads_repository(
+    args: argparse.Namespace,
+    stdin_content: str | None,
+    commit_file_path: str | None,
+) -> bool:
+    """Whether a requested check has to read the repository.
+
+    A message that comes from a file or stdin needs no repository, and
+    neither does a branch name or author piped in on stdin. Anything else
+    asks git, and when git cannot read the repository each of those checks
+    would come back skipped, which exits 0 as if the run had been judged.
+    """
+    if args.message and stdin_content is None and commit_file_path is None:
+        return True
+    if args.tag or args.files or args.no_force_push:
+        return True
+    if args.branch or args.author_name or args.author_email:
+        # Beside --message, stdin is the message, so these read git.
+        return args.message or stdin_content is None
+    return False
+
+
+def _report_unreadable_repository(reason: str) -> int:
+    """Say that git cannot read the repository, and exit as a setup error."""
+    print(
+        "Error: git cannot read a repository here, so nothing can be checked:",
+        file=sys.stderr,
+    )
+    print(reason, file=sys.stderr)
+    return EXIT_CONFIG_ERROR
+
+
 def _resolve_stdin_for_non_message(
     args: argparse.Namespace, stdin_reader: StdinReader
 ) -> tuple[str | None, bool]:
@@ -714,6 +747,9 @@ def main() -> int:
                     "--rev and a commit message file both name the "
                     "thing to check; pass one or the other"
                 )
+            repo_error = git_repository_error()
+            if repo_error:
+                return _report_unreadable_repository(repo_error)
             # Fail here, with the revision named, rather than deep inside a
             # validator where the error would surface as a missing message.
             if not git_rev_parse_verify(args.rev):
@@ -786,6 +822,13 @@ def main() -> int:
 
         # Next to --message, piped stdin is the message; other checks read git.
         stdin_is_message = args.message and stdin_content is not None
+
+        if args.rev is None and _reads_repository(
+            args, stdin_content, commit_file_path
+        ):
+            repo_error = git_repository_error()
+            if repo_error:
+                return _report_unreadable_repository(repo_error)
 
         if args.fix and not commit_file_path:
             parser.error("--fix rewrites a commit message file; pass one")
