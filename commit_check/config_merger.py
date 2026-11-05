@@ -116,6 +116,12 @@ def get_default_config() -> dict[str, Any]:
 #: ``[jira]`` and ``[pull_request]`` by the GitHub App.
 _OTHER_KEYS = frozenset({"warn", "jira", "pull_request"})
 
+#: Keys inside the CLI's own tables that only the GitHub App reads:
+#: ``require_verified`` needs GitHub's verdict on a commit's signature.
+_OTHER_SETTINGS: dict[str, frozenset[str]] = {
+    "commit": frozenset({"require_verified"}),
+}
+
 
 def unknown_setting_warnings(config: dict[str, Any]) -> list[str]:
     """One line per setting in a config file that nothing reads.
@@ -134,6 +140,7 @@ def unknown_setting_warnings(config: dict[str, Any]) -> list[str]:
                 (f"[{section}] {key}", key, defaults[section])
                 for key in value
                 if key not in defaults[section]
+                and key not in _OTHER_SETTINGS.get(section, ())
             )
     warnings = []
     for shown, name, known in names:

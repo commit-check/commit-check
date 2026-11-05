@@ -431,6 +431,12 @@ class TestUnknownSettings:
             "⚠ unknown setting [pull_requset] is ignored; did you mean pull_request?",
         ]
 
+    def test_a_key_the_github_app_reads_is_not_unknown(self):
+        assert unknown_setting_warnings({"commit": {"require_verified": True}}) == []
+        assert unknown_setting_warnings({"branch": {"require_verified": True}}) == [
+            "⚠ unknown setting [branch] require_verified is ignored"
+        ]
+
     def test_a_known_section_that_is_not_a_table_names_no_keys(self):
         """There are no keys to read in a scalar section, so none is reported."""
         assert unknown_setting_warnings({"commit": "feat", "files": False}) == []
