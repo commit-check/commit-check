@@ -324,9 +324,14 @@ class TestHumanNameFalsePositives:
             "Made-with: love",
             "Made-with: Cursors and arrows",
             # "Continue" is a common word and a possible surname; only the
-            # continue.dev address is Continue's mark.
+            # continue.dev noreply address is Continue's mark.
             "Co-authored-by: Continue <dev@example.com>",
             "Co-authored-by: Alex Continue <alex@example.com>",
+            # A person at Continue signing with their own @continue.dev address
+            # is a human, not the bot's noreply@ address.
+            "Signed-off-by: Jane <jane@continue.dev>",
+            # A look-alike domain must not satisfy the continue.dev anchor.
+            "Co-authored-by: Continue <noreply@continue.dev.evil.com>",
         ],
     )
     def test_bare_human_name_not_detected(self, trailer):
