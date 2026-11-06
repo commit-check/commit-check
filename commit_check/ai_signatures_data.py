@@ -360,6 +360,28 @@ JULES = KnownAiTool(
     ],
 )
 
+# --- Continue (continue.dev) ---
+# The Continue CLI injects a commit signature by default, unless
+# CONTINUE_CLI_DISABLE_COMMIT_SIGNATURE is set: a "Generated with [Continue]"
+# body marker and a Co-authored-by trailer with the continue.dev address.
+# https://github.com/continuedev/continue/blob/main/extensions/cli/src/systemMessage.ts
+# "Continue" is a common English word (and a possible surname), so the
+# co-author / sign-off patterns are anchored to the continue.dev address and
+# the body marker to its URL; the tool gets no broad name_pattern, so a bare
+# "continue" in prose or a human co-author is never flagged.
+CONTINUE = KnownAiTool(
+    name="Continue",
+    patterns=[
+        *_identity(
+            r"[^<\n]*<noreply@continue\.dev>", "Continue <noreply@continue.dev>"
+        ),
+        _body_marker(
+            r"Generated with \[Continue\]\(https://continue\.dev\)",
+            "``Generated with [Continue](https://continue.dev)`` body marker",
+        ),
+    ],
+)
+
 # --- Generic / catch-all AI patterns ---
 GENERIC_AI = KnownAiTool(
     name="Generic AI",
@@ -420,5 +442,6 @@ ALL_KNOWN_TOOLS: list[KnownAiTool] = [
     OPENHANDS,
     FACTORY_DROID,
     JULES,
+    CONTINUE,
     GENERIC_AI,
 ]

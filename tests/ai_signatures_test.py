@@ -173,6 +173,26 @@ class TestDetectAiSignatures:
         assert any("Claude Code" == s["tool"] for s in result)
 
     @pytest.mark.benchmark
+    def test_continue_co_author_with_noreply_email(self):
+        """Co-authored-by: Continue with the continue.dev address is detected."""
+        message = "feat: add feature\n\nCo-Authored-By: Continue <noreply@continue.dev>"
+        result = detect_ai_signatures(message)
+        assert any(s["tool"] == "Continue" for s in result)
+
+    @pytest.mark.benchmark
+    def test_continue_body_marker_detected(self):
+        """The ``Generated with [Continue](...)`` body marker is detected."""
+        message = "feat: add feature\n\nGenerated with [Continue](https://continue.dev)"
+        result = detect_ai_signatures(message)
+        assert any(s["tool"] == "Continue" for s in result)
+
+    @pytest.mark.benchmark
+    def test_continue_word_in_body_not_flagged(self):
+        """The common word 'continue' in a message body is not a signature."""
+        message = "fix: continue on error when the queue is empty"
+        assert detect_ai_signatures(message) == []
+
+    @pytest.mark.benchmark
     def test_aider_suffix_pattern(self):
         """Co-authored-by with (aider) suffix is detected."""
         message = (
@@ -303,6 +323,15 @@ class TestHumanNameFalsePositives:
             # Made-with names other things too; only Cursor is Cursor's mark.
             "Made-with: love",
             "Made-with: Cursors and arrows",
+            # "Continue" is a common word and a possible surname; only the
+            # continue.dev noreply address is Continue's mark.
+            "Co-authored-by: Continue <dev@example.com>",
+            "Co-authored-by: Alex Continue <alex@example.com>",
+            # A person at Continue signing with their own @continue.dev address
+            # is a human, not the bot's noreply@ address.
+            "Signed-off-by: Jane <jane@continue.dev>",
+            # A look-alike domain must not satisfy the continue.dev anchor.
+            "Co-authored-by: Continue <noreply@continue.dev.evil.com>",
         ],
     )
     def test_bare_human_name_not_detected(self, trailer):
@@ -527,6 +556,18 @@ class TestRoles:
                 ),
                 "GitHub Copilot",
                 ROLE_CO_AUTHOR,
+            ),
+            # Continue's CLI signs with its own address; "continue" is a common
+            # word, so the continue.dev address is what makes it Continue's.
+            (
+                "Co-authored-by: Continue <noreply@continue.dev>",
+                "Continue",
+                ROLE_CO_AUTHOR,
+            ),
+            (
+                "Signed-off-by: Continue <noreply@continue.dev>",
+                "Continue",
+                ROLE_SIGNOFF,
             ),
         ],
     )
