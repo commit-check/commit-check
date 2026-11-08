@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import shlex
 import subprocess
@@ -267,8 +268,10 @@ class BaseValidator(ABC):
 
         *Prospective message* (``stdin_text`` or ``commit_file`` is set):
         the user is about to create a new commit.  The last commit's author
-        is unrelated — the relevant identity is the local git config
-        (``user.name``), i.e. the person who will author the pending commit.
+        is unrelated — the relevant identity is the one git would record:
+        ``GIT_AUTHOR_NAME`` when set (how a tool commits under its own name,
+        and how the Action passes on the author of a commit it pipes in),
+        else ``user.name``.
 
         *Existing commit* (no ``stdin_text``, no ``commit_file``):
         the last commit is the one being validated.  Use its own author
@@ -280,7 +283,11 @@ class BaseValidator(ABC):
             # fact about that commit, so the config never enters into it.
             return get_commit_info("an", context.rev)
         if context.stdin_text is not None or context.commit_file is not None:
-            return get_git_config_value("user.name") or get_commit_info("an")
+            return (
+                os.environ.get("GIT_AUTHOR_NAME", "").strip()
+                or get_git_config_value("user.name")
+                or get_commit_info("an")
+            )
         return get_commit_info("an") or get_git_config_value("user.name")
 
     @staticmethod

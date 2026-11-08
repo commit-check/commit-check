@@ -2492,6 +2492,59 @@ class TestCoAuthorSkip:
         # Not skipped — Alice is not in ignore_authors, so validation runs
         assert result == ValidationResult.PASS  # message is valid
 
+    @pytest.mark.parametrize(
+        ("env_name", "expected"),
+        [
+            ("Renovate Bot", ValidationResult.SKIP),
+            ("Alice Developer", ValidationResult.PASS),
+            ("", ValidationResult.PASS),
+        ],
+    )
+    def test_author_in_ignore_list_uses_the_pending_author(
+        self, monkeypatch, env_name, expected
+    ):
+        """A piped message is judged by the author git would record.
+
+        ``GIT_AUTHOR_NAME`` outranks ``user.name`` there, which is how the
+        Action hands over the author of a pull request commit it pipes in.
+        """
+        validator = CommitMessageValidator(
+            ValidationRule(
+                check="message",
+                regex=CONVENTIONAL_COMMIT_REGEX,
+                error=BAD_COMMIT_MSG,
+                suggest=USE_CONVENTIONAL_FORMAT,
+            )
+        )
+        context = ValidationContext(
+            stdin_text="fix: resolve edge case in parser",
+            config={"commit": {"ignore_authors": ["Renovate Bot"]}},
+        )
+        monkeypatch.setenv("GIT_AUTHOR_NAME", env_name)
+        with patch(
+            "commit_check.engine.get_git_config_value",
+            return_value="Alice Developer",
+        ):
+            assert validator.validate(context) == expected
+
+    def test_pending_author_ignore_check_reads_git_environment(self, monkeypatch):
+        """End to end: GIT_AUTHOR_NAME reaches the ignore list unmocked."""
+        monkeypatch.setenv("GIT_AUTHOR_NAME", "Renovate Bot")
+        monkeypatch.setenv("GIT_AUTHOR_EMAIL", "bot@renovateapp.com")
+        validator = CommitMessageValidator(
+            ValidationRule(
+                check="message",
+                regex=CONVENTIONAL_COMMIT_REGEX,
+                error=BAD_COMMIT_MSG,
+                suggest=USE_CONVENTIONAL_FORMAT,
+            )
+        )
+        context = ValidationContext(
+            stdin_text="not conventional at all",
+            config={"commit": {"ignore_authors": ["Renovate Bot"]}},
+        )
+        assert validator.validate(context) == ValidationResult.SKIP
+
     @pytest.mark.benchmark
     def test_author_in_ignore_list_uses_commit_author_when_no_stdin(self):
         """
