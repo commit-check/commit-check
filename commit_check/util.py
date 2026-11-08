@@ -716,6 +716,21 @@ def get_git_user_identity() -> tuple[str, str]:
     return identity["user.name"], identity["user.email"]
 
 
+def get_pending_author_identity() -> tuple[str, str]:
+    """The author name and email the next commit will carry, or two blanks.
+
+    ``git var GIT_AUTHOR_IDENT`` answers as ``git commit`` would: from
+    ``GIT_AUTHOR_NAME`` / ``GIT_AUTHOR_EMAIL`` when they are set (a tool
+    that commits under its own name sets them), else from ``user.name`` /
+    ``user.email``. With neither, git prints an error, which matches nothing.
+    """
+    output = cmd_output(["git", "var", "GIT_AUTHOR_IDENT"]).strip()
+    match = re.fullmatch(r"(.*) <([^<>\n]*)> \d+ [+-]\d{4}", output)
+    if not match:
+        return "", ""
+    return match.group(1).strip(), match.group(2).strip()
+
+
 def get_commit_author_identity(sha: str = "HEAD") -> tuple[str, str]:
     """The author name and email of a commit, in one git call."""
     name, _, email = get_commit_info("an%x1f%ae", sha).partition("\x1f")

@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from commit_check.ai_signatures_data import ALL_KNOWN_TOOLS as _ALL_KNOWN_TOOLS
-from commit_check.ai_signatures_data import GENERIC_AI, ROLE_DISCLOSURE
+from commit_check.ai_signatures_data import GENERIC_AI, ROLE_CO_AUTHOR, ROLE_DISCLOSURE
 
 # Re-export for convenience — consumers can import everything from
 # commit_check.ai_signatures without knowing about the data/logic split.
@@ -233,6 +233,26 @@ def detect_ai_signatures(message: str) -> list[dict[str, str]]:
         )
 
     return results
+
+
+def detect_ai_author(name: str, email: str) -> str | None:
+    """The AI tool a commit's author identity names, or ``None``.
+
+    An author is judged exactly as the same identity would be on a
+    ``Co-authored-by:`` line, so the two can never disagree about who is a
+    tool: ``google-labs-jules[bot]``, ``openhands <openhands@all-hands.dev>``,
+    a name ending in ``(aider)``, any name at Copilot's account address.
+    """
+    name = " ".join(name.split())
+    email = "".join(email.split())
+    if not name and not email:
+        return None
+    identity = f"{name} <{email}>" if email else name
+    signatures = detect_ai_signatures(f"x\n\nCo-authored-by: {identity}")
+    return next(
+        (s["tool"] for s in signatures if s["role"] == ROLE_CO_AUTHOR),
+        None,
+    )
 
 
 def has_ai_signature(message: str) -> bool:

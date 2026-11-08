@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import shlex
 import subprocess
@@ -19,6 +20,7 @@ from commit_check import (
     ai_policy,
 )
 from commit_check.ai_signatures import (
+    detect_ai_author,
     detect_ai_signatures,
 )
 from commit_check.fixes import (
@@ -43,6 +45,7 @@ from commit_check.util import (
     get_git_config_value,
     get_git_remotes,
     get_git_user_identity,
+    get_pending_author_identity,
     get_push_commits,
     get_tags_at,
     get_upstream_branch,
@@ -72,6 +75,10 @@ def is_merge_subject(subject: str) -> bool:
 # re.MULTILINE and "[ \t]*" rather than "\s*" keep the match on the first
 # line, so a body that merely mentions WIP is not a WIP commit.
 _WIP_MARKER = re.compile(r"^[ \t]*(?:\[wip\]|wip\b)", re.IGNORECASE)
+
+
+#: The git config key naming the person who will author the next commit.
+_USER_NAME = "user.name"
 
 
 class ValidationResult(IntEnum):
@@ -265,8 +272,10 @@ class BaseValidator(ABC):
 
         *Prospective message* (``stdin_text`` or ``commit_file`` is set):
         the user is about to create a new commit.  The last commit's author
-        is unrelated — the relevant identity is the local git config
-        (``user.name``), i.e. the person who will author the pending commit.
+        is unrelated — the relevant identity is the one git would record:
+        ``GIT_AUTHOR_NAME`` when set (how a tool commits under its own name,
+        and how the Action passes on the author of a commit it pipes in),
+        else ``user.name``.
 
         *Existing commit* (no ``stdin_text``, no ``commit_file``):
         the last commit is the one being validated.  Use its own author
@@ -278,8 +287,12 @@ class BaseValidator(ABC):
             # fact about that commit, so the config never enters into it.
             return get_commit_info("an", context.rev)
         if context.stdin_text is not None or context.commit_file is not None:
-            return get_git_config_value("user.name") or get_commit_info("an")
-        return get_commit_info("an") or get_git_config_value("user.name")
+            return (
+                os.environ.get("GIT_AUTHOR_NAME", "").strip()
+                or get_git_config_value(_USER_NAME)
+                or get_commit_info("an")
+            )
+        return get_commit_info("an") or get_git_config_value(_USER_NAME)
 
     @staticmethod
     def _message_was_supplied(context: ValidationContext) -> bool:
@@ -695,7 +708,7 @@ class AuthorValidator(BaseValidator):
             return supplied.strip()
 
         git_config_map = {
-            "author_name": "user.name",
+            "author_name": _USER_NAME,
             "author_email": "user.email",
         }
         git_log_map = {
@@ -1613,6 +1626,45 @@ class AiAttributionValidator(BaseValidator):
         return ValidationResult.FAIL
 
 
+class AiAuthorValidator(BaseValidator):
+    """Rejects a commit whose author is an AI tool (CC017).
+
+    Under both ``forbid`` and ``disclose``: a tool in the author's place,
+    with the person behind it at most a ``Co-authored-by:`` line, is the
+    strongest attribution a commit can make. An existing commit (``--rev``,
+    or HEAD) is judged by its recorded author; a message not yet committed
+    by the author git would record for it, which honours ``GIT_AUTHOR_NAME``
+    and ``GIT_AUTHOR_EMAIL`` the way ``git commit`` does.
+    """
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        if self._should_skip_commit_validation(context):
+            return ValidationResult.SKIP
+
+        if context.rev is None and (
+            context.stdin_text is not None or context.commit_file is not None
+        ):
+            name, email = get_pending_author_identity()
+        else:
+            name, email = get_commit_author_identity(context.rev or "HEAD")
+        identity = f"{name} <{email}>" if email else name
+        self._checked_value = identity
+        tool = detect_ai_author(name, email)
+        if tool is None:
+            return ValidationResult.PASS
+
+        suggest = "Author the commit yourself: git commit --amend --reset-author"
+        if self.rule.value == "disclose":
+            trailers = self.rule.allowed or list(DEFAULT_AI_DISCLOSURE_TRAILERS)
+            suggest += f', and disclose the tool with "{trailers[0]}: {tool}"'
+        self._print_failure(
+            identity,
+            error=f"An AI tool is the commit author: {tool}",
+            suggest=suggest,
+        )
+        return ValidationResult.FAIL
+
+
 class ValidationEngine:
     """Main validation engine that orchestrates all validations."""
 
@@ -1639,6 +1691,7 @@ class ValidationEngine:
         "ai_disclosure": AiAttributionValidator,
         "ai_co_author": AiAttributionValidator,
         "ai_signoff": AiAttributionValidator,
+        "ai_author": AiAuthorValidator,
         "tag": TagValidator,
         "file_size": FilesValidator,
         "file_pattern": FilesValidator,

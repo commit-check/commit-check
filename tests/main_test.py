@@ -383,6 +383,10 @@ class TestFixOption:
         path = tmp_path / "COMMIT_EDITMSG"
         path.write_text(message)
         monkeypatch.chdir(tmp_path)
+        # The pending commit's author is whoever git would record, which on a
+        # machine set up for an agent may itself be an AI tool (CC017).
+        monkeypatch.setenv("GIT_AUTHOR_NAME", "Jane Dev")
+        monkeypatch.setenv("GIT_AUTHOR_EMAIL", "jane@example.com")
         monkeypatch.setattr("sys.argv", [CMD, "--message", "--fix", *flags, str(path)])
         return main(), path.read_text()
 

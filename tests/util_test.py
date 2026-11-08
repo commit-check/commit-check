@@ -20,6 +20,7 @@ from commit_check.util import (
     get_commit_files,
     get_commit_info,
     get_git_remotes,
+    get_pending_author_identity,
     get_push_commits,
     get_remote_branch_sha,
     get_tags_at,
@@ -1895,3 +1896,32 @@ class TestPrintableFailureText:
             compact=True,
         )
         assert capfd.readouterr().out == "[FAIL] CC201 branch: bad\\x1b[2K\n"
+
+
+class TestGetPendingAuthorIdentity:
+    """The author ``git commit`` would record, read with ``git var``."""
+
+    def test_the_environment_names_the_author(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setenv("GIT_AUTHOR_NAME", "Jane Dev (aider)")
+        monkeypatch.setenv("GIT_AUTHOR_EMAIL", "jane@example.com")
+        assert get_pending_author_identity() == ("Jane Dev (aider)", "jane@example.com")
+
+    @pytest.mark.parametrize(
+        "output",
+        [
+            "Author identity unknown\n\n*** Please tell me who you are.",
+            "",
+            "Jane Dev <jane@example.com>",
+        ],
+    )
+    def test_anything_but_an_identity_reads_as_none(self, output):
+        with patch("commit_check.util.cmd_output", return_value=output):
+            assert get_pending_author_identity() == ("", "")
+
+    def test_the_timestamp_is_dropped(self):
+        with patch(
+            "commit_check.util.cmd_output",
+            return_value="Jane Dev <jane@example.com> 1794109093 +0100\n",
+        ):
+            assert get_pending_author_identity() == ("Jane Dev", "jane@example.com")

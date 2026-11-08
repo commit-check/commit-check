@@ -218,6 +218,16 @@ COMMIT_RULES = [
         error="An AI tool signed off the commit",
         suggest="Only a person can certify the Developer Certificate of Origin: remove the AI Signed-off-by line and sign off yourself (git commit --signoff)",
     ),
+    # Under both forbid and disclose: a tool in the author's place is the
+    # strongest attribution there is. Read from the commit, so it judges
+    # existing commits (--rev, or HEAD) and passes a message not yet committed.
+    RuleCatalogEntry(
+        rule_id="CC017",
+        check="ai_author",
+        regex=None,
+        error="An AI tool is the commit author",
+        suggest="Author the commit yourself: git commit --amend --reset-author",
+    ),
 ]
 
 # Push rules
