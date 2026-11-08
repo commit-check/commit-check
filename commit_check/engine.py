@@ -1533,19 +1533,24 @@ class AiAttributionValidator(BaseValidator):
             return ValidationResult.PASS
 
         fix = strip_lines_containing(message, [s["matched_text"] for s in signatures])
+        if not_a_commit:
+            suggest = (
+                "This project does not accept AI attribution. Remove the AI lines."
+            )
+        else:
+            action = (
+                "Remove the AI trailer lines and re-commit."
+                if fix
+                else "Remove AI trailers and re-commit."
+            )
+            suggest = (
+                "This project does not accept AI attribution in commit messages. "
+                + action
+            )
         self._print_failure(
             _tools(signatures),
             error=f"AI attribution is forbidden in this project — detected: {_tools(signatures)}",
-            suggest=(
-                "This project does not accept AI attribution. Remove the AI lines."
-                if not_a_commit
-                else "This project does not accept AI attribution in commit messages. "
-                + (
-                    "Remove the AI trailer lines and re-commit."
-                    if fix
-                    else "Remove AI trailers and re-commit."
-                )
-            ),
+            suggest=suggest,
             fix=fix,
         )
         return ValidationResult.FAIL
