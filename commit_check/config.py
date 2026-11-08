@@ -7,19 +7,13 @@ import io
 import os
 import stat
 import sys
+import tomllib
 import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
 
-try:
-    import tomllib
-
-    toml_load = tomllib.load
-except ImportError:
-    import tomli  # type: ignore
-
-    toml_load = tomli.load
+toml_load = tomllib.load
 
 
 class ConfigError(ValueError):
@@ -253,8 +247,7 @@ def _resolve_inherit_from(
     # Fail open, as documented: a parent that cannot be loaded leaves the
     # local config in force. Say so on stderr rather than silently, and keep
     # stdout clean for --format json.
-    # TOMLDecodeError (tomllib and tomli alike) is a ValueError; URLError is
-    # an OSError.
+    # TOMLDecodeError is a ValueError; URLError is an OSError.
     try:
         parent = _load_parent_config(inherit_from, base_dir)
     except (OSError, ValueError) as e:

@@ -46,7 +46,7 @@ commit_check/
 ├── __init__.py          # Package constants: DEFAULT_COMMIT_TYPES, DEFAULT_BRANCH_TYPES, DEFAULT_BOOLEAN_RULES
 ├── main.py              # CLI entry point, argument parsing, StdinReader
 ├── api.py               # Public Python API (validate_message, validate_branch, ...) without a subprocess
-├── config.py            # TOML file loading (uses tomllib on Python 3.11+, tomli on older), inherit_from, deep_merge
+├── config.py            # TOML file loading (stdlib tomllib), inherit_from, deep_merge
 ├── config_merger.py     # ConfigMerger: merges CLI → Env → TOML → Defaults
 ├── rule_builder.py      # RuleBuilder: creates ValidationRule objects from config + catalog
 ├── rules_catalog.py     # Catalog of all rules (COMMIT_RULES, BRANCH_RULES, PUSH_RULES, FILES_RULES, TAG_RULES)
