@@ -3477,9 +3477,23 @@ class TestAiAuthorValidator:
             ValidationContext(commit_file=".git/COMMIT_EDITMSG"),
         ],
     )
-    def test_a_message_not_yet_committed_passes(self, context):
-        result, _validator, read_author = self._run(self.JULES, context=context)
-        assert result == ValidationResult.PASS
+    @pytest.mark.parametrize(
+        "pending, expected",
+        [
+            (("Jane Dev (aider)", "jane@example.com"), ValidationResult.FAIL),
+            (("Jane Dev", "jane@example.com"), ValidationResult.PASS),
+            (("", ""), ValidationResult.PASS),
+        ],
+    )
+    def test_a_message_not_yet_committed_is_judged_by_the_pending_author(
+        self, context, pending, expected
+    ):
+        """No commit to read, so the author is the one git would record."""
+        with patch(
+            "commit_check.engine.get_pending_author_identity", return_value=pending
+        ):
+            result, _validator, read_author = self._run(self.JULES, context=context)
+        assert result == expected
         read_author.assert_not_called()
 
     def test_an_ignored_author_is_skipped(self):

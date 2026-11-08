@@ -44,6 +44,7 @@ from commit_check.util import (
     get_git_config_value,
     get_git_remotes,
     get_git_user_identity,
+    get_pending_author_identity,
     get_push_commits,
     get_tags_at,
     get_upstream_branch,
@@ -1619,20 +1620,22 @@ class AiAuthorValidator(BaseValidator):
 
     Under both ``forbid`` and ``disclose``: a tool in the author's place,
     with the person behind it at most a ``Co-authored-by:`` line, is the
-    strongest attribution a commit can make. The author is read from the
-    commit, so only an existing one is judged (``--rev``, or HEAD); a message
-    not yet committed has no author to read and passes.
+    strongest attribution a commit can make. An existing commit (``--rev``,
+    or HEAD) is judged by its recorded author; a message not yet committed
+    by the author git would record for it, which honours ``GIT_AUTHOR_NAME``
+    and ``GIT_AUTHOR_EMAIL`` the way ``git commit`` does.
     """
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        if context.rev is None and (
-            context.stdin_text is not None or context.commit_file is not None
-        ):
-            return ValidationResult.PASS
         if self._should_skip_commit_validation(context):
             return ValidationResult.SKIP
 
-        name, email = get_commit_author_identity(context.rev or "HEAD")
+        if context.rev is None and (
+            context.stdin_text is not None or context.commit_file is not None
+        ):
+            name, email = get_pending_author_identity()
+        else:
+            name, email = get_commit_author_identity(context.rev or "HEAD")
         identity = f"{name} <{email}>" if email else name
         self._checked_value = identity
         tool = detect_ai_author(name, email)
