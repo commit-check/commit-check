@@ -36,7 +36,7 @@ free for public repositories and personal accounts.
 ## Quick start
 
 ```bash
-pip install commit-check        # Python 3.10+
+pip install commit-check        # Python 3.11+
 commit-check --message --branch
 ```
 
