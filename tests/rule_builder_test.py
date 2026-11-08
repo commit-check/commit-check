@@ -1191,6 +1191,15 @@ class TestWrongTypeSettings:
             RuleBuilder({section: {key: value}}).build_all_rules()
         assert excinfo.value.setting == f"[{section}] {key}"
 
+    @pytest.mark.parametrize("key", ["subject_max_length", "subject_min_length"])
+    @pytest.mark.parametrize("value", [0, -1])
+    def test_a_zero_length_builds_no_rule(self, key, value):
+        """0 switches the length rule off rather than allowing 0 characters."""
+        checks = {
+            r.check for r in RuleBuilder({"commit": {key: value}}).build_all_rules()
+        }
+        assert key not in checks
+
     def test_an_unset_length_builds_no_rule(self):
         checks = {r.check for r in RuleBuilder({"commit": {}}).build_all_rules()}
         assert "subject_max_length" not in checks
