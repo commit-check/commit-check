@@ -50,7 +50,7 @@ Stop bad commits before they exist. In `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.20.0
+    rev: v2.21.0
     hooks:
       - id: check-message
       - id: check-branch
