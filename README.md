@@ -184,14 +184,14 @@ author is on an `ignore_authors` list: `"author dependabot[bot] is in [commit].i
 
 With a message checked, the output also has `ai_tools`: the AI tools found by
 their known signatures in the message (and by a commit's author), under any
-`ai_attribution` policy. `--ai-only` runs only the AI rules (CC013 to CC016),
+`ai_attribution` policy. `--ai-attribution-only` runs only the AI rules (CC013 to CC016),
 for text that is not a commit message, such as a pull request description.
 Under the default `ai_attribution = "ignore"` no AI rule runs, so the result
 passes and only `ai_tools` reports what was found; set `forbid` or `disclose`
 to enforce a policy:
 
 ```bash
-commit-check --ai-only --format json < pr-description.md
+commit-check --ai-attribution-only --format json < pr-description.md
 ```
 
 Validate a commit message with the Python API, without a subprocess:
