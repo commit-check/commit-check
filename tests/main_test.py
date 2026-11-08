@@ -2240,3 +2240,121 @@ class TestLastResortErrorIsNeverBlank:
         monkeypatch.setattr("sys.argv", [CMD, "-m", "--no-banner"])
         assert main() == 1
         assert capsys.readouterr().err == expected
+
+
+class TestAiOnly:
+    """``--ai-only``: the AI rules on text that is not a commit message."""
+
+    BODY = (
+        "This adds a parser.\n\n"
+        "🤖 Generated with [Claude Code](https://claude.com/claude-code)\n"
+    )
+
+    def _run_json(self, mocker, capsys, monkeypatch, message, *argv):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=message)
+        monkeypatch.setattr("sys.argv", [CMD, "--format", "json", *argv])
+        rc = main()
+        return rc, json.loads(capsys.readouterr().out)
+
+    def test_only_the_ai_rules_run(self, mocker, capsys, monkeypatch, pinned_author):
+        """A description is not held to the commit-message format."""
+        rc, data = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            self.BODY,
+            "--ai-only",
+            "--ai-attribution",
+            "forbid",
+        )
+        assert rc == 1
+        assert [(c["rule_id"], c["status"]) for c in data["checks"]] == [
+            ("CC013", "fail")
+        ]
+        assert data["ai_tools"] == ["Claude Code"]
+
+    def test_under_disclose_the_three_rules_run(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        rc, data = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            "This adds a parser.\n\nAssisted-by: Claude Code\n",
+            "--ai-only",
+            "--ai-attribution",
+            "disclose",
+        )
+        assert rc == 0
+        assert sorted(c["rule_id"] for c in data["checks"]) == [
+            "CC014",
+            "CC015",
+            "CC016",
+        ]
+
+    def test_ignore_runs_nothing_but_still_names_the_tools(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        """Label-only: no verdict, but the tools are reported."""
+        rc, data = self._run_json(mocker, capsys, monkeypatch, self.BODY, "--ai-only")
+        assert rc == 0
+        assert data["status"] == "pass"
+        assert data["checks"] == []
+        assert data["ai_tools"] == ["Claude Code"]
+
+    def test_the_author_is_not_judged(self, mocker, capsys, monkeypatch):
+        """A description has no commit author, so an AI identity does not count."""
+        mocker.patch(
+            "commit_check.engine.get_pending_author_identity",
+            return_value=("google-labs-jules[bot]", ""),
+        )
+        rc, data = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            "This adds a parser.\n",
+            "--ai-only",
+            "--ai-attribution",
+            "forbid",
+        )
+        assert rc == 0
+        assert data["ai_tools"] == []
+
+
+class TestAiToolsInJson:
+    """``ai_tools`` names the AI tools of a checked message, whatever the policy."""
+
+    def _run_json(self, mocker, capsys, monkeypatch, message, *argv):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=message)
+        monkeypatch.setattr("sys.argv", [CMD, "--format", "json", *argv])
+        main()
+        return json.loads(capsys.readouterr().out)
+
+    def test_a_clean_message_names_none(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        data = self._run_json(mocker, capsys, monkeypatch, "feat: add a parser\n", "-m")
+        assert data["ai_tools"] == []
+
+    def test_message_and_author_are_both_read(self, mocker, capsys, monkeypatch):
+        mocker.patch(
+            "commit_check.engine.get_pending_author_identity",
+            return_value=("google-labs-jules[bot]", ""),
+        )
+        data = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            "feat: add a parser\n\nCo-authored-by: Claude <noreply@anthropic.com>\n",
+            "-m",
+        )
+        assert data["ai_tools"] == ["Claude Code", "Jules"]
+
+    def test_absent_when_no_message_is_checked(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        mocker.patch("commit_check.engine.get_branch_name", return_value="feature/x")
+        data = self._run_json(mocker, capsys, monkeypatch, "", "-b")
+        assert "ai_tools" not in data

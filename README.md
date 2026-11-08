@@ -182,6 +182,15 @@ The failing entry of its `checks` array:
 A check that did not run has status `skip`, and `reason` says why when the
 author is on an `ignore_authors` list: `"author dependabot[bot] is in [commit].ignore_authors"`.
 
+With a message checked, the output also has `ai_tools`: the AI tools the
+message (and a commit's author) names, under any `ai_attribution` policy.
+`--ai-only` runs only the AI rules (CC013 to CC016), for text that is not a
+commit message, such as a pull request description:
+
+```bash
+commit-check --ai-only --format json < pr-description.md
+```
+
 The same result, without a subprocess:
 
 ```python
