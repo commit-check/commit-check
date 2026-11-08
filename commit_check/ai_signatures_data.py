@@ -83,6 +83,19 @@ class KnownAiTool:
 #: Trailers whose value credits a person who wrote part of the change.
 PERSON_TRAILERS = ("Co-authored-by", "Co-developed-by")
 
+#: Trailers that credit a person with some other part in the change: a
+#: review, a test, the idea for it. A tool named in one is a mark of its
+#: use, not a claim of authorship, so it is a stamp: ``forbid`` rejects it,
+#: and ``disclose`` asks for a disclosure beside it. The Linux kernel's
+#: submitting-patches guide lists these keys.
+CREDIT_TRAILERS = (
+    "Reviewed-by",
+    "Suggested-by",
+    "Helped-by",
+    "Tested-by",
+    "Reported-by",
+)
+
 
 def _trailer(
     keys: tuple[str, ...], value_pattern: str, role: str, description: str
@@ -110,9 +123,9 @@ def _trailer(
 
 
 def _identity(value_pattern: str, label: str) -> list[AiSignaturePattern]:
-    """The co-author and sign-off patterns for one way a tool names itself.
+    """The co-author, sign-off and credit patterns for one way a tool names itself.
 
-    One identity serves both trailers, so the two cannot drift apart.
+    One identity serves every trailer, so they cannot drift apart.
     """
     return [
         _trailer(
@@ -126,6 +139,12 @@ def _identity(value_pattern: str, label: str) -> list[AiSignaturePattern]:
             value_pattern,
             ROLE_SIGNOFF,
             f"``Signed-off-by: {label}`` trailer",
+        ),
+        _trailer(
+            CREDIT_TRAILERS,
+            value_pattern,
+            ROLE_STAMP,
+            f"``Reviewed-by: {label}`` (or another credit) trailer",
         ),
     ]
 
@@ -195,6 +214,22 @@ CLAUDE_CODE = KnownAiTool(
         _body_marker(
             r"🤖\s*Generated\s+(?:with|by)\s+\[?Claude",
             "``🤖 Generated with Claude`` body marker",
+        ),
+        # The same notice with the emoji taken out, as copied into a pull
+        # request description or left by a tool that strips emoji. Without
+        # the emoji only the product's own name counts, at a line start, so
+        # a sentence about Claude is never read as the mark.
+        _body_marker(
+            r"^[ \t]*Generated[ \t]+(?:with|by)[ \t]+"
+            r"(?:\[Claude Code\]\(|Claude Code\b)",
+            "``Generated with [Claude Code]`` body marker",
+        ),
+        # Claude Code on the web links the session on a line of its own.
+        # Only a line that is nothing but the link counts: a sentence that
+        # cites a session is discussing one.
+        _body_marker(
+            r"^[ \t]*https://claude\.ai/code/session_[A-Za-z0-9]+[ \t]*$",
+            "Claude Code session link",
         ),
         # Session ID trailer (Claude Code sometimes adds this)
         _stamp_trailer("Claude-Session", "``Claude-Session:`` trailer"),
@@ -441,6 +476,39 @@ AMAZON_Q = KnownAiTool(
     patterns=[*_app_bot("amazon-q-developer")],
 )
 
+# --- Warp ---
+# Warp's cloud agents commit as ``Warp <agent@warp.dev>`` when no git
+# identity is configured, see DEFAULT_GIT_NAME / DEFAULT_GIT_EMAIL in
+# https://github.com/warpdotdev/warp/blob/master/app/src/ai/agent_sdk/driver/git_credentials.rs
+# and projects that ask for a co-author line give Warp the same address.
+# "Warp" alone is a word, so only the address names the tool.
+WARP = KnownAiTool(
+    name="Warp",
+    patterns=[
+        *_identity(r"[^<\n]*<agent@warp\.dev>", "... <agent@warp.dev>"),
+    ],
+)
+
+# --- Crush (Charm) ---
+# Crush's commit instructions add "💘 Generated with Crush" (generated_with,
+# on by default) and a trailer: "Assisted-by: Crush:<model>" by default, or
+# "Co-Authored-By: Crush <crush@charm.land>" with trailer_style =
+# "co-authored-by".
+# https://github.com/charmbracelet/crush/blob/main/internal/agent/tools/bash.md.tpl
+# "Crush" alone is a word and a name, so the co-author line is anchored to
+# the charm.land address and the notice to its own wording.
+CRUSH = KnownAiTool(
+    name="Crush",
+    name_pattern=_names(r"crush"),
+    patterns=[
+        *_identity(r"[^<\n]*<crush@charm\.land>", "... <crush@charm.land>"),
+        _body_marker(
+            r"^[ \t]*(?:💘[ \t]*)?Generated[ \t]+with[ \t]+Crush\b",
+            "``💘 Generated with Crush`` body marker",
+        ),
+    ],
+)
+
 # --- Generic / catch-all AI patterns ---
 GENERIC_AI = KnownAiTool(
     name="Generic AI",
@@ -505,5 +573,7 @@ ALL_KNOWN_TOOLS: list[KnownAiTool] = [
     MISTRAL_VIBE,
     QWEN_CODE,
     AMAZON_Q,
+    WARP,
+    CRUSH,
     GENERIC_AI,
 ]
