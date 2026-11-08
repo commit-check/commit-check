@@ -870,6 +870,7 @@ def main() -> int:
             and (stdin_content is None or stdin_is_message),
             stdin_is_message=stdin_is_message,
             push_from_pre_commit=push_from_pre_commit,
+            not_a_commit=args.ai_only,
         )
 
         # Run validation – choose output mode based on --format

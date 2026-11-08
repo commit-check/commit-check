@@ -131,6 +131,9 @@ class ValidationContext:
     # commits the remote lacks, so a ref pushed alongside it -- a tag that
     # ``git push --follow-tags`` sends after a branch -- is not in the line.
     push_from_pre_commit: bool = False
+    # Set by --ai-only: the text is not a commit message (a pull request
+    # description, say), so advice must not tell the reader to re-commit.
+    not_a_commit: bool = False
 
     @property
     def piped_value(self) -> str | None:
@@ -1522,9 +1525,9 @@ class AiAttributionValidator(BaseValidator):
             # No-op policy: nothing is checked, so no value is recorded.
             return ValidationResult.PASS
         self._checked_value = message
-        return self._judge_under_forbid(message)
+        return self._judge_under_forbid(message, context.not_a_commit)
 
-    def _judge_under_forbid(self, message: str) -> ValidationResult:
+    def _judge_under_forbid(self, message: str, not_a_commit: bool) -> ValidationResult:
         signatures = detect_ai_signatures(message)
         if not signatures:
             return ValidationResult.PASS
@@ -1534,7 +1537,9 @@ class AiAttributionValidator(BaseValidator):
             _tools(signatures),
             error=f"AI attribution is forbidden in this project — detected: {_tools(signatures)}",
             suggest=(
-                "This project does not accept AI attribution in commit messages. "
+                "This project does not accept AI attribution. Remove the AI lines."
+                if not_a_commit
+                else "This project does not accept AI attribution in commit messages. "
                 + (
                     "Remove the AI trailer lines and re-commit."
                     if fix

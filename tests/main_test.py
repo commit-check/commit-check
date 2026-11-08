@@ -2272,6 +2272,11 @@ class TestAiOnly:
         assert [(c["rule_id"], c["status"]) for c in data["checks"]] == [
             ("CC013", "fail")
         ]
+        # Not a commit, so the advice does not say to re-commit.
+        assert data["checks"][0]["suggest"] == (
+            "This project does not accept AI attribution. Remove the AI lines."
+        )
+        assert data["checks"][0]["fix"] == "This adds a parser."
         assert data["ai_tools"] == ["Claude Code"]
 
     def test_under_disclose_the_three_rules_run(
