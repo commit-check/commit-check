@@ -15,11 +15,17 @@ from commit_check.engine import (
     ValidationContext,
     ValidationEngine,
     ValidationResult,
+    ai_tools_in,
     count_warnings,
     overall_status,
 )
 from commit_check.rule_builder import RuleBuilder
-from commit_check.rules_catalog import BRANCH_CHECKS, FILES_CHECKS, MESSAGE_CHECKS
+from commit_check.rules_catalog import (
+    AI_TEXT_CHECKS,
+    BRANCH_CHECKS,
+    FILES_CHECKS,
+    MESSAGE_CHECKS,
+)
 from commit_check.util import (
     get_remote_branch_sha,
     git_repository_error,
@@ -182,6 +188,14 @@ def _get_parser() -> argparse.ArgumentParser:
         "--message",
         action="store_true",
         help="validate commit message (file path can be provided as positional argument for pre-commit compatibility)",
+    )
+
+    check_group.add_argument(
+        "--ai-only",
+        action="store_true",
+        help="check only the AI attribution of the message (CC013 to CC016), "
+        "for text that is not a commit message, such as a pull request "
+        "description; implies --message",
     )
 
     check_group.add_argument(
@@ -674,7 +688,7 @@ def _get_requested_checks(args: argparse.Namespace) -> set[str]:
     requested_checks: set[str] = set()
 
     if args.message:
-        requested_checks |= MESSAGE_CHECKS
+        requested_checks |= AI_TEXT_CHECKS if args.ai_only else MESSAGE_CHECKS
     if args.branch:
         requested_checks |= BRANCH_CHECKS
     if args.tag:
@@ -709,20 +723,27 @@ _UNCONFIGURED_HINTS = (
 )
 
 
-def _run_json_output(engine: ValidationEngine, context: ValidationContext) -> int:
-    """Run validation and print JSON output."""
+def _run_json_output(
+    engine: ValidationEngine,
+    context: ValidationContext,
+    args: argparse.Namespace,
+) -> int:
+    """Run validation and print JSON output.
+
+    When a message is checked, ``ai_tools`` lists the AI tools it names (and,
+    for a commit, its author), whatever the policy: what a pull request
+    is labelled on.
+    """
     outcomes: list[CheckOutcome] = engine.validate_all_detailed(context)
     overall = overall_status(o.status for o in outcomes)
-    print(
-        json.dumps(
-            {
-                "status": overall,
-                "warnings": count_warnings(o.status for o in outcomes),
-                "checks": [o.to_dict() for o in outcomes],
-            },
-            indent=2,
-        )
-    )
+    report: dict[str, object] = {
+        "status": overall,
+        "warnings": count_warnings(o.status for o in outcomes),
+        "checks": [o.to_dict() for o in outcomes],
+    }
+    if args.message:
+        report["ai_tools"] = ai_tools_in(context, author=not args.ai_only)
+    print(json.dumps(report, indent=2))
     # Only a failure is an error. A skipped run validated nothing, but that
     # is not a policy violation, so it must not turn into a non-zero exit.
     return 1 if overall == "fail" else 0
@@ -738,7 +759,7 @@ def main() -> int:
 
     try:
         # Handle positional commit_msg_file argument for pre-commit compatibility
-        if args.commit_msg_file:
+        if args.commit_msg_file or args.ai_only:
             args.message = True
 
         if args.rev is not None:
@@ -849,12 +870,13 @@ def main() -> int:
             and (stdin_content is None or stdin_is_message),
             stdin_is_message=stdin_is_message,
             push_from_pre_commit=push_from_pre_commit,
+            not_a_commit=args.ai_only,
         )
 
         # Run validation – choose output mode based on --format
         output_format: str = getattr(args, "output_format", "text")
         if output_format == "json":
-            exit_code = _run_json_output(engine, context)
+            exit_code = _run_json_output(engine, context, args)
         else:
             result = engine.validate_all(context)
             exit_code = EXIT_PASS if result == ValidationResult.PASS else EXIT_FAIL

@@ -131,6 +131,9 @@ class ValidationContext:
     # commits the remote lacks, so a ref pushed alongside it -- a tag that
     # ``git push --follow-tags`` sends after a branch -- is not in the line.
     push_from_pre_commit: bool = False
+    # Set by --ai-only: the text is not a commit message (a pull request
+    # description, say), so advice must not tell the reader to re-commit.
+    not_a_commit: bool = False
 
     @property
     def piped_value(self) -> str | None:
@@ -1522,25 +1525,32 @@ class AiAttributionValidator(BaseValidator):
             # No-op policy: nothing is checked, so no value is recorded.
             return ValidationResult.PASS
         self._checked_value = message
-        return self._judge_under_forbid(message)
+        return self._judge_under_forbid(message, context.not_a_commit)
 
-    def _judge_under_forbid(self, message: str) -> ValidationResult:
+    def _judge_under_forbid(self, message: str, not_a_commit: bool) -> ValidationResult:
         signatures = detect_ai_signatures(message)
         if not signatures:
             return ValidationResult.PASS
 
         fix = strip_lines_containing(message, [s["matched_text"] for s in signatures])
+        if not_a_commit:
+            suggest = (
+                "This project does not accept AI attribution. Remove the AI lines."
+            )
+        else:
+            action = (
+                "Remove the AI trailer lines and re-commit."
+                if fix
+                else "Remove AI trailers and re-commit."
+            )
+            suggest = (
+                "This project does not accept AI attribution in commit messages. "
+                + action
+            )
         self._print_failure(
             _tools(signatures),
             error=f"AI attribution is forbidden in this project — detected: {_tools(signatures)}",
-            suggest=(
-                "This project does not accept AI attribution in commit messages. "
-                + (
-                    "Remove the AI trailer lines and re-commit."
-                    if fix
-                    else "Remove AI trailers and re-commit."
-                )
-            ),
+            suggest=suggest,
             fix=fix,
         )
         return ValidationResult.FAIL
@@ -1626,6 +1636,35 @@ class AiAttributionValidator(BaseValidator):
         return ValidationResult.FAIL
 
 
+def _author_identity(context: ValidationContext) -> tuple[str, str]:
+    """The author of the commit under test, as ``(name, email)``.
+
+    An existing commit (``--rev``, or HEAD) by its recorded author; a message
+    not yet committed by the author git would record for it.
+    """
+    if context.rev is None and (
+        context.stdin_text is not None or context.commit_file is not None
+    ):
+        return get_pending_author_identity()
+    return get_commit_author_identity(context.rev or "HEAD")
+
+
+def ai_tools_in(context: ValidationContext, *, author: bool) -> list[str]:
+    """The AI tools the message under test names, sorted, whatever the policy.
+
+    With *author*, a tool in the commit author's place counts too. This is
+    a finding, not a verdict: it is what a pull request is labelled on, so
+    it is reported under ``ai_attribution = "ignore"`` as well.
+    """
+    message = BaseValidator._get_commit_message(context)
+    tools = {s["tool"] for s in detect_ai_signatures(message)}
+    if author:
+        tool = detect_ai_author(*_author_identity(context))
+        if tool is not None:
+            tools.add(tool)
+    return sorted(tools)
+
+
 class AiAuthorValidator(BaseValidator):
     """Rejects a commit whose author is an AI tool (CC017).
 
@@ -1641,12 +1680,7 @@ class AiAuthorValidator(BaseValidator):
         if self._should_skip_commit_validation(context):
             return ValidationResult.SKIP
 
-        if context.rev is None and (
-            context.stdin_text is not None or context.commit_file is not None
-        ):
-            name, email = get_pending_author_identity()
-        else:
-            name, email = get_commit_author_identity(context.rev or "HEAD")
+        name, email = _author_identity(context)
         identity = f"{name} <{email}>" if email else name
         self._checked_value = identity
         tool = detect_ai_author(name, email)
