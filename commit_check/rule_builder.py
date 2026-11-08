@@ -35,11 +35,12 @@ from commit_check.util import format_size, parse_size
 
 #: The checks each ``ai_attribution`` policy builds. ``forbid`` rejects every
 #: AI signature under one rule; ``disclose`` asks for three things, one rule
-#: each, so a project can warn on one while enforcing the others.
+#: each, so a project can warn on one while enforcing the others. Both reject
+#: a tool as the commit's author (CC017).
 _AI_CHECKS_BY_POLICY: dict[str, frozenset[str]] = {
     "ignore": frozenset(),
-    "forbid": frozenset({"ai_attribution"}),
-    "disclose": frozenset({"ai_disclosure", "ai_co_author", "ai_signoff"}),
+    "forbid": frozenset({"ai_attribution", "ai_author"}),
+    "disclose": frozenset({"ai_disclosure", "ai_co_author", "ai_signoff", "ai_author"}),
 }
 _AI_CHECKS: frozenset[str] = frozenset().union(*_AI_CHECKS_BY_POLICY.values())
 
@@ -661,7 +662,7 @@ class RuleBuilder:
     ) -> ValidationRule | None:
         """Build one of the AI attribution rules, when the policy asks for it.
 
-        ``forbid`` builds CC013 alone. ``disclose`` builds CC014–CC016, each
+        ``forbid`` builds CC013 and CC017. ``disclose`` builds CC014–CC017, each
         carrying the accepted trailers and the value pattern, so any one of
         them can judge a message by itself. ``ignore`` builds nothing.
         """

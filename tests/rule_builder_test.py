@@ -469,13 +469,14 @@ class TestAiAttributionRuleBuilder:
 
     @pytest.mark.benchmark
     def test_build_all_rules_forbid_includes_attribution(self):
-        """forbid mode includes ai_attribution and no other AI rules."""
+        """forbid mode builds ai_attribution and ai_author, no disclose rules."""
         config = {"commit": {"ai_attribution": "forbid"}}
         builder = RuleBuilder(config)
         rules = builder.build_all_rules()
-        ai_rules = [r for r in rules if r.check.startswith("ai_")]
-        assert len(ai_rules) == 1
-        assert ai_rules[0].check == "ai_attribution"
+        ai_rules = {r.check: r for r in rules if r.check.startswith("ai_")}
+        assert set(ai_rules) == {"ai_attribution", "ai_author"}
+        assert ai_rules["ai_author"].rule_id == "CC017"
+        assert ai_rules["ai_author"].value == "forbid"
 
     @pytest.mark.benchmark
     def test_build_all_rules_no_ai_by_default(self):
@@ -494,15 +495,15 @@ def _ai_rules(commit_config):
 class TestDiscloseRuleBuilder:
     """``disclose`` is three rules, each able to judge a message on its own."""
 
-    def test_disclose_builds_the_three_conditions_and_not_forbid(self):
+    def test_disclose_builds_its_conditions_and_not_forbid(self):
         rules = _ai_rules({"ai_attribution": "disclose"})
-        assert set(rules) == {"ai_disclosure", "ai_co_author", "ai_signoff"}
-        assert [
-            rules[c].rule_id for c in ("ai_disclosure", "ai_co_author", "ai_signoff")
-        ] == [
+        checks = ("ai_disclosure", "ai_co_author", "ai_signoff", "ai_author")
+        assert set(rules) == set(checks)
+        assert [rules[c].rule_id for c in checks] == [
             "CC014",
             "CC015",
             "CC016",
+            "CC017",
         ]
         for rule in rules.values():
             assert rule.value == "disclose"
@@ -609,6 +610,7 @@ class TestDiscloseRuleBuilder:
             "ai_disclosure": "error",
             "ai_co_author": "warn",
             "ai_signoff": "error",
+            "ai_author": "error",
         }
 
 

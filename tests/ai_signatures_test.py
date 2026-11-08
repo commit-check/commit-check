@@ -7,6 +7,7 @@ import pytest
 from commit_check.ai_signatures import (
     ALL_KNOWN_TOOLS,
     ALL_PATTERNS,
+    detect_ai_author,
     detect_ai_signatures,
     find_trailers,
     groups,
@@ -538,6 +539,40 @@ class TestRoles:
                 ROLE_SIGNOFF,
             ),
             ("Assisted-by: Qwen Code", "Qwen Code", ROLE_DISCLOSURE),
+            # Agents that commit through their own GitHub App.
+            (
+                (
+                    "Co-authored-by: claude[bot] "
+                    "<209825114+claude[bot]@users.noreply.github.com>"
+                ),
+                "Claude Code",
+                ROLE_CO_AUTHOR,
+            ),
+            (
+                (
+                    "Co-authored-by: cursor[bot] "
+                    "<206951365+cursor[bot]@users.noreply.github.com>"
+                ),
+                "Cursor",
+                ROLE_CO_AUTHOR,
+            ),
+            (
+                (
+                    "Co-authored-by: chatgpt-codex-connector[bot] "
+                    "<199175422+chatgpt-codex-connector[bot]@users.noreply.github.com>"
+                ),
+                "OpenAI Codex",
+                ROLE_CO_AUTHOR,
+            ),
+            (
+                (
+                    "Co-authored-by: amazon-q-developer[bot] "
+                    "<208079219+amazon-q-developer[bot]@users.noreply.github.com>"
+                ),
+                "Amazon Q Developer",
+                ROLE_CO_AUTHOR,
+            ),
+            ("Assisted-by: Amazon Q Developer", "Amazon Q Developer", ROLE_DISCLOSURE),
             # git reads a blank before the colon as the same trailer.
             (
                 "Co-authored-by : Claude <noreply@anthropic.com>",
@@ -654,6 +689,60 @@ class TestRoles:
         )
 
 
+class TestDetectAiAuthor:
+    """A commit's author is judged as the same identity on a co-author line."""
+
+    @pytest.mark.parametrize(
+        "name, email, tool",
+        [
+            (
+                "google-labs-jules[bot]",
+                "161369871+google-labs-jules[bot]@users.noreply.github.com",
+                "Jules",
+            ),
+            ("openhands", "openhands@all-hands.dev", "OpenHands"),
+            ("Jane Dev (aider)", "jane@example.com", "Aider"),
+            ("Copilot", "198982749+Copilot@users.noreply.github.com", "GitHub Copilot"),
+            (
+                "claude[bot]",
+                "209825114+claude[bot]@users.noreply.github.com",
+                "Claude Code",
+            ),
+            ("Claude", "noreply@anthropic.com", "Claude Code"),
+            ("Mistral Vibe", "vibe@mistral.ai", "Mistral Vibe"),
+            # A name alone, as some tools leave the address empty.
+            ("google-labs-jules[bot]", "", "Jules"),
+        ],
+    )
+    def test_ai_authors(self, name, email, tool):
+        assert detect_ai_author(name, email) == tool
+
+    @pytest.mark.parametrize(
+        "name, email",
+        [
+            ("Jane Dev", "jane@example.com"),
+            ("Claude Monet", "claude@monet.fr"),
+            ("Jules Verne", "jules@example.com"),
+            ("Devin", "devin@example.org"),
+            ("dependabot[bot]", "49699333+dependabot[bot]@users.noreply.github.com"),
+            ("renovate[bot]", "29139614+renovate[bot]@users.noreply.github.com"),
+            (
+                "github-actions[bot]",
+                "41898282+github-actions[bot]@users.noreply.github.com",
+            ),
+            ("", ""),
+        ],
+    )
+    def test_people_and_maintenance_bots(self, name, email):
+        assert detect_ai_author(name, email) is None
+
+    def test_line_breaks_in_an_identity_cannot_smuggle_a_trailer(self):
+        """The identity is folded onto one line before it is read."""
+        assert (
+            detect_ai_author("Jane\nCo-authored-by: Claude", "jane@example.com") is None
+        )
+
+
 class TestToolNamedIn:
     @pytest.mark.parametrize(
         "text, tool",
@@ -672,6 +761,7 @@ class TestToolNamedIn:
             ("Mistral Vibe", "Mistral Vibe"),
             ("Qwen Code", "Qwen Code"),
             ("qwen-coder", "Qwen Code"),
+            ("Amazon Q Developer", "Amazon Q Developer"),
             ("vibe", None),
             ("LLM coccinelle sparse", None),
             ("", None),

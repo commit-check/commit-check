@@ -19,6 +19,7 @@ from commit_check import (
     ai_policy,
 )
 from commit_check.ai_signatures import (
+    detect_ai_author,
     detect_ai_signatures,
 )
 from commit_check.fixes import (
@@ -1613,6 +1614,43 @@ class AiAttributionValidator(BaseValidator):
         return ValidationResult.FAIL
 
 
+class AiAuthorValidator(BaseValidator):
+    """Rejects a commit whose author is an AI tool (CC017).
+
+    Under both ``forbid`` and ``disclose``: a tool in the author's place,
+    with the person behind it at most a ``Co-authored-by:`` line, is the
+    strongest attribution a commit can make. The author is read from the
+    commit, so only an existing one is judged (``--rev``, or HEAD); a message
+    not yet committed has no author to read and passes.
+    """
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        if context.rev is None and (
+            context.stdin_text is not None or context.commit_file is not None
+        ):
+            return ValidationResult.PASS
+        if self._should_skip_commit_validation(context):
+            return ValidationResult.SKIP
+
+        name, email = get_commit_author_identity(context.rev or "HEAD")
+        identity = f"{name} <{email}>" if email else name
+        self._checked_value = identity
+        tool = detect_ai_author(name, email)
+        if tool is None:
+            return ValidationResult.PASS
+
+        suggest = "Author the commit yourself: git commit --amend --reset-author"
+        if self.rule.value == "disclose":
+            trailers = self.rule.allowed or list(DEFAULT_AI_DISCLOSURE_TRAILERS)
+            suggest += f', and disclose the tool with "{trailers[0]}: {tool}"'
+        self._print_failure(
+            identity,
+            error=f"An AI tool is the commit author: {tool}",
+            suggest=suggest,
+        )
+        return ValidationResult.FAIL
+
+
 class ValidationEngine:
     """Main validation engine that orchestrates all validations."""
 
@@ -1639,6 +1677,7 @@ class ValidationEngine:
         "ai_disclosure": AiAttributionValidator,
         "ai_co_author": AiAttributionValidator,
         "ai_signoff": AiAttributionValidator,
+        "ai_author": AiAuthorValidator,
         "tag": TagValidator,
         "file_size": FilesValidator,
         "file_pattern": FilesValidator,

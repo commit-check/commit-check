@@ -77,7 +77,7 @@ The same `cchk.toml` drives all of them:
 | Check | Flag | Rules |
 |---|---|---|
 | Commit message — Conventional Commits, subject length, case and mood, WIP and fixup commits, body, sign-off | `--message` | CC001–CC012 |
-| AI attribution — forbid it, or require an `Assisted-by:` disclosure | `--message` | CC013–CC016 |
+| AI attribution — forbid it, or require an `Assisted-by:` disclosure | `--message` | CC013–CC017 |
 | Author name and email | `--author-name` `--author-email` | CC101–CC102 |
 | Branch name — Conventional Branch, rebased onto a target | `--branch` | CC201–CC202 |
 | Force push | `--no-force-push` | CC301 |
@@ -130,7 +130,7 @@ Priority: CLI > env > TOML > default. Booleans accept `true/false`, `yes/no`,
 | `commit.require_body` | `false` | `--require-body` | `CCHK_REQUIRE_BODY` | Require a commit body (CC011) |
 | `commit.require_signed_off_by` | `false` | `--require-signed-off-by` | `CCHK_REQUIRE_SIGNED_OFF_BY` | Require a `Signed-off-by:` trailer (CC012) |
 | `commit.ignore_authors` | `[]` | `--ignore-authors` | `CCHK_IGNORE_AUTHORS` | Authors and co-authors whose commits skip the commit checks |
-| `commit.ai_attribution` | `"ignore"` | `--ai-attribution` | `CCHK_AI_ATTRIBUTION` | `ignore`, `forbid` or `disclose`. `forbid` rejects commits carrying known AI tool signatures (CC013); `disclose` accepts AI assistance disclosed with one of `ai_disclosure_trailers` (CC014) and rejects the tool as a co-author (CC015) or as a sign-off (CC016) |
+| `commit.ai_attribution` | `"ignore"` | `--ai-attribution` | `CCHK_AI_ATTRIBUTION` | `ignore`, `forbid` or `disclose`. `forbid` rejects commits carrying known AI tool signatures (CC013); `disclose` accepts AI assistance disclosed with one of `ai_disclosure_trailers` (CC014) and rejects the tool as a co-author (CC015) or as a sign-off (CC016); both reject a commit whose author is an AI tool (CC017) |
 | `commit.ai_disclosure_trailers` | `Assisted-by, Generated-by` | `--ai-disclosure-trailers` | `CCHK_AI_DISCLOSURE_TRAILERS` | Trailers that disclose AI assistance under `disclose`; the first is the one a fix is written with. List `Co-authored-by` to accept the tool as a co-author |
 | `commit.ai_disclosure_pattern` | `""` | `--ai-disclosure-pattern` | `CCHK_AI_DISCLOSURE_PATTERN` | Regex the disclosure's value must match under `disclose`, e.g. `^\S+/\S+` for `agent/model`; empty accepts any value, but a trailer with no value at all is always reported |
 | `commit.author_email_pattern` | `"^.+@.+$"` | `--author-email-pattern` | `CCHK_AUTHOR_EMAIL_PATTERN` | Regex the author email must match (CC102, with `--author-email`) |

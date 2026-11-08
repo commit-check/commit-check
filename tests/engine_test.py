@@ -11,6 +11,7 @@ import pytest
 
 from commit_check.engine import (
     AiAttributionValidator,
+    AiAuthorValidator,
     AuthorValidator,
     BaseValidator,
     BodyValidator,
@@ -3375,6 +3376,122 @@ class TestAiAttributionValidator:
             )
         assert body == ""
         mock_commit_info.assert_not_called()
+
+
+class TestAiAuthorValidator:
+    """CC017: a commit whose author is an AI tool fails, read from the commit."""
+
+    JULES = (
+        "google-labs-jules[bot]",
+        "161369871+google-labs-jules[bot]@users.noreply.github.com",
+    )
+
+    def _run(self, identity, policy="forbid", context=None, allowed=None):
+        rule = ValidationRule(check="ai_author", value=policy, allowed=allowed)
+        validator = AiAuthorValidator(rule)
+        validator._suppress_output = True
+        with (
+            patch(
+                "commit_check.engine.get_commit_author_identity",
+                return_value=identity,
+            ) as read_author,
+            patch("commit_check.engine.has_commits", return_value=True),
+        ):
+            result = validator.validate(context or ValidationContext(rev="abc123"))
+        return result, validator, read_author
+
+    @pytest.mark.parametrize(
+        "identity, tool",
+        [
+            (JULES, "Jules"),
+            (("openhands", "openhands@all-hands.dev"), "OpenHands"),
+            (("Jane Dev (aider)", "jane@example.com"), "Aider"),
+            (
+                ("claude[bot]", "209825114+claude[bot]@users.noreply.github.com"),
+                "Claude Code",
+            ),
+            (
+                ("Copilot", "198982749+Copilot@users.noreply.github.com"),
+                "GitHub Copilot",
+            ),
+            (
+                (
+                    "devin-ai-integration[bot]",
+                    "158243242+devin-ai-integration[bot]@users.noreply.github.com",
+                ),
+                "Devin",
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("policy", ["forbid", "disclose"])
+    def test_an_ai_author_fails(self, identity, tool, policy):
+        result, validator, read_author = self._run(identity, policy)
+        assert result == ValidationResult.FAIL
+        read_author.assert_called_once_with("abc123")
+        failure = validator._last_failure
+        assert failure["check"] == "ai_author"
+        assert failure["value"] == f"{identity[0]} <{identity[1]}>"
+        assert failure["error"] == f"An AI tool is the commit author: {tool}"
+
+    @pytest.mark.parametrize(
+        "identity",
+        [
+            ("Jane Dev", "jane@example.com"),
+            ("Claude Monet", "claude@monet.fr"),
+            ("Jules Verne", "jules@example.com"),
+            ("dependabot[bot]", "49699333+dependabot[bot]@users.noreply.github.com"),
+            ("renovate[bot]", "29139614+renovate[bot]@users.noreply.github.com"),
+            ("", ""),
+        ],
+    )
+    def test_a_person_or_a_maintenance_bot_passes(self, identity):
+        result, _validator, _read_author = self._run(identity)
+        assert result == ValidationResult.PASS
+
+    def test_forbid_asks_for_a_human_author(self):
+        _result, validator, _ = self._run(self.JULES)
+        assert validator._last_failure["suggest"] == (
+            "Author the commit yourself: git commit --amend --reset-author"
+        )
+
+    def test_disclose_also_asks_for_the_disclosure_trailer(self):
+        _result, validator, _ = self._run(
+            self.JULES, policy="disclose", allowed=["Generated-by"]
+        )
+        assert validator._last_failure["suggest"] == (
+            "Author the commit yourself: git commit --amend --reset-author, "
+            'and disclose the tool with "Generated-by: Jules"'
+        )
+
+    def test_head_is_read_when_no_revision_is_named(self):
+        result, _validator, read_author = self._run(
+            self.JULES, context=ValidationContext()
+        )
+        assert result == ValidationResult.FAIL
+        read_author.assert_called_once_with("HEAD")
+
+    @pytest.mark.parametrize(
+        "context",
+        [
+            ValidationContext(stdin_text="feat: add flag"),
+            ValidationContext(commit_file=".git/COMMIT_EDITMSG"),
+        ],
+    )
+    def test_a_message_not_yet_committed_passes(self, context):
+        result, _validator, read_author = self._run(self.JULES, context=context)
+        assert result == ValidationResult.PASS
+        read_author.assert_not_called()
+
+    def test_an_ignored_author_is_skipped(self):
+        context = ValidationContext(
+            rev="abc123",
+            config={"commit": {"ignore_authors": ["google-labs-jules[bot]"]}},
+        )
+        with patch(
+            "commit_check.engine.get_commit_info", return_value="google-labs-jules[bot]"
+        ):
+            result, _validator, _ = self._run(self.JULES, context=context)
+        assert result == ValidationResult.SKIP
 
 
 class TestSkipCoverage:

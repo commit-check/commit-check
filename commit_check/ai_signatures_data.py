@@ -130,6 +130,15 @@ def _identity(value_pattern: str, label: str) -> list[AiSignaturePattern]:
     ]
 
 
+def _app_bot(login: str) -> list[AiSignaturePattern]:
+    """The identity of a tool's GitHub App: ``<login>[bot]``, with any address.
+
+    A GitHub App commits under its own ``[bot]`` account, and no person can
+    hold that name, so the address needs no anchoring.
+    """
+    return _identity(rf"{re.escape(login)}\[bot\][ \t]*(?:<[^>\n]*>)?", f"{login}[bot]")
+
+
 def _disclosure(key: str, description: str) -> AiSignaturePattern:
     """A trailer that exists to disclose AI assistance, whatever its value."""
     return _trailer((key,), r"\S[^\n]*", ROLE_DISCLOSURE, description)
@@ -180,6 +189,8 @@ CLAUDE_CODE = KnownAiTool(
         # variants such as "Claude Opus 4.5 (1M context)" that the pattern
         # above misses.
         *_identity(r"[^<\n]*<noreply@anthropic\.com>", "... <noreply@anthropic.com>"),
+        # The Claude GitHub App, which commits as itself.
+        *_app_bot("claude"),
         # Body marker: generated-with notice
         _body_marker(
             r"🤖\s*Generated\s+(?:with|by)\s+\[?Claude",
@@ -221,6 +232,8 @@ CODEX = KnownAiTool(
     name_pattern=_names(r"codex"),
     patterns=[
         *_identity(r"Codex[ \t]*(?:<[^>\n]*>)?", "Codex"),
+        # Codex in the cloud commits through its GitHub App.
+        *_app_bot("chatgpt-codex-connector"),
     ],
 )
 
@@ -242,6 +255,8 @@ CURSOR = KnownAiTool(
         # Cursor's agent signs as ``Cursor Agent <cursoragent@cursor.com>``;
         # the address catches it under any display name.
         *_identity(r"[^<\n]*<cursoragent@cursor\.com>", "... <cursoragent@cursor.com>"),
+        # Cursor's background agent commits through its GitHub App.
+        *_app_bot("cursor"),
         # Cursor's own mark on commits it writes:
         # https://forum.cursor.com/t/allow-disabling-made-with-cursor-commit-trailer/154494
         _trailer(
@@ -418,6 +433,14 @@ QWEN_CODE = KnownAiTool(
     ],
 )
 
+# --- Amazon Q Developer ---
+# The Amazon Q Developer agent commits through its GitHub App.
+AMAZON_Q = KnownAiTool(
+    name="Amazon Q Developer",
+    name_pattern=_names(r"amazon[ \t]+q(?:[ \t]+developer)?|amazon-q-developer"),
+    patterns=[*_app_bot("amazon-q-developer")],
+)
+
 # --- Generic / catch-all AI patterns ---
 GENERIC_AI = KnownAiTool(
     name="Generic AI",
@@ -481,5 +504,6 @@ ALL_KNOWN_TOOLS: list[KnownAiTool] = [
     CONTINUE,
     MISTRAL_VIBE,
     QWEN_CODE,
+    AMAZON_Q,
     GENERIC_AI,
 ]

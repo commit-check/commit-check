@@ -343,12 +343,17 @@ CLAUDE_CO_AUTHOR = "Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 
 
 def _disclose_outcomes(message, commit_config=None, warn=None):
-    """The three disclose rules, built as the config builds them, run on *message*."""
+    """The three disclose rules, built as the config builds them, run on *message*.
+
+    CC017 is built too, but reads the commit's author, not the message.
+    """
     config = {"commit": {"ai_attribution": "disclose", **(commit_config or {})}}
     if warn:
         config["warn"] = warn
     rules = [
-        r for r in RuleBuilder(config).build_all_rules() if r.check.startswith("ai_")
+        r
+        for r in RuleBuilder(config).build_all_rules()
+        if r.check.startswith("ai_") and r.check != "ai_author"
     ]
     outcomes = ValidationEngine(rules).validate_all_detailed(
         ValidationContext(stdin_text=message)
