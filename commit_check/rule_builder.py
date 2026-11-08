@@ -575,7 +575,7 @@ class RuleBuilder:
     def _build_length_rule(
         self, catalog_entry: RuleCatalogEntry, config_key: str
     ) -> ValidationRule | None:
-        """Build subject length validation rule."""
+        """Build subject length validation rule; 0 switches the rule off."""
         length = self.commit_config.get(config_key)
         if length is None:
             return None
@@ -585,6 +585,11 @@ class RuleBuilder:
             raise ConfigError(
                 f"{setting} must be a whole number, got {length!r}", setting=setting
             )
+        # 0 turns the rule off, as max_path_length = 0 does. It used to be a
+        # limit of 0 characters, so a project that only wanted the AI check
+        # had to pick an arbitrary large number to get rid of the length one.
+        if length <= 0:
+            return None
 
         # The suggestion is templated on the same values as the error: naming
         # the configured length is the whole point of the advice, and "the

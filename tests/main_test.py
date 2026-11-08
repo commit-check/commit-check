@@ -853,6 +853,31 @@ class TestEnvironmentVariableIntegration:
         assert result == 1  # Should fail due to length
 
     @pytest.mark.benchmark
+    def test_ai_check_alone_with_length_rules_off(self, mocker, monkeypatch):
+        """Only the AI check runs when the length rules are set to 0.
+
+        The setup a project uses to enforce its AI policy and nothing else:
+        a long subject passes, an AI co-author still fails.
+        """
+        monkeypatch.setenv("CCHK_AI_ATTRIBUTION", "forbid")
+        monkeypatch.setenv("CCHK_CONVENTIONAL_COMMITS", "false")
+        monkeypatch.setenv("CCHK_SUBJECT_MAX_LENGTH", "0")
+        monkeypatch.setenv("CCHK_SUBJECT_MIN_LENGTH", "0")
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("commit_check.engine.get_commit_info", return_value="test-user")
+        monkeypatch.setattr("sys.argv", ["commit-check", "--message"])
+        subject = "Update dependency org.example:some-long-artifact-name " * 3
+
+        mocker.patch("sys.stdin.read", return_value=f"{subject}\n")
+        assert main() == 0
+
+        mocker.patch(
+            "sys.stdin.read",
+            return_value=f"{subject}\n\nCo-authored-by: Claude <noreply@anthropic.com>\n",
+        )
+        assert main() == 1
+
+    @pytest.mark.benchmark
     def test_env_allow_commit_types(self, mocker, monkeypatch):
         """Test CCHK_ALLOW_COMMIT_TYPES environment variable."""
         monkeypatch.setenv("CCHK_ALLOW_COMMIT_TYPES", "feat,fix")

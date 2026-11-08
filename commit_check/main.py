@@ -309,7 +309,7 @@ def _get_parser() -> argparse.ArgumentParser:
         type=parse_int,
         default=None,
         metavar="INT",
-        help="maximum length of commit subject",
+        help="maximum length of commit subject; 0 turns the check off",
     )
 
     commit_group.add_argument(
@@ -317,7 +317,7 @@ def _get_parser() -> argparse.ArgumentParser:
         type=parse_int,
         default=None,
         metavar="INT",
-        help="minimum length of commit subject",
+        help="minimum length of commit subject; 0 turns the check off",
     )
 
     commit_group.add_argument(
