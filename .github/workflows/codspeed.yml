@@ -40,6 +40,10 @@ jobs:
         # in the CodSpeed docs): under --codspeed on pytest 9, test-groups does
         # not split and every shard runs the full set. pytest-split partitions
         # the --codspeed selection into disjoint groups (--group is 1-indexed).
+        # Groups are balanced by run time from .test_durations, which holds
+        # per-benchmark times measured in this workflow (simulation mode).
+        # Benchmarks missing from it are counted at the average time; refresh
+        # it when shard run times drift apart. --splits follows the matrix size.
         shard: [1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -56,5 +60,5 @@ jobs:
         uses: CodSpeedHQ/action@78102a468f96d8e0ccb92d0ec49425753fc42062 # v5.6.0
         with:
           token: ${{ secrets.CODSPEED_TOKEN }}
-          run: pytest tests/ --codspeed --splits ${{ strategy.job-total }} --group ${{ matrix.shard }} --durations=0 --durations-min=0
+          run: pytest tests/ --codspeed --splits ${{ strategy.job-total }} --group ${{ matrix.shard }} --splitting-algorithm least_duration
           mode: simulation # https://codspeed.io/docs/instruments
