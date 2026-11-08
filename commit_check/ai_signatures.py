@@ -248,10 +248,11 @@ def detect_ai_author(name: str, email: str) -> str | None:
     if not name and not email:
         return None
     identity = f"{name} <{email}>" if email else name
-    for signature in detect_ai_signatures(f"x\n\nCo-authored-by: {identity}"):
-        if signature["role"] == ROLE_CO_AUTHOR:
-            return signature["tool"]
-    return None
+    signatures = detect_ai_signatures(f"x\n\nCo-authored-by: {identity}")
+    return next(
+        (s["tool"] for s in signatures if s["role"] == ROLE_CO_AUTHOR),
+        None,
+    )
 
 
 def has_ai_signature(message: str) -> bool:
