@@ -56,5 +56,5 @@ jobs:
         uses: CodSpeedHQ/action@78102a468f96d8e0ccb92d0ec49425753fc42062 # v5.6.0
         with:
           token: ${{ secrets.CODSPEED_TOKEN }}
-          run: pytest tests/ --codspeed --splits 5 --group ${{ matrix.shard }}
+          run: pytest tests/ --codspeed --splits ${{ strategy.job-total }} --group ${{ matrix.shard }} --durations=0 --durations-min=0
           mode: simulation # https://codspeed.io/docs/instruments
