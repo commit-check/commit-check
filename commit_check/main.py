@@ -191,11 +191,18 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     check_group.add_argument(
-        "--ai-only",
+        "--ai-attribution-only",
         action="store_true",
         help="check only the AI attribution of the message (CC013 to CC016), "
         "for text that is not a commit message, such as a pull request "
         "description; implies --message",
+    )
+    # The name it shipped with in 2.20.1, kept so existing scripts still work.
+    check_group.add_argument(
+        "--ai-only",
+        dest="ai_attribution_only",
+        action="store_true",
+        help=argparse.SUPPRESS,
     )
 
     check_group.add_argument(
@@ -688,7 +695,9 @@ def _get_requested_checks(args: argparse.Namespace) -> set[str]:
     requested_checks: set[str] = set()
 
     if args.message:
-        requested_checks |= AI_TEXT_CHECKS if args.ai_only else MESSAGE_CHECKS
+        requested_checks |= (
+            AI_TEXT_CHECKS if args.ai_attribution_only else MESSAGE_CHECKS
+        )
     if args.branch:
         requested_checks |= BRANCH_CHECKS
     if args.tag:
@@ -742,7 +751,7 @@ def _run_json_output(
         "checks": [o.to_dict() for o in outcomes],
     }
     if args.message:
-        report["ai_tools"] = ai_tools_in(context, author=not args.ai_only)
+        report["ai_tools"] = ai_tools_in(context, author=not args.ai_attribution_only)
     print(json.dumps(report, indent=2))
     # Only a failure is an error. A skipped run validated nothing, but that
     # is not a policy violation, so it must not turn into a non-zero exit.
@@ -759,7 +768,7 @@ def main() -> int:
 
     try:
         # Handle positional commit_msg_file argument for pre-commit compatibility
-        if args.commit_msg_file or args.ai_only:
+        if args.commit_msg_file or args.ai_attribution_only:
             args.message = True
 
         if args.rev is not None:
@@ -870,7 +879,7 @@ def main() -> int:
             and (stdin_content is None or stdin_is_message),
             stdin_is_message=stdin_is_message,
             push_from_pre_commit=push_from_pre_commit,
-            not_a_commit=args.ai_only,
+            not_a_commit=args.ai_attribution_only,
         )
 
         # Run validation – choose output mode based on --format

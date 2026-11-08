@@ -2242,8 +2242,8 @@ class TestLastResortErrorIsNeverBlank:
         assert capsys.readouterr().err == expected
 
 
-class TestAiOnly:
-    """``--ai-only``: the AI rules on text that is not a commit message."""
+class TestAiAttributionOnly:
+    """``--ai-attribution-only``: the AI rules on text that is not a commit message."""
 
     BODY = (
         "This adds a parser.\n\n"
@@ -2264,7 +2264,7 @@ class TestAiOnly:
             capsys,
             monkeypatch,
             self.BODY,
-            "--ai-only",
+            "--ai-attribution-only",
             "--ai-attribution",
             "forbid",
         )
@@ -2287,7 +2287,7 @@ class TestAiOnly:
             capsys,
             monkeypatch,
             "This adds a parser.\n\nAssisted-by: Claude Code\n",
-            "--ai-only",
+            "--ai-attribution-only",
             "--ai-attribution",
             "disclose",
         )
@@ -2302,7 +2302,9 @@ class TestAiOnly:
         self, mocker, capsys, monkeypatch, pinned_author
     ):
         """Label-only: no verdict, but the tools are reported."""
-        rc, data = self._run_json(mocker, capsys, monkeypatch, self.BODY, "--ai-only")
+        rc, data = self._run_json(
+            mocker, capsys, monkeypatch, self.BODY, "--ai-attribution-only"
+        )
         assert rc == 0
         assert data["status"] == "pass"
         assert data["checks"] == []
@@ -2319,12 +2321,34 @@ class TestAiOnly:
             capsys,
             monkeypatch,
             "This adds a parser.\n",
-            "--ai-only",
+            "--ai-attribution-only",
             "--ai-attribution",
             "forbid",
         )
         assert rc == 0
         assert data["ai_tools"] == []
+
+    def test_the_old_name_still_works(self, mocker, capsys, monkeypatch, pinned_author):
+        """``--ai-only``, the name it shipped with in 2.20.1, is a hidden alias."""
+        rc, data = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            self.BODY,
+            "--ai-only",
+            "--ai-attribution",
+            "forbid",
+        )
+        assert rc == 1
+        assert [c["rule_id"] for c in data["checks"]] == ["CC013"]
+
+    def test_the_old_name_is_not_in_the_help(self, capsys, monkeypatch):
+        monkeypatch.setattr("sys.argv", [CMD, "--help"])
+        with pytest.raises(SystemExit):
+            main()
+        out = capsys.readouterr().out
+        assert "--ai-attribution-only" in out
+        assert "--ai-only" not in out
 
 
 class TestAiToolsInJson:

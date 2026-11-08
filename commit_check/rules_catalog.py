@@ -326,7 +326,7 @@ MESSAGE_CHECKS: frozenset[str] = frozenset(
     for entry in COMMIT_RULES
     if entry.check not in {"author_name", "author_email", "ignore_authors"}
 )
-#: What ``--ai-only`` runs: the AI attribution a text makes (CC013 to CC016),
+#: What ``--ai-attribution-only`` runs: the AI attribution a text makes (CC013 to CC016),
 #: for text that is not a commit, such as a pull request description. CC017
 #: is left out: it judges a commit's author, which such text does not have.
 AI_TEXT_CHECKS: frozenset[str] = frozenset(
