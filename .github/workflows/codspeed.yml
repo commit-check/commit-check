@@ -28,6 +28,19 @@ jobs:
   benchmarks:
     name: Run benchmarks
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Split the benchmark set across CI jobs instead of across processes in
+        # one job. Each shard runs single-process, so every benchmark is
+        # measured in the same context as a serial run and the simulated numbers
+        # stay stable; CodSpeed aggregates the shards into one report.
+        # https://codspeed.io/docs/benchmarks/python
+        # Sharding is done with pytest-split (not the pytest-test-groups shown
+        # in the CodSpeed docs): under --codspeed on pytest 9, test-groups does
+        # not split and every shard runs the full set. pytest-split partitions
+        # the --codspeed selection into disjoint groups (--group is 1-indexed).
+        shard: [1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -43,5 +56,5 @@ jobs:
         uses: CodSpeedHQ/action@78102a468f96d8e0ccb92d0ec49425753fc42062 # v5.6.0
         with:
           token: ${{ secrets.CODSPEED_TOKEN }}
-          run: pytest tests/ --codspeed -n auto
+          run: pytest tests/ --codspeed --splits 5 --group ${{ matrix.shard }}
           mode: simulation # https://codspeed.io/docs/instruments
