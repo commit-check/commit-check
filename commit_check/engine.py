@@ -77,6 +77,10 @@ def is_merge_subject(subject: str) -> bool:
 _WIP_MARKER = re.compile(r"^[ \t]*(?:\[wip\]|wip\b)", re.IGNORECASE)
 
 
+#: The git config key naming the person who will author the next commit.
+_USER_NAME = "user.name"
+
+
 class ValidationResult(IntEnum):
     """Validation result codes.
 
@@ -285,10 +289,10 @@ class BaseValidator(ABC):
         if context.stdin_text is not None or context.commit_file is not None:
             return (
                 os.environ.get("GIT_AUTHOR_NAME", "").strip()
-                or get_git_config_value("user.name")
+                or get_git_config_value(_USER_NAME)
                 or get_commit_info("an")
             )
-        return get_commit_info("an") or get_git_config_value("user.name")
+        return get_commit_info("an") or get_git_config_value(_USER_NAME)
 
     @staticmethod
     def _message_was_supplied(context: ValidationContext) -> bool:
@@ -704,7 +708,7 @@ class AuthorValidator(BaseValidator):
             return supplied.strip()
 
         git_config_map = {
-            "author_name": "user.name",
+            "author_name": _USER_NAME,
             "author_email": "user.email",
         }
         git_log_map = {
