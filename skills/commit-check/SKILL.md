@@ -16,7 +16,7 @@ Check your work locally before you commit, so you fix it once instead of after r
 
 ## 1. Read the project's policy
 
-Look for the config file, in this order:
+Run commit-check from the repository root. It reads the first of these files that exists there:
 
 ```text
 cchk.toml
@@ -44,7 +44,9 @@ printf '%s\n' "feat: add login page" | commit-check --message --compact
 For a multi-line message, write it to a file and pass the path:
 
 ```bash
-commit-check --message --compact .git/COMMIT_MSG_DRAFT
+draft=$(mktemp)
+printf '%s\n' "$MESSAGE" > "$draft"
+commit-check --message --compact "$draft"
 ```
 
 To get the suggested fix in a form you can parse, add `--format json`. Each failed check has `error`, `suggest` and, when there is a mechanical fix, `fix` with the corrected text. Rule details are at `docs_url`.
@@ -52,10 +54,10 @@ To get the suggested fix in a form you can parse, add `--format json`. Each fail
 When every failure has a mechanical fix (a type's case, a missing colon), `--fix` rewrites the file for you:
 
 ```bash
-commit-check --message --fix .git/COMMIT_MSG_DRAFT
+commit-check --message --fix "$draft"
 ```
 
-Re-run the check after any change until it exits `0`.
+Re-run the check after any change until it exits `0`, then commit that exact text with `git commit -F "$draft"`.
 
 ## 3. Respect the AI attribution policy
 
