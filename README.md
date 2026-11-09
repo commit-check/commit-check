@@ -258,3 +258,8 @@ Questions and ideas go to [Discussions](https://github.com/commit-check/commit-c
 bugs to [Issues](https://github.com/commit-check/commit-check/issues).
 Releases follow [Semantic Versioning](https://semver.org/). Released under the
 [MIT License](https://github.com/commit-check/commit-check/blob/main/LICENSE).
+
+Thanks to everyone who has contributed. Want to join them? Start with
+[CONTRIBUTING.md](https://github.com/commit-check/commit-check/blob/main/CONTRIBUTING.md).
+
+[![Contributors](https://contrib.rocks/image?repo=commit-check/commit-check)](https://github.com/commit-check/commit-check/graphs/contributors)
