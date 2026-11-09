@@ -70,7 +70,7 @@ The same `cchk.toml` drives all of them:
 |---|---|
 | GitHub, no workflow | [Install the GitHub App](https://github.com/apps/commit-check) — one check run per commit |
 | GitHub Actions | `uses: commit-check/commit-check-action@v2` — see [commit-check-action](https://github.com/commit-check/commit-check-action) |
-| AI agents | `--format json`, the [Python API](#ai-native-usage), or the [MCP server](https://github.com/commit-check/commit-check-mcp) |
+| AI agents | The [agent skill](#agent-skill), `--format json`, the [Python API](#ai-native-usage), or the [MCP server](https://github.com/commit-check/commit-check-mcp) |
 
 ## What it checks
 
@@ -214,6 +214,21 @@ holds a regex that does not compile or gives a `[commit]` or `[branch]` setting
 a value of the wrong type (`subject_max_length = "abc"`), or git cannot read the
 repository (not a repository, or "dubious ownership"). A `[files]` value it
 cannot use turns that rule off with a notice instead. `--dry-run` reports everything and exits `0`. More output formats: [examples](https://commit-check.com/example/).
+
+### Agent skill
+
+[`skills/commit-check`](https://github.com/commit-check/commit-check/blob/main/skills/commit-check/SKILL.md) teaches a coding agent
+to read the project's `cchk.toml`, check a message before it commits, follow
+the AI attribution policy and never skip the hook. It uses the
+[Agent Skills](https://agentskills.io) format, which Claude Code, GitHub
+Copilot, Codex, Cursor and others load:
+
+```bash
+npx skills add https://github.com/commit-check/commit-check --skill commit-check
+```
+
+Or copy the folder into your agent's skills directory, such as
+`.claude/skills/commit-check/` for Claude Code.
 
 ## Why Commit Check
 
