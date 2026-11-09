@@ -316,7 +316,7 @@ class TestWarnSeverityInTheEngine:
         )
         out, err = capsys.readouterr()
         assert result == ValidationResult.PASS
-        assert "subject-imperative check warning ==> feat: added x" in out
+        assert "subject-imperative warning: feat: added x" in out
         assert "does not fail the run" in out
         assert "Commit rejected" not in out
         assert "⚠ warnings (not enforced): subject-imperative" in err
@@ -327,8 +327,8 @@ class TestWarnSeverityInTheEngine:
         )
         out, _ = capsys.readouterr()
         assert result == ValidationResult.FAIL
-        assert "message check failed ==> added x" in out
-        assert "subject-imperative check warning ==> added x" in out
+        assert "message failed: added x" in out
+        assert "subject-imperative warning: added x" in out
 
     def test_overall_status_only_counts_failures(self):
         assert overall_status(["warn", "pass"]) == "pass"
@@ -524,9 +524,9 @@ class TestDisclosePolicyInTheEngine:
         )
         out, _ = capsys.readouterr()
         assert result == ValidationResult.FAIL
-        assert f"ai-disclosure check failed ==> {CLAUDE_CO_AUTHOR}" in out
-        assert f"ai-co-author check failed ==> {CLAUDE_CO_AUTHOR}" in out
+        assert f"ai-disclosure failed: {CLAUDE_CO_AUTHOR}" in out
+        assert f"ai-co-author failed: {CLAUDE_CO_AUTHOR}" in out
         assert "ai-signoff" not in out
         assert 'Suggest: Disclose the tool with "Assisted-by: Claude Opus 4.5"' in out
-        assert "Docs: https://commit-check.com/rules/#cc014" in out
-        assert "Docs: https://commit-check.com/rules/#cc015" in out
+        assert "Docs:    https://commit-check.com/rules/#cc014" in out
+        assert "Docs:    https://commit-check.com/rules/#cc015" in out

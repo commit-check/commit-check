@@ -247,7 +247,7 @@ class BaseValidator(ABC):
         # Populated by _print_failure() on every failure, regardless of mode.
         self._last_failure: dict[str, str] | None = None
         # The failure blocks as the printer takes them, (rule dict, value),
-        # kept so the engine can print them after the banner.
+        # kept so the engine can print them after the header.
         self._failure_blocks: list[tuple[dict, str]] = []
         # Populated by subclasses on every validation (pass or fail) with the
         # concrete value that was checked (subject, branch, author, ...), so
@@ -1739,7 +1739,7 @@ class ValidationEngine:
         """Run all validations, print the findings, and return the overall result.
 
         The failure blocks are printed once every rule has run, not as each
-        rule fails: the banner above them names what was rejected, and that
+        rule fails: the header above them names what was rejected, and that
         is only known once it is clear whether the failures are all about the
         commit, all about the branch, or spread across both.
         """
@@ -1769,7 +1769,7 @@ class ValidationEngine:
                 continue  # Skip unknown validators
 
             validator: BaseValidator = validator_class(rule)
-            validator._suppress_output = True  # printed later, after the banner
+            validator._suppress_output = True  # printed later, after the header
             result = validator.validate(context)
             blocks.extend(validator._failure_blocks)
             if result == ValidationResult.SKIP:
@@ -1786,11 +1786,11 @@ class ValidationEngine:
     def _print_blocks(
         context: ValidationContext, failed: list[str], blocks: list[tuple[dict, str]]
     ) -> None:
-        """Print the banner, named for *failed*, then every failure block."""
+        """Print the header, named for *failed*, then every failure block."""
         if not blocks:
             return
 
-        # Only an enforced failure earns the banner; a warning rejects
+        # Only an enforced failure earns the header; a warning rejects
         # nothing. --compact and --no-banner keep it off entirely.
         if (
             failed
@@ -1798,7 +1798,7 @@ class ValidationEngine:
             and not context.compact
             and not print_error_header.has_been_called
         ):
-            print_error_header(rejection_headline(failed))
+            print_error_header(rejection_headline(failed), failed=len(failed))
         for rule_dict, value in blocks:
             _print_failure(
                 rule_dict,

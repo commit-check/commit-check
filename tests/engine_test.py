@@ -4347,7 +4347,7 @@ class TestFilesValidator:
 
 
 class TestValidateAllBanner:
-    """The text-mode banner names what the failing checks rejected."""
+    """The text-mode header names what the failing checks rejected."""
 
     @staticmethod
     def _run(rules, capsys, **context):
@@ -4362,12 +4362,9 @@ class TestValidateAllBanner:
     def test_branch_failure_gets_a_branch_banner_said_once(self, capsys):
         result, out = self._run([ValidationRule(check="branch", regex=r"^ok$")], capsys)
         assert result == ValidationResult.FAIL
-        assert out.startswith("Branch rejected by Commit-Check.")
+        assert out.startswith("✖ Branch rejected by Commit Check · 1 check failed\n\n")
         assert out.count("rejected") == 1
-        # The banner is complete before the first failure block starts.
-        assert out.index("(c).-.(c)") < out.index(
-            "branch check failed ==> my_bad_branch"
-        )
+        assert "✖ CC201 branch failed: my_bad_branch" in out
 
     def test_commit_failure_gets_a_commit_banner(self, capsys):
         rules = [
@@ -4376,12 +4373,10 @@ class TestValidateAllBanner:
         ]
         result, out = self._run(rules, capsys)
         assert result == ValidationResult.FAIL
-        assert out.startswith("Commit rejected by Commit-Check.")
+        assert out.startswith("✖ Commit rejected by Commit Check · 2 checks failed")
         assert out.count("rejected") == 1
         # Both blocks follow, in rule order.
-        assert out.index("message check failed") < out.index(
-            "subject-max-length check failed"
-        )
+        assert out.index("message failed") < out.index("subject-max-length failed")
 
     def test_failures_across_families_get_the_neutral_banner(self, capsys):
         rules = [
@@ -4389,8 +4384,8 @@ class TestValidateAllBanner:
             ValidationRule(check="branch", regex=r"^ok$"),
         ]
         _, out = self._run(rules, capsys)
-        assert out.startswith("Checks failed - rejected by Commit-Check.")
-        assert out.count("rejected") == 1
+        assert out.startswith("✖ Rejected by Commit Check · 2 checks failed")
+        assert out.count("Rejected") == 1
 
     def test_only_the_failing_family_is_named(self, capsys):
         """A run that checks the message and the branch, where only the branch
@@ -4400,20 +4395,20 @@ class TestValidateAllBanner:
             ValidationRule(check="branch", regex=r"^ok$"),
         ]
         _, out = self._run(rules, capsys)
-        assert out.startswith("Branch rejected by Commit-Check.")
+        assert out.startswith("✖ Branch rejected by Commit Check")
 
     def test_a_warning_alone_earns_no_banner(self, capsys):
         rules = [ValidationRule(check="branch", regex=r"^ok$", severity="warn")]
         result, out = self._run(rules, capsys)
         assert result == ValidationResult.PASS
         assert "rejected" not in out
-        assert "branch check warning ==> my_bad_branch" in out
+        assert "branch warning: my_bad_branch" in out
 
     def test_no_banner_and_compact_keep_the_banner_off(self, capsys):
         rules = [ValidationRule(check="branch", regex=r"^ok$")]
         _, out = self._run(rules, capsys, no_banner=True)
         assert "rejected" not in out
-        assert "branch check failed ==> my_bad_branch" in out
+        assert "branch failed: my_bad_branch" in out
         _, out = self._run(rules, capsys, compact=True)
         assert out == "[FAIL] CC201 branch: my_bad_branch\n"
 

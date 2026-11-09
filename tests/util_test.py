@@ -730,36 +730,60 @@ class TestUtil:
             # Must print on stdout with given argument.
             print_error_header()
             stdout, _ = capfd.readouterr()
-            assert stdout.startswith("Commit rejected by Commit-Check.")
-            assert "(c).-.(c)" in stdout
-            # The verdict is said once; the old closing "Commit rejected."
-            # line repeated it below the art.
-            assert stdout.count("rejected") == 1
-            assert "Commit rejected." not in stdout
+            # One line and a blank one: the header names the verdict once,
+            # and the failures start right under it.
+            assert stdout == "✖ Commit rejected by Commit Check\n\n"
+
+        def test_print_error_header_counts_the_failures(self, capfd):
+            print_error_header("Commit rejected by Commit Check", failed=1)
+            print_error_header("Commit rejected by Commit Check", failed=3)
+            stdout, _ = capfd.readouterr()
+            assert "✖ Commit rejected by Commit Check · 1 check failed\n" in stdout
+            assert "✖ Commit rejected by Commit Check · 3 checks failed\n" in stdout
+
+        def test_symbols_fall_back_to_ascii(self, monkeypatch, capfd):
+            """A console that cannot encode the marker gets a plain one,
+            rather than a UnicodeEncodeError in place of the report."""
+            import types
+
+            from commit_check import util
+
+            monkeypatch.setattr(
+                util.sys,
+                "stdout",
+                types.SimpleNamespace(encoding="ascii", write=lambda _: None),
+            )
+            assert util._symbol("✖", "x") == "x"
+            monkeypatch.setattr(
+                util.sys,
+                "stdout",
+                types.SimpleNamespace(encoding="no-such-codec", write=lambda _: None),
+            )
+            assert util._symbol("✖", "x") == "x"
 
         @pytest.mark.benchmark
         def test_print_error_header_takes_the_headline(self, capfd):
-            print_error_header("Branch rejected by Commit-Check.")
+            print_error_header("Branch rejected by Commit Check")
             stdout, _ = capfd.readouterr()
-            assert stdout.startswith("Branch rejected by Commit-Check.")
+            assert stdout.startswith("✖ Branch rejected by Commit Check")
             assert "Commit rejected" not in stdout
 
         @pytest.mark.parametrize(
             "checks, headline",
             [
-                (["message"], "Commit rejected by Commit-Check."),
+                (["message"], "Commit rejected by Commit Check"),
                 (
                     ["subject_max_length", "author_name"],
-                    "Commit rejected by Commit-Check.",
+                    "Commit rejected by Commit Check",
                 ),
-                (["file_size"], "Commit rejected by Commit-Check."),
-                (["branch"], "Branch rejected by Commit-Check."),
-                (["merge_base"], "Branch rejected by Commit-Check."),
-                (["branch", "merge_base"], "Branch rejected by Commit-Check."),
-                (["tag"], "Tag rejected by Commit-Check."),
-                (["no_force_push"], "Push rejected by Commit-Check."),
-                (["message", "branch"], "Checks failed - rejected by Commit-Check."),
-                (["branch", "tag"], "Checks failed - rejected by Commit-Check."),
+                (["file_size"], "Commit rejected by Commit Check"),
+                (["branch"], "Branch rejected by Commit Check"),
+                (["merge_base"], "Branch rejected by Commit Check"),
+                (["branch", "merge_base"], "Branch rejected by Commit Check"),
+                (["tag"], "Tag rejected by Commit Check"),
+                (["no_force_push"], "Push rejected by Commit Check"),
+                (["message", "branch"], "Rejected by Commit Check"),
+                (["branch", "tag"], "Rejected by Commit Check"),
             ],
         )
         def test_rejection_headline_names_what_failed(self, checks, headline):
@@ -784,9 +808,9 @@ class TestUtil:
                 "release_1",
             )
             stdout, _ = capfd.readouterr()
-            assert stdout.startswith("Tag rejected by Commit-Check.")
+            assert stdout.startswith("✖ Tag rejected by Commit Check")
             assert stdout.count("rejected") == 1
-            assert "CC401 tag check failed ==> release_1" in stdout
+            assert "CC401 tag failed: release_1" in stdout
 
         @pytest.mark.benchmark
         @pytest.mark.parametrize(
@@ -811,7 +835,7 @@ class TestUtil:
             stdout, _ = capfd.readouterr()
             assert printed_name in stdout
             assert "_" not in stdout.split(" check failed")[0]
-            assert "check failed ==>" in stdout
+            assert " failed: " in stdout
             assert dummy_error in stdout
 
     class TestHyperlinks:
@@ -984,7 +1008,7 @@ class TestUtil:
                 no_banner=True,
             )
             stdout, _ = capfd.readouterr()
-            assert "Docs: https://commit-check.com/rules/#cc005" in stdout
+            assert "Docs:    https://commit-check.com/rules/#cc005" in stdout
 
         @pytest.mark.benchmark
         def test_docs_line_dropped_when_id_is_the_link(self, capfd, mocker):
@@ -1023,7 +1047,7 @@ class TestUtil:
             stdout, _ = capfd.readouterr()
             lines = stdout.splitlines()
             assert lines[-1] == ""
-            assert lines[-2].startswith("Docs: ")
+            assert lines[-2].startswith("  Docs:    ")
             assert "" not in lines[:-1]
 
     class TestColor:
@@ -1832,10 +1856,10 @@ class TestPrintFailureWarnSeverity:
         _print_failure(self.check(), "Feature/x")
         out = capfd.readouterr().out
         assert "Commit rejected" not in out
-        assert "branch check warning ==> " in out
+        assert "branch warning: " in out
         assert "check failed" not in out
         assert "Suggest: " in out
-        assert "Docs: https://commit-check.com/rules/#cc201" in out
+        assert "Docs:    https://commit-check.com/rules/#cc201" in out
         assert (
             "This rule is set to warn in the config; it does not fail the run." in out
         )
@@ -1886,8 +1910,31 @@ class TestPrintableFailureText:
         out = capfd.readouterr().out
         assert "\x1b]52" not in out
         assert "bad\\x1b]52;c;eA==\\x07" in out
-        assert "\n\\::add-mask::x" in out
+        # Only the value's first line is shown; the second is not printed at
+        # all, so it cannot reach the runner as a command.
+        assert "add-mask" not in out
+        assert "(+1 more line)" in out
         assert 'Use "x\\x1b[31m"' in out
+
+    @pytest.mark.parametrize(
+        "value, shown",
+        [
+            ("add login", "failed: add login\n"),
+            ("add login\n\nBody text.\n", "failed: add login (+1 more line)\n"),
+            (
+                "add login\n\nBody.\n\nSigned-off-by: A <a@b.c>",
+                "failed: add login (+2 more lines)\n",
+            ),
+        ],
+    )
+    def test_failure_line_shows_the_subject_of_a_message(
+        self, capfd, monkeypatch, value, shown
+    ):
+        """The whole message is the value of several rules; the line shows
+        its subject and says how much more there is."""
+        monkeypatch.setattr(print_error_header, "has_been_called", True)
+        _print_failure({"check": "message", "rule_id": "CC001"}, value)
+        assert capfd.readouterr().out.startswith(f"✖ CC001 message {shown}")
 
     def test_compact_line_prints_the_value_inert(self, capfd):
         _print_failure(
