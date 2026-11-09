@@ -14,7 +14,7 @@ import sys
 from collections.abc import Iterable
 from subprocess import CalledProcessError
 
-from commit_check import GREEN, RED, RESET_COLOR, YELLOW
+from commit_check import BOLD, DIM, GREEN, RED, RESET_COLOR, YELLOW
 from commit_check.rules_catalog import display_name
 
 # C0 and C1 control characters, and DEL, except the newline and tab that a
@@ -55,7 +55,7 @@ def _print_failure(
     """Print a standardized failure message.
 
     A rule whose ``severity`` is ``"warn"`` prints the same block with the
-    word ``warning`` in place of ``failed``, no rejection banner, and one
+    word ``warning`` in place of ``failed``, no rejection header, and one
     closing line saying the run is not failed by it.
     """
     rule_id = check.get("rule_id", "")
@@ -66,7 +66,7 @@ def _print_failure(
         label = f"{rule_id} {name}" if rule_id else name
         print(f"[{'WARN' if warn else 'FAIL'}] {label}: {compact_value}")
         return
-    # The banner announces a rejection; a warning rejects nothing.
+    # The header announces a rejection; a warning rejects nothing.
     if not warn and not no_banner and not print_error_header.has_been_called:
         print_error_header(rejection_headline([check["check"]]))
     docs_url = check.get("docs_url", "") or ""
@@ -88,9 +88,14 @@ def _print_failure(
     # to read. Without hyperlink support — a pipe, a CI log — it is the only
     # way the reader gets the address at all, so it stays.
     if docs_url and not (rule_id and supports_hyperlinks()):
-        print(f"Docs: {docs_url}")
+        print(
+            f"{_DETAIL_INDENT}{DIM}Docs:{RESET_COLOR}    {DIM}{docs_url}{RESET_COLOR}"
+        )
     if warn:
-        print("This rule is set to warn in the config; it does not fail the run.")
+        print(
+            f"{_DETAIL_INDENT}{DIM}This rule is set to warn in the config; "
+            f"it does not fail the run.{RESET_COLOR}"
+        )
     # Blank line closes the whole block, rather than splitting it before the
     # documentation link.
     print()
@@ -786,7 +791,7 @@ def track_print_call(func):
     return wrapper
 
 
-#: What the banner says was rejected, by the check that failed. A check not
+#: What the header says was rejected, by the check that failed. A check not
 #: listed here is about the commit itself: its message, its author, the files
 #: it touches.
 _REJECTED_SUBJECTS = {
@@ -796,12 +801,26 @@ _REJECTED_SUBJECTS = {
     "no_force_push": "Push",
 }
 
-#: Width of the banner's ASCII art; the text lines are padded to match it.
-_BANNER_WIDTH = 66
+#: Detail lines (explanation, suggestion, docs) sit under the failing value,
+#: indented past the marker so the rule IDs form a column to scan down.
+_DETAIL_INDENT = "  "
+
+
+def _symbol(fancy: str, plain: str) -> str:
+    """*fancy* when stdout can encode it, else *plain*.
+
+    A Windows console on a legacy code page cannot print every symbol, and a
+    failure report that crashes with UnicodeEncodeError reports nothing.
+    """
+    try:
+        fancy.encode(getattr(sys.stdout, "encoding", None) or "ascii")
+    except (UnicodeEncodeError, LookupError):
+        return plain
+    return fancy
 
 
 def rejection_headline(checks: Iterable[str]) -> str:
-    """The banner's first line, naming what the failing *checks* rejected.
+    """The header's text, naming what the failing *checks* rejected.
 
     A developer who pushed a badly named branch reads "Commit rejected" and
     goes looking at their commit, so the line names the branch, tag or push
@@ -810,27 +829,25 @@ def rejection_headline(checks: Iterable[str]) -> str:
     """
     subjects = {_REJECTED_SUBJECTS.get(check, "Commit") for check in checks}
     if len(subjects) == 1:
-        return f"{subjects.pop()} rejected by Commit-Check."
-    return "Checks failed - rejected by Commit-Check."
+        return f"{subjects.pop()} rejected by Commit Check"
+    return "Rejected by Commit Check"
 
 
 @track_print_call
-def print_error_header(headline: str = "Commit rejected by Commit-Check.") -> None:
-    """Print the rejection banner: *headline*, then the ASCII art.
+def print_error_header(
+    headline: str = "Commit rejected by Commit Check", failed: int = 0
+) -> None:
+    """Print the one-line rejection header, then a blank line.
 
-    :param headline: the first line, from :func:`rejection_headline`
+    :param headline: the text, from :func:`rejection_headline`
+    :param failed: how many enforced checks failed; named when given
     """
-    print(headline.ljust(_BANNER_WIDTH))
-    print("                                                                  ")
-    print(r"  (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)    (c).-.(c)  ")
-    print(r"   / ._. \      / ._. \      / ._. \      / ._. \      / ._. \   ")
-    print(r" __\( C )/__  __\( H )/__  __\( E )/__  __\( C )/__  __\( K )/__ ")
-    print(r"(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)(_.-/'-'\-._)")
-    print(r"   || E ||      || R ||      || R ||      || O ||      || R ||   ")
-    print(r" _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._  _.' '-' '._ ")
-    print(r"(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)(.-./`-´\.-.)")
-    print(r" `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´  `-´     `-´ ")
-    print("                                                                  ")
+    count = ""
+    if failed:
+        noun = "check" if failed == 1 else "checks"
+        count = f" {DIM}· {failed} {noun} failed{RESET_COLOR}"
+    print(f"{BOLD}{RED}{_symbol('✖', 'x')} {headline}{RESET_COLOR}{count}")
+    print()
 
 
 #: Terminals known to render OSC 8 hyperlinks, by ``TERM_PROGRAM``.
@@ -908,10 +925,21 @@ def print_error_message(
     label = rule_id
     if rule_id and docs_url and supports_hyperlinks():
         label = hyperlink(rule_id, docs_url)
-    prefix = f"{YELLOW}{label}{RESET_COLOR} " if rule_id else ""
-    verdict, colour = ("warning", YELLOW) if warn else ("failed", RED)
+    prefix = f"{BOLD}{label}{RESET_COLOR} " if rule_id else ""
+    if warn:
+        marker, verdict, colour = _symbol("▲", "!"), "warning", YELLOW
+    else:
+        marker, verdict, colour = _symbol("✖", "x"), "failed", RED
+    # A whole commit message is the value of several rules; its subject names
+    # the commit, and the rest would push the explanation off the screen.
+    first, _, rest = reason.partition("\n")
+    more = sum(1 for line in rest.splitlines() if line.strip())
+    tail = ""
+    if more:
+        tail = f" {DIM}(+{more} more line{'s' if more > 1 else ''}){RESET_COLOR}"
     print(
-        f"{prefix}{YELLOW}{name}{RESET_COLOR} check {verdict} ==> {colour}{reason}{RESET_COLOR}"
+        f"{colour}{marker}{RESET_COLOR} {prefix}{YELLOW}{name}{RESET_COLOR} "
+        f"{verdict}: {colour}{first}{RESET_COLOR}{tail}"
     )
     if error:
         # Same trade-off as the Docs: line above — once the spec name is a
@@ -920,7 +948,7 @@ def print_error_message(
         if spec_name and spec_url and supports_hyperlinks():
             error = error.replace(f". See {spec_url}", "")
             error = error.replace(spec_name, hyperlink(spec_name, spec_url))
-        print(error)
+        print(f"{_DETAIL_INDENT}{error}")
 
 
 def print_suggestion(suggest: str) -> None:
@@ -928,4 +956,6 @@ def print_suggestion(suggest: str) -> None:
     :param suggest: what message to print out
     """
     if suggest:
-        print(f"Suggest: {GREEN}{suggest}{RESET_COLOR}")
+        print(
+            f"{_DETAIL_INDENT}{BOLD}{GREEN}Suggest:{RESET_COLOR} {GREEN}{suggest}{RESET_COLOR}"
+        )

@@ -1203,10 +1203,10 @@ class TestNoBanner:
 
         out, _ = capsys.readouterr()
         assert rc == 1
-        assert "Commit rejected by Commit-Check" not in out
+        assert "Commit rejected by Commit Check" not in out
         assert "(c).-.(c)" not in out
         # Error details should still appear
-        assert "check failed ==>" in out
+        assert " failed: " in out
 
     @pytest.mark.benchmark
     def test_no_banner_still_shows_error_details(self, mocker, capsys, monkeypatch):
@@ -1219,7 +1219,7 @@ class TestNoBanner:
         main()
 
         out, _ = capsys.readouterr()
-        assert "check failed ==>" in out
+        assert " failed: " in out
         assert "Suggest:" in out
 
     @pytest.mark.benchmark
@@ -1247,7 +1247,7 @@ class TestCompact:
 
         out, _ = capsys.readouterr()
         assert rc == 1
-        assert "Commit rejected by Commit-Check" not in out
+        assert "Commit rejected by Commit Check" not in out
         assert "(c).-.(c)" not in out
 
     @pytest.mark.benchmark
@@ -1700,9 +1700,9 @@ class TestBannerHeadline:
         monkeypatch.setattr("sys.argv", [CMD, "--branch", "--config", str(cfg)])
         assert main() == 1
         out, _ = capsys.readouterr()
-        assert out.startswith("Branch rejected by Commit-Check.")
+        assert out.startswith("✖ Branch rejected by Commit Check")
         assert out.count("rejected") == 1
-        assert "CC201 branch check failed ==> my_bad_branch" in out
+        assert "CC201 branch failed: my_bad_branch" in out
 
     def test_bad_message_is_a_commit_rejection(
         self, mocker, capsys, monkeypatch, pinned_author
@@ -1712,7 +1712,7 @@ class TestBannerHeadline:
         monkeypatch.setattr("sys.argv", [CMD, "-m"])
         assert main() == 1
         out, _ = capsys.readouterr()
-        assert out.startswith("Commit rejected by Commit-Check.")
+        assert out.startswith("✖ Commit rejected by Commit Check")
         assert out.count("rejected") == 1
 
 
@@ -1958,7 +1958,7 @@ class TestWarnLevel:
         rc = main()
         out, err = capsys.readouterr()
         assert rc == 0
-        assert "subject-imperative check warning ==> feat: added x" in out
+        assert "subject-imperative warning: feat: added x" in out
         assert "Commit rejected" not in out
         assert "⚠ warnings (not enforced): subject-imperative" in err
 

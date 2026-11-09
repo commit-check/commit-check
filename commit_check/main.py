@@ -286,7 +286,7 @@ def _get_parser() -> argparse.ArgumentParser:
         "--no-banner",
         action="store_true",
         default=False,
-        help="suppress the ASCII art banner on failure",
+        help="suppress the one-line rejection header on failure",
     )
 
     check_group.add_argument(
@@ -865,7 +865,7 @@ def main() -> int:
         if args.fix and commit_file_path and not args.dry_run:
             _fix_message_file(commit_file_path, filtered_rules, config_data)
 
-        # Reset banner state for this run
+        # Reset header state for this run
         print_error_header.has_been_called = False
 
         context = ValidationContext(

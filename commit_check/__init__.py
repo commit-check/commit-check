@@ -49,6 +49,8 @@ RED = "\033[91m" if _colored else ""
 GREEN = "\033[92m" if _colored else ""
 YELLOW = "\033[93m" if _colored else ""
 RESET_COLOR = "\033[0m" if _colored else ""
+BOLD = "\033[1m" if _colored else ""
+DIM = "\033[2m" if _colored else ""
 
 # Follow conventional commits
 DEFAULT_COMMIT_TYPES = [
