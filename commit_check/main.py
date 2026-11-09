@@ -21,6 +21,7 @@ from commit_check.engine import (
 )
 from commit_check.rule_builder import RuleBuilder
 from commit_check.rules_catalog import (
+    AI_COMMIT_CHECKS,
     AI_TEXT_CHECKS,
     BRANCH_CHECKS,
     FILES_CHECKS,
@@ -196,6 +197,12 @@ def _get_parser() -> argparse.ArgumentParser:
         help="check only the AI attribution of the message (CC013 to CC016), "
         "for text that is not a commit message, such as a pull request "
         "description; implies --message",
+    )
+    check_group.add_argument(
+        "--message-ai-attribution",
+        action="store_true",
+        help="check only the AI attribution of a commit (CC013 to CC017): the "
+        "message and its author, without the format rules; implies --message",
     )
     # The name it shipped with in 2.20.1, kept so existing scripts still work.
     check_group.add_argument(
@@ -695,9 +702,12 @@ def _get_requested_checks(args: argparse.Namespace) -> set[str]:
     requested_checks: set[str] = set()
 
     if args.message:
-        requested_checks |= (
-            AI_TEXT_CHECKS if args.ai_attribution_only else MESSAGE_CHECKS
-        )
+        if args.ai_attribution_only:
+            requested_checks |= AI_TEXT_CHECKS
+        elif args.message_ai_attribution:
+            requested_checks |= AI_COMMIT_CHECKS
+        else:
+            requested_checks |= MESSAGE_CHECKS
     if args.branch:
         requested_checks |= BRANCH_CHECKS
     if args.tag:
@@ -768,7 +778,16 @@ def main() -> int:
 
     try:
         # Handle positional commit_msg_file argument for pre-commit compatibility
-        if args.commit_msg_file or args.ai_attribution_only:
+        if args.ai_attribution_only and args.message_ai_attribution:
+            parser.error(
+                "--ai-attribution-only is for text that is not a commit and "
+                "--message-ai-attribution is for a commit; pass one or the other"
+            )
+        if (
+            args.commit_msg_file
+            or args.ai_attribution_only
+            or args.message_ai_attribution
+        ):
             args.message = True
 
         if args.rev is not None:
@@ -832,6 +851,14 @@ def main() -> int:
         for requested, checks, hint in _UNCONFIGURED_HINTS:
             if getattr(args, requested) and built_checks.isdisjoint(checks):
                 print(f"⊘ {hint}", file=sys.stderr)
+        # Unlike --ai-attribution-only, which still reports the AI tools for a
+        # label, this flag is asked for a verdict: with no policy it has none.
+        if args.message_ai_attribution and built_checks.isdisjoint(AI_COMMIT_CHECKS):
+            print(
+                "⊘ --message-ai-attribution requested but ai_attribution is "
+                '"ignore": set it to "forbid" or "disclose"',
+                file=sys.stderr,
+            )
 
         engine = ValidationEngine(filtered_rules)
 

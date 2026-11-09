@@ -332,5 +332,8 @@ MESSAGE_CHECKS: frozenset[str] = frozenset(
 AI_TEXT_CHECKS: frozenset[str] = frozenset(
     {"ai_attribution", "ai_disclosure", "ai_co_author", "ai_signoff"}
 )
+#: What ``--message-ai-attribution`` runs: the AI rules on a commit (CC013 to
+#: CC017), the text ones plus the AI author rule, and none of the format rules.
+AI_COMMIT_CHECKS: frozenset[str] = AI_TEXT_CHECKS | {"ai_author"}
 BRANCH_CHECKS: frozenset[str] = frozenset({"branch", "merge_base"})
 FILES_CHECKS: frozenset[str] = frozenset(entry.check for entry in FILES_RULES)

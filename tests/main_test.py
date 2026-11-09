@@ -2351,6 +2351,143 @@ class TestAiAttributionOnly:
         assert "--ai-only" not in out
 
 
+class TestMessageAiAttribution:
+    """``--message-ai-attribution``: the AI rules on a commit, without the format rules."""
+
+    def _run_json(self, mocker, capsys, monkeypatch, message, *argv):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=message)
+        monkeypatch.setattr("sys.argv", [CMD, "--format", "json", *argv])
+        rc = main()
+        captured = capsys.readouterr()
+        return rc, json.loads(captured.out), captured.err
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "WIP",
+            "fixup! Add a parser",
+            "Merge branch 'main' into feature/parser",
+            "a",
+            "Bump " + "x" * 90 + " from 1.0.0 to 2.0.0",
+        ],
+    )
+    def test_format_rules_do_not_run(
+        self, mocker, capsys, monkeypatch, pinned_author, message
+    ):
+        """Messages the default format rules reject pass when only AI is checked."""
+        rc, data, _ = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            message,
+            "--message-ai-attribution",
+            "--ai-attribution",
+            "forbid",
+        )
+        assert rc == 0
+        assert [c["rule_id"] for c in data["checks"]] == ["CC013", "CC017"]
+
+    def test_an_ai_co_author_fails_as_a_commit(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        """The advice is a commit's: re-commit, unlike for a description."""
+        rc, data, _ = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            "Add a parser\n\nCo-authored-by: Claude <noreply@anthropic.com>\n",
+            "--message-ai-attribution",
+            "--ai-attribution",
+            "forbid",
+        )
+        assert rc == 1
+        failed = [c for c in data["checks"] if c["status"] == "fail"]
+        assert [c["rule_id"] for c in failed] == ["CC013"]
+        assert "re-commit" in failed[0]["suggest"]
+        assert data["ai_tools"] == ["Claude Code"]
+
+    def test_the_author_is_judged(self, mocker, capsys, monkeypatch):
+        """Unlike --ai-attribution-only, an AI tool as the author fails (CC017)."""
+        mocker.patch(
+            "commit_check.engine.get_pending_author_identity",
+            return_value=("google-labs-jules[bot]", ""),
+        )
+        rc, data, _ = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            "Add a parser\n",
+            "--message-ai-attribution",
+            "--ai-attribution",
+            "forbid",
+        )
+        assert rc == 1
+        assert [(c["rule_id"], c["status"]) for c in data["checks"]] == [
+            ("CC013", "pass"),
+            ("CC017", "fail"),
+        ]
+
+    def test_under_disclose_the_four_rules_run(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        rc, data, _ = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            "wip\n\nAssisted-by: Claude Code\n",
+            "--message-ai-attribution",
+            "--ai-attribution",
+            "disclose",
+        )
+        assert rc == 0
+        assert [c["rule_id"] for c in data["checks"]] == [
+            "CC014",
+            "CC015",
+            "CC016",
+            "CC017",
+        ]
+
+    def test_with_message_it_still_runs_only_the_ai_rules(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        """A pre-commit hook passes -m; adding the flag narrows it to the AI rules."""
+        rc, data, _ = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            "WIP",
+            "-m",
+            "--message-ai-attribution",
+            "--ai-attribution",
+            "forbid",
+        )
+        assert rc == 0
+        assert [c["rule_id"] for c in data["checks"]] == ["CC013", "CC017"]
+
+    def test_ignore_says_nothing_was_checked(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        rc, data, err = self._run_json(
+            mocker, capsys, monkeypatch, "WIP", "--message-ai-attribution"
+        )
+        assert rc == 0
+        assert data["checks"] == []
+        assert (
+            '--message-ai-attribution requested but ai_attribution is "ignore"' in err
+        )
+
+    def test_not_with_ai_attribution_only(self, capsys, monkeypatch):
+        monkeypatch.setattr(
+            "sys.argv",
+            [CMD, "--message-ai-attribution", "--ai-attribution-only"],
+        )
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 2
+        assert "pass one or the other" in capsys.readouterr().err
+
+
 class TestAiToolsInJson:
     """``ai_tools`` names the AI tools of a checked message, whatever the policy."""
 

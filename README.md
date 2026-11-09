@@ -194,6 +194,15 @@ to enforce a policy:
 commit-check --ai-attribution-only --format json < pr-description.md
 ```
 
+To check commits for AI attribution and nothing else, use
+`--message-ai-attribution`: it runs the AI rules on a commit (CC013 to CC017,
+so the author too) and none of the format rules, such as Conventional Commits
+or the subject length:
+
+```bash
+commit-check --message-ai-attribution --ai-attribution forbid
+```
+
 Validate a commit message with the Python API, without a subprocess:
 
 ```python
