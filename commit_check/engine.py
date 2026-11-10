@@ -278,7 +278,7 @@ class BaseValidator(ABC):
         is unrelated — the relevant identity is the one git would record:
         ``GIT_AUTHOR_NAME`` when set (how a tool commits under its own name,
         and how the Action passes on the author of a commit it pipes in),
-        else ``user.name``.
+        else ``author.name``, else ``user.name``.
 
         *Existing commit* (no ``stdin_text``, no ``commit_file``):
         the last commit is the one being validated.  Use its own author
@@ -292,6 +292,7 @@ class BaseValidator(ABC):
         if context.stdin_text is not None or context.commit_file is not None:
             return (
                 os.environ.get("GIT_AUTHOR_NAME", "").strip()
+                or get_git_config_value("author.name")
                 or get_git_config_value(_USER_NAME)
                 or get_commit_info("an")
             )
@@ -703,8 +704,8 @@ class AuthorValidator(BaseValidator):
     def _get_author_value(self, context: ValidationContext) -> str:
         """Get author value based on rule type.
 
-        Checks git config first (for pre-commit validation of the configured identity),
-        then falls back to the last commit's author info.
+        Reads the identity git would record for a new commit first (for
+        pre-commit validation), then falls back to the last commit's author.
         """
         supplied = context.piped_name
         if supplied is not None:
@@ -726,12 +727,20 @@ class AuthorValidator(BaseValidator):
             format_str = git_log_map.get(self.rule.check, "")
             return get_commit_info(format_str, context.rev) if format_str else ""
 
-        # Try git config first (validates configured identity for new commits)
+        # The identity git would record for the next commit, in git's order:
+        # GIT_AUTHOR_NAME / GIT_AUTHOR_EMAIL (set for the hooks by
+        # ``git commit --author``, and by tools that commit under their own
+        # name), then author.name / author.email, then user.name / user.email.
         config_key = git_config_map.get(self.rule.check, "")
         if config_key:
-            config_value = get_git_config_value(config_key)
-            if config_value:
-                return config_value
+            field = config_key.split(".")[1]
+            from_env = os.environ.get(f"GIT_AUTHOR_{field.upper()}", "").strip()
+            if from_env:
+                return from_env
+            for key in (f"author.{field}", config_key):
+                config_value = get_git_config_value(key)
+                if config_value:
+                    return config_value
 
         # Fall back to last commit's author info
         format_str = git_log_map.get(self.rule.check, "")
@@ -1189,6 +1198,34 @@ class SignoffValidator(BaseValidator):
         return name, email
 
 
+#: A trailer line: a key with a hyphen (``Signed-off-by``, ``Change-Id``)
+#: or one of the common one-word keys, then a colon. A one-word key such as
+#: ``Note:`` is left as body text, since a sentence can start that way.
+_BODY_TRAILER_LINE = re.compile(
+    r"^(?:[a-z]\w*-[\w-]+|Fixes|Closes|Resolves|Refs|Link|Cc|Bug)[ \t]*:",
+    re.IGNORECASE,
+)
+
+
+def _body_without_trailers(message: str) -> str:
+    """The body of *message*: what follows the subject, minus the trailer block.
+
+    ``git commit -s`` adds a ``Signed-off-by:`` line, so a message with only
+    trailers after its subject used to count as having a body.
+    """
+    paragraphs = [
+        p.strip() for p in re.split(r"\n[ \t]*\n", message.strip()) if p.strip()
+    ]
+    # The subject is the first line, even when the body follows it directly.
+    rest = paragraphs[0].partition("\n")[2] if paragraphs else ""
+    body = ([rest.strip()] if rest.strip() else []) + paragraphs[1:]
+    if body and all(
+        _BODY_TRAILER_LINE.match(ln.strip()) for ln in body[-1].splitlines()
+    ):
+        body = body[:-1]
+    return "\n\n".join(body).strip()
+
+
 class BodyValidator(BaseValidator):
     """Validates that commit messages contain a body when required."""
 
@@ -1202,23 +1239,8 @@ class BodyValidator(BaseValidator):
 
         self._checked_value = message
 
-        # Split message into lines and check if there's content after the subject
-        lines = message.strip().split("\n")
-
-        # Filter out empty lines
-        non_empty_lines = [line.strip() for line in lines if line.strip()]
-
-        # If there's more than just the subject line, we have a body
-        if len(non_empty_lines) > 1:
+        if _body_without_trailers(message):
             return ValidationResult.PASS
-
-        # Check if there's content after the first line (even if separated by empty lines)
-        # Unreachable: the message is stripped, so two or more lines always
-        # hold two non-empty ones and have passed above.
-        if len(lines) > 1:  # pragma: no cover
-            body_content = "\n".join(lines[1:]).strip()
-            if body_content:
-                return ValidationResult.PASS
 
         self._print_failure(message)
         return ValidationResult.FAIL
