@@ -13,6 +13,10 @@ jobs:
     permissions:
       id-token: write
       attestations: write
+    # Must match the environment set in the PyPI trusted publisher.
+    environment:
+      name: pypi
+      url: https://pypi.org/p/commit-check
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -33,7 +37,7 @@ jobs:
         # Build wheel. --no-deps is load-bearing: without it pip also writes
         # every dependency's wheel into dist/, and the publish step uploads
         # the whole directory (it has no file-selection input), so PyPI is
-        # asked to accept someone else's package under our scoped token.
+        # asked to accept someone else's package under our project.
         python -m pip wheel --no-deps -w dist .
         # Check distribution
         twine check dist/commit_check*
@@ -51,8 +55,8 @@ jobs:
         password: ${{ secrets.TEST_PYPI_TOKEN }}
       continue-on-error: true
 
+    # Trusted Publishing (OIDC, no token): PyPI then stores the PEP 740
+    # attestations this action makes and shows provenance on the release.
     - name: Publish package to PyPI
       if: github.event_name != 'workflow_dispatch' && github.repository == 'commit-check/commit-check'
       uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
-      with:
-        password: ${{ secrets.PYPI_API_TOKEN }}
