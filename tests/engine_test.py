@@ -3516,6 +3516,27 @@ class TestAiAuthorValidator:
             'and disclose the tool with "Generated-by: Jules"'
         )
 
+    @pytest.mark.parametrize(
+        "context",
+        [
+            ValidationContext(stdin_text="feat: add flag"),
+            ValidationContext(commit_file=".git/COMMIT_EDITMSG"),
+        ],
+    )
+    def test_a_message_not_yet_committed_is_not_told_to_amend(self, context):
+        """Before the commit exists, --amend would rewrite the previous one."""
+        with patch(
+            "commit_check.engine.get_pending_author_identity",
+            return_value=self.JULES,
+        ):
+            _result, validator, _ = self._run(self.JULES, context=context)
+        assert validator._last_failure["suggest"] == (
+            "Commit as yourself: set git config user.name and user.email "
+            "to your own, and unset GIT_AUTHOR_NAME and GIT_AUTHOR_EMAIL "
+            "if a tool set them; a commit that already exists then needs "
+            "git commit --amend --reset-author"
+        )
+
     def test_head_is_read_when_no_revision_is_named(self):
         result, _validator, read_author = self._run(
             self.JULES, context=ValidationContext()

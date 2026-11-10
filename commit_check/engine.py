@@ -1642,11 +1642,16 @@ def _author_identity(context: ValidationContext) -> tuple[str, str]:
     An existing commit (``--rev``, or HEAD) by its recorded author; a message
     not yet committed by the author git would record for it.
     """
-    if context.rev is None and (
-        context.stdin_text is not None or context.commit_file is not None
-    ):
+    if _is_pending(context):
         return get_pending_author_identity()
     return get_commit_author_identity(context.rev or "HEAD")
+
+
+def _is_pending(context: ValidationContext) -> bool:
+    """Whether the message under test is not committed yet (stdin or a file)."""
+    return context.rev is None and (
+        context.stdin_text is not None or context.commit_file is not None
+    )
 
 
 def ai_tools_in(context: ValidationContext, *, author: bool) -> list[str]:
@@ -1687,7 +1692,19 @@ class AiAuthorValidator(BaseValidator):
         if tool is None:
             return ValidationResult.PASS
 
-        suggest = "Author the commit yourself: git commit --amend --reset-author"
+        if _is_pending(context):
+            # Usually no commit exists yet (a hook, a piped message): --amend
+            # would rewrite the one before it, and --reset-author on its own
+            # records this same identity again. The Action pipes existing
+            # pull request commits this way too, hence the last clause.
+            suggest = (
+                "Commit as yourself: set git config user.name and user.email "
+                "to your own, and unset GIT_AUTHOR_NAME and GIT_AUTHOR_EMAIL "
+                "if a tool set them; a commit that already exists then needs "
+                "git commit --amend --reset-author"
+            )
+        else:
+            suggest = "Author the commit yourself: git commit --amend --reset-author"
         if self.rule.value == "disclose":
             trailers = self.rule.allowed or list(DEFAULT_AI_DISCLOSURE_TRAILERS)
             suggest += f', and disclose the tool with "{trailers[0]}: {tool}"'
