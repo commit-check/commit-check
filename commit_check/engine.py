@@ -1202,7 +1202,7 @@ class SignoffValidator(BaseValidator):
 #: or one of the common one-word keys, then a colon. A one-word key such as
 #: ``Note:`` is left as body text, since a sentence can start that way.
 _BODY_TRAILER_LINE = re.compile(
-    r"^(?:[A-Za-z]\w*-[\w-]+|Fixes|Closes|Resolves|Refs|Link|Cc|Bug)[ \t]*:",
+    r"^(?:[a-z]\w*-[\w-]+|Fixes|Closes|Resolves|Refs|Link|Cc|Bug)[ \t]*:",
     re.IGNORECASE,
 )
 
