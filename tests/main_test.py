@@ -2328,6 +2328,33 @@ class TestAiAttributionOnly:
         assert rc == 0
         assert data["ai_tools"] == []
 
+    @pytest.mark.parametrize("piped", ["", "\n", "  \n\n"])
+    def test_an_empty_description_is_not_read_from_head(
+        self, mocker, capsys, monkeypatch, pinned_author, piped
+    ):
+        """A pull request with no description has nothing to judge.
+
+        Falling back to the last commit, as ``--message`` does, would judge
+        that commit's trailers in the description's place.
+        """
+        head = mocker.patch(
+            "commit_check.engine.get_commit_info",
+            return_value="Co-authored-by: Claude <noreply@anthropic.com>",
+        )
+        rc, data = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            piped,
+            "--ai-attribution-only",
+            "--ai-attribution",
+            "forbid",
+        )
+        assert rc == 0
+        assert data["status"] == "pass"
+        assert data["ai_tools"] == []
+        head.assert_not_called()
+
     def test_the_old_name_still_works(self, mocker, capsys, monkeypatch, pinned_author):
         """``--ai-only``, the name it shipped with in 2.20.1, is a hidden alias."""
         rc, data = self._run_json(

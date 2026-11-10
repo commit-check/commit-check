@@ -620,6 +620,11 @@ def _resolve_commit_message_source(
         return None, args.commit_msg_file
 
     stdin_content = stdin_reader.read_piped_input()
+    if args.ai_attribution_only:
+        # The text under test is what was piped, a pull request description
+        # say. None of it, an empty description, is empty text: falling back
+        # to HEAD would judge the last commit's message in its place.
+        return stdin_content or "", None
     return stdin_content or None, None
 
 
