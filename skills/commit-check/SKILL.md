@@ -41,18 +41,21 @@ printf '%s\n' "feat: add login page" | commit-check --message --compact
 - Exit `1`: a rule failed. Each `[FAIL]` line names the rule (for example `CC001`) and what is wrong.
 - Exit `2`: the config file is invalid or git cannot read the repository. Report it to the user; do not work around it.
 
-For a multi-line message, write it to a file and pass the path:
+For a multi-line message, write it to a file in the git directory, where it is never committed, and pass the path. Find the file with `git rev-parse --git-path`: in a worktree or a submodule `.git` is a file, not a directory, so `.git/COMMIT_MSG_DRAFT` cannot be written there.
 
 ```bash
-commit-check --message --compact .git/COMMIT_MSG_DRAFT
+draft="$(git rev-parse --git-path COMMIT_MSG_DRAFT)"
+commit-check --message --compact "$draft"
 ```
+
+Commit with `git commit -F "$draft"` once it passes.
 
 To get the suggested fix in a form you can parse, add `--format json`. Each failed check has `error`, `suggest` and, when there is a mechanical fix, `fix` with the corrected text. Rule details are at `docs_url`.
 
 When every failure has a mechanical fix (a type's case, a missing colon), `--fix` rewrites the file for you:
 
 ```bash
-commit-check --message --fix .git/COMMIT_MSG_DRAFT
+commit-check --message --fix "$draft"
 ```
 
 Re-run the check after any change until it exits `0`.
