@@ -278,7 +278,7 @@ class BaseValidator(ABC):
         is unrelated — the relevant identity is the one git would record:
         ``GIT_AUTHOR_NAME`` when set (how a tool commits under its own name,
         and how the Action passes on the author of a commit it pipes in),
-        else ``user.name``.
+        else ``author.name``, else ``user.name``.
 
         *Existing commit* (no ``stdin_text``, no ``commit_file``):
         the last commit is the one being validated.  Use its own author
@@ -292,6 +292,7 @@ class BaseValidator(ABC):
         if context.stdin_text is not None or context.commit_file is not None:
             return (
                 os.environ.get("GIT_AUTHOR_NAME", "").strip()
+                or get_git_config_value("author.name")
                 or get_git_config_value(_USER_NAME)
                 or get_commit_info("an")
             )
@@ -1201,7 +1202,7 @@ class SignoffValidator(BaseValidator):
 #: or one of the common one-word keys, then a colon. A one-word key such as
 #: ``Note:`` is left as body text, since a sentence can start that way.
 _BODY_TRAILER_LINE = re.compile(
-    r"^(?:[A-Za-z][\w]*-[\w-]+|Fixes|Closes|Resolves|Refs|Link|Cc|Bug)[ \t]*:",
+    r"^(?:[A-Za-z]\w*-[\w-]+|Fixes|Closes|Resolves|Refs|Link|Cc|Bug)[ \t]*:",
     re.IGNORECASE,
 )
 

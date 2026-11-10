@@ -2590,6 +2590,28 @@ class TestCoAuthorSkip:
         ):
             assert validator.validate(context) == expected
 
+    def test_pending_author_ignore_check_prefers_author_name_config(self, monkeypatch):
+        """author.name outranks user.name, as it does for the author checks."""
+        monkeypatch.delenv("GIT_AUTHOR_NAME", raising=False)
+        config = {"author.name": "Renovate Bot", "user.name": "Alice Developer"}
+        validator = CommitMessageValidator(
+            ValidationRule(
+                check="message",
+                regex=CONVENTIONAL_COMMIT_REGEX,
+                error=BAD_COMMIT_MSG,
+                suggest=USE_CONVENTIONAL_FORMAT,
+            )
+        )
+        context = ValidationContext(
+            stdin_text="not conventional",
+            config={"commit": {"ignore_authors": ["Renovate Bot"]}},
+        )
+        with patch(
+            "commit_check.engine.get_git_config_value",
+            side_effect=lambda key: config.get(key, ""),
+        ):
+            assert validator.validate(context) == ValidationResult.SKIP
+
     def test_pending_author_ignore_check_reads_git_environment(self, monkeypatch):
         """End to end: GIT_AUTHOR_NAME reaches the ignore list unmocked."""
         monkeypatch.setenv("GIT_AUTHOR_NAME", "Renovate Bot")
