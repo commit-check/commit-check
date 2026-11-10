@@ -562,6 +562,40 @@ class TestBranchValidator:
 
 
 class TestAuthorValidator:
+    @pytest.mark.parametrize(
+        ("check", "env", "expected"),
+        [
+            ("author_email", {"GIT_AUTHOR_EMAIL": "work@corp.com"}, "work@corp.com"),
+            ("author_name", {"GIT_AUTHOR_NAME": "Work Name"}, "Work Name"),
+        ],
+    )
+    def test_git_author_variables_win_over_the_config(
+        self, monkeypatch, check, env, expected
+    ):
+        """``git commit --author`` reaches the hooks as GIT_AUTHOR_*."""
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        with patch(
+            "commit_check.engine.get_git_config_value", return_value="me@home.org"
+        ):
+            value = AuthorValidator(ValidationRule(check=check))._get_author_value(
+                ValidationContext()
+            )
+        assert value == expected
+
+    def test_author_email_config_wins_over_user_email(self, monkeypatch):
+        """git records author.email over user.email, and so does the check."""
+        monkeypatch.delenv("GIT_AUTHOR_EMAIL", raising=False)
+        config = {"author.email": "work@corp.com", "user.email": "me@home.org"}
+        with patch(
+            "commit_check.engine.get_git_config_value",
+            side_effect=lambda key: config.get(key, ""),
+        ):
+            value = AuthorValidator(
+                ValidationRule(check="author_email")
+            )._get_author_value(ValidationContext())
+        assert value == "work@corp.com"
+
     @patch("commit_check.engine.has_commits")
     @patch(GIT_CONFIG_VALUE)
     @patch("commit_check.engine.get_commit_info")
@@ -1424,6 +1458,35 @@ class TestSubjectCapitalizationValidator:
 
 
 class TestBodyValidator:
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "feat: x\n\nSigned-off-by: T <t@e.com>",
+            "feat: x\n\nSigned-off-by: T <t@e.com>\nCo-authored-by: U <u@e.com>",
+            "feat: x\n\nFixes: #12\nChange-Id: I1234",
+            "feat: x\nSigned-off-by: T <t@e.com>",
+        ],
+    )
+    def test_trailers_alone_are_not_a_body(self, message):
+        """``git commit -s`` adds a sign-off; that is not a reason for the change."""
+        validator = BodyValidator(ValidationRule(check="require_body"))
+        result = validator.validate(ValidationContext(stdin_text=message))
+        assert result == ValidationResult.FAIL
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "feat: x\n\nExplain why.\n\nSigned-off-by: T <t@e.com>",
+            "feat: x\n\nNote: this keeps the old format.",
+            "feat: x\nExplain why, right under the subject.",
+            "feat: x\n\nSigned-off-by: T <t@e.com>\nand a sentence",
+        ],
+    )
+    def test_a_body_with_or_without_trailers_passes(self, message):
+        validator = BodyValidator(ValidationRule(check="require_body"))
+        result = validator.validate(ValidationContext(stdin_text=message))
+        assert result == ValidationResult.PASS
+
     @pytest.mark.benchmark
     def test_body_validator_with_body(self):
         """Test BodyValidator with commit body."""

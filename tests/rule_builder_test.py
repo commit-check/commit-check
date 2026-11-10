@@ -70,17 +70,25 @@ class TestRuleBuilder:
 
     @pytest.mark.benchmark
     def test_rule_builder_invalid_author_list_type(self):
-        """Test RuleBuilder with invalid author list type returns None."""
-        config = {"commit": {"ignore_authors": "not_a_list"}}
+        """An ignore_authors that is neither a list nor a string is refused."""
+        for section in ("commit", "branch"):
+            with pytest.raises(ConfigError, match=rf"\[{section}\] ignore_authors"):
+                RuleBuilder({section: {"ignore_authors": 42}})
 
+    def test_ignore_authors_string_is_split_on_commas(self):
+        """A string used to be a substring match: "Test User 2" ignored "Test User"."""
+        config = {
+            "commit": {"ignore_authors": "renovate[bot], Test User 2"},
+            "branch": {"ignore_authors": "dependabot[bot]"},
+        }
         builder = RuleBuilder(config)
+        assert config["commit"]["ignore_authors"] == ["renovate[bot]", "Test User 2"]
+        assert config["branch"]["ignore_authors"] == ["dependabot[bot]"]
         catalog_entry = RuleCatalogEntry(
             check="ignore_authors", regex="", error="", suggest=""
         )
-
-        # This should return None for invalid type
         rule = builder._build_author_list_rule(catalog_entry, "ignore_authors")
-        assert rule is None
+        assert rule.ignored == ["renovate[bot]", "Test User 2"]
 
     def test_author_list_rule_is_built_for_ignore_authors_only(self):
         """A list under any other key builds no author rule."""

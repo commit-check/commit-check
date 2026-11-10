@@ -222,6 +222,22 @@ def _check_booleans(config: dict[str, Any]) -> None:
             )
 
 
+def _check_author_lists(config: dict[str, Any]) -> None:
+    """Make each ``ignore_authors`` a list, or refuse it.
+
+    A string such as ``"renovate[bot], Bot User"`` was tested with ``in``,
+    which on a string is a substring match: any author whose name was part
+    of it, ``bot`` or ``Bot``, skipped every check. A comma-separated string
+    is now split, as ``--ignore-authors`` and ``CCHK_IGNORE_AUTHORS`` split it.
+    """
+    for section in ("commit", "branch"):
+        values = config.get(section)
+        if isinstance(values, dict) and "ignore_authors" in values:
+            values["ignore_authors"] = _string_list(
+                values, "ignore_authors", [], f"[{section}] ignore_authors"
+            )
+
+
 class RuleBuilder:
     """Builds validation rules from config and catalog entries."""
 
@@ -233,6 +249,7 @@ class RuleBuilder:
         self.tag_config = config.get("tag", {})
         self.files_config = config.get("files", {})
         _check_booleans(config)
+        _check_author_lists(config)
         self.warn_checks = self._resolve_warn_list(config.get("warn", []))
 
     def build_all_rules(self) -> list[ValidationRule]:
