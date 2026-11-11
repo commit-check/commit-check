@@ -729,6 +729,7 @@ class TestAuthorValidator:
 
         with (
             patch(GIT_CONFIG_VALUE, return_value=""),
+            patch("commit_check.engine.has_commits", return_value=True),
             patch(
                 "commit_check.engine.get_commit_info", return_value="test@example.com"
             ),
