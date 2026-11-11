@@ -733,7 +733,8 @@ class TestAuthorValidator:
                 "commit_check.engine.get_commit_info", return_value="test@example.com"
             ),
         ):
-            author_value = validator._get_author_value(context)
+            # has_head: a commit exists, so git is not asked whether one does.
+            author_value = validator._get_author_value(context, has_head=True)
             assert author_value == "test@example.com"
 
     def test_no_identity_anywhere_leaves_nothing_to_judge(self):

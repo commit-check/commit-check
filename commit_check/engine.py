@@ -694,6 +694,9 @@ class AuthorValidator(BaseValidator):
     """Validates author information."""
 
     def validate(self, context: ValidationContext) -> ValidationResult:
+        if self._author_in_ignore_list(context):
+            return ValidationResult.SKIP
+
         # With no message and no --rev the commit checks skip a repository
         # that has no commits. The author checks do not: the value under
         # test is the identity the next commit will carry, and git knows
@@ -702,8 +705,8 @@ class AuthorValidator(BaseValidator):
         has_head: bool | None = None
         if not self._message_was_supplied(context):
             has_head = has_commits()
-        if self._author_in_ignore_list(context, pending=has_head is False):
-            return ValidationResult.SKIP
+            if not has_head and self._author_in_ignore_list(context, pending=True):
+                return ValidationResult.SKIP
 
         author_value = self._get_author_value(context, has_head)
         if author_value is None:
