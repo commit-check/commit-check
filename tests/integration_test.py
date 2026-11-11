@@ -173,6 +173,26 @@ class TestIntegration:
         monkeypatch.setattr(sys, "argv", ["commit-check", "--author-email"])
         assert main() == 0
 
+    def test_author_is_checked_before_the_first_commit(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ):
+        """The author hooks judge the identity the first commit will carry."""
+        _git("init", "--initial-branch=main", cwd=tmp_path)
+        _git("config", "user.name", "claude", cwd=tmp_path)
+        _git("config", "user.email", "test@example.com", cwd=tmp_path)
+        (tmp_path / "cchk.toml").write_text(
+            '[commit]\nauthor_name_pattern = "^[A-Z][a-z]+ [A-Z][a-z]+$"\n'
+        )
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("GIT_AUTHOR_NAME", raising=False)
+        monkeypatch.setattr(sys, "argv", ["commit-check", "--author-name"])
+
+        assert main() == 1
+        assert "CC101 author-name failed: claude" in capsys.readouterr().out
+
     # ── combined checks ─────────────────────────────────────────────────
 
     @pytest.mark.benchmark

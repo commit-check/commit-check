@@ -752,6 +752,54 @@ class TestAuthorValidator:
         assert result == ValidationResult.PASS
         assert validator._last_failure is None
 
+    @pytest.mark.parametrize(
+        ("check", "regex", "configured"),
+        [
+            ("author_name", r"^[A-Z][a-z]+ [A-Z][a-z]+$", "claude"),
+            ("author_email", r"^.+@example\.com$", "bot@x"),
+        ],
+    )
+    def test_the_configured_identity_is_checked_before_the_first_commit(
+        self, monkeypatch, check, regex, configured
+    ):
+        """The first commit carries user.name and user.email like any other."""
+        monkeypatch.delenv("GIT_AUTHOR_NAME", raising=False)
+        monkeypatch.delenv("GIT_AUTHOR_EMAIL", raising=False)
+        validator = AuthorValidator(ValidationRule(check=check, regex=regex))
+        config = {"user.name": "claude", "user.email": "bot@x"}
+
+        with (
+            patch("commit_check.engine.has_commits", return_value=False),
+            patch(GIT_CONFIG_VALUE, side_effect=lambda key: config.get(key, "")),
+            patch("commit_check.engine.get_commit_info") as mock_info,
+            patch("commit_check.engine._print_failure"),
+        ):
+            result = validator.validate(ValidationContext())
+
+        assert result == ValidationResult.FAIL
+        assert validator._checked_value == configured
+        mock_info.assert_not_called()
+
+    def test_no_identity_and_no_commit_is_skipped(self, monkeypatch):
+        """Nothing is configured and there is no commit to read an author from."""
+        monkeypatch.delenv("GIT_AUTHOR_NAME", raising=False)
+        validator = AuthorValidator(
+            ValidationRule(check="author_name", regex=r"^never matches$")
+        )
+
+        with (
+            patch("commit_check.engine.has_commits", return_value=False),
+            patch(GIT_CONFIG_VALUE, return_value=""),
+            patch("commit_check.engine.get_commit_info") as mock_info,
+        ):
+            result = validator.validate(ValidationContext())
+
+        assert result == ValidationResult.SKIP
+        assert validator._last_failure is None
+        # git log on a repository with no commits prints an error, which
+        # would be read as the author's name.
+        mock_info.assert_not_called()
+
     def test_a_check_with_no_identity_source_reads_nothing(self):
         """Only author_name and author_email map to a git config key and a log field."""
         validator = AuthorValidator(ValidationRule(check="author_nickname"))

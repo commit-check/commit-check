@@ -689,11 +689,16 @@ class AuthorValidator(BaseValidator):
     """Validates author information."""
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        # Use commit skip logic for ignore_authors
-        if self._should_skip_commit_validation(context):
+        # ignore_authors applies as it does to every commit check. The other
+        # half of the commit skip, "no commits yet", does not: without --rev
+        # the value under test is the identity the next commit will carry,
+        # and git knows that before the first commit exists.
+        if self._author_in_ignore_list(context):
             return ValidationResult.SKIP
 
         author_value = self._get_author_value(context)
+        if author_value is None:
+            return ValidationResult.SKIP
         if not author_value:
             return ValidationResult.PASS
 
@@ -701,11 +706,13 @@ class AuthorValidator(BaseValidator):
 
         return self._validate_author(author_value)
 
-    def _get_author_value(self, context: ValidationContext) -> str:
+    def _get_author_value(self, context: ValidationContext) -> str | None:
         """Get author value based on rule type.
 
         Reads the identity git would record for a new commit first (for
         pre-commit validation), then falls back to the last commit's author.
+        ``None`` when neither exists: no identity is configured and the
+        repository has no commit yet.
         """
         supplied = context.piped_name
         if supplied is not None:
@@ -742,9 +749,14 @@ class AuthorValidator(BaseValidator):
                 if config_value:
                     return config_value
 
-        # Fall back to last commit's author info
+        # Fall back to the last commit's author. Before the first commit
+        # there is none, and git would answer with an error message.
         format_str = git_log_map.get(self.rule.check, "")
-        return get_commit_info(format_str) if format_str else ""
+        if not format_str:
+            return ""
+        if not has_commits():
+            return None
+        return get_commit_info(format_str)
 
     def _validate_author(self, author_value: str) -> ValidationResult:
         """Validate author against rule constraints."""
