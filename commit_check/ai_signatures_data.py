@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from functools import cached_property
 
 #: A trailer whose purpose is to disclose AI assistance: ``Assisted-by``
 #: (Linux kernel, Fedora, FluxCD), ``Generated-by`` (Apache Software
@@ -36,8 +37,11 @@ ROLES = frozenset({ROLE_DISCLOSURE, ROLE_CO_AUTHOR, ROLE_SIGNOFF, ROLE_STAMP})
 class AiSignaturePattern:
     """A single pattern that identifies AI tool usage in a commit message.
 
-    :param regex: A compiled regex that, if matched anywhere in the commit
-        message body, indicates the corresponding tool was involved.
+    :param source: A regex that, if matched anywhere in the commit message
+        body, indicates the corresponding tool was involved. It is compiled
+        with *flags* on first use of :attr:`regex`, not at import: a run
+        that never scans a message for AI signatures never pays for it.
+    :param flags: The ``re`` flags :attr:`regex` is compiled with.
     :param kind: ``"trailer"`` for structured ``Key: value`` footer lines
         (matched case-insensitively), ``"body_marker"`` for any other text
         marker.
@@ -52,12 +56,18 @@ class AiSignaturePattern:
         so a trailer line is read once however many tools the catalog knows.
     """
 
-    regex: re.Pattern[str]
+    source: str
+    flags: int
     kind: str  # "trailer" | "body_marker"
     role: str
     description: str = ""
     keys: frozenset[str] = frozenset()
     value_pattern: str = ""
+
+    @cached_property
+    def regex(self) -> re.Pattern[str]:
+        """The compiled :attr:`source`."""
+        return re.compile(self.source, self.flags)
 
 
 @dataclass(frozen=True)
@@ -66,14 +76,26 @@ class KnownAiTool:
 
     :param name: Short display name (e.g. ``"Claude Code"``, ``"GitHub Copilot"``).
     :param patterns: One or more signature patterns that indicate this tool.
-    :param name_pattern: A regex that recognises the tool when it is named in
-        free text — the value of a disclosure trailer, say — so a generic
+    :param names: A regex for the tool's names, recognised as whole words
+        in free text — the value of a disclosure trailer, say — so a generic
         ``Assisted-by:`` match can still be attributed to the tool it names.
+        Compiled on first use of :attr:`name_pattern`.
     """
 
     name: str
     patterns: list[AiSignaturePattern] = field(default_factory=list)
-    name_pattern: re.Pattern[str] | None = None
+    names: str | None = None
+
+    @cached_property
+    def name_pattern(self) -> re.Pattern[str] | None:
+        """:attr:`names` as whole words, or ``None`` for a tool without them.
+
+        Bounded at both ends, or ``Generated-by: Raider`` is disclosed as
+        Aider.
+        """
+        if self.names is None:
+            return None
+        return re.compile(rf"(?<!\w)(?:{self.names})(?!\w)", re.IGNORECASE)
 
 
 # ---------------------------------------------------------------------------
@@ -113,7 +135,8 @@ def _trailer(
     alternation = "|".join(re.escape(key) for key in keys)
     raw = rf"^(?:{alternation})[ \t]*:[ \t]*(?=\S)(?:{value_pattern})(?<![ \t])[ \t]*$"
     return AiSignaturePattern(
-        regex=re.compile(raw, re.IGNORECASE | re.MULTILINE),
+        source=raw,
+        flags=re.IGNORECASE | re.MULTILINE,
         kind="trailer",
         role=role,
         description=description,
@@ -171,19 +194,12 @@ def _stamp_trailer(key: str, description: str) -> AiSignaturePattern:
 def _body_marker(pattern: str, description: str = "") -> AiSignaturePattern:
     """Build a free-text body marker pattern."""
     return AiSignaturePattern(
-        regex=re.compile(pattern, re.MULTILINE),
+        source=pattern,
+        flags=re.MULTILINE,
         kind="body_marker",
         role=ROLE_STAMP,
         description=description,
     )
-
-
-def _names(pattern: str) -> re.Pattern[str]:
-    """Compile a ``name_pattern``: the tool's names, as whole words.
-
-    Bounded at both ends, or ``Generated-by: Raider`` is disclosed as Aider.
-    """
-    return re.compile(rf"(?<!\w)(?:{pattern})(?!\w)", re.IGNORECASE)
 
 
 # ---------------------------------------------------------------------------
@@ -193,7 +209,7 @@ def _names(pattern: str) -> re.Pattern[str]:
 # --- Anthropic Claude Code / Claude CLI ---
 CLAUDE_CODE = KnownAiTool(
     name="Claude Code",
-    name_pattern=_names(r"\bclaude\b|anthropic"),
+    names=r"\bclaude\b|anthropic",
     patterns=[
         # Standard Co-authored-by trailer added by Claude Code.
         # When an email is present, anchor to known AI noreply addresses
@@ -247,7 +263,7 @@ CLAUDE_CODE = KnownAiTool(
 # https://github.blog/changelog/2026-03-20-trace-any-copilot-coding-agent-commit-to-its-session-logs
 COPILOT = KnownAiTool(
     name="GitHub Copilot",
-    name_pattern=_names(r"copilot"),
+    names=r"copilot",
     patterns=[
         *_identity(
             r"Copilot(?:[ \t]*<\d+\+Copilot@users\.noreply\.github\.com>)?",
@@ -266,7 +282,7 @@ COPILOT = KnownAiTool(
 # --- OpenAI Codex ---
 CODEX = KnownAiTool(
     name="OpenAI Codex",
-    name_pattern=_names(r"codex"),
+    names=r"codex",
     patterns=[
         *_identity(r"Codex[ \t]*(?:<[^>\n]*>)?", "Codex"),
         # Codex in the cloud commits through its GitHub App.
@@ -280,7 +296,7 @@ CODEX = KnownAiTool(
 # --- Gemini (Google) ---
 GEMINI = KnownAiTool(
     name="Gemini",
-    name_pattern=_names(r"gemini"),
+    names=r"gemini",
     patterns=[
         *_identity(r"Gemini[ \t]*(?:<[^>\n]*>)?", "Gemini"),
     ],
@@ -289,7 +305,7 @@ GEMINI = KnownAiTool(
 # --- Cursor ---
 CURSOR = KnownAiTool(
     name="Cursor",
-    name_pattern=_names(r"cursor"),
+    names=r"cursor",
     patterns=[
         *_identity(r"Cursor(?: Agent)?[ \t]*(?:<[^>\n]*>)?", "Cursor"),
         # Cursor's agent signs as ``Cursor Agent <cursoragent@cursor.com>``;
@@ -318,7 +334,7 @@ CURSOR = KnownAiTool(
 # the address is the app's.
 DEVIN = KnownAiTool(
     name="Devin",
-    name_pattern=_names(r"devin"),
+    names=r"devin",
     patterns=[
         *_identity(r"Devin AI[ \t]*(?:<[^>\n]*>)?", "Devin AI"),
         *_identity(
@@ -342,7 +358,7 @@ DEVIN = KnownAiTool(
 # --- Aider ---
 AIDER = KnownAiTool(
     name="Aider",
-    name_pattern=_names(r"aider"),
+    names=r"aider",
     patterns=[
         *_identity(r"Aider[ \t]*(?:<[^>\n]*>)?", "Aider"),
         # aider's own trailer names the model, on by default since v0.85:
@@ -357,7 +373,7 @@ AIDER = KnownAiTool(
 # --- Windsurf (Codeium) ---
 WINDSURF = KnownAiTool(
     name="Windsurf",
-    name_pattern=_names(r"windsurf|codeium"),
+    names=r"windsurf|codeium",
     patterns=[
         *_identity(r"Windsurf[ \t]*(?:<[^>\n]*>)?", "Windsurf"),
     ],
@@ -366,7 +382,7 @@ WINDSURF = KnownAiTool(
 # --- Tabby ---
 TABBY = KnownAiTool(
     name="Tabby",
-    name_pattern=_names(r"tabby"),
+    names=r"tabby",
     patterns=[
         *_identity(r"Tabby[ \t]*(?:<[^>\n]*>)?", "Tabby"),
     ],
@@ -377,7 +393,7 @@ TABBY = KnownAiTool(
 # https://ampcode.com/docs/cli/settings
 AMP = KnownAiTool(
     name="Amp",
-    name_pattern=_names(r"amp|ampcode"),
+    names=r"amp|ampcode",
     patterns=[
         # "Amp" is a short word, so when an address is present it must be
         # Amp's own.
@@ -392,7 +408,7 @@ AMP = KnownAiTool(
 # https://docs.openhands.dev/openhands/usage/settings/application-settings
 OPENHANDS = KnownAiTool(
     name="OpenHands",
-    name_pattern=_names(r"openhands|all-hands"),
+    names=r"openhands|all-hands",
     patterns=[
         # By name only: the people who work at All Hands share the agent's
         # all-hands.dev domain.
@@ -405,7 +421,7 @@ OPENHANDS = KnownAiTool(
 # https://docs.factory.com/droid-cli/settings.md
 FACTORY_DROID = KnownAiTool(
     name="Factory Droid",
-    name_pattern=_names(r"factory-droid|droid"),
+    names=r"factory-droid|droid",
     patterns=[
         *_identity(r"factory-droid\[bot\][ \t]*(?:<[^>\n]*>)?", "factory-droid[bot]"),
     ],
@@ -417,7 +433,7 @@ FACTORY_DROID = KnownAiTool(
 # "Jules" alone is a person's name, so only the app's name counts.
 JULES = KnownAiTool(
     name="Jules",
-    name_pattern=_names(r"google-labs-jules|jules"),
+    names=r"google-labs-jules|jules",
     patterns=[
         *_identity(
             r"google-labs-jules\[bot\][ \t]*(?:<[^>\n]*>)?", "google-labs-jules[bot]"
@@ -459,7 +475,7 @@ CONTINUE = KnownAiTool(
 # names the tool.
 MISTRAL_VIBE = KnownAiTool(
     name="Mistral Vibe",
-    name_pattern=_names(r"mistral[ \t-]?vibe"),
+    names=r"mistral[ \t-]?vibe",
     patterns=[
         *_identity(r"Mistral[ \t]+Vibe[ \t]*(?:<[^>\n]*>)?", "Mistral Vibe"),
         *_identity(r"[^<\n]*<vibe@mistral\.ai>", "... <vibe@mistral.ai>"),
@@ -475,7 +491,7 @@ MISTRAL_VIBE = KnownAiTool(
 # https://github.com/QwenLM/qwen-code/blob/main/packages/core/src/config/config.ts
 QWEN_CODE = KnownAiTool(
     name="Qwen Code",
-    name_pattern=_names(r"qwen[ \t-]?code|qwen-coder"),
+    names=r"qwen[ \t-]?code|qwen-coder",
     patterns=[
         *_identity(r"Qwen-Coder[ \t]*(?:<[^>\n]*>)?", "Qwen-Coder"),
         *_identity(
@@ -489,7 +505,7 @@ QWEN_CODE = KnownAiTool(
 # The Amazon Q Developer agent commits through its GitHub App.
 AMAZON_Q = KnownAiTool(
     name="Amazon Q Developer",
-    name_pattern=_names(r"amazon[ \t]+q(?:[ \t]+developer)?|amazon-q-developer"),
+    names=r"amazon[ \t]+q(?:[ \t]+developer)?|amazon-q-developer",
     patterns=[*_app_bot("amazon-q-developer")],
 )
 
@@ -516,7 +532,7 @@ WARP = KnownAiTool(
 # the charm.land address and the notice to its own wording.
 CRUSH = KnownAiTool(
     name="Crush",
-    name_pattern=_names(r"crush"),
+    names=r"crush",
     patterns=[
         *_identity(r"[^<\n]*<crush@charm\.land>", "... <crush@charm.land>"),
         _body_marker(

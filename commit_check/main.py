@@ -34,7 +34,7 @@ from commit_check.util import (
     split_message_comments,
 )
 
-from . import AI_ATTRIBUTION_POLICIES, __version__
+from . import AI_ATTRIBUTION_POLICIES
 
 # Exit codes. ``1`` is a verdict on the commit; ``2`` means the run could not
 # be set up at all -- the same code argparse uses for a bad command line -- so
@@ -133,6 +133,35 @@ def _build_pre_commit_push_input() -> str | None:
     return f"{local_ref} {local_sha} {remote_ref} {remote_sha}"
 
 
+class _VersionAction(argparse.Action):
+    """``--version``, with the version looked up only when it is asked for.
+
+    Reading the package metadata costs more than the rest of startup, so the
+    parser must not do it on every run just to have the string ready.
+    """
+
+    def __init__(self, option_strings: list[str], dest: str, **kwargs: object) -> None:
+        super().__init__(
+            option_strings,
+            dest=argparse.SUPPRESS,
+            default=argparse.SUPPRESS,
+            nargs=0,
+            help="show program's version number and exit",
+        )
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: object,
+        option_string: str | None = None,
+    ) -> None:
+        from . import __version__
+
+        print(f"{parser.prog} {__version__}")
+        parser.exit()
+
+
 def _get_parser() -> argparse.ArgumentParser:
     """Get parser to interpret CLI args."""
     parser = argparse.ArgumentParser(
@@ -151,8 +180,7 @@ def _get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-v",
         "--version",
-        action="version",
-        version=f"%(prog)s {__version__}",
+        action=_VersionAction,
     )
 
     parser.add_argument(

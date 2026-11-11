@@ -8,10 +8,11 @@ import os
 import stat
 import sys
 import tomllib
-import urllib.error
-import urllib.request
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import urllib.request
 
 toml_load = tomllib.load
 
@@ -94,27 +95,12 @@ def _github_shorthand_to_url(value: str) -> str | None:
     return f"https://raw.githubusercontent.com/{repo_part}/{ref}/{file_path}"
 
 
-class _HttpsOnlyRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """Follow redirects only to HTTPS targets.
-
-    ``urlopen`` follows an HTTPS-to-HTTP redirect by default, which would
-    let a parent config be swapped in transit on the way to being merged
-    into the policy. Any redirect off HTTPS is refused instead.
-    """
-
-    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[override]
-        if not newurl.startswith("https://"):
-            raise urllib.error.URLError(
-                f"redirect to a non-HTTPS URL refused: {newurl}"
-            )
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
-
-
 class _LazyOpener:
     """The HTTPS-only opener, built on first use.
 
-    ``build_opener`` is not free, and most runs never fetch a parent config
-    at all, so the cost is paid only by the run that does.
+    Importing ``urllib`` and building the opener are not free, and most runs
+    never fetch a parent config at all, so the cost is paid only by the run
+    that does.
     """
 
     def __init__(self) -> None:
@@ -126,7 +112,9 @@ class _LazyOpener:
 
     def _get(self) -> urllib.request.OpenerDirector:
         if self._opener is None:
-            self._opener = urllib.request.build_opener(_HttpsOnlyRedirectHandler())
+            from commit_check._https import build_opener
+
+            self._opener = build_opener()
         return self._opener
 
     def open(self, url: str, timeout: float = 10):  # type: ignore[no-untyped-def]
