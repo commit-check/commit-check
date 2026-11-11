@@ -3665,8 +3665,9 @@ class TestAiAuthorValidator:
             _result, validator, _ = self._run(self.JULES, context=context)
         assert validator._last_failure["suggest"] == (
             "Commit as yourself: set git config user.name and user.email "
-            "to your own, and unset GIT_AUTHOR_NAME and GIT_AUTHOR_EMAIL "
-            "if a tool set them; a commit that already exists then needs "
+            "to your own, and unset author.name, author.email, "
+            "GIT_AUTHOR_NAME and GIT_AUTHOR_EMAIL if a tool set them; a "
+            "commit that already exists then needs "
             "git commit --amend --reset-author"
         )
 

@@ -1731,10 +1731,13 @@ class AiAuthorValidator(BaseValidator):
             # would rewrite the one before it, and --reset-author on its own
             # records this same identity again. The Action pipes existing
             # pull request commits this way too, hence the last clause.
+            # author.name and author.email outrank user.name and user.email,
+            # so a tool named there survives setting the user.* pair alone.
             suggest = (
                 "Commit as yourself: set git config user.name and user.email "
-                "to your own, and unset GIT_AUTHOR_NAME and GIT_AUTHOR_EMAIL "
-                "if a tool set them; a commit that already exists then needs "
+                "to your own, and unset author.name, author.email, "
+                "GIT_AUTHOR_NAME and GIT_AUTHOR_EMAIL if a tool set them; a "
+                "commit that already exists then needs "
                 "git commit --amend --reset-author"
             )
         else:
