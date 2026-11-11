@@ -780,6 +780,55 @@ class TestAuthorValidator:
         assert validator._checked_value == configured
         mock_info.assert_not_called()
 
+    def test_ignore_authors_reads_the_identity_of_the_first_commit(self, monkeypatch):
+        """With no commit author to read, the ignore list gets the pending one."""
+        monkeypatch.delenv("GIT_AUTHOR_NAME", raising=False)
+        validator = AuthorValidator(
+            ValidationRule(check="author_name", regex=r"^[A-Z][a-z]+ [A-Z][a-z]+$")
+        )
+        config = {"user.name": "dependabot[bot]"}
+        context = ValidationContext(
+            config={"commit": {"ignore_authors": ["dependabot[bot]"]}}
+        )
+
+        with (
+            patch("commit_check.engine.has_commits", return_value=False),
+            patch(GIT_CONFIG_VALUE, side_effect=lambda key: config.get(key, "")),
+            # What git log prints on a repository with no commits.
+            patch(
+                "commit_check.engine.get_commit_info",
+                return_value="fatal: your current branch 'main' does not have "
+                "any commits yet",
+            ),
+        ):
+            result = validator.validate(context)
+
+        assert result == ValidationResult.SKIP
+        assert validator._skip_reason == (
+            "author dependabot[bot] is in [commit].ignore_authors"
+        )
+
+    def test_a_supplied_message_with_no_identity_and_no_commit_is_skipped(
+        self, monkeypatch
+    ):
+        """The commit-msg hook on a first commit, with nothing configured."""
+        monkeypatch.delenv("GIT_AUTHOR_NAME", raising=False)
+        validator = AuthorValidator(
+            ValidationRule(check="author_name", regex=r"^never matches$")
+        )
+
+        with (
+            patch("commit_check.engine.has_commits", return_value=False),
+            patch(GIT_CONFIG_VALUE, return_value=""),
+            patch("commit_check.engine.get_commit_info") as mock_info,
+        ):
+            result = validator.validate(
+                ValidationContext(commit_file=".git/COMMIT_EDITMSG")
+            )
+
+        assert result == ValidationResult.SKIP
+        mock_info.assert_not_called()
+
     def test_no_identity_and_no_commit_is_skipped(self, monkeypatch):
         """Nothing is configured and there is no commit to read an author from."""
         monkeypatch.delenv("GIT_AUTHOR_NAME", raising=False)
