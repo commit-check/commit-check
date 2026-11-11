@@ -268,12 +268,15 @@ class BaseValidator(ABC):
         """Perform validation and return result."""
 
     @staticmethod
-    def _resolve_current_author(context: ValidationContext) -> str:
+    def _resolve_current_author(
+        context: ValidationContext, pending: bool = False
+    ) -> str:
         """Resolve the relevant author identity based on validation mode.
 
         Two distinct modes:
 
-        *Prospective message* (``stdin_text`` or ``commit_file`` is set):
+        *Prospective message* (``stdin_text`` or ``commit_file`` is set, or
+        *pending* is passed by a check that judges the next commit):
         the user is about to create a new commit.  The last commit's author
         is unrelated — the relevant identity is the one git would record:
         ``GIT_AUTHOR_NAME`` when set (how a tool commits under its own name,
@@ -289,7 +292,7 @@ class BaseValidator(ABC):
             # An explicit revision names an existing commit; its author is a
             # fact about that commit, so the config never enters into it.
             return get_commit_info("an", context.rev)
-        if context.stdin_text is not None or context.commit_file is not None:
+        if pending or context.stdin_text is not None or context.commit_file is not None:
             return (
                 os.environ.get("GIT_AUTHOR_NAME", "").strip()
                 or get_git_config_value("author.name")
@@ -339,13 +342,15 @@ class BaseValidator(ABC):
             body = get_commit_info("b")
         return f"{subject}\n\n{body}".strip()
 
-    def _author_in_ignore_list(self, context: ValidationContext) -> bool:
+    def _author_in_ignore_list(
+        self, context: ValidationContext, pending: bool = False
+    ) -> bool:
         """Check if the current author or any co-author is in the ignore list."""
         ignore_authors = context.config.get("commit", {}).get("ignore_authors", [])
         if not ignore_authors:
             return False
 
-        current_author = self._resolve_current_author(context)
+        current_author = self._resolve_current_author(context, pending)
         if current_author and current_author in ignore_authors:
             self._skip_reason = f"author {current_author} is in [commit].ignore_authors"
             return True
@@ -689,11 +694,20 @@ class AuthorValidator(BaseValidator):
     """Validates author information."""
 
     def validate(self, context: ValidationContext) -> ValidationResult:
-        # Use commit skip logic for ignore_authors
-        if self._should_skip_commit_validation(context):
+        # With no message and no --rev the commit checks skip a repository
+        # that has no commits. The author checks do not: the value under
+        # test is the identity the next commit will carry, and git knows
+        # that before the first commit exists. ignore_authors then reads
+        # that identity too, there being no commit author to read.
+        has_head: bool | None = None
+        if not self._message_was_supplied(context):
+            has_head = has_commits()
+        if self._author_in_ignore_list(context, pending=has_head is False):
             return ValidationResult.SKIP
 
-        author_value = self._get_author_value(context)
+        author_value = self._get_author_value(context, has_head)
+        if author_value is None:
+            return ValidationResult.SKIP
         if not author_value:
             return ValidationResult.PASS
 
@@ -701,11 +715,16 @@ class AuthorValidator(BaseValidator):
 
         return self._validate_author(author_value)
 
-    def _get_author_value(self, context: ValidationContext) -> str:
+    def _get_author_value(
+        self, context: ValidationContext, has_head: bool | None = None
+    ) -> str | None:
         """Get author value based on rule type.
 
         Reads the identity git would record for a new commit first (for
         pre-commit validation), then falls back to the last commit's author.
+        ``None`` when neither exists: no identity is configured and the
+        repository has no commit yet. *has_head* is whether it has one,
+        when the caller already knows.
         """
         supplied = context.piped_name
         if supplied is not None:
@@ -742,9 +761,16 @@ class AuthorValidator(BaseValidator):
                 if config_value:
                     return config_value
 
-        # Fall back to last commit's author info
+        # Fall back to the last commit's author. Before the first commit
+        # there is none, and git would answer with an error message.
         format_str = git_log_map.get(self.rule.check, "")
-        return get_commit_info(format_str) if format_str else ""
+        if not format_str:
+            return ""
+        if has_head is None:
+            has_head = has_commits()
+        if not has_head:
+            return None
+        return get_commit_info(format_str)
 
     def _validate_author(self, author_value: str) -> ValidationResult:
         """Validate author against rule constraints."""
@@ -1719,10 +1745,13 @@ class AiAuthorValidator(BaseValidator):
             # would rewrite the one before it, and --reset-author on its own
             # records this same identity again. The Action pipes existing
             # pull request commits this way too, hence the last clause.
+            # author.name and author.email outrank user.name and user.email,
+            # so a tool named there survives setting the user.* pair alone.
             suggest = (
                 "Commit as yourself: set git config user.name and user.email "
-                "to your own, and unset GIT_AUTHOR_NAME and GIT_AUTHOR_EMAIL "
-                "if a tool set them; a commit that already exists then needs "
+                "to your own, and unset author.name, author.email, "
+                "GIT_AUTHOR_NAME and GIT_AUTHOR_EMAIL if a tool set them; a "
+                "commit that already exists then needs "
                 "git commit --amend --reset-author"
             )
         else:
