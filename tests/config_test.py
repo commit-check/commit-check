@@ -680,10 +680,10 @@ class TestHttpsOnlyRedirects:
     def _redirect(self, target: str):
         import urllib.request
 
-        from commit_check.config import _HttpsOnlyRedirectHandler
+        from commit_check._https import HttpsOnlyRedirectHandler
 
         req = urllib.request.Request(EXAMPLE_CONFIG_URL)
-        handler = _HttpsOnlyRedirectHandler()
+        handler = HttpsOnlyRedirectHandler()
         return handler.redirect_request(req, None, 302, "Found", {}, target)
 
     def test_redirect_to_http_is_refused(self):
@@ -713,9 +713,10 @@ class TestHttpsOnlyRedirects:
         built.open.assert_any_call("https://example.com/cchk.toml", timeout=10)
 
     def test_opener_uses_the_https_only_handler(self):
-        from commit_check.config import _HttpsOnlyRedirectHandler, _opener
+        from commit_check._https import HttpsOnlyRedirectHandler
+        from commit_check.config import _opener
 
-        assert any(isinstance(h, _HttpsOnlyRedirectHandler) for h in _opener.handlers)
+        assert any(isinstance(h, HttpsOnlyRedirectHandler) for h in _opener.handlers)
         # The default redirect handler must not remain alongside it.
         import urllib.request
 

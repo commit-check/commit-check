@@ -19,6 +19,7 @@ import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
 from commit_check.ai_signatures_data import ALL_KNOWN_TOOLS as _ALL_KNOWN_TOOLS
 from commit_check.ai_signatures_data import GENERIC_AI, ROLE_CO_AUTHOR, ROLE_DISCLOSURE
@@ -28,20 +29,38 @@ from commit_check.ai_signatures_data import GENERIC_AI, ROLE_CO_AUTHOR, ROLE_DIS
 ALL_KNOWN_TOOLS = _ALL_KNOWN_TOOLS
 
 
-#: Flat list of all compiled patterns for bulk scanning.
-#: Each tuple is ``(regex, tool_name, description, kind, role)``.
-ALL_PATTERNS: list[tuple[re.Pattern[str], str, str, str, str]] = [
-    (p.regex, tool.name, p.description, p.kind, p.role)
-    for tool in ALL_KNOWN_TOOLS
-    for p in tool.patterns
-]
+if TYPE_CHECKING:
+    ALL_PATTERNS: list[tuple[re.Pattern[str], str, str, str, str]]
 
-#: The tools that can be recognised by name in free text.
-_NAMED_TOOLS: list[tuple[re.Pattern[str], str]] = [
-    (tool.name_pattern, tool.name)
-    for tool in ALL_KNOWN_TOOLS
-    if tool.name_pattern is not None
-]
+
+def __getattr__(name: str) -> object:
+    """``ALL_PATTERNS``, compiled on first access rather than at import.
+
+    Every pattern of the catalog as ``(regex, tool_name, description, kind,
+    role)``. The scanner reads the compiled groups instead (:func:`groups`),
+    so a run only builds this list when something asks for it by name, and
+    a run that checks no AI attribution compiles none of the catalog.
+    """
+    if name == "ALL_PATTERNS":
+        patterns = [
+            (p.regex, tool.name, p.description, p.kind, p.role)
+            for tool in ALL_KNOWN_TOOLS
+            for p in tool.patterns
+        ]
+        globals()["ALL_PATTERNS"] = patterns
+        return patterns
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+@lru_cache(maxsize=1)
+def _named_tools() -> tuple[tuple[re.Pattern[str], str], ...]:
+    """The tools that can be recognised by name in free text."""
+    return tuple(
+        (tool.name_pattern, tool.name)
+        for tool in ALL_KNOWN_TOOLS
+        if tool.name_pattern is not None
+    )
+
 
 #: What a match says about the tool: ``(tool, description, kind, role)``.
 _Member = tuple[str, str, str, str]
@@ -176,7 +195,7 @@ def _scan(message: str) -> Iterator[tuple[_Member, str]]:
 
 def tool_named_in(text: str) -> str | None:
     """The known tool *text* names, or ``None`` when it names none."""
-    for pattern, name in _NAMED_TOOLS:
+    for pattern, name in _named_tools():
         if pattern.search(text):
             return name
     return None

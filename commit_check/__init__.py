@@ -8,7 +8,8 @@ Exports:
 
 import os
 import sys
-from importlib.metadata import PackageNotFoundError, version
+from functools import lru_cache
+from typing import TYPE_CHECKING
 
 # Exit codes used across the package
 PASS = 0
@@ -158,7 +159,25 @@ DEFAULT_AI_DISCLOSURE_TRAILERS = ["Assisted-by", "Generated-by"]
 DEFAULT_AI_DISCLOSURE_PATTERN = ""
 
 
-try:
-    __version__ = version("commit-check")
-except PackageNotFoundError:
-    __version__ = "0.0.0.dev"
+if TYPE_CHECKING:
+    __version__: str
+
+
+@lru_cache(maxsize=1)
+def _version() -> str:
+    """The installed package's version, read from its metadata."""
+    # Imported here, not at the top: importlib.metadata and the lookup cost
+    # more than the rest of startup, and only ``--version`` asks.
+    from importlib.metadata import PackageNotFoundError, version
+
+    try:
+        return version("commit-check")
+    except PackageNotFoundError:
+        return "0.0.0.dev"
+
+
+def __getattr__(name: str) -> str:
+    """``__version__``, looked up on first access rather than at import."""
+    if name == "__version__":
+        return _version()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
