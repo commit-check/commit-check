@@ -1520,9 +1520,9 @@ def _first_of(lines: list[str]) -> str:
 
 
 def _added_lines(before: str, after: str) -> list[str]:
-    """The lines *after* carries that *before* did not."""
+    """The lines *after* carries that *before* did not, blank ones aside."""
     seen = set(before.splitlines())
-    return [line for line in after.splitlines() if line not in seen]
+    return [line for line in after.splitlines() if line.strip() and line not in seen]
 
 
 def _tools(signatures: list[dict[str, str]]) -> str:
