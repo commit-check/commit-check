@@ -397,6 +397,22 @@ class TestDisclosePolicyInTheEngine:
         # Applying either fix satisfies all three rules.
         assert {o.status for o in _disclose_outcomes(fixed).values()} == {"pass"}
 
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "feat: add caching 🤖 Generated with Claude Code",
+            "feat: add caching\n🤖 Generated with Claude Code",
+        ],
+    )
+    def test_the_advice_names_the_trailer_when_the_message_has_no_blank_line(
+        self, message
+    ):
+        """The fix adds a blank line before the trailer; the advice skips it."""
+        out = _disclose_outcomes(message)["ai_disclosure"]
+        assert out.status == "fail"
+        assert out.fix == f"{message}\n\nAssisted-by: Claude Code"
+        assert out.suggest == 'Disclose the tool with "Assisted-by: Claude Code"'
+
     def test_a_disclosed_tool_credited_as_co_author_only_loses_the_credit(self):
         message = (
             "feat: add caching\n\nAssisted-by: Claude Code\n"
