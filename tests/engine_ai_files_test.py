@@ -360,6 +360,25 @@ class TestAiFilePatternEndToEnd:
             in capfd.readouterr().out
         )
 
+    def test_a_tracked_file_named_head_hides_nothing(self, repo, monkeypatch, capfd):
+        """Git calls a bare ``HEAD`` ambiguous once a file has that name."""
+        (repo / "HEAD").write_text("not a ref\n")
+        (repo / "CODEOWNERS").write_text("* @bot\n")
+        _git(repo, "add", "-A")
+        _git(
+            repo,
+            "commit",
+            "-qm",
+            "chore: change owners",
+            GIT_AUTHOR_NAME=BOT[0],
+            GIT_AUTHOR_EMAIL=BOT[1],
+        )
+        assert self._run(monkeypatch) == 1
+        assert (
+            "CODEOWNERS (pattern CODEOWNERS, changed by GitHub Copilot)"
+            in capfd.readouterr().out
+        )
+
     def test_rev_judges_an_earlier_commit(self, repo, monkeypatch):
         (repo / ".github" / "workflows" / "ci.yml").write_text("on: pull_request\n")
         _git(repo, "commit", "-qam", f"ci: run on pull requests\n\n{CO_AUTHOR}")

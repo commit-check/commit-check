@@ -1085,6 +1085,41 @@ class FilesValidator(BaseValidator):
             return commits_new_to_remotes(pushed)
         return [context.rev or "HEAD"]
 
+    def _ai_commits(
+        self, revs: list[str]
+    ) -> tuple[list[tuple[str, list[str] | None]], int]:
+        """The commits among *revs* that an AI tool is behind.
+
+        :returns: ``(tool, changed paths)`` per such commit, the paths
+            ``None`` where they could not be read, and the number of commits
+            whose author and message could not be read at all.
+        """
+        accepted = self.rule.allowed or list(DEFAULT_AI_DISCLOSURE_TRAILERS)
+        found: list[tuple[str, list[str] | None]] = []
+        unread = 0
+        for rev in revs:
+            authorship = get_commit_authorship(rev)
+            if authorship is None:
+                unread += 1
+                continue
+            tool = _ai_tool_behind(*authorship, accepted)
+            if tool is not None:
+                found.append((tool, get_commit_changed_paths(rev)))
+        return found, unread
+
+    def _ai_offenders(self, commits: list[tuple[str, list[str] | None]]) -> list[str]:
+        """One line per reserved path the commits changed, first change wins."""
+        patterns = self.rule.value or []
+        offenders: dict[str, str] = {}
+        for tool, paths in commits:
+            for path in paths or []:
+                hit = self._pattern_hit(path, patterns)
+                if hit:
+                    offenders.setdefault(
+                        path, f"{path} (pattern {hit}, changed by {tool})"
+                    )
+        return list(offenders.values())
+
     def _validate_ai_patterns(self, context: ValidationContext) -> ValidationResult:
         """CC305: a commit attributed to an AI tool changes none of the paths.
 
@@ -1096,34 +1131,13 @@ class FilesValidator(BaseValidator):
         if not revs:
             return ValidationResult.SKIP
 
-        patterns = self.rule.value or []
-        accepted = self.rule.allowed or list(DEFAULT_AI_DISCLOSURE_TRAILERS)
-        offenders: dict[str, str] = {}
-        attributed = unread = undiffed = changed = 0
-        for rev in revs:
-            authorship = get_commit_authorship(rev)
-            if authorship is None:
-                unread += 1
-                continue
-            tool = _ai_tool_behind(*authorship, accepted)
-            if tool is None:
-                continue
-            attributed += 1
-            paths = get_commit_changed_paths(rev)
-            if paths is None:
-                undiffed += 1
-                continue
-            changed += len(paths)
-            for path in paths:
-                hit = self._pattern_hit(path, patterns)
-                if hit and path not in offenders:
-                    offenders[path] = f"{path} (pattern {hit}, changed by {tool})"
-
+        commits, unread = self._ai_commits(revs)
+        offenders = self._ai_offenders(commits)
         if offenders:
-            return self._fail(list(offenders.values()))
+            return self._fail(offenders)
         # Not validated is not the same as clean: a commit that could not be
         # read, or whose changes could not, is a skip and never a pass.
-        if undiffed:
+        if any(paths is None for _, paths in commits):
             self._skip_reason = (
                 "what the commit changed could not be read "
                 "(a shallow clone lacks its parent)"
@@ -1131,9 +1145,10 @@ class FilesValidator(BaseValidator):
             return ValidationResult.SKIP
         if unread:
             return ValidationResult.SKIP
-        if not attributed:
+        if not commits:
             self._checked_value = "no commit attributed to an AI tool"
             return ValidationResult.PASS
+        changed = sum(len(paths or []) for _, paths in commits)
         if not changed:
             return ValidationResult.SKIP
         self._checked_value = f"{changed} path(s) changed by an AI tool"

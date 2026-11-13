@@ -433,8 +433,10 @@ def get_commit_changed_paths(rev: str = "HEAD") -> list[str] | None:
         it sits at the edge of a shallow clone, where the parent it would be
         compared against is missing and every file would look new.
     """
+    # The trailing "--" keeps git from weighing the revision against a file of
+    # the same name (a tracked file called HEAD makes a bare HEAD ambiguous).
     lineage = subprocess.run(
-        ["git", "rev-list", "--parents", "-n", "1", rev],
+        ["git", "rev-list", "--parents", "-n", "1", rev, "--"],
         capture_output=True,
         check=False,
         encoding="utf-8",
@@ -453,7 +455,16 @@ def get_commit_changed_paths(rev: str = "HEAD") -> list[str] | None:
         scope = ["-c", rev]
 
     diff = subprocess.run(
-        ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "-z", *scope],
+        [
+            "git",
+            "diff-tree",
+            "--no-commit-id",
+            "--name-only",
+            "-r",
+            "-z",
+            *scope,
+            "--",
+        ],
         capture_output=True,
         check=False,
         encoding="utf-8",
@@ -472,8 +483,19 @@ def get_commit_authorship(rev: str = "HEAD") -> tuple[str, str, str] | None:
     :returns: ``(name, email, message)``, or ``None`` when the revision does
         not resolve.
     """
+    # --no-show-signature: with log.showSignature set, git prints the
+    # signature check ahead of the format and it would be read as the name.
     result = subprocess.run(
-        ["git", "log", "-n", "1", "--pretty=format:%an%x1f%ae%x1f%B", rev],
+        [
+            "git",
+            "log",
+            "--no-show-signature",
+            "-n",
+            "1",
+            "--pretty=format:%an%x1f%ae%x1f%B",
+            rev,
+            "--",
+        ],
         capture_output=True,
         check=False,
         encoding="utf-8",

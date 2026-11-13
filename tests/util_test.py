@@ -1914,6 +1914,31 @@ class TestGetCommitChangedPaths:
         )
         assert get_commit_changed_paths("v1") is None
 
+    def test_a_file_named_like_the_revision_is_no_obstacle(self, tmp_path, monkeypatch):
+        """Git calls a bare ``HEAD`` ambiguous once a tracked file has that name."""
+        from commit_check.util import get_commit_changed_paths
+
+        _init_git_repo(tmp_path, "-b", "main")
+        (tmp_path / "HEAD").write_text("not a ref\n")
+        (tmp_path / "ci.yml").write_text("a\n")
+        _commit_all(tmp_path, BASE_COMMIT_MSG)
+
+        monkeypatch.chdir(tmp_path)
+        assert sorted(get_commit_changed_paths()) == ["HEAD", "ci.yml"]
+
+        (tmp_path / "ci.yml").write_text("b\n")
+        _commit_all(tmp_path, "ci: change")
+        assert get_commit_changed_paths() == ["ci.yml"]
+
+        # A merge that edits what it merges, the third shape of the diff.
+        self._git(tmp_path, "checkout", "-qb", "feature", "HEAD~1")
+        (tmp_path / "app.py").write_text("1\n")
+        _commit_all(tmp_path, "feat: app")
+        self._git(tmp_path, "merge", "--no-commit", "main")
+        (tmp_path / "ci.yml").write_text("edited during the merge\n")
+        _commit_all(tmp_path, "chore: merge main")
+        assert get_commit_changed_paths() == ["ci.yml"]
+
     def test_an_unresolvable_revision_is_unknown(self, tmp_path, monkeypatch):
         from commit_check.util import get_commit_changed_paths
 
@@ -1960,6 +1985,51 @@ class TestGetCommitAuthorship:
         assert (name, email) == ("T", TEST_EMAIL)
         assert message.startswith("feat: add a\n\nBody line.")
         assert AI_CO_AUTHOR in message
+
+    def test_a_file_named_like_the_revision_is_no_obstacle(self, tmp_path, monkeypatch):
+        from commit_check.util import get_commit_authorship
+
+        _init_git_repo(tmp_path, "-b", "main")
+        (tmp_path / "HEAD").write_text("not a ref\n")
+        _commit_all(tmp_path, BASE_COMMIT_MSG)
+
+        monkeypatch.chdir(tmp_path)
+        assert get_commit_authorship() == ("T", TEST_EMAIL, BASE_COMMIT_MSG + "\n")
+
+    def test_signature_display_stays_out_of_the_author(self, tmp_path, monkeypatch):
+        """``log.showSignature`` puts the signature check ahead of the format."""
+        from commit_check.util import get_commit_authorship
+
+        _init_git_repo(tmp_path, "-b", "main")
+        _run_git(tmp_path, "config", "log.showSignature", "true")
+        (tmp_path / "a.txt").write_text("a")
+        _run_git(tmp_path, "add", "-A")
+        # A signature header is enough for git to report on it; no key needed.
+        commit = subprocess.run(
+            ["git", "hash-object", "-t", "commit", "-w", "--stdin"],
+            cwd=tmp_path,
+            input=(
+                f"tree {_run_git(tmp_path, 'write-tree')}\n"
+                "author OpenHands <openhands@all-hands.dev> 1700000000 +0000\n"
+                "committer OpenHands <openhands@all-hands.dev> 1700000000 +0000\n"
+                "gpgsig -----BEGIN SSH SIGNATURE-----\n"
+                " c2lnbmF0dXJl\n"
+                " -----END SSH SIGNATURE-----\n"
+                "\n"
+                "chore: init\n"
+            ),
+            capture_output=True,
+            check=True,
+            encoding="utf-8",
+        ).stdout.strip()
+        _run_git(tmp_path, "update-ref", "HEAD", commit)
+
+        monkeypatch.chdir(tmp_path)
+        assert get_commit_authorship() == (
+            "OpenHands",
+            "openhands@all-hands.dev",
+            "chore: init\n",
+        )
 
     def test_an_unresolvable_revision_has_none(self, tmp_path, monkeypatch):
         from commit_check.util import get_commit_authorship
