@@ -1792,6 +1792,300 @@ class TestGetPushCommits:
         assert get_push_commits("deadbeef", "cafebabe") == ["deadbeef"]
 
 
+AI_CO_AUTHOR = "Co-Authored-By: Claude <noreply@anthropic.com>"
+
+
+# No benchmark marks in the three classes below: real-git tests, see above.
+class TestGetCommitChangedPaths:
+    _git = staticmethod(_run_git)
+
+    def test_added_modified_deleted_and_renamed_paths_all_count(
+        self, tmp_path, monkeypatch
+    ):
+        """Removing or renaming a file changes it as surely as editing it."""
+        from commit_check.util import get_commit_changed_paths
+
+        _init_git_repo(tmp_path, "-b", "main")
+        (tmp_path / ".github" / "workflows").mkdir(parents=True)
+        (tmp_path / ".github" / "workflows" / "ci.yml").write_text("on: push\n")
+        (tmp_path / "CODEOWNERS").write_text("* @owner\n")
+        (tmp_path / "app.py").write_text("x = 1\n")
+        _commit_all(tmp_path, BASE_COMMIT_MSG)
+        self._git(tmp_path, "rm", "-q", "CODEOWNERS")
+        self._git(
+            tmp_path, "mv", ".github/workflows/ci.yml", ".github/workflows/build.yml"
+        )
+        (tmp_path / "app.py").write_text("x = 2\n")
+        (tmp_path / "new.py").write_text("y = 1\n")
+        _commit_all(tmp_path, "chore: reshuffle")
+
+        monkeypatch.chdir(tmp_path)
+        assert sorted(get_commit_changed_paths()) == [
+            ".github/workflows/build.yml",
+            ".github/workflows/ci.yml",
+            "CODEOWNERS",
+            "app.py",
+            "new.py",
+        ]
+
+    def test_a_root_commit_changes_everything_it_holds(self, tmp_path, monkeypatch):
+        from commit_check.util import get_commit_changed_paths
+
+        _init_git_repo(tmp_path, "-b", "main")
+        (tmp_path / "a.txt").write_text("a")
+        _commit_all(tmp_path, BASE_COMMIT_MSG)
+
+        monkeypatch.chdir(tmp_path)
+        assert get_commit_changed_paths() == ["a.txt"]
+
+    def test_an_empty_commit_changes_nothing(self, tmp_path, monkeypatch):
+        from commit_check.util import get_commit_changed_paths
+
+        _init_git_repo(tmp_path, "-b", "main")
+        (tmp_path / "a.txt").write_text("a")
+        _commit_all(tmp_path, BASE_COMMIT_MSG)
+        self._git(tmp_path, "commit", "-q", "--allow-empty", "-m", "chore: nothing")
+
+        monkeypatch.chdir(tmp_path)
+        assert get_commit_changed_paths() == []
+
+    def _diverged(self, tmp_path):
+        """main and feature each one commit past a shared base, on feature."""
+        _init_git_repo(tmp_path, "-b", "main")
+        (tmp_path / "ci.yml").write_text("a\n")
+        (tmp_path / "app.py").write_text("1\n")
+        _commit_all(tmp_path, BASE_COMMIT_MSG)
+        self._git(tmp_path, "checkout", "-qb", "feature")
+        (tmp_path / "app.py").write_text("2\n")
+        _commit_all(tmp_path, "feat: app")
+        self._git(tmp_path, "checkout", "-q", "main")
+        (tmp_path / "ci.yml").write_text("b\n")
+        _commit_all(tmp_path, "ci: change on main")
+        self._git(tmp_path, "checkout", "-q", "feature")
+
+    def test_a_clean_merge_changes_nothing_itself(self, tmp_path, monkeypatch):
+        """Merging the base branch in does not make its changes the merge's."""
+        from commit_check.util import get_commit_changed_paths
+
+        self._diverged(tmp_path)
+        self._git(tmp_path, "merge", "-q", "--no-edit", "main")
+
+        monkeypatch.chdir(tmp_path)
+        assert get_commit_changed_paths() == []
+
+    def test_a_merge_answers_for_what_it_edited(self, tmp_path, monkeypatch):
+        from commit_check.util import get_commit_changed_paths
+
+        self._diverged(tmp_path)
+        self._git(tmp_path, "merge", "--no-commit", "main")
+        (tmp_path / "ci.yml").write_text("edited during the merge\n")
+        _commit_all(tmp_path, "chore: merge main")
+
+        monkeypatch.chdir(tmp_path)
+        assert get_commit_changed_paths() == ["ci.yml"]
+
+    def test_the_edge_of_a_shallow_clone_is_unknown(self, tmp_path, monkeypatch):
+        """Its parent is missing, so every file would look newly added."""
+        from commit_check.util import get_commit_changed_paths
+
+        origin = tmp_path / "origin"
+        origin.mkdir()
+        _init_git_repo(origin, "-b", "main")
+        (origin / "a.txt").write_text("a")
+        _commit_all(origin, BASE_COMMIT_MSG)
+        (origin / "b.txt").write_text("b")
+        _commit_all(origin, "feat: b")
+        shallow = tmp_path / "shallow"
+        _run_git(tmp_path, "clone", "-q", "--depth", "1", origin.as_uri(), str(shallow))
+
+        monkeypatch.chdir(shallow)
+        assert get_commit_changed_paths() is None
+        # An annotated tag names no parent itself; the commit under it does.
+        _run_git(
+            shallow,
+            "-c",
+            "user.name=Jane Dev",
+            "-c",
+            "user.email=jane@example.com",
+            "tag",
+            "-am",
+            "v1",
+            "v1",
+        )
+        assert get_commit_changed_paths("v1") is None
+
+    def test_a_file_named_like_the_revision_is_no_obstacle(self, tmp_path, monkeypatch):
+        """Git calls a bare ``HEAD`` ambiguous once a tracked file has that name."""
+        from commit_check.util import get_commit_changed_paths
+
+        _init_git_repo(tmp_path, "-b", "main")
+        (tmp_path / "HEAD").write_text("not a ref\n")
+        (tmp_path / "ci.yml").write_text("a\n")
+        _commit_all(tmp_path, BASE_COMMIT_MSG)
+
+        monkeypatch.chdir(tmp_path)
+        assert sorted(get_commit_changed_paths()) == ["HEAD", "ci.yml"]
+
+        (tmp_path / "ci.yml").write_text("b\n")
+        _commit_all(tmp_path, "ci: change")
+        assert get_commit_changed_paths() == ["ci.yml"]
+
+        # A merge that edits what it merges, the third shape of the diff.
+        self._git(tmp_path, "checkout", "-qb", "feature", "HEAD~1")
+        (tmp_path / "app.py").write_text("1\n")
+        _commit_all(tmp_path, "feat: app")
+        self._git(tmp_path, "merge", "--no-commit", "main")
+        (tmp_path / "ci.yml").write_text("edited during the merge\n")
+        _commit_all(tmp_path, "chore: merge main")
+        assert get_commit_changed_paths() == ["ci.yml"]
+
+    def test_an_unresolvable_revision_is_unknown(self, tmp_path, monkeypatch):
+        from commit_check.util import get_commit_changed_paths
+
+        _init_git_repo(tmp_path)
+        monkeypatch.chdir(tmp_path)
+        assert get_commit_changed_paths("no-such-rev") is None
+
+    def test_a_failing_diff_is_unknown(self, mocker):
+        from commit_check.util import get_commit_changed_paths
+
+        mocker.patch(
+            "commit_check.util.subprocess.run",
+            side_effect=[
+                mocker.Mock(returncode=0, stdout="abc123 def456\n"),
+                mocker.Mock(returncode=128, stdout="", stderr="fatal"),
+            ],
+        )
+        assert get_commit_changed_paths("abc123") is None
+
+    def test_an_unreadable_parentless_commit_counts_as_a_root(self, mocker):
+        from commit_check.util import get_commit_changed_paths
+
+        mocker.patch(
+            "commit_check.util.subprocess.run",
+            side_effect=[
+                mocker.Mock(returncode=0, stdout="abc123\n"),
+                mocker.Mock(returncode=128, stdout="", stderr="fatal"),
+                mocker.Mock(returncode=0, stdout="a.txt\0"),
+            ],
+        )
+        assert get_commit_changed_paths("abc123") == ["a.txt"]
+
+
+class TestGetCommitAuthorship:
+    def test_reads_the_author_and_the_whole_message(self, tmp_path, monkeypatch):
+        from commit_check.util import get_commit_authorship
+
+        _init_git_repo(tmp_path, "-b", "main")
+        (tmp_path / "a.txt").write_text("a")
+        _commit_all(tmp_path, f"feat: add a\n\nBody line.\n\n{AI_CO_AUTHOR}")
+
+        monkeypatch.chdir(tmp_path)
+        name, email, message = get_commit_authorship()
+        assert (name, email) == ("T", TEST_EMAIL)
+        assert message.startswith("feat: add a\n\nBody line.")
+        assert AI_CO_AUTHOR in message
+
+    def test_a_file_named_like_the_revision_is_no_obstacle(self, tmp_path, monkeypatch):
+        from commit_check.util import get_commit_authorship
+
+        _init_git_repo(tmp_path, "-b", "main")
+        (tmp_path / "HEAD").write_text("not a ref\n")
+        _commit_all(tmp_path, BASE_COMMIT_MSG)
+
+        monkeypatch.chdir(tmp_path)
+        assert get_commit_authorship() == ("T", TEST_EMAIL, BASE_COMMIT_MSG + "\n")
+
+    def test_signature_display_stays_out_of_the_author(self, tmp_path, monkeypatch):
+        """``log.showSignature`` puts the signature check ahead of the format."""
+        from commit_check.util import get_commit_authorship
+
+        _init_git_repo(tmp_path, "-b", "main")
+        _run_git(tmp_path, "config", "log.showSignature", "true")
+        (tmp_path / "a.txt").write_text("a")
+        _run_git(tmp_path, "add", "-A")
+        # A signature header is enough for git to report on it; no key needed.
+        commit = subprocess.run(
+            ["git", "hash-object", "-t", "commit", "-w", "--stdin"],
+            cwd=tmp_path,
+            input=(
+                f"tree {_run_git(tmp_path, 'write-tree')}\n"
+                "author OpenHands <openhands@all-hands.dev> 1700000000 +0000\n"
+                "committer OpenHands <openhands@all-hands.dev> 1700000000 +0000\n"
+                "gpgsig -----BEGIN SSH SIGNATURE-----\n"
+                " c2lnbmF0dXJl\n"
+                " -----END SSH SIGNATURE-----\n"
+                "\n"
+                "chore: init\n"
+            ),
+            capture_output=True,
+            check=True,
+            encoding="utf-8",
+        ).stdout.strip()
+        _run_git(tmp_path, "update-ref", "HEAD", commit)
+
+        monkeypatch.chdir(tmp_path)
+        assert get_commit_authorship() == (
+            "OpenHands",
+            "openhands@all-hands.dev",
+            "chore: init\n",
+        )
+
+    def test_an_unresolvable_revision_has_none(self, tmp_path, monkeypatch):
+        from commit_check.util import get_commit_authorship
+
+        _init_git_repo(tmp_path)
+        monkeypatch.chdir(tmp_path)
+        assert get_commit_authorship("no-such-rev") is None
+
+
+class TestCommitsNewToRemotes:
+    def test_commits_a_remote_already_has_are_left_out(self, tmp_path, monkeypatch):
+        """A merge of the base branch carries commits that are not this push's."""
+        from commit_check.util import commits_new_to_remotes
+
+        remote = tmp_path / "remote.git"
+        _run_git(tmp_path, "init", "-q", "--bare", str(remote))
+        work = tmp_path / "work"
+        work.mkdir()
+        _init_git_repo(work, "-b", "main")
+        _run_git(work, "remote", "add", "origin", str(remote))
+        (work / "base.txt").write_text("base")
+        _commit_all(work, BASE_COMMIT_MSG)
+        _run_git(work, "push", "-q", "origin", "main")
+        _run_git(work, "checkout", "-qb", "feature")
+        (work / "mine.txt").write_text("mine")
+        _commit_all(work, "feat: mine")
+        mine = _run_git(work, "rev-parse", "HEAD")
+        _run_git(work, "checkout", "-q", "main")
+        (work / "theirs.txt").write_text("theirs")
+        _commit_all(work, "feat: theirs")
+        theirs = _run_git(work, "rev-parse", "HEAD")
+        _run_git(work, "push", "-q", "origin", "main")
+        _run_git(work, "checkout", "-q", "feature")
+        _run_git(work, "merge", "-q", "--no-edit", "main")
+        merge = _run_git(work, "rev-parse", "HEAD")
+
+        monkeypatch.chdir(work)
+        assert commits_new_to_remotes([merge, theirs, mine]) == [merge, mine]
+
+    def test_no_commits_ask_git_nothing(self, mocker):
+        from commit_check.util import commits_new_to_remotes
+
+        run = mocker.patch("commit_check.util.subprocess.run")
+        assert commits_new_to_remotes([]) == []
+        run.assert_not_called()
+
+    def test_every_commit_is_kept_when_git_cannot_say(self, mocker):
+        from commit_check.util import commits_new_to_remotes
+
+        mocker.patch(
+            "commit_check.util.subprocess.run",
+            return_value=mocker.Mock(returncode=128, stdout="", stderr="fatal"),
+        )
+        assert commits_new_to_remotes(["a", "b"]) == ["a", "b"]
+
+
 class TestParseSizeOverflow:
     @pytest.mark.benchmark
     def test_infinite_sizes_are_unusable(self):

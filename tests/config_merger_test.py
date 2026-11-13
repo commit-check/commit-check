@@ -481,6 +481,7 @@ class TestFilesConfig:
             "max_size": "",
             "prohibited_patterns": [],
             "max_path_length": 0,
+            "ai_prohibited_patterns": [],
         }
 
     @pytest.mark.benchmark
@@ -495,4 +496,15 @@ class TestFilesConfig:
             "max_size": "5MB",
             "prohibited_patterns": ["*.pem", ".env"],
             "max_path_length": 200,
+        }
+
+    def test_env_var_sets_the_ai_prohibited_patterns(self, monkeypatch):
+        from commit_check.config_merger import ConfigMerger
+
+        monkeypatch.setenv(
+            "CCHK_FILES_AI_PROHIBITED_PATTERNS", ".github/workflows/*,CODEOWNERS"
+        )
+        config = ConfigMerger.parse_env_vars()
+        assert config["files"] == {
+            "ai_prohibited_patterns": [".github/workflows/*", "CODEOWNERS"],
         }

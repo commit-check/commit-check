@@ -22,6 +22,7 @@ from commit_check import (
 from commit_check.ai_signatures import (
     detect_ai_author,
     detect_ai_signatures,
+    tool_named_in,
 )
 from commit_check.fixes import (
     fix_branch_type,
@@ -35,11 +36,14 @@ from commit_check.imperatives import IMPERATIVES, NON_IMPERATIVE_LOOKALIKES
 from commit_check.rule_builder import ValidationRule
 from commit_check.util import (
     _print_failure,
+    commits_new_to_remotes,
     fetch_remote_ref,
     fetch_upstream_ref,
     format_size,
     get_branch_name,
     get_commit_author_identity,
+    get_commit_authorship,
+    get_commit_changed_paths,
     get_commit_files,
     get_commit_info,
     get_git_config_value,
@@ -911,11 +915,12 @@ class TagValidator(BaseValidator):
 class FilesValidator(BaseValidator):
     """Validates metadata about the files a commit touches.
 
-    One class serves the three file rules — size limit, prohibited path
-    patterns, path length — branching on the rule's check name. Only the
-    paths and sizes recorded in the commit are read, never file contents:
-    content scanning is a different tool's job. A commit touching no files
-    (or an unresolvable revision) is a skip.
+    One class serves the file rules — size limit, prohibited path patterns,
+    path length, paths a commit attributed to an AI tool may not change —
+    branching on the rule's check name. Only the paths and sizes recorded in
+    the commit are read, never file contents: content scanning is a
+    different tool's job. A commit touching no files (or an unresolvable
+    revision) is a skip.
     """
 
     @staticmethod
@@ -970,12 +975,15 @@ class FilesValidator(BaseValidator):
         or commits the remote already has — which the caller reports as a
         skip rather than a pass.
         """
-        supplied = context.piped_value
-        if supplied is not None:
-            revs = self._push_revs_from_stdin(supplied)
-            if revs is not None:
-                return revs or None
+        pushed = self._pushed_revs(context)
+        if pushed is not None:
+            return pushed or None
         return [context.rev or "HEAD"]
+
+    def _pushed_revs(self, context: ValidationContext) -> list[str] | None:
+        """The commits of the push under test, or ``None`` when it is not one."""
+        supplied = context.piped_value
+        return None if supplied is None else self._push_revs_from_stdin(supplied)
 
     def _collect_files(
         self, context: ValidationContext, revs: list[str]
@@ -995,6 +1003,9 @@ class FilesValidator(BaseValidator):
         return files
 
     def validate(self, context: ValidationContext) -> ValidationResult:
+        if self.rule.check == "ai_file_pattern":
+            return self._validate_ai_patterns(context)
+
         revs = self._revs_to_check(context)
         if revs is None:
             return ValidationResult.SKIP
@@ -1031,30 +1042,116 @@ class FilesValidator(BaseValidator):
             return self._fail(offenders)
         return ValidationResult.PASS
 
-    def _validate_patterns(self, files: list[tuple[str, int]]) -> ValidationResult:
+    @staticmethod
+    def _pattern_hit(path: str, patterns: list[str]) -> str | None:
+        """The first of *patterns* that *path* matches, or ``None``."""
         # fnmatch() folds case through os.path.normcase, which would make
         # "*.pem" catch KEY.PEM on Windows and miss it everywhere else --
         # one config, two policies. fnmatchcase() is the same on every
         # platform, and case-sensitive is what git pathspecs already are.
+        basename = path.rsplit("/", 1)[-1]
+        return next(
+            (
+                pattern
+                for pattern in patterns
+                # A bare pattern like *.pem should catch the file at any
+                # depth, so the basename is matched alongside the full
+                # path.
+                if fnmatchcase(path, pattern) or fnmatchcase(basename, pattern)
+            ),
+            None,
+        )
+
+    def _validate_patterns(self, files: list[tuple[str, int]]) -> ValidationResult:
         patterns = self.rule.value or []
         offenders = []
         for path, _ in files:
-            basename = path.rsplit("/", 1)[-1]
-            hit = next(
-                (
-                    pattern
-                    for pattern in patterns
-                    # A bare pattern like *.pem should catch the file at any
-                    # depth, so the basename is matched alongside the full
-                    # path.
-                    if fnmatchcase(path, pattern) or fnmatchcase(basename, pattern)
-                ),
-                None,
-            )
+            hit = self._pattern_hit(path, patterns)
             if hit:
                 offenders.append(f"{path} (pattern {hit})")
         if offenders:
             return self._fail(offenders)
+        return ValidationResult.PASS
+
+    def _ai_revs_to_check(self, context: ValidationContext) -> list[str]:
+        """The commits CC305 answers for.
+
+        In a push, only those no remote has yet: a push that follows a merge
+        of the base branch carries that branch's commits along, and a commit
+        an AI tool made there was accepted there.
+        """
+        pushed = self._pushed_revs(context)
+        if pushed is not None:
+            return commits_new_to_remotes(pushed)
+        return [context.rev or "HEAD"]
+
+    def _ai_commits(
+        self, revs: list[str]
+    ) -> tuple[list[tuple[str, list[str] | None]], int]:
+        """The commits among *revs* that an AI tool is behind.
+
+        :returns: ``(tool, changed paths)`` per such commit, the paths
+            ``None`` where they could not be read, and the number of commits
+            whose author and message could not be read at all.
+        """
+        accepted = self.rule.allowed or list(DEFAULT_AI_DISCLOSURE_TRAILERS)
+        found: list[tuple[str, list[str] | None]] = []
+        unread = 0
+        for rev in revs:
+            authorship = get_commit_authorship(rev)
+            if authorship is None:
+                unread += 1
+                continue
+            tool = _ai_tool_behind(*authorship, accepted)
+            if tool is not None:
+                found.append((tool, get_commit_changed_paths(rev)))
+        return found, unread
+
+    def _ai_offenders(self, commits: list[tuple[str, list[str] | None]]) -> list[str]:
+        """One line per reserved path the commits changed, first change wins."""
+        patterns = self.rule.value or []
+        offenders: dict[str, str] = {}
+        for tool, paths in commits:
+            for path in paths or []:
+                hit = self._pattern_hit(path, patterns)
+                if hit:
+                    offenders.setdefault(
+                        path, f"{path} (pattern {hit}, changed by {tool})"
+                    )
+        return list(offenders.values())
+
+    def _validate_ai_patterns(self, context: ValidationContext) -> ValidationResult:
+        """CC305: a commit attributed to an AI tool changes none of the paths.
+
+        Deleting or renaming a path counts as changing it, and a merge commit
+        answers only for what it changed itself; see
+        :func:`get_commit_changed_paths`.
+        """
+        revs = self._ai_revs_to_check(context)
+        if not revs:
+            return ValidationResult.SKIP
+
+        commits, unread = self._ai_commits(revs)
+        offenders = self._ai_offenders(commits)
+        if offenders:
+            return self._fail(offenders)
+        # Not validated is not the same as clean: a commit that could not be
+        # read, or whose changes could not, is a skip and never a pass.
+        if any(paths is None for _, paths in commits):
+            self._skip_reason = (
+                "what the commit changed could not be read "
+                "(a shallow clone lacks its parent)"
+            )
+            return ValidationResult.SKIP
+        if unread:
+            return ValidationResult.SKIP
+        if not commits:
+            self._checked_value = "no commit attributed to an AI tool"
+            return ValidationResult.PASS
+        changed = sum(len(paths or []) for _, paths in commits)
+        if not changed:
+            return ValidationResult.SKIP
+        self._checked_value = f"{changed} path(s) changed by an AI tool"
         return ValidationResult.PASS
 
     def _validate_path_lengths(self, files: list[tuple[str, int]]) -> ValidationResult:
@@ -1721,6 +1818,29 @@ def ai_tools_in(context: ValidationContext, *, author: bool) -> list[str]:
     return sorted(tools)
 
 
+def _ai_tool_behind(
+    name: str, email: str, message: str, accepted: list[str]
+) -> str | None:
+    """The AI tool a commit is attributed to, or ``None``.
+
+    By its author first, the strongest attribution a commit makes, then by
+    its message: a co-author or sign-off line, a vendor's stamp, or a
+    disclosure under one of the *accepted* trailers. Whatever the
+    ``ai_attribution`` policy: this reads who wrote the commit, it does not
+    judge how that is said.
+    """
+    tool = detect_ai_author(name, email)
+    if tool is not None:
+        return tool
+    report = ai_policy.analyze(message, accepted)
+    if report.evidence:
+        return report.evidence[0]["tool"]
+    for disclosure in report.disclosures:
+        if disclosure.value:
+            return tool_named_in(disclosure.value) or disclosure.value
+    return None
+
+
 class AiAuthorValidator(BaseValidator):
     """Rejects a commit whose author is an AI tool (CC017).
 
@@ -1801,6 +1921,7 @@ class ValidationEngine:
         "file_size": FilesValidator,
         "file_pattern": FilesValidator,
         "path_length": FilesValidator,
+        "ai_file_pattern": FilesValidator,
     }
 
     def __init__(self, rules: list[ValidationRule]):
