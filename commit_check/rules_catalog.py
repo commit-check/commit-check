@@ -265,6 +265,13 @@ FILES_RULES = [
         error="File path exceeds {max_len} characters",
         suggest="Shorten the path to {max_len} characters or fewer",
     ),
+    RuleCatalogEntry(
+        rule_id="CC305",
+        check="ai_file_pattern",
+        regex=None,
+        error="A commit attributed to an AI tool changes a path reserved for people",
+        suggest="Leave the path out of this commit and have a person change it in a commit of their own, or adjust ai_prohibited_patterns in the [files] config",
+    ),
 ]
 
 # Branch rules

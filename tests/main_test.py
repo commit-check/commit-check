@@ -1601,6 +1601,7 @@ class TestFilesFlag:
         assert "--files-max-size" in out
         assert "--files-prohibited-patterns" in out
         assert "--files-max-path-length" in out
+        assert "--files-ai-prohibited-patterns" in out
 
     def test_files_in_requested_checks(self):
         from commit_check.main import _get_parser, _get_requested_checks
@@ -1610,6 +1611,7 @@ class TestFilesFlag:
             "file_size",
             "file_pattern",
             "path_length",
+            "ai_file_pattern",
         }
 
     def test_files_cli_options_reach_config(self):
@@ -1632,6 +1634,18 @@ class TestFilesFlag:
             "max_size": "5MB",
             "prohibited_patterns": ["*.pem", ".env"],
             "max_path_length": 200,
+        }
+
+    def test_the_ai_prohibited_patterns_option_reaches_config(self):
+        from commit_check.config_merger import ConfigMerger
+        from commit_check.main import _get_parser
+
+        args = _get_parser().parse_args(
+            ["-f", "--files-ai-prohibited-patterns", ".github/workflows/*,CODEOWNERS"]
+        )
+        config = ConfigMerger.parse_cli_args(args)
+        assert config["files"] == {
+            "ai_prohibited_patterns": [".github/workflows/*", "CODEOWNERS"],
         }
 
     def test_files_unconfigured_prints_hint(self, capfd, monkeypatch, tmp_path):

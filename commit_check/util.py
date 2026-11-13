@@ -393,6 +393,124 @@ def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
     return files
 
 
+def _is_shallow_boundary(rev: str) -> bool:
+    """Whether *rev* has parents this clone does not hold.
+
+    A shallow clone grafts its oldest commits to look like root commits. The
+    commit object still names its parents, so the two disagree exactly there.
+    """
+    # ^{commit} peels an annotated tag, whose own headers name no parent.
+    raw = subprocess.run(
+        ["git", "cat-file", "-p", f"{rev}^{{commit}}"],
+        capture_output=True,
+        check=False,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if raw.returncode != 0:
+        return False
+    headers = raw.stdout.split("\n\n", 1)[0]
+    return any(line.startswith("parent ") for line in headers.splitlines())
+
+
+def get_commit_changed_paths(rev: str = "HEAD") -> list[str] | None:
+    """List every path a commit changes, deletions included.
+
+    Where :func:`get_commit_files` measures what a commit adds, this answers
+    who touched what: a path deleted or renamed away counts, since removing a
+    workflow or a ``CODEOWNERS`` file changes it as surely as editing it.
+    Only paths are read, never sizes or contents.
+
+    A merge commit is credited with what it changed itself: the paths whose
+    merged result differs from every parent (a conflict resolution, an edit
+    made during the merge). What a merge merely brings in was changed by the
+    commits on the other branch; counting it here would hold whoever merged
+    the base branch in answerable for every change made on it.
+
+    :param rev: Revision whose changed paths to list, ``HEAD`` by default.
+    :returns: The changed paths, empty when the commit changes none, or
+        ``None`` when that cannot be known: the revision does not resolve, or
+        it sits at the edge of a shallow clone, where the parent it would be
+        compared against is missing and every file would look new.
+    """
+    lineage = subprocess.run(
+        ["git", "rev-list", "--parents", "-n", "1", rev],
+        capture_output=True,
+        check=False,
+        encoding="utf-8",
+    )
+    if lineage.returncode != 0:
+        return None
+    parents = lineage.stdout.split()[1:]
+    if not parents:
+        if _is_shallow_boundary(rev):
+            return None
+        scope = ["--root", rev]
+    elif len(parents) == 1:
+        scope = [parents[0], rev]
+    else:
+        # -c lists only the paths that differ from all parents.
+        scope = ["-c", rev]
+
+    diff = subprocess.run(
+        ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "-z", *scope],
+        capture_output=True,
+        check=False,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if diff.returncode != 0:
+        return None
+    return [p for p in diff.stdout.split("\0") if p]
+
+
+def get_commit_authorship(rev: str = "HEAD") -> tuple[str, str, str] | None:
+    """The author name, author email and full message of a commit.
+
+    One git call for the three things that say who, or what, wrote a commit.
+
+    :returns: ``(name, email, message)``, or ``None`` when the revision does
+        not resolve.
+    """
+    result = subprocess.run(
+        ["git", "log", "-n", "1", "--pretty=format:%an%x1f%ae%x1f%B", rev],
+        capture_output=True,
+        check=False,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if result.returncode != 0:
+        return None
+    name, _, rest = result.stdout.partition("\x1f")
+    email, _, message = rest.partition("\x1f")
+    return name.strip(), email.strip(), message
+
+
+def commits_new_to_remotes(revs: list[str]) -> list[str]:
+    """Those of *revs* that no remote-tracking ref reaches yet, in order.
+
+    A push that follows a merge of the base branch carries that branch's
+    commits along. They are in the pushed range, but they are not this
+    push's to answer for: they were accepted where they were merged.
+
+    :returns: The commits a remote does not have; all of *revs* when git
+        cannot say.
+    """
+    if not revs:
+        return []
+    result = subprocess.run(
+        ["git", "rev-list", "--stdin", "--not", "--remotes"],
+        input="\n".join(revs) + "\n",
+        capture_output=True,
+        check=False,
+        encoding="utf-8",
+    )
+    if result.returncode != 0:
+        return list(revs)
+    new = set(result.stdout.split())
+    return [rev for rev in revs if rev in new]
+
+
 def get_push_commits(local_sha: str, remote_sha: str) -> list[str]:
     """List the commits a push introduces, newest first.
 

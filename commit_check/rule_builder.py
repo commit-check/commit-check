@@ -337,7 +337,7 @@ class RuleBuilder:
     def _build_files_rules(self) -> list[ValidationRule]:
         """Build file-metadata validation rules.
 
-        All three are off by default: each rule exists only when its
+        All of them are off by default: each rule exists only when its
         [files] setting carries a usable value, and malformed values (a
         non-table section, an unparsable size, a non-list pattern set)
         disable the rule rather than failing every commit.
@@ -359,12 +359,14 @@ class RuleBuilder:
             "file_size": self._build_file_size_rule,
             "file_pattern": self._build_file_pattern_rule,
             "path_length": self._build_path_length_rule,
+            "ai_file_pattern": self._build_ai_file_pattern_rule,
         }
         #: The [files] key each rule reads, for reporting unusable values.
         settings = {
             "file_size": "max_size",
             "file_pattern": "prohibited_patterns",
             "path_length": "max_path_length",
+            "ai_file_pattern": "ai_prohibited_patterns",
         }
 
         rules = []
@@ -404,16 +406,18 @@ class RuleBuilder:
         )
 
     @staticmethod
+    def _usable_patterns(raw: Any) -> list[str]:
+        """The entries of a pattern list that can be matched against a path."""
+        if not isinstance(raw, list):
+            return []
+        return [p for p in raw if isinstance(p, str) and p.strip()]
+
+    @classmethod
     def _build_file_pattern_rule(
-        catalog_entry: RuleCatalogEntry, files_config: dict[str, Any]
+        cls, catalog_entry: RuleCatalogEntry, files_config: dict[str, Any]
     ) -> ValidationRule | None:
         """Build the prohibited-pattern rule from the usable list entries."""
-        raw = files_config.get("prohibited_patterns")
-        patterns = (
-            [p for p in raw if isinstance(p, str) and p.strip()]
-            if isinstance(raw, list)
-            else []
-        )
+        patterns = cls._usable_patterns(files_config.get("prohibited_patterns"))
         if not patterns:
             return None
         return ValidationRule(
@@ -421,6 +425,26 @@ class RuleBuilder:
             error=catalog_entry.error,
             suggest=catalog_entry.suggest,
             value=patterns,
+        )
+
+    def _build_ai_file_pattern_rule(
+        self, catalog_entry: RuleCatalogEntry, files_config: dict[str, Any]
+    ) -> ValidationRule | None:
+        """Build the rule on paths a commit attributed to an AI tool may not change.
+
+        It carries the project's disclosure trailers: a commit that discloses
+        a tool under one of them is attributed to that tool, whatever the
+        ``ai_attribution`` policy does with the disclosure.
+        """
+        patterns = self._usable_patterns(files_config.get("ai_prohibited_patterns"))
+        if not patterns:
+            return None
+        return ValidationRule(
+            check=catalog_entry.check,
+            error=catalog_entry.error,
+            suggest=catalog_entry.suggest,
+            value=patterns,
+            allowed=self._ai_disclosure_trailers(),
         )
 
     @staticmethod

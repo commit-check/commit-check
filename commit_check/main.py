@@ -254,8 +254,9 @@ def _get_parser() -> argparse.ArgumentParser:
         "-f",
         "--files",
         help="check the files the commit at HEAD (or --rev) touches: size "
-        "limit, prohibited path patterns, path length (all off until "
-        "configured in the [files] config section)",
+        "limit, prohibited path patterns, path length, paths a commit "
+        "attributed to an AI tool may not change (all off until configured "
+        "in the [files] config section)",
         action="store_true",
         required=False,
     )
@@ -587,6 +588,16 @@ def _get_parser() -> argparse.ArgumentParser:
         help="maximum number of characters in a committed file path",
     )
 
+    files_group.add_argument(
+        "--files-ai-prohibited-patterns",
+        type=parse_list,
+        default=None,
+        metavar="LIST",
+        help="comma-separated fnmatch patterns for paths a commit attributed "
+        "to an AI tool must not change (e.g. .github/workflows/*,CODEOWNERS); "
+        "deleting or renaming a path counts as changing it",
+    )
+
     return parser
 
 
@@ -751,7 +762,7 @@ def _get_requested_checks(args: argparse.Namespace) -> set[str]:
 _UNCONFIGURED_HINTS = (
     (
         "files",
-        ("file_size", "file_pattern", "path_length"),
+        ("file_size", "file_pattern", "path_length", "ai_file_pattern"),
         "--files requested but nothing is configured in the [files] section",
     ),
     (
