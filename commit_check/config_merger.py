@@ -13,11 +13,13 @@ from commit_check import (
     DEFAULT_AI_ATTRIBUTION,
     DEFAULT_AI_DISCLOSURE_PATTERN,
     DEFAULT_AI_DISCLOSURE_TRAILERS,
+    DEFAULT_AI_SESSION_TRAILERS,
     DEFAULT_BOOLEAN_RULES,
     DEFAULT_BRANCH_NAMES,
     DEFAULT_BRANCH_TYPES,
     DEFAULT_COMMIT_TYPES,
     DEFAULT_PUSH_RULES,
+    DEFAULT_REQUIRE_AI_SESSION,
     DEFAULT_TAG_REGEX,
 )
 from commit_check.config import deep_merge
@@ -87,6 +89,8 @@ def get_default_config() -> dict[str, Any]:
             "ai_attribution": DEFAULT_AI_ATTRIBUTION,
             "ai_disclosure_trailers": DEFAULT_AI_DISCLOSURE_TRAILERS.copy(),
             "ai_disclosure_pattern": DEFAULT_AI_DISCLOSURE_PATTERN,
+            "require_ai_session": DEFAULT_REQUIRE_AI_SESSION,
+            "ai_session_trailers": DEFAULT_AI_SESSION_TRAILERS.copy(),
             "author_email_pattern": "^.+@.+$",
             "author_name_pattern": "",
         },
@@ -179,6 +183,8 @@ class ConfigMerger:
             parse_list,
         ),
         "CCHK_AI_DISCLOSURE_PATTERN": ("commit", "ai_disclosure_pattern", str),
+        "CCHK_REQUIRE_AI_SESSION": ("commit", "require_ai_session", parse_bool),
+        "CCHK_AI_SESSION_TRAILERS": ("commit", "ai_session_trailers", parse_list),
         "CCHK_AUTHOR_EMAIL_PATTERN": ("commit", "author_email_pattern", str),
         "CCHK_AUTHOR_NAME_PATTERN": ("commit", "author_name_pattern", str),
         # Branch section
@@ -227,6 +233,8 @@ class ConfigMerger:
         "ai_attribution": ("commit", "ai_attribution"),
         "ai_disclosure_trailers": ("commit", "ai_disclosure_trailers"),
         "ai_disclosure_pattern": ("commit", "ai_disclosure_pattern"),
+        "require_ai_session": ("commit", "require_ai_session"),
+        "ai_session_trailers": ("commit", "ai_session_trailers"),
         "author_email_pattern": ("commit", "author_email_pattern"),
         "author_name_pattern": ("commit", "author_name_pattern"),
         # Branch section

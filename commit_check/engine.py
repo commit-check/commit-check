@@ -22,6 +22,8 @@ from commit_check import (
 from commit_check.ai_signatures import (
     detect_ai_author,
     detect_ai_signatures,
+    detect_session_links,
+    find_trailers,
     tool_named_in,
 )
 from commit_check.fixes import (
@@ -1890,6 +1892,45 @@ class AiAuthorValidator(BaseValidator):
         return ValidationResult.FAIL
 
 
+class AiSessionValidator(BaseValidator):
+    """A commit attributed to an AI tool links the session that produced it (CC018).
+
+    The tool is read as CC305 reads it: by the commit's author, a co-author
+    or sign-off line, a vendor's stamp, or a disclosure under an accepted
+    trailer. A session is linked by a line a known tool writes for the
+    purpose (``Agent-Logs-Url:``, ``Entire-Checkpoint:``, a Claude Code or
+    Devin session URL, a Codex task) or by one of the project's own
+    ``ai_session_trailers`` with a value. A commit no tool is behind passes:
+    there is no session to link.
+    """
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        if self._should_skip_commit_validation(context):
+            return ValidationResult.SKIP
+
+        message = self._get_commit_message(context)
+        accepted = self.rule.allowed or list(DEFAULT_AI_DISCLOSURE_TRAILERS)
+        tool = _ai_tool_behind(*_author_identity(context), message, accepted)
+        if tool is None:
+            self._checked_value = "no commit attributed to an AI tool"
+            return ValidationResult.PASS
+
+        links = [s["matched_text"] for s in detect_session_links(message)]
+        own = self.rule.value or []
+        links += [line for _, value, line in find_trailers(message, own) if value]
+        if links:
+            self._checked_value = links[0]
+            return ValidationResult.PASS
+
+        shown = f"{tool}, no session link"
+        self._checked_value = shown
+        self._print_failure(
+            shown,
+            error=f"A commit attributed to {tool} does not link the session that produced it",
+        )
+        return ValidationResult.FAIL
+
+
 class ValidationEngine:
     """Main validation engine that orchestrates all validations."""
 
@@ -1917,6 +1958,7 @@ class ValidationEngine:
         "ai_co_author": AiAttributionValidator,
         "ai_signoff": AiAttributionValidator,
         "ai_author": AiAuthorValidator,
+        "ai_session": AiSessionValidator,
         "tag": TagValidator,
         "file_size": FilesValidator,
         "file_pattern": FilesValidator,

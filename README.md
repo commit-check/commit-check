@@ -77,7 +77,7 @@ The same `cchk.toml` drives all of them:
 | Check | Flag | Rules |
 |---|---|---|
 | Commit message — Conventional Commits, subject length, case and mood, WIP and fixup commits, body, sign-off | `--message` | CC001–CC012 |
-| AI attribution — forbid it, or require an `Assisted-by:` disclosure | `--message` | CC013–CC017 |
+| AI attribution — forbid it, require an `Assisted-by:` disclosure, or a link to the agent's session | `--message` | CC013–CC018 |
 | Author name and email | `--author-name` `--author-email` | CC101–CC102 |
 | Branch name — Conventional Branch, rebased onto a target | `--branch` | CC201–CC202 |
 | Force push | `--no-force-push` | CC301 |
@@ -133,6 +133,8 @@ Priority: CLI > env > TOML > default. Booleans accept `true/false`, `yes/no`,
 | `commit.ai_attribution` | `"ignore"` | `--ai-attribution` | `CCHK_AI_ATTRIBUTION` | `ignore`, `forbid` or `disclose`. `forbid` rejects commits carrying known AI tool signatures (CC013); `disclose` accepts AI assistance disclosed with one of `ai_disclosure_trailers` (CC014) and rejects the tool as a co-author (CC015) or as a sign-off (CC016); both reject a commit whose author is an AI tool (CC017) |
 | `commit.ai_disclosure_trailers` | `Assisted-by, Generated-by` | `--ai-disclosure-trailers` | `CCHK_AI_DISCLOSURE_TRAILERS` | Trailers that disclose AI assistance under `disclose`; the first is the one a fix is written with. List `Co-authored-by` to accept the tool as a co-author |
 | `commit.ai_disclosure_pattern` | `""` | `--ai-disclosure-pattern` | `CCHK_AI_DISCLOSURE_PATTERN` | Regex the disclosure's value must match under `disclose`, e.g. `^\S+/\S+` for `agent/model`; empty accepts any value, but a trailer with no value at all is always reported |
+| `commit.require_ai_session` | `false` | `--require-ai-session` | `CCHK_REQUIRE_AI_SESSION` | Require a commit attributed to an AI tool (by its author, a co-author line, a stamp or a disclosure) to link the session that produced it (CC018): a link a known tool writes, such as `Agent-Logs-Url:`, `Entire-Checkpoint:` or a Claude Code session URL, or one of `ai_session_trailers` with a value. Not built under `forbid` |
+| `commit.ai_session_trailers` | `[]` | `--ai-session-trailers` | `CCHK_AI_SESSION_TRAILERS` | Trailers of the project's own that link the session under `require_ai_session`, e.g. `Agent-Session` for an in-house agent platform; the known tools' links count without being listed |
 | `commit.author_email_pattern` | `"^.+@.+$"` | `--author-email-pattern` | `CCHK_AUTHOR_EMAIL_PATTERN` | Regex the author email must match (CC102, with `--author-email`) |
 | `commit.author_name_pattern` | `""` | `--author-name-pattern` | `CCHK_AUTHOR_NAME_PATTERN` | Regex the author name must match (CC101, with `--author-name`) |
 | `branch.conventional_branch` | `true` | `--conventional-branch` | `CCHK_CONVENTIONAL_BRANCH` | Enforce `<type>/<description>` branch names (CC201) |

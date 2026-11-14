@@ -473,6 +473,25 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     commit_group.add_argument(
+        "--require-ai-session",
+        type=parse_bool,
+        default=None,
+        metavar="BOOL",
+        help="require a commit attributed to an AI tool to link the session "
+        "that produced it, e.g. with an Agent-Logs-Url: or Entire-Checkpoint: "
+        "trailer (true/false)",
+    )
+
+    commit_group.add_argument(
+        "--ai-session-trailers",
+        type=parse_list,
+        default=None,
+        metavar="LIST",
+        help="comma-separated trailers of the project's own that link the "
+        "session under --require-ai-session, beside those the known tools write",
+    )
+
+    commit_group.add_argument(
         "--author-email-pattern",
         type=str,
         default=None,

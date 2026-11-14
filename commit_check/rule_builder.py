@@ -12,11 +12,13 @@ from commit_check import (
     DEFAULT_AI_ATTRIBUTION,
     DEFAULT_AI_DISCLOSURE_PATTERN,
     DEFAULT_AI_DISCLOSURE_TRAILERS,
+    DEFAULT_AI_SESSION_TRAILERS,
     DEFAULT_BOOLEAN_RULES,
     DEFAULT_BRANCH_NAMES,
     DEFAULT_BRANCH_TYPES,
     DEFAULT_COMMIT_TYPES,
     DEFAULT_PUSH_RULES,
+    DEFAULT_REQUIRE_AI_SESSION,
     DEFAULT_TAG_REGEX,
     GIT_MERGE_SUBJECT_PATTERN,
 )
@@ -535,6 +537,8 @@ class RuleBuilder:
             return self._build_author_list_rule(catalog_entry, "ignore_authors")
         elif check in _AI_CHECKS:
             return self._build_ai_attribution_rule(catalog_entry)
+        elif check == "ai_session":
+            return self._build_ai_session_rule(catalog_entry)
         elif check == "author_email":
             return self._build_author_pattern_rule(
                 catalog_entry, "author_email_pattern"
@@ -729,6 +733,67 @@ class RuleBuilder:
             error=(catalog_entry.error or "").format(trailer=trailers[0]),
             suggest=(catalog_entry.suggest or "").format(trailer=trailers[0]),
         )
+
+    def _build_ai_session_rule(
+        self, catalog_entry: RuleCatalogEntry
+    ) -> ValidationRule | None:
+        """Build CC018, when ``require_ai_session`` asks for it.
+
+        The rule carries the project's own session trailers as its value and
+        the accepted disclosure trailers, because a disclosure is one of the
+        ways a commit is attributed to a tool. Under ``forbid`` nothing is
+        built: a commit an AI tool is behind fails CC013 already, and a link
+        to its session would not make it acceptable.
+        """
+        setting = "[commit] require_ai_session"
+        required = self.commit_config.get(
+            "require_ai_session", DEFAULT_REQUIRE_AI_SESSION
+        )
+        if not isinstance(required, bool):
+            raise ConfigError(
+                f"{setting} must be true or false, got {required!r}", setting=setting
+            )
+        if not required or self._ai_policy() == "forbid":
+            return None
+
+        own = self._ai_session_trailers()
+        suggest = catalog_entry.suggest or ""
+        if own:
+            suggest += f"; this project also accepts {own[0]}:"
+        return ValidationRule(
+            check=catalog_entry.check,
+            value=own,
+            allowed=self._ai_disclosure_trailers(),
+            error=catalog_entry.error,
+            suggest=suggest,
+        )
+
+    def _ai_session_trailers(self) -> list[str]:
+        """The project's own trailers that link a session, as the config spells them.
+
+        Empty is allowed, and is the default: the links the known tools
+        write are recognised without being listed.
+        """
+        setting = "[commit] ai_session_trailers"
+        raw = self.commit_config.get("ai_session_trailers", DEFAULT_AI_SESSION_TRAILERS)
+        if isinstance(raw, str):
+            raw = raw.split(",")
+        elif not isinstance(raw, list):
+            raw = [raw]
+        trailers: list[str] = []
+        for item in raw:
+            name = item.strip().rstrip(":").strip() if isinstance(item, str) else ""
+            if name == "" and isinstance(item, str):
+                continue
+            if not _TRAILER_KEY.match(name):
+                raise ConfigError(
+                    f"{setting} cannot use {item!r}: a trailer is a token such as "
+                    "Agent-Session",
+                    setting=setting,
+                )
+            if name.lower() not in {t.lower() for t in trailers}:
+                trailers.append(name)
+        return trailers
 
     def _ai_policy(self) -> str:
         """The ``ai_attribution`` policy, once it is known to be one.
