@@ -62,8 +62,9 @@ def _named_tools() -> tuple[tuple[re.Pattern[str], str], ...]:
     )
 
 
-#: What a match says about the tool: ``(tool, description, kind, role)``.
-_Member = tuple[str, str, str, str]
+#: What a match says about the tool: ``(tool, description, kind, role,
+#: session)``, the last whether the line links the session's record.
+_Member = tuple[str, str, str, str, bool]
 
 
 @dataclass(frozen=True)
@@ -99,6 +100,7 @@ def _build_groups() -> list[_Group]:
                 pattern.description,
                 pattern.kind,
                 pattern.role,
+                pattern.session,
             )
             if not pattern.keys:
                 markers.append(_Group(frozenset(), pattern.regex, (member,)))
@@ -224,10 +226,26 @@ def detect_ai_signatures(message: str) -> list[dict[str, str]]:
         ... )
         [{'tool': 'Claude Code', 'kind': 'trailer', 'role': 'co_author', ...}]
     """
-    results: list[dict[str, str]] = []
+    return [signature for signature, _ in _signatures(message)]
+
+
+def detect_session_links(message: str) -> list[dict[str, str]]:
+    """The signatures in *message* that point at the session's record.
+
+    A link to an agent's session logs (``Agent-Logs-Url:``, a Claude Code
+    session URL, a Devin run) or a checkpoint ID (``Entire-Checkpoint:``):
+    where the record of what the agent did can be found. Reported as
+    :func:`detect_ai_signatures` reports them.
+    """
+    return [signature for signature, session in _signatures(message) if session]
+
+
+def _signatures(message: str) -> list[tuple[dict[str, str], bool]]:
+    """Every signature in *message*, and whether it links the session."""
+    results: list[tuple[dict[str, str], bool]] = []
     seen: set[str] = set()
 
-    for (tool_name, desc, kind, role), matched in _scan(message):
+    for (tool_name, desc, kind, role, session), matched in _scan(message):
         if matched in seen:
             continue
         seen.add(matched)
@@ -239,17 +257,16 @@ def detect_ai_signatures(message: str) -> list[dict[str, str]]:
             # The disclosure trailers are matched generically, on their
             # key alone; the value is where the tool is named.
             tool = tool_named_in(value) or tool_name
-        results.append(
-            {
-                "tool": tool,
-                "kind": kind,
-                "role": role,
-                "description": desc,
-                "matched_text": matched,
-                "trailer": trailer,
-                "value": value,
-            }
-        )
+        signature = {
+            "tool": tool,
+            "kind": kind,
+            "role": role,
+            "description": desc,
+            "matched_text": matched,
+            "trailer": trailer,
+            "value": value,
+        }
+        results.append((signature, session))
 
     return results
 

@@ -54,6 +54,10 @@ class AiSignaturePattern:
     :param value_pattern: For a trailer, what may follow the key. The scanner
         compiles the value patterns that share a key into one alternation,
         so a trailer line is read once however many tools the catalog knows.
+    :param session: Whether the match points at the record of the session
+        that produced the change: a link to its logs, a checkpoint ID. Such
+        a line is how a commit says where its evidence is, which is what
+        ``require_ai_session`` (CC018) asks for.
     """
 
     source: str
@@ -63,6 +67,7 @@ class AiSignaturePattern:
     description: str = ""
     keys: frozenset[str] = frozenset()
     value_pattern: str = ""
+    session: bool = False
 
     @cached_property
     def regex(self) -> re.Pattern[str]:
@@ -120,7 +125,12 @@ CREDIT_TRAILERS = (
 
 
 def _trailer(
-    keys: tuple[str, ...], value_pattern: str, role: str, description: str
+    keys: tuple[str, ...],
+    value_pattern: str,
+    role: str,
+    description: str,
+    *,
+    session: bool = False,
 ) -> AiSignaturePattern:
     """Build a trailer pattern for a structured ``Key: value`` line.
 
@@ -142,6 +152,7 @@ def _trailer(
         description=description,
         keys=frozenset(key.lower() for key in keys),
         value_pattern=value_pattern,
+        session=session,
     )
 
 
@@ -186,12 +197,16 @@ def _disclosure(key: str, description: str) -> AiSignaturePattern:
     return _trailer((key,), r"\S[^\n]*", ROLE_DISCLOSURE, description)
 
 
-def _stamp_trailer(key: str, description: str) -> AiSignaturePattern:
+def _stamp_trailer(
+    key: str, description: str, *, session: bool = False
+) -> AiSignaturePattern:
     """A trailer a vendor adds for its own purposes, such as a session ID."""
-    return _trailer((key,), r"\S+", ROLE_STAMP, description)
+    return _trailer((key,), r"\S+", ROLE_STAMP, description, session=session)
 
 
-def _body_marker(pattern: str, description: str = "") -> AiSignaturePattern:
+def _body_marker(
+    pattern: str, description: str = "", *, session: bool = False
+) -> AiSignaturePattern:
     """Build a free-text body marker pattern."""
     return AiSignaturePattern(
         source=pattern,
@@ -199,6 +214,7 @@ def _body_marker(pattern: str, description: str = "") -> AiSignaturePattern:
         kind="body_marker",
         role=ROLE_STAMP,
         description=description,
+        session=session,
     )
 
 
@@ -248,9 +264,10 @@ CLAUDE_CODE = KnownAiTool(
         _body_marker(
             r"^[ \t]*https://claude\.ai/code/session_[A-Za-z0-9]+[ \t]*$",
             "Claude Code session link",
+            session=True,
         ),
         # Session ID trailer (Claude Code sometimes adds this)
-        _stamp_trailer("Claude-Session", "``Claude-Session:`` trailer"),
+        _stamp_trailer("Claude-Session", "``Claude-Session:`` trailer", session=True),
         # Workflow ID trailer
         _stamp_trailer("Claude-Workflow", "``Claude-Workflow:`` trailer"),
     ],
@@ -275,7 +292,7 @@ COPILOT = KnownAiTool(
             r"[^<\n]*<\d+\+Copilot@users\.noreply\.github\.com>",
             "... <N+Copilot@users.noreply.github.com>",
         ),
-        _stamp_trailer("Agent-Logs-Url", "``Agent-Logs-Url:`` trailer"),
+        _stamp_trailer("Agent-Logs-Url", "``Agent-Logs-Url:`` trailer", session=True),
     ],
 )
 
@@ -289,7 +306,11 @@ CODEX = KnownAiTool(
         *_app_bot("chatgpt-codex-connector"),
         # A Codex cloud pull request links its task in the description:
         # ``Codex Cloud task: https://chatgpt.com/codex/tasks/task_e_...``.
-        _body_marker(r"https://chatgpt\.com/codex/tasks/task_\w+", "Codex task link"),
+        _body_marker(
+            r"https://chatgpt\.com/codex/tasks/task_\w+",
+            "Codex task link",
+            session=True,
+        ),
     ],
 )
 
@@ -350,7 +371,9 @@ DEVIN = KnownAiTool(
         ),
         # Devin's pull requests link the run: ``Link to Devin run: https://...``.
         _body_marker(
-            r"https://app\.devin\.ai/sessions/[0-9a-f]{32}", "Devin session link"
+            r"https://app\.devin\.ai/sessions/[0-9a-f]{32}",
+            "Devin session link",
+            session=True,
         ),
     ],
 )
@@ -542,6 +565,22 @@ CRUSH = KnownAiTool(
     ],
 )
 
+# --- Entire ---
+# The Entire CLI records the agent session behind each commit as a
+# checkpoint, kept in the repository apart from the working branches, and
+# names it in a trailer of its own: ``Entire-Checkpoint: 01M4X1NYD0BAHNW448QYK3CBC7``.
+# https://entire.com/blog/the-entire-cli-how-it-works-and-where-its-headed
+# The agent itself usually signs the commit too; the trailer is the link to
+# the record. "Entire" is a common word, so the tool has no free-text name.
+ENTIRE = KnownAiTool(
+    name="Entire",
+    patterns=[
+        _stamp_trailer(
+            "Entire-Checkpoint", "``Entire-Checkpoint:`` trailer", session=True
+        ),
+    ],
+)
+
 # --- Generic / catch-all AI patterns ---
 GENERIC_AI = KnownAiTool(
     name="Generic AI",
@@ -608,5 +647,6 @@ ALL_KNOWN_TOOLS: list[KnownAiTool] = [
     AMAZON_Q,
     WARP,
     CRUSH,
+    ENTIRE,
     GENERIC_AI,
 ]

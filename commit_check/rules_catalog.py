@@ -228,6 +228,17 @@ COMMIT_RULES = [
         error="An AI tool is the commit author",
         suggest="Author the commit yourself: git commit --amend --reset-author",
     ),
+    # A commit an AI tool is behind says where the record of its session is:
+    # the disclosure names the tool, the link is the evidence of what it
+    # did. Off until require_ai_session is set; not built under forbid.
+    RuleCatalogEntry(
+        rule_id="CC018",
+        check="ai_session",
+        regex=None,
+        error="A commit attributed to an AI tool does not link the session that produced it",
+        suggest="Add the link the tool records for its session, such as an "
+        "Agent-Logs-Url: or Entire-Checkpoint: trailer",
+    ),
 ]
 
 # Push rules

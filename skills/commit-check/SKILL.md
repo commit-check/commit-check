@@ -72,6 +72,8 @@ The `ai_attribution` key under `[commit]` sets what the project accepts from AI 
 
 Under both `forbid` and `disclose`, a commit whose author is an AI tool fails (rule CC017). Commit with the user's git identity.
 
+If `require_ai_session = true`, a commit you made must also link your session (rule CC018). Keep the link your tool writes, such as an `Agent-Logs-Url:` or `Entire-Checkpoint:` trailer or a Claude Code session URL, or add one of the trailers in `ai_session_trailers`. Never invent a link.
+
 If the project forbids AI attribution but your tool adds a trailer on its own, remove the trailer from the message before committing; do not turn the check off.
 
 To check only the AI rules on text that is not a commit message, such as a pull request description:

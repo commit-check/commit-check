@@ -157,6 +157,12 @@ DEFAULT_AI_ATTRIBUTION = "ignore"
 DEFAULT_AI_DISCLOSURE_TRAILERS = ["Assisted-by", "Generated-by"]
 # A regex the disclosure's value must match; empty accepts any non-empty value.
 DEFAULT_AI_DISCLOSURE_PATTERN = ""
+#: Whether a commit attributed to an AI tool must link the session that
+#: produced it (CC018). Off by default.
+DEFAULT_REQUIRE_AI_SESSION = False
+#: Trailers of the project's own that link the session, beside the links the
+#: known tools write (``Agent-Logs-Url:``, ``Entire-Checkpoint:``...).
+DEFAULT_AI_SESSION_TRAILERS: list[str] = []
 
 
 if TYPE_CHECKING:
