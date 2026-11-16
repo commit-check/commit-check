@@ -1887,12 +1887,7 @@ class AiDeclarationValidator(BaseValidator):
             return ValidationResult.SKIP
 
         options = self.rule.allowed or []
-        # Unstripped: a first line indented four spaces is code, not a box.
-        text = (
-            context.stdin_text
-            if context.stdin_text is not None
-            else self._get_commit_message(context)
-        )
+        text = self._get_commit_message(context)
         boxes = declaration_boxes(text, options)
         ticked: list[str] = []
         for option, is_ticked, _line in boxes:

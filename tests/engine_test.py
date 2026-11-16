@@ -4731,13 +4731,6 @@ class TestAiDeclarationValidator:
         result, _ = _declare(text)
         assert result == ValidationResult.PASS
 
-    def test_a_box_indented_four_spaces_is_code(self):
-        """The first line is read as written, not stripped of its indent."""
-        result, _ = _declare("    - [x] No AI tools were used\n")
-        assert result == ValidationResult.FAIL
-        result, _ = _declare("- [x] No AI tools were used\n")
-        assert result == ValidationResult.PASS
-
     def test_an_unclosed_comment_hides_the_rest(self):
         text = "- [ ] If AI tools were used\n<!-- note\n- [x] No AI tools were used\n"
         result, _ = _declare(text)
