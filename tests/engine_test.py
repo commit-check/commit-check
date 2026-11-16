@@ -4709,6 +4709,35 @@ class TestAiDeclarationValidator:
         assert result == ValidationResult.FAIL
         assert validator._last_failure["error"] == "No AI declaration box is ticked"
 
+    def test_a_shorter_fence_does_not_close_a_longer_one(self):
+        """Inside a four-backtick block, a three-backtick line is code too."""
+        text = "````\n```\n- [x] No AI tools were used\n````\n"
+        result, _ = _declare(text)
+        assert result == ValidationResult.FAIL
+
+    def test_a_fence_with_text_after_it_does_not_close(self):
+        text = "```\n``` not a fence\n- [x] No AI tools were used\n```\n"
+        result, _ = _declare(text)
+        assert result == ValidationResult.FAIL
+
+    def test_a_comment_mark_in_a_code_block_is_code(self):
+        """``<!--`` in a code block opens no comment, so the box after counts."""
+        text = "~~~\n<!--\n~~~\n- [x] No AI tools were used\n"
+        result, _ = _declare(text)
+        assert result == ValidationResult.PASS
+
+    def test_text_around_a_comment_on_one_line_is_read(self):
+        text = "<!-- pick one -->- [x] No AI tools were used <!-- thanks\n-->\n"
+        result, _ = _declare(text)
+        assert result == ValidationResult.PASS
+
+    def test_a_box_indented_four_spaces_is_code(self):
+        """The first line is read as written, not stripped of its indent."""
+        result, _ = _declare("    - [x] No AI tools were used\n")
+        assert result == ValidationResult.FAIL
+        result, _ = _declare("- [x] No AI tools were used\n")
+        assert result == ValidationResult.PASS
+
     def test_an_unclosed_comment_hides_the_rest(self):
         text = "- [ ] If AI tools were used\n<!-- note\n- [x] No AI tools were used\n"
         result, _ = _declare(text)

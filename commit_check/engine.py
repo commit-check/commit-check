@@ -1773,11 +1773,10 @@ class AiAuthorValidator(BaseValidator):
 #: A task-list item, as GitHub renders one: a bullet or a number, a box,
 #: and the item's text. The box holds a space, ``x`` or ``X``.
 _CHECKBOX = re.compile(r"^ {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]+\[([ xX])\][ \t]+(\S.*)")
-#: An HTML comment, which GitHub does not show. One left open hides the rest
-#: of the text, as it does on the page (see ``_visible_lines``).
-_HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
-#: The opening or closing line of a fenced code block.
-_FENCE = re.compile(r"^ {0,3}(```|~~~)")
+#: The opening line of a fenced code block: its run of backticks or tildes.
+_FENCE_OPEN = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+#: A closing fence: the same mark, at least as many times, and nothing after.
+_FENCE_CLOSE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*$")
 #: Markdown emphasis and code marks, which change how a box's text looks but
 #: not what it says: ``**No AI tools were used**`` is the box "No AI tools
 #: were used".
@@ -1789,6 +1788,27 @@ def _plain(text: str) -> str:
     return " ".join(_EMPHASIS.sub("", text).split()).casefold()
 
 
+def _without_comments(line: str, in_comment: bool) -> tuple[str, bool]:
+    """*line* with its HTML comments left out, and whether one is still open.
+
+    GitHub does not show a comment, and one left open hides the rest of the
+    text, as it does on the page.
+    """
+    shown = ""
+    while line:
+        if in_comment:
+            end = line.find("-->")
+            if end < 0:
+                return shown, True
+            line, in_comment = line[end + 3 :], False
+        else:
+            start = line.find("<!--")
+            if start < 0:
+                return shown + line, False
+            shown, line, in_comment = shown + line[:start], line[start + 4 :], True
+    return shown, in_comment
+
+
 def _visible_lines(text: str) -> list[str]:
     """The lines of *text* a reader sees as text: comments and code left out.
 
@@ -1797,17 +1817,24 @@ def _visible_lines(text: str) -> list[str]:
     """
     lines = []
     fence = ""
-    shown = _HTML_COMMENT.sub("", text).split("<!--", 1)[0]
-    for line in shown.splitlines():
-        match = _FENCE.match(line)
+    in_comment = False
+    for line in text.splitlines():
         if fence:
-            if match and match.group(1) == fence:
+            close = _FENCE_CLOSE.match(line)
+            if (
+                close
+                and close.group(1)[0] == fence[0]
+                and len(close.group(1)) >= len(fence)
+            ):
                 fence = ""
             continue
-        if match:
-            fence = match.group(1)
-            continue
-        lines.append(line)
+        if not in_comment:
+            opening = _FENCE_OPEN.match(line)
+            if opening:
+                fence = opening.group(1)
+                continue
+        shown, in_comment = _without_comments(line, in_comment)
+        lines.append(shown)
     return lines
 
 
@@ -1860,7 +1887,12 @@ class AiDeclarationValidator(BaseValidator):
             return ValidationResult.SKIP
 
         options = self.rule.allowed or []
-        text = self._get_commit_message(context)
+        # Unstripped: a first line indented four spaces is code, not a box.
+        text = (
+            context.stdin_text
+            if context.stdin_text is not None
+            else self._get_commit_message(context)
+        )
         boxes = declaration_boxes(text, options)
         ticked: list[str] = []
         for option, is_ticked, _line in boxes:
