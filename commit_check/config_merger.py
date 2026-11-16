@@ -113,7 +113,7 @@ def get_default_config() -> dict[str, Any]:
 
 
 #: Read from the same file, but not as defaults: ``warn`` and
-#: ``[pull_request] ai_declaration_options`` by the rule builder, ``[jira]`` and
+#: ``[pull_request] ai_declaration_checkboxes`` by the rule builder, ``[jira]`` and
 #: the rest of ``[pull_request]`` by the GitHub App.
 _OTHER_KEYS = frozenset({"warn", "jira", "pull_request"})
 

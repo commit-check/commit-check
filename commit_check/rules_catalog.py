@@ -12,7 +12,7 @@ ID ranges
 ``CC2xx``  Branch rules
 ``CC3xx``  Push and file rules
 ``CC4xx``  Tag rules
-``CC5xx``  Pull request description rules
+``CC5xx``  Pull request rules
 =========  ==================================
 
 Internal bookkeeping entries that never produce a diagnostic (such as
@@ -295,11 +295,10 @@ BRANCH_RULES = [
     ),
 ]
 
-# Pull request description rules. They read text that is not a commit
-# message, so they run under ``--ai-attribution-only`` and never under
-# ``--message``.
+# Pull request rules. They read text that is not a commit message, so
+# they run under ``--ai-attribution-only`` and never under ``--message``.
 PULL_REQUEST_RULES = [
-    # Built only when [pull_request] ai_declaration_options lists the boxes
+    # Built only when [pull_request] ai_declaration_checkboxes lists the boxes
     # the project's pull request template asks the author to tick.
     RuleCatalogEntry(
         rule_id="CC501",
