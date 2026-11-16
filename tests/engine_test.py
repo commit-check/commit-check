@@ -4714,6 +4714,13 @@ class TestAiDeclarationValidator:
         result, _ = _declare(text)
         assert result == ValidationResult.FAIL
 
+    def test_a_long_run_of_spaces_is_read_in_linear_time(self):
+        """A description is anyone's text: a box line padded with 60,000 spaces
+        before more text once took the old pattern seconds to read."""
+        text = "- [x] No AI tools were used" + " " * 60_000 + "here\n"
+        result, _ = _declare(text)
+        assert result == ValidationResult.PASS
+
     def test_the_longer_option_wins_when_one_starts_another(self):
         """statsmodels: "AI tools were used" must not read as "No AI tools ..."."""
         options = ["No AI tools were used", "AI tools were used"]

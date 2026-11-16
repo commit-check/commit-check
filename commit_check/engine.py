@@ -1772,12 +1772,10 @@ class AiAuthorValidator(BaseValidator):
 
 #: A task-list item, as GitHub renders one: a bullet or a number, a box,
 #: and the item's text. The box holds a space, ``x`` or ``X``.
-_CHECKBOX = re.compile(
-    r"^ {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]+\[([ xX])\][ \t]+(\S.*?)\s*$"
-)
+_CHECKBOX = re.compile(r"^ {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]+\[([ xX])\][ \t]+(\S.*)")
 #: An HTML comment, which GitHub does not show. One left open hides the rest
-#: of the text, as it does on the page.
-_HTML_COMMENT = re.compile(r"<!--.*?(?:-->|\Z)", re.DOTALL)
+#: of the text, as it does on the page (see ``_visible_lines``).
+_HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 #: The opening or closing line of a fenced code block.
 _FENCE = re.compile(r"^ {0,3}(```|~~~)")
 #: Markdown emphasis and code marks, which change how a box's text looks but
@@ -1799,7 +1797,8 @@ def _visible_lines(text: str) -> list[str]:
     """
     lines = []
     fence = ""
-    for line in _HTML_COMMENT.sub("", text).splitlines():
+    shown = _HTML_COMMENT.sub("", text).split("<!--", 1)[0]
+    for line in shown.splitlines():
         match = _FENCE.match(line)
         if fence:
             if match and match.group(1) == fence:
