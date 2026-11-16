@@ -224,7 +224,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="check only the AI attribution of the message (CC013 to CC016), "
         "for text that is not a commit message, such as a pull request "
         "description, and its AI declaration when [pull_request] "
-        "ai_declaration_options is set (CC501); implies --message",
+        "ai_declaration_checkboxes is set (CC501); implies --message",
     )
     # The name it shipped with in 2.20.1, kept so existing scripts still work.
     check_group.add_argument(

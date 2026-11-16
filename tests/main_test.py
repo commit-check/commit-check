@@ -2360,7 +2360,7 @@ class TestAiAttributionOnly:
         config = tmp_path / "cchk.toml"
         config.write_text(
             "[pull_request]\n"
-            'ai_declaration_options = ["No AI tools were used", "AI tools were used"]\n'
+            'ai_declaration_checkboxes = ["No AI tools were used", "AI tools were used"]\n'
         )
         return str(config)
 

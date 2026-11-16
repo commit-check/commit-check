@@ -4640,7 +4640,7 @@ DJANGO_OPTIONS = ["No AI tools were used", "If AI tools were used"]
 
 def _declaration_rule(options=None):
     builder = RuleBuilder(
-        {"pull_request": {"ai_declaration_options": options or DJANGO_OPTIONS}}
+        {"pull_request": {"ai_declaration_checkboxes": options or DJANGO_OPTIONS}}
     )
     return next(r for r in builder.build_all_rules() if r.check == "ai_declaration")
 

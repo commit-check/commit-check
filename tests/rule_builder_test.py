@@ -1244,7 +1244,7 @@ class TestWrongTypeSettings:
 
 
 class TestAiDeclarationRule:
-    """CC501 is built from [pull_request] ai_declaration_options."""
+    """CC501 is built from [pull_request] ai_declaration_checkboxes."""
 
     @staticmethod
     def _rules(section):
@@ -1263,7 +1263,12 @@ class TestAiDeclarationRule:
 
     def test_built_with_the_options(self):
         (rule,) = self._rules(
-            {"ai_declaration_options": ["No AI tools were used", "AI tools were used"]}
+            {
+                "ai_declaration_checkboxes": [
+                    "No AI tools were used",
+                    "AI tools were used",
+                ]
+            }
         )
         assert rule.rule_id == "CC501"
         assert rule.allowed == ["No AI tools were used", "AI tools were used"]
@@ -1274,21 +1279,23 @@ class TestAiDeclarationRule:
 
     def test_a_string_is_one_box_and_commas_do_not_split_it(self):
         (rule,) = self._rules(
-            {"ai_declaration_options": "If AI tools were used, I have disclosed them"}
+            {
+                "ai_declaration_checkboxes": "If AI tools were used, I have disclosed them"
+            }
         )
         assert rule.allowed == ["If AI tools were used, I have disclosed them"]
 
     def test_spaces_collapse_and_duplicates_drop(self):
         (rule,) = self._rules(
-            {"ai_declaration_options": ["  No AI  tools ", "no ai tools", "AI used"]}
+            {"ai_declaration_checkboxes": ["  No AI  tools ", "no ai tools", "AI used"]}
         )
         assert rule.allowed == ["No AI tools", "AI used"]
 
     @pytest.mark.parametrize("value", [True, 3, ["ok", 1], {"a": "b"}, ["ok", "  "]])
     def test_a_bad_value_is_a_config_error(self, value):
         with pytest.raises(ConfigError) as exc:
-            self._rules({"ai_declaration_options": value})
-        assert exc.value.setting == "[pull_request] ai_declaration_options"
+            self._rules({"ai_declaration_checkboxes": value})
+        assert exc.value.setting == "[pull_request] ai_declaration_checkboxes"
 
     def test_a_non_table_pull_request_section_builds_nothing(self):
         assert [
@@ -1301,7 +1308,9 @@ class TestAiDeclarationRule:
         builder = RuleBuilder(
             {
                 "warn": ["CC501"],
-                "pull_request": {"ai_declaration_options": ["No AI tools were used"]},
+                "pull_request": {
+                    "ai_declaration_checkboxes": ["No AI tools were used"]
+                },
             }
         )
         (rule,) = [r for r in builder.build_all_rules() if r.check == "ai_declaration"]
