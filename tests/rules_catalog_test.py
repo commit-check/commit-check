@@ -10,6 +10,7 @@ import pytest
 
 from commit_check.rule_builder import RuleBuilder
 from commit_check.rules_catalog import (
+    AI_TEXT_CHECKS,
     ALL_RULES,
     BRANCH_CHECKS,
     BRANCH_RULES,
@@ -17,13 +18,14 @@ from commit_check.rules_catalog import (
     FILES_CHECKS,
     FILES_RULES,
     MESSAGE_CHECKS,
+    PULL_REQUEST_RULES,
     PUSH_RULES,
     RULES_BY_CHECK,
     RULES_DOCS_URL,
     RuleCatalogEntry,
 )
 
-ALL_ENTRIES = [*COMMIT_RULES, *BRANCH_RULES, *PUSH_RULES]
+ALL_ENTRIES = [*COMMIT_RULES, *BRANCH_RULES, *PUSH_RULES, *PULL_REQUEST_RULES]
 
 
 class TestRuleIds:
@@ -155,6 +157,12 @@ class TestCheckGroups:
     def test_branch_checks_are_branch_rules(self):
         assert BRANCH_CHECKS <= {entry.check for entry in BRANCH_RULES}
         assert "ignore_authors" not in BRANCH_CHECKS
+
+    def test_pull_request_rules_run_on_descriptions_only(self):
+        """CC501 reads a description's boxes, which a commit message lacks."""
+        checks = {entry.check for entry in PULL_REQUEST_RULES}
+        assert checks <= AI_TEXT_CHECKS
+        assert checks.isdisjoint(MESSAGE_CHECKS)
 
     def test_files_checks_are_every_files_rule(self):
         assert FILES_CHECKS == {entry.check for entry in FILES_RULES}

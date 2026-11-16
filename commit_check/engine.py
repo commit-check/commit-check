@@ -1770,6 +1770,162 @@ class AiAuthorValidator(BaseValidator):
         return ValidationResult.FAIL
 
 
+#: A task-list item, as GitHub renders one: a bullet or a number, a box,
+#: and the item's text. The box holds a space, ``x`` or ``X``.
+_CHECKBOX = re.compile(r"^ {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]+\[([ xX])\][ \t]+(\S.*)")
+#: The opening line of a fenced code block: its run of backticks or tildes.
+_FENCE_OPEN = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+#: A closing fence: the same mark, at least as many times, and nothing after.
+_FENCE_CLOSE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*$")
+#: Markdown emphasis and code marks, which change how a box's text looks but
+#: not what it says: ``**No AI tools were used**`` is the box "No AI tools
+#: were used".
+_EMPHASIS = re.compile(r"[*_`~]")
+
+
+def _plain(text: str) -> str:
+    """*text* without emphasis marks, in one case, spaces collapsed."""
+    return " ".join(_EMPHASIS.sub("", text).split()).casefold()
+
+
+def _without_comments(line: str, in_comment: bool) -> tuple[str, bool]:
+    """*line* with its HTML comments left out, and whether one is still open.
+
+    GitHub does not show a comment, and one left open hides the rest of the
+    text, as it does on the page.
+    """
+    shown = ""
+    while line:
+        if in_comment:
+            end = line.find("-->")
+            if end < 0:
+                return shown, True
+            line, in_comment = line[end + 3 :], False
+        else:
+            start = line.find("<!--")
+            if start < 0:
+                return shown + line, False
+            shown, line, in_comment = shown + line[:start], line[start + 4 :], True
+    return shown, in_comment
+
+
+def _visible_lines(text: str) -> list[str]:
+    """The lines of *text* a reader sees as text: comments and code left out.
+
+    A template keeps its instructions in an HTML comment, and an example in a
+    code block: a box shown there is not one the author ticked.
+    """
+    lines = []
+    fence = ""
+    in_comment = False
+    for line in text.splitlines():
+        if fence:
+            close = _FENCE_CLOSE.match(line)
+            if (
+                close
+                and close.group(1)[0] == fence[0]
+                and len(close.group(1)) >= len(fence)
+            ):
+                fence = ""
+            continue
+        if not in_comment:
+            opening = _FENCE_OPEN.match(line)
+            if opening:
+                fence = opening.group(1)
+                continue
+        shown, in_comment = _without_comments(line, in_comment)
+        lines.append(shown)
+    return lines
+
+
+def declaration_boxes(text: str, options: list[str]) -> list[tuple[str, bool, str]]:
+    """The declaration boxes in *text*: (option, ticked, the line as written).
+
+    A box is one of *options* when its text starts with the option's, word
+    for word, ignoring case and emphasis: the template may follow the option
+    with more ("No AI tools were used in preparing this PR."). When two
+    options fit, the longer one is the box, so "AI tools were used" is not
+    mistaken for "No AI tools were used" or the other way round.
+    """
+    wanted = sorted(((_plain(o), o) for o in options), key=lambda p: -len(p[0]))
+    boxes = []
+    for line in _visible_lines(text):
+        match = _CHECKBOX.match(line)
+        if not match:
+            continue
+        label = _plain(match.group(2))
+        for plain, option in wanted:
+            if (
+                label.startswith(plain)
+                and not label[len(plain) : len(plain) + 1].isalnum()
+            ):
+                boxes.append((option, match.group(1) != " ", line.strip()))
+                break
+    return boxes
+
+
+def _quoted(options: list[str], conjunction: str = "or") -> str:
+    """``"a"``, ``"a" or "b"``, ``"a", "b" and "c"``."""
+    quoted = [f'"{option}"' for option in options]
+    if len(quoted) <= 1:
+        return "".join(quoted)
+    return f"{', '.join(quoted[:-1])} {conjunction} {quoted[-1]}"
+
+
+class AiDeclarationValidator(BaseValidator):
+    """Judges whether a pull request description declares its AI use (CC501).
+
+    Many projects put a choice in their pull request template, "No AI tools
+    were used" or "AI tools were used", and ask the author to tick one. The
+    rule passes when exactly one of the configured boxes is ticked. It reads
+    the text the way GitHub shows it, so a box inside an HTML comment or a
+    code block does not count. It cannot tell whether the answer is true.
+    """
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        if self._should_skip_commit_validation(context):
+            return ValidationResult.SKIP
+
+        options = self.rule.allowed or []
+        text = self._get_commit_message(context)
+        boxes = declaration_boxes(text, options)
+        ticked: list[str] = []
+        for option, is_ticked, _line in boxes:
+            if is_ticked and option not in ticked:
+                ticked.append(option)
+        self._checked_value = "\n".join(line for _o, _t, line in boxes)
+
+        if len(ticked) == 1:
+            return ValidationResult.PASS
+
+        if len(ticked) > 1:
+            self._print_failure(
+                self._checked_value,
+                error=(
+                    "More than one AI declaration box is ticked: "
+                    + _quoted(ticked, "and")
+                ),
+                suggest="Tick only the box that applies",
+            )
+        elif boxes:
+            self._print_failure(
+                self._checked_value,
+                error="No AI declaration box is ticked",
+                suggest=f"Tick the box that applies: {_quoted(options)}",
+            )
+        else:
+            boxes_md = ", ".join(f'"- [ ] {option}"' for option in options)
+            self._print_failure(
+                "(none)",
+                error="The pull request description has no AI declaration",
+                suggest=(
+                    "Add the AI declaration from the pull request template "
+                    f"and tick the box that applies: {boxes_md}"
+                ),
+            )
+        return ValidationResult.FAIL
+
+
 class ValidationEngine:
     """Main validation engine that orchestrates all validations."""
 
@@ -1797,6 +1953,7 @@ class ValidationEngine:
         "ai_co_author": AiAttributionValidator,
         "ai_signoff": AiAttributionValidator,
         "ai_author": AiAuthorValidator,
+        "ai_declaration": AiDeclarationValidator,
         "tag": TagValidator,
         "file_size": FilesValidator,
         "file_pattern": FilesValidator,

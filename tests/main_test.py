@@ -2355,6 +2355,58 @@ class TestAiAttributionOnly:
         assert data["ai_tools"] == []
         head.assert_not_called()
 
+    @staticmethod
+    def _declaration_config(tmp_path):
+        config = tmp_path / "cchk.toml"
+        config.write_text(
+            "[pull_request]\n"
+            'ai_declaration_options = ["No AI tools were used", "AI tools were used"]\n'
+        )
+        return str(config)
+
+    def test_the_ai_declaration_runs_on_a_description(
+        self, mocker, capsys, monkeypatch, pinned_author, tmp_path
+    ):
+        """CC501 joins the AI rules for a description once its boxes are named."""
+        config = self._declaration_config(tmp_path)
+        rc, data = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            "Adds a parser.\n\n- [x] No AI tools were used\n- [ ] AI tools were used\n",
+            "--ai-attribution-only",
+            "--config",
+            config,
+        )
+        assert rc == 0
+        assert [(c["rule_id"], c["status"]) for c in data["checks"]] == [
+            ("CC501", "pass")
+        ]
+
+        rc, data = self._run_json(
+            mocker, capsys, monkeypatch, "", "--ai-attribution-only", "--config", config
+        )
+        assert rc == 1
+        assert data["checks"][0]["error"] == (
+            "The pull request description has no AI declaration"
+        )
+
+    def test_the_ai_declaration_is_not_asked_of_a_commit(
+        self, mocker, capsys, monkeypatch, pinned_author, tmp_path
+    ):
+        """A commit message has no template boxes, so --message never runs CC501."""
+        rc, data = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            "feat: add a parser\n",
+            "--message",
+            "--config",
+            self._declaration_config(tmp_path),
+        )
+        assert rc == 0
+        assert "CC501" not in [c["rule_id"] for c in data["checks"]]
+
     def test_the_old_name_still_works(self, mocker, capsys, monkeypatch, pinned_author):
         """``--ai-only``, the name it shipped with in 2.20.1, is a hidden alias."""
         rc, data = self._run_json(

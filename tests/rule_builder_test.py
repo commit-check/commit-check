@@ -1241,3 +1241,68 @@ class TestWrongTypeSettings:
         with pytest.raises(ConfigError, match="must be a list of strings") as excinfo:
             RuleBuilder({"commit": {"allow_commit_types": value}}).build_all_rules()
         assert excinfo.value.setting == "[commit] allow_commit_types"
+
+
+class TestAiDeclarationRule:
+    """CC501 is built from [pull_request] ai_declaration_options."""
+
+    @staticmethod
+    def _rules(section):
+        return [
+            r
+            for r in RuleBuilder({"pull_request": section}).build_all_rules()
+            if r.check == "ai_declaration"
+        ]
+
+    def test_not_built_without_options(self):
+        assert self._rules({}) == []
+        assert self._rules({"body_ai_attribution": True, "ai_label": True}) == []
+        assert [
+            r for r in RuleBuilder({}).build_all_rules() if r.check == "ai_declaration"
+        ] == []
+
+    def test_built_with_the_options(self):
+        (rule,) = self._rules(
+            {"ai_declaration_options": ["No AI tools were used", "AI tools were used"]}
+        )
+        assert rule.rule_id == "CC501"
+        assert rule.allowed == ["No AI tools were used", "AI tools were used"]
+        assert rule.suggest == (
+            "Tick exactly one of the AI declaration boxes: "
+            '"No AI tools were used", "AI tools were used"'
+        )
+
+    def test_a_string_is_one_box_and_commas_do_not_split_it(self):
+        (rule,) = self._rules(
+            {"ai_declaration_options": "If AI tools were used, I have disclosed them"}
+        )
+        assert rule.allowed == ["If AI tools were used, I have disclosed them"]
+
+    def test_spaces_collapse_and_duplicates_drop(self):
+        (rule,) = self._rules(
+            {"ai_declaration_options": ["  No AI  tools ", "no ai tools", "AI used"]}
+        )
+        assert rule.allowed == ["No AI tools", "AI used"]
+
+    @pytest.mark.parametrize("value", [True, 3, ["ok", 1], {"a": "b"}, ["ok", "  "]])
+    def test_a_bad_value_is_a_config_error(self, value):
+        with pytest.raises(ConfigError) as exc:
+            self._rules({"ai_declaration_options": value})
+        assert exc.value.setting == "[pull_request] ai_declaration_options"
+
+    def test_a_non_table_pull_request_section_builds_nothing(self):
+        assert [
+            r
+            for r in RuleBuilder({"pull_request": "squash"}).build_all_rules()
+            if r.check == "ai_declaration"
+        ] == []
+
+    def test_warn_demotes_it(self):
+        builder = RuleBuilder(
+            {
+                "warn": ["CC501"],
+                "pull_request": {"ai_declaration_options": ["No AI tools were used"]},
+            }
+        )
+        (rule,) = [r for r in builder.build_all_rules() if r.check == "ai_declaration"]
+        assert rule.severity == "warn"
