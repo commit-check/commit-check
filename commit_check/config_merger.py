@@ -112,8 +112,9 @@ def get_default_config() -> dict[str, Any]:
     }
 
 
-#: Read from the same file, but by other tools: ``warn`` by the rule builder,
-#: ``[jira]`` and ``[pull_request]`` by the GitHub App.
+#: Read from the same file, but not as defaults: ``warn`` and
+#: ``[pull_request] ai_declaration_options`` by the rule builder, ``[jira]`` and
+#: the rest of ``[pull_request]`` by the GitHub App.
 _OTHER_KEYS = frozenset({"warn", "jira", "pull_request"})
 
 #: Keys inside the CLI's own tables that only the GitHub App reads:
