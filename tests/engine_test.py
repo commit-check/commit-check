@@ -9,6 +9,7 @@ from unittest.mock import mock_open, patch
 
 import pytest
 
+from commit_check.config_merger import get_default_config
 from commit_check.engine import (
     AiAttributionValidator,
     AiAuthorValidator,
@@ -1307,6 +1308,116 @@ class TestSubjectLengthValidator:
         out = capsys.readouterr().out
         assert "Subject is 62 characters; it must be at most 20 characters" in out
         assert "Suggest: Shorten the subject by 42 characters, to 20 or fewer" in out
+
+    LONG_UPDATE = (
+        "chore(deps): Bump org.zalando:logbook-spring-boot-webflux-autoconfigure"
+        " from 4.0.3 to 4.0.4"
+    )
+
+    @pytest.mark.parametrize("bot", ["dependabot[bot]", "renovate[bot]"])
+    def test_dependency_bot_subject_length_is_skipped(self, bot, monkeypatch):
+        """The bot writes the subject from the package path and versions."""
+        monkeypatch.setenv("GIT_AUTHOR_NAME", bot)
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        assert len(self.LONG_UPDATE) > 80
+        result = validator.validate(ValidationContext(stdin_text=self.LONG_UPDATE))
+        assert result == ValidationResult.SKIP
+        assert validator._skip_reason == (
+            f"{bot} writes the subject from the package name and versions"
+        )
+
+    def test_a_person_with_the_same_subject_still_fails(self, monkeypatch):
+        monkeypatch.setenv("GIT_AUTHOR_NAME", "Jane Doe")
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        result = validator.validate(ValidationContext(stdin_text=self.LONG_UPDATE))
+        assert result == ValidationResult.FAIL
+        assert validator._skip_reason == ""
+
+    @pytest.mark.parametrize(
+        "author", ["dependabot", "Dependabot[bot]", "dependabot[bot] fork"]
+    )
+    def test_only_the_exact_bot_names_are_skipped(self, author, monkeypatch):
+        monkeypatch.setenv("GIT_AUTHOR_NAME", author)
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        result = validator.validate(ValidationContext(stdin_text=self.LONG_UPDATE))
+        assert result == ValidationResult.FAIL
+
+    def test_a_subject_within_bounds_looks_up_no_author(self, mocker):
+        """The author is asked only once a subject is out of bounds."""
+        info = mocker.patch(
+            "commit_check.engine.get_commit_info",
+            return_value="chore(deps): bump x from 1 to 2",
+        )
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        assert validator.validate(ValidationContext(rev="abc123")) == (
+            ValidationResult.PASS
+        )
+        assert [c.args[0] for c in info.call_args_list] == ["s"]
+
+    def test_a_piped_message_does_not_ask_git_config(self, mocker, monkeypatch):
+        """A local hook's author is a person: only GIT_AUTHOR_NAME can name
+        a bot for a message that is not committed yet."""
+        monkeypatch.delenv("GIT_AUTHOR_NAME", raising=False)
+        config = mocker.patch(
+            "commit_check.engine.get_git_config_value", return_value="dependabot[bot]"
+        )
+        info = mocker.patch("commit_check.engine.get_commit_info")
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        result = validator.validate(ValidationContext(stdin_text=self.LONG_UPDATE))
+        assert result == ValidationResult.FAIL
+        config.assert_not_called()
+        info.assert_not_called()
+
+    def test_dependency_bot_head_commit_is_skipped(self, mocker):
+        """With nothing piped in, HEAD is the commit, and its author decides."""
+        mocker.patch(
+            "commit_check.engine.get_commit_info",
+            side_effect=lambda fmt, rev=None: {
+                "s": self.LONG_UPDATE,
+                "an": "renovate[bot]",
+            }[fmt],
+        )
+        mocker.patch("commit_check.engine.has_commits", return_value=True)
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        assert validator.validate(ValidationContext()) == ValidationResult.SKIP
+
+    def test_dependency_bot_commit_by_rev_is_skipped(self, mocker):
+        """An existing commit is judged by its own author."""
+        mocker.patch(
+            "commit_check.engine.get_commit_info",
+            side_effect=lambda fmt, rev=None: {
+                "s": self.LONG_UPDATE,
+                "an": "dependabot[bot]",
+            }[fmt],
+        )
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        assert validator.validate(ValidationContext(rev="abc123")) == (
+            ValidationResult.SKIP
+        )
+
+    def test_other_rules_still_judge_dependency_bot_commits(self, monkeypatch):
+        """Only the length rules step aside; the format rule still applies."""
+        monkeypatch.setenv("GIT_AUTHOR_NAME", "dependabot[bot]")
+        rules = RuleBuilder(get_default_config()).build_all_rules()
+        engine = ValidationEngine(rules)
+        context = ValidationContext(
+            stdin_text="Bump org.zalando:logbook-spring-boot-webflux-autoconfigure"
+            " from 4.0.3 to 4.0.4 in /server",
+            no_banner=True,
+        )
+        results = {r.check: r.status for r in engine.validate_all_detailed(context)}
+        assert results["subject_max_length"] == "skip"
+        assert results["message"] == "fail"
 
 
 class TestSignoffValidator:

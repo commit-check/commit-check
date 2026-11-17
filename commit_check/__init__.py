@@ -97,6 +97,11 @@ DEFAULT_BRANCH_TYPES = [
     "dependabot",
     "renovate",
 ]
+#: Bots that write a commit subject from a package's name and versions, so
+#: its length is theirs, not a person's to shorten. The subject length rules
+#: (CC004, CC005) skip their commits; every other rule still applies.
+DEPENDENCY_UPDATE_BOTS = ("dependabot[bot]", "renovate[bot]")
+
 # Additional allowed branch names (e.g., staging, production)
 DEFAULT_BRANCH_NAMES: list[str] = []
 
