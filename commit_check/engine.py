@@ -654,6 +654,13 @@ class SubjectImperativeValidator(SubjectValidator):
         return any(stem in IMPERATIVES for stem in stems)
 
 
+# GitHub ends the subject of a squash merge with the pull request's number,
+# " (#123)". Like a merge subject's length, those characters are GitHub's
+# doing, not the author's: a title that fit the limit on the pull request
+# must not fail once it lands on the branch.
+_SQUASH_PR_NUMBER = re.compile(r" \(#[0-9]+\)$")
+
+
 def _characters(count: int) -> str:
     """``count`` with its unit, singular or plural as the number demands."""
     return f"{count} character{'' if count == 1 else 's'}"
@@ -667,7 +674,8 @@ class SubjectLengthValidator(SubjectValidator):
         if is_merge_subject(subject):
             return ValidationResult.SKIP
 
-        length = len(subject)
+        suffix = _SQUASH_PR_NUMBER.search(subject)
+        length = suffix.start() if suffix else len(subject)
         limit = self.rule.value
 
         if (
@@ -677,14 +685,16 @@ class SubjectLengthValidator(SubjectValidator):
         ):
             return ValidationResult.PASS
 
+        # Name the suffix left out, so the count matches what the author sees.
+        uncounted = f', not counting "{suffix.group().strip()}"' if suffix else ""
         # "At most 20" states the rule; the measured length says how far off
         # the subject is, and the difference is what decides between trimming
         # a word and rewriting the line.
         if self.rule.check == "subject_max_length":
-            error = f"Subject is {_characters(length)}; it must be at most {_characters(limit)}"
+            error = f"Subject is {_characters(length)}{uncounted}; it must be at most {_characters(limit)}"
             suggest = f"Shorten the subject by {_characters(length - limit)}, to {limit} or fewer"
         else:
-            error = f"Subject is {_characters(length)}; it must be at least {_characters(limit)}"
+            error = f"Subject is {_characters(length)}{uncounted}; it must be at least {_characters(limit)}"
             suggest = f"Write a subject of at least {_characters(limit)} ({limit - length} more)"
         self._print_failure(subject, error=error, suggest=suggest)
         return ValidationResult.FAIL
