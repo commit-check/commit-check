@@ -4301,6 +4301,14 @@ class TestTagValidator:
         assert result == ValidationResult.SKIP
 
 
+def _pushed_tip_alone(local_sha, remote_sha):
+    """A pushed range that holds the tip and nothing before it.
+
+    Stands in for git, so that the made-up shas of a test are never looked up.
+    """
+    return [local_sha]
+
+
 class TestFilesValidator:
     @patch("commit_check.engine.get_push_commits")
     @patch("commit_check.engine.get_commit_files")
@@ -4504,6 +4512,7 @@ class TestFilesValidator:
         validator = FilesValidator(rule)
         assert validator.validate(ValidationContext()) == ValidationResult.PASS
 
+    @patch("commit_check.engine.get_push_commits", new=_pushed_tip_alone)
     @patch("commit_check.engine.get_commit_files")
     @pytest.mark.benchmark
     def test_pre_push_stdin_validates_the_pushed_sha(self, mock_files):
@@ -4516,6 +4525,7 @@ class TestFilesValidator:
         assert result == ValidationResult.PASS
         mock_files.assert_called_once_with("abc123")
 
+    @patch("commit_check.engine.get_push_commits", new=_pushed_tip_alone)
     @patch("commit_check.engine.get_commit_files")
     @pytest.mark.benchmark
     def test_pre_push_stdin_validates_every_pushed_ref(self, mock_files):
