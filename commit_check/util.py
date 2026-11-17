@@ -576,25 +576,31 @@ def get_push_commits(local_sha: str, remote_sha: str) -> list[str]:
 
     :param local_sha: The sha being pushed.
     :param remote_sha: What the remote currently has, all zeroes for a new ref.
-    :returns: The commit shas in the pushed range; the tip alone if the range
-        cannot be computed.
+    :returns: The commit shas in the pushed range; where the remote's sha is
+        unknown to this clone, the commits no remote-tracking ref reaches;
+        the tip alone if neither can be computed.
     """
+    # A new ref carries every commit the remote cannot already reach.
+    unreached = [local_sha, "--not", "--remotes"]
     if set(remote_sha) == {"0"}:
-        # A new ref carries every commit the remote cannot already reach.
-        args = [local_sha, "--not", "--remotes"]
+        ranges = [unreached]
     else:
-        args = [f"{remote_sha}..{local_sha}"]
-    result = subprocess.run(
-        ["git", "rev-list", *args],
-        capture_output=True,
-        check=False,
-        encoding="utf-8",
-    )
-    if result.returncode != 0:
-        # An unresolvable range (a remote sha this clone lacks, say) still
-        # leaves the tip worth checking.
-        return [local_sha]
-    return [line for line in result.stdout.split() if line]
+        # A forced push over commits never fetched names a remote sha this
+        # clone lacks, and the range from it cannot be read. What no
+        # remote-tracking ref reaches is then the nearest answer, and it still
+        # covers the commits before the tip.
+        ranges = [[f"{remote_sha}..{local_sha}"], unreached]
+    for args in ranges:
+        result = subprocess.run(
+            ["git", "rev-list", *args],
+            capture_output=True,
+            check=False,
+            encoding="utf-8",
+        )
+        if result.returncode == 0:
+            return [line for line in result.stdout.split() if line]
+    # Neither can be computed; that still leaves the tip worth checking.
+    return [local_sha]
 
 
 def get_upstream_branch() -> str:

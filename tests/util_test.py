@@ -1780,6 +1780,38 @@ class TestGetPushCommits:
         monkeypatch.chdir(work)
         assert get_push_commits(tip, "0" * 40) == [tip]
 
+    # No benchmark mark: real-git test, see above.
+    def test_forced_push_over_unfetched_commits_covers_every_commit(
+        self, tmp_path, monkeypatch
+    ):
+        """The remote's sha is unknown here when its commits were never fetched.
+
+        The range from it cannot be read, and falling back to the tip alone
+        would let anything committed before the tip through.
+        """
+        remote = tmp_path / "remote.git"
+        _run_git(tmp_path, "init", "-q", "--bare", str(remote))
+        work = tmp_path / "work"
+        work.mkdir()
+        _init_git_repo(work, "-b", "main")
+        _run_git(work, "remote", "add", "origin", str(remote))
+        (work / "base.txt").write_text("base")
+        _commit_all(work, BASE_COMMIT_MSG)
+        base = _run_git(work, "rev-parse", "HEAD")
+        _run_git(work, "push", "-q", "origin", "main")
+        (work / "a.txt").write_text("a")
+        _commit_all(work, "feat: a")
+        earlier = _run_git(work, "rev-parse", "HEAD")
+        (work / "b.txt").write_text("b")
+        _commit_all(work, "feat: b")
+        tip = _run_git(work, "rev-parse", "HEAD")
+
+        monkeypatch.chdir(work)
+        never_fetched = "1" * 40
+        assert get_push_commits(tip, never_fetched) == [tip, earlier]
+        # Pushing what the remote already has carries nothing new.
+        assert get_push_commits(base, never_fetched) == []
+
     @pytest.mark.benchmark
     def test_unresolvable_range_falls_back_to_the_tip(self, mocker):
         """A range this clone cannot compute still leaves the tip worth checking."""
