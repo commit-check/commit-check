@@ -1,0 +1,39 @@
+# commit-check.readthedocs.io is the old documentation site; the docs now live
+# at https://commit-check.com. This build replaces every old page with the
+# same "moved" page commit-check.github.io serves, so a search result that
+# still leads here sends readers on. Read the Docs serves 404.html for any
+# page that no longer exists, which is every old one.
+version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.13"
+  commands:
+    - |
+      mkdir -p "$READTHEDOCS_OUTPUT/html"
+      cat > "$READTHEDOCS_OUTPUT/html/index.html" <<'PAGE'
+      <!doctype html>
+      <html lang="en">
+      <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Moved to commit-check.com</title>
+      <link rel="canonical" href="https://commit-check.com/">
+      <meta http-equiv="refresh" content="0; url=https://commit-check.com/">
+      <script>location.replace("https://commit-check.com/" + location.hash);</script>
+      <style>
+        body { font-family: system-ui, sans-serif; margin: 4rem auto; max-width: 34rem;
+               padding: 0 1rem; line-height: 1.6; }
+        a { color: #2c9ccd; }
+      </style>
+      </head>
+      <body>
+      <h1>This site has moved</h1>
+      <p>The Commit Check documentation, landing page and blog are now published at
+      <a href="https://commit-check.com/">https://commit-check.com/</a>.</p>
+      <p>If you are not redirected automatically, follow the link above.</p>
+      </body>
+      </html>
+      PAGE
+      cp "$READTHEDOCS_OUTPUT/html/index.html" "$READTHEDOCS_OUTPUT/html/404.html"
