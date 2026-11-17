@@ -1437,6 +1437,22 @@ class TestSubjectLengthValidator:
             ValidationResult.PASS
         )
 
+    def test_a_title_ending_in_a_number_measures_the_same_after_the_merge(self):
+        """A backport titled "... (#12)" gets " (#34)" too; both are left out,
+        so the title that passed on the pull request still passes."""
+        title = "feat: " + "x" * 74 + " (#12)"
+        rule = ValidationRule(check="subject_max_length", value=80)
+        for subject in (title, title + " (#34)"):
+            validator = SubjectLengthValidator(rule)
+            assert validator.validate(ValidationContext(stdin_text=subject)) == (
+                ValidationResult.PASS
+            )
+        failure = self._failure("subject_max_length", 70, title + " (#34)")
+        assert failure["error"] == (
+            'Subject is 80 characters, not counting "(#12) (#34)"; '
+            "it must be at most 70 characters"
+        )
+
     def test_squash_pr_number_is_not_counted_toward_the_minimum(self):
         rule = ValidationRule(check="subject_min_length", value=5)
         validator = SubjectLengthValidator(rule)

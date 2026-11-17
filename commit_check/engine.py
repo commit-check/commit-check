@@ -658,8 +658,10 @@ class SubjectImperativeValidator(SubjectValidator):
 # GitHub ends the subject of a squash merge with the pull request's number,
 # " (#123)". Like a merge subject's length, those characters are GitHub's
 # doing, not the author's: a title that fit the limit on the pull request
-# must not fail once it lands on the branch.
-_SQUASH_PR_NUMBER = re.compile(r" \(#[0-9]+\)$")
+# must not fail once it lands on the branch. A title that already ends in
+# a number, such as a backport's " (#12)", gets a second one, so the whole
+# run is left out. [0-9], not \d, which also matches other scripts' digits.
+_SQUASH_PR_NUMBER = re.compile(r"(?: \(#[0-9]+\))+$")
 
 
 def _characters(count: int) -> str:
