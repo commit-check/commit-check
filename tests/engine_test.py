@@ -1308,6 +1308,65 @@ class TestSubjectLengthValidator:
         assert "Subject is 62 characters; it must be at most 20 characters" in out
         assert "Suggest: Shorten the subject by 42 characters, to 20 or fewer" in out
 
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            # 79 characters of title; GitHub's squash merge adds " (#1698)".
+            "fix: return 404 if no member left after pick and omit when retrieving an entity (#1698)",
+            "feat: x" + "y" * 73 + " (#7)",
+        ],
+    )
+    def test_squash_pr_number_is_not_counted(self, subject):
+        """A title that fit the limit on the pull request still fits once the
+        squash merge lands it with the pull request's number on the end."""
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        assert len(subject) > 80
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.PASS
+        )
+
+    def test_squash_pr_number_is_not_counted_toward_the_minimum(self):
+        rule = ValidationRule(check="subject_min_length", value=5)
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(stdin_text="fix (#12)")
+        assert validator.validate(context) == ValidationResult.FAIL
+
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "feat: " + "y" * 70 + " (#12) more",  # not at the end
+            "feat: " + "y" * 70 + "(#12)",  # no space before it
+            "feat: " + "y" * 70 + " (#12a)",  # not a number
+            "feat: " + "y" * 70 + " (GH-12)",  # another forge's wording
+        ],
+    )
+    def test_other_parentheses_are_counted(self, subject):
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        assert len(subject) > 80
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.FAIL
+        )
+
+    def test_failure_names_the_suffix_it_did_not_count(self):
+        subject = "feat: " + "y" * 80 + " (#1698)"
+        failure = self._failure("subject_max_length", 80, subject)
+        assert failure["error"] == (
+            'Subject is 86 characters, not counting "(#1698)"; '
+            "it must be at most 80 characters"
+        )
+        assert (
+            failure["suggest"] == "Shorten the subject by 6 characters, to 80 or fewer"
+        )
+        failure = self._failure("subject_min_length", 30, "fix: typo (#3)")
+        assert failure["error"] == (
+            'Subject is 9 characters, not counting "(#3)"; '
+            "it must be at least 30 characters"
+        )
+
 
 class TestSignoffValidator:
     @staticmethod
