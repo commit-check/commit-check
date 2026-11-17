@@ -16,6 +16,7 @@ from typing import ClassVar
 
 from commit_check import (
     DEFAULT_AI_DISCLOSURE_TRAILERS,
+    DEPENDENCY_UPDATE_BOTS,
     GIT_MERGE_SUBJECT_PATTERN,
     ai_policy,
 )
@@ -657,8 +658,10 @@ class SubjectImperativeValidator(SubjectValidator):
 # GitHub ends the subject of a squash merge with the pull request's number,
 # " (#123)". Like a merge subject's length, those characters are GitHub's
 # doing, not the author's: a title that fit the limit on the pull request
-# must not fail once it lands on the branch.
-_SQUASH_PR_NUMBER = re.compile(r" \(#[0-9]+\)$")
+# must not fail once it lands on the branch. A title that already ends in
+# a number, such as a backport's " (#12)", gets a second one, so the whole
+# run is left out. [0-9], not \d, which also matches other scripts' digits.
+_SQUASH_PR_NUMBER = re.compile(r"(?: \(#[0-9]+\))+$")
 
 
 def _characters(count: int) -> str:
@@ -668,6 +671,31 @@ def _characters(count: int) -> str:
 
 class SubjectLengthValidator(SubjectValidator):
     """Validates subject line length constraints."""
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        # Kept for _written_by_dependency_bot, which asks only once a subject
+        # is out of bounds, so a passing subject costs no author lookup.
+        self._context = context
+        return super().validate(context)
+
+    def _written_by_dependency_bot(self) -> bool:
+        context = self._context
+        if context.rev is not None:
+            author = get_commit_info("an", context.rev)
+        elif context.stdin_text is not None or context.commit_file is not None:
+            # A message not yet committed is a bot's only when the caller says
+            # so through git's author variable, as the Action does for each
+            # pull request commit. Bots do not commit through a local hook,
+            # so the local git config is not asked.
+            author = os.environ.get("GIT_AUTHOR_NAME", "").strip()
+        else:
+            author = get_commit_info("an")
+        if author not in DEPENDENCY_UPDATE_BOTS:
+            return False
+        self._skip_reason = (
+            f"{author} writes the subject from the package name and versions"
+        )
+        return True
 
     def _validate_subject(self, subject: str) -> ValidationResult:
         # A merge subject's length is git's doing, not the author's.
@@ -684,6 +712,9 @@ class SubjectLengthValidator(SubjectValidator):
             or self.rule.check not in ["subject_max_length", "subject_min_length"]
         ):
             return ValidationResult.PASS
+
+        if self._written_by_dependency_bot():
+            return ValidationResult.SKIP
 
         # Name the suffix left out, so the count matches what the author sees.
         uncounted = f', not counting "{suffix.group().strip()}"' if suffix else ""
