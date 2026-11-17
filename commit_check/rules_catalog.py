@@ -12,6 +12,7 @@ ID ranges
 ``CC2xx``  Branch rules
 ``CC3xx``  Push and file rules
 ``CC4xx``  Tag rules
+``CC5xx``  Pull request rules
 =========  ==================================
 
 Internal bookkeeping entries that never produce a diagnostic (such as
@@ -301,6 +302,20 @@ BRANCH_RULES = [
     ),
 ]
 
+# Pull request rules. They read text that is not a commit message, so
+# they run under ``--ai-attribution-only`` and never under ``--message``.
+PULL_REQUEST_RULES = [
+    # Built only when [pull_request] ai_declaration_checkboxes lists the boxes
+    # the project's pull request template asks the author to tick.
+    RuleCatalogEntry(
+        rule_id="CC501",
+        check="ai_declaration",
+        regex=None,
+        error="The pull request description does not say whether AI tools were used",
+        suggest="Tick exactly one of the AI declaration boxes: {options}",
+    ),
+]
+
 # Tag rules
 TAG_RULES = [
     RuleCatalogEntry(
@@ -315,7 +330,14 @@ TAG_RULES = [
 #: All catalog entries that represent a user-facing, documented rule.
 ALL_RULES = [
     entry
-    for entry in (*COMMIT_RULES, *BRANCH_RULES, *PUSH_RULES, *FILES_RULES, *TAG_RULES)
+    for entry in (
+        *COMMIT_RULES,
+        *BRANCH_RULES,
+        *PUSH_RULES,
+        *FILES_RULES,
+        *TAG_RULES,
+        *PULL_REQUEST_RULES,
+    )
     if entry.rule_id is not None
 ]
 
@@ -334,10 +356,11 @@ MESSAGE_CHECKS: frozenset[str] = frozenset(
     if entry.check not in {"author_name", "author_email", "ignore_authors"}
 )
 #: What ``--ai-attribution-only`` runs: the AI attribution a text makes (CC013 to CC016),
-#: for text that is not a commit, such as a pull request description. CC017
-#: is left out: it judges a commit's author, which such text does not have.
+#: for text that is not a commit, such as a pull request description, and the
+#: AI declaration a description must make (CC501). CC017 is left out: it
+#: judges a commit's author, which such text does not have.
 AI_TEXT_CHECKS: frozenset[str] = frozenset(
     {"ai_attribution", "ai_disclosure", "ai_co_author", "ai_signoff"}
-)
+) | frozenset(entry.check for entry in PULL_REQUEST_RULES)
 BRANCH_CHECKS: frozenset[str] = frozenset({"branch", "merge_base"})
 FILES_CHECKS: frozenset[str] = frozenset(entry.check for entry in FILES_RULES)

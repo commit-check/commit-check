@@ -83,6 +83,7 @@ The same `cchk.toml` drives all of them:
 | Force push | `--no-force-push` | CC301 |
 | Committed files — size, forbidden paths, path length, paths AI commits may not change | `--files` | CC302–CC305 |
 | Tag names — SemVer or your own pattern | `--tag` | CC401 |
+| AI declaration — the pull request description ticks one of the template's boxes | `--ai-attribution-only` | CC501 |
 
 Every rule, with examples: [commit-check.com/rules](https://commit-check.com/rules/)
 
@@ -147,6 +148,7 @@ Priority: CLI > env > TOML > default. Booleans accept `true/false`, `yes/no`,
 | `files.prohibited_patterns` | `[]` | `--files-prohibited-patterns` | `CCHK_FILES_PROHIBITED_PATTERNS` | fnmatch patterns committed paths must not match (CC303) |
 | `files.max_path_length` | `0` (off) | `--files-max-path-length` | `CCHK_FILES_MAX_PATH_LENGTH` | Longest allowed committed path, in characters (CC304) |
 | `files.ai_prohibited_patterns` | `[]` | `--files-ai-prohibited-patterns` | `CCHK_FILES_AI_PROHIBITED_PATTERNS` | fnmatch patterns for paths a commit attributed to an AI tool (by its author, a co-author line, a stamp or a disclosure) must not change, e.g. `.github/workflows/*`; deleting or renaming a path counts (CC305) |
+| `pull_request.ai_declaration_checkboxes` | `[]` (off) | — | — | The AI declaration checkboxes of your pull request template (often headed "AI disclosure"), e.g. `["No AI tools were used", "AI tools were used"]`. A description checked with `--ai-attribution-only` must tick exactly one of them (CC501). Each entry matches a box whose text starts with it, ignoring case and bold; boxes in HTML comments and code blocks do not count |
 
 Output and appearance are per-run flags, not configuration: `--format json`,
 `--no-banner`, `--compact`, `--dry-run`, `--rev`, `--config`. Color follows
@@ -187,6 +189,8 @@ With a message checked, the output also has `ai_tools`: the AI tools found by
 their known signatures in the message (and by a commit's author), under any
 `ai_attribution` policy. `--ai-attribution-only` runs only the AI rules (CC013 to CC016),
 for text that is not a commit message, such as a pull request description.
+With `[pull_request] ai_declaration_checkboxes` set, it also checks that the
+description ticks exactly one of those boxes (CC501).
 Under the default `ai_attribution = "ignore"` no AI rule runs, so the result
 passes and only `ai_tools` reports what was found; set `forbid` or `disclose`
 to enforce a policy:

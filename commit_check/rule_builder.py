@@ -205,6 +205,41 @@ _BOOLEAN_SETTINGS = tuple(
 )
 
 
+def _declaration_checkboxes(section: dict[str, Any]) -> list[str]:
+    """``[pull_request] ai_declaration_checkboxes``, as the boxes' texts.
+
+    A single string is one box. A list is not split on commas, as other
+    lists are, because a box's text is a sentence and may hold one
+    ("If AI tools were used, I have disclosed which ones"). Anything else,
+    or an empty text, is refused rather than read as "no declaration
+    asked for", which would leave the rule the author wrote unenforced.
+    """
+    setting = "[pull_request] ai_declaration_checkboxes"
+    raw = section.get("ai_declaration_checkboxes")
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        raw = [raw]
+    if not isinstance(raw, list) or not all(isinstance(item, str) for item in raw):
+        raise ConfigError(
+            f"{setting} must be a list of the boxes' texts, e.g. "
+            '["No AI tools were used", "AI tools were used"], got ' + repr(raw),
+            setting=setting,
+        )
+    options: list[str] = []
+    for item in raw:
+        text = " ".join(item.split())
+        if not text:
+            raise ConfigError(
+                f"{setting} cannot hold an empty text: each entry is the text "
+                "of one box in the pull request template",
+                setting=setting,
+            )
+        if text.casefold() not in {o.casefold() for o in options}:
+            options.append(text)
+    return options
+
+
 def _check_booleans(config: dict[str, Any]) -> None:
     """Refuse a boolean setting given anything but ``true`` or ``false``.
 
@@ -260,6 +295,7 @@ class RuleBuilder:
         rules.extend(self._build_push_rules())
         rules.extend(self._build_files_rules())
         rules.extend(self._build_tag_rules())
+        rules.extend(self._build_pull_request_rules())
         if not self.warn_checks:
             return rules
         return [
@@ -461,6 +497,30 @@ class RuleBuilder:
             suggest=(catalog_entry.suggest or "").format(max_len=max_len),
             value=max_len,
         )
+
+    def _build_pull_request_rules(self) -> list[ValidationRule]:
+        """Build the pull request rules.
+
+        CC501 exists only when ``[pull_request] ai_declaration_checkboxes``
+        names the boxes; the table is otherwise the GitHub App's, and its
+        other keys are not read here.
+        """
+        section = self.config.get("pull_request", {})
+        if not isinstance(section, dict):
+            return []
+        options = _declaration_checkboxes(section)
+        if not options:
+            return []
+        catalog_entry = RULES_BY_CHECK["ai_declaration"]
+        listed = ", ".join(f'"{option}"' for option in options)
+        return [
+            ValidationRule(
+                check=catalog_entry.check,
+                allowed=options,
+                error=catalog_entry.error,
+                suggest=(catalog_entry.suggest or "").format(options=listed),
+            )
+        ]
 
     def _build_tag_rules(self) -> list[ValidationRule]:
         """Build tag-related validation rules.

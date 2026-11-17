@@ -12,6 +12,7 @@ import pytest
 from commit_check.engine import (
     AiAttributionValidator,
     AiAuthorValidator,
+    AiDeclarationValidator,
     AuthorValidator,
     BaseValidator,
     BodyValidator,
@@ -30,6 +31,7 @@ from commit_check.engine import (
     ValidationContext,
     ValidationEngine,
     ValidationResult,
+    declaration_boxes,
     is_merge_subject,
 )
 from commit_check.rule_builder import RuleBuilder, ValidationRule
@@ -4631,3 +4633,183 @@ class TestValidateAllBanner:
             validator._failure_blocks[0][0]["error"]
             == (validator._last_failure["error"])
         )
+
+
+DJANGO_OPTIONS = ["No AI tools were used", "If AI tools were used"]
+
+
+def _declaration_rule(options=None):
+    builder = RuleBuilder(
+        {"pull_request": {"ai_declaration_checkboxes": options or DJANGO_OPTIONS}}
+    )
+    return next(r for r in builder.build_all_rules() if r.check == "ai_declaration")
+
+
+def _declare(text, options=None):
+    validator = AiDeclarationValidator(_declaration_rule(options))
+    validator._suppress_output = True
+    result = validator.validate(ValidationContext(stdin_text=text))
+    return result, validator
+
+
+class TestAiDeclarationValidator:
+    """CC501: a pull request description ticks exactly one declaration box."""
+
+    # Django's template, as it stands.
+    TEMPLATE = (
+        "#### AI Assistance Disclosure (REQUIRED)\n"
+        "<!-- Select exactly ONE of the following: -->\n"
+        "- [{no}] **No AI tools were used** in preparing this PR.\n"
+        "- [{used}] **If AI tools were used**, I have disclosed which ones, "
+        "and fully reviewed and verified their output.\n"
+    )
+
+    @pytest.mark.parametrize("no, used", [("x", " "), (" ", "x"), ("X", " ")])
+    def test_one_box_ticked_passes(self, no, used):
+        result, validator = _declare(self.TEMPLATE.format(no=no, used=used))
+        assert result == ValidationResult.PASS
+        assert validator._last_failure is None
+
+    def test_no_box_ticked_fails(self):
+        result, validator = _declare(self.TEMPLATE.format(no=" ", used=" "))
+        assert result == ValidationResult.FAIL
+        assert validator._last_failure["error"] == "No AI declaration box is ticked"
+        assert validator._last_failure["suggest"] == (
+            'Tick the box that applies: "No AI tools were used" or '
+            '"If AI tools were used"'
+        )
+
+    def test_both_boxes_ticked_fails(self):
+        result, validator = _declare(self.TEMPLATE.format(no="x", used="x"))
+        assert result == ValidationResult.FAIL
+        assert validator._last_failure["error"] == (
+            "More than one AI declaration box is ticked: "
+            '"No AI tools were used" and "If AI tools were used"'
+        )
+
+    @pytest.mark.parametrize("text", ["", "Adds a parser.", "- [x] Tests added"])
+    def test_a_description_without_the_boxes_fails(self, text):
+        """A template replaced by the author's own words declares nothing."""
+        result, validator = _declare(text)
+        assert result == ValidationResult.FAIL
+        assert validator._last_failure["error"] == (
+            "The pull request description has no AI declaration"
+        )
+        assert '"- [ ] No AI tools were used"' in validator._last_failure["suggest"]
+
+    def test_a_box_in_a_comment_or_code_block_does_not_count(self):
+        """What GitHub does not show as a ticked box is not one."""
+        text = (
+            "<!--\n- [x] No AI tools were used\n-->\n"
+            "```\n- [x] No AI tools were used\n```\n"
+            "- [ ] No AI tools were used\n"
+            "- [ ] If AI tools were used\n"
+        )
+        result, validator = _declare(text)
+        assert result == ValidationResult.FAIL
+        assert validator._last_failure["error"] == "No AI declaration box is ticked"
+
+    def test_a_shorter_fence_does_not_close_a_longer_one(self):
+        """Inside a four-backtick block, a three-backtick line is code too."""
+        text = "````\n```\n- [x] No AI tools were used\n````\n"
+        result, _ = _declare(text)
+        assert result == ValidationResult.FAIL
+
+    def test_a_fence_with_text_after_it_does_not_close(self):
+        text = "```\n``` not a fence\n- [x] No AI tools were used\n```\n"
+        result, _ = _declare(text)
+        assert result == ValidationResult.FAIL
+
+    def test_a_comment_mark_in_a_code_block_is_code(self):
+        """``<!--`` in a code block opens no comment, so the box after counts."""
+        text = "~~~\n<!--\n~~~\n- [x] No AI tools were used\n"
+        result, _ = _declare(text)
+        assert result == ValidationResult.PASS
+
+    def test_text_around_a_comment_on_one_line_is_read(self):
+        text = "<!-- pick one -->- [x] No AI tools were used <!-- thanks\n-->\n"
+        result, _ = _declare(text)
+        assert result == ValidationResult.PASS
+
+    def test_an_unclosed_comment_hides_the_rest(self):
+        text = "- [ ] If AI tools were used\n<!-- note\n- [x] No AI tools were used\n"
+        result, _ = _declare(text)
+        assert result == ValidationResult.FAIL
+
+    def test_a_long_run_of_spaces_is_read_in_linear_time(self):
+        """A description is anyone's text: a box line padded with 60,000 spaces
+        before more text once took the old pattern seconds to read."""
+        text = "- [x] No AI tools were used" + " " * 60_000 + "here\n"
+        result, _ = _declare(text)
+        assert result == ValidationResult.PASS
+
+    def test_the_longer_option_wins_when_one_starts_another(self):
+        """statsmodels: "AI tools were used" must not read as "No AI tools ..."."""
+        options = ["No AI tools were used", "AI tools were used"]
+        text = (
+            "- [x] No AI tools were used to develop this pull request.\n"
+            "- [ ] AI tools were used.\n"
+        )
+        assert declaration_boxes(text, options) == [
+            (
+                "No AI tools were used",
+                True,
+                "- [x] No AI tools were used to develop this pull request.",
+            ),
+            ("AI tools were used", False, "- [ ] AI tools were used."),
+        ]
+        result, _ = _declare(text, options)
+        assert result == ValidationResult.PASS
+
+    def test_an_option_matches_whole_words_only(self):
+        """ "AI tools were used" is not the start of "AI tools were useless"."""
+        assert (
+            declaration_boxes("- [x] AI tools were useless", ["AI tools were used"])
+            == []
+        )
+
+    @pytest.mark.parametrize(
+        "line",
+        [
+            "* [x] NO AI TOOLS WERE USED",
+            "1. [x] `No AI tools` were used",
+            "+ [x]  No  AI tools were used.",
+            "- [x] __No AI tools were used__ in preparing this PR",
+        ],
+    )
+    def test_list_marks_case_and_emphasis_are_read_through(self, line):
+        result, _ = _declare(line + "\n- [ ] If AI tools were used\n")
+        assert result == ValidationResult.PASS
+
+    def test_one_box_ticked_twice_counts_once(self):
+        result, _ = _declare(
+            "- [x] No AI tools were used\n- [x] No AI tools were used, really\n"
+        )
+        assert result == ValidationResult.PASS
+
+    def test_a_single_required_box(self):
+        """One option is a box the author must tick, such as a policy read."""
+        options = ["I have read the AI policy"]
+        assert _declare("- [x] I have read the AI policy.", options)[0] == (
+            ValidationResult.PASS
+        )
+        assert _declare("- [ ] I have read the AI policy.", options)[0] == (
+            ValidationResult.FAIL
+        )
+
+    def test_the_checked_value_is_the_declaration_lines(self):
+        text = "Adds a parser.\n\n- [x] No AI tools were used\n- [ ] If AI tools were used\n"
+        _, validator = _declare(text)
+        assert validator._checked_value == (
+            "- [x] No AI tools were used\n- [ ] If AI tools were used"
+        )
+
+    def test_an_ignored_author_skips_it(self, monkeypatch):
+        """Dependency bots on ignore_authors open pull requests with no template."""
+        monkeypatch.setenv("GIT_AUTHOR_NAME", "dependabot[bot]")
+        validator = AiDeclarationValidator(_declaration_rule())
+        context = ValidationContext(
+            stdin_text="Bumps lodash.",
+            config={"commit": {"ignore_authors": ["dependabot[bot]"]}},
+        )
+        assert validator.validate(context) == ValidationResult.SKIP
