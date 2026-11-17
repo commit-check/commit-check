@@ -2069,6 +2069,66 @@ class TestCommitsNewToRemotes:
         monkeypatch.chdir(work)
         assert commits_new_to_remotes([merge, theirs, mine]) == [merge, mine]
 
+    def test_an_annotated_tag_stands_for_the_commit_it_points_to(
+        self, tmp_path, monkeypatch
+    ):
+        """A tag push names the tag object, which no listing of commits holds."""
+        from commit_check.util import commits_new_to_remotes
+
+        remote = tmp_path / "remote.git"
+        _run_git(tmp_path, "init", "-q", "--bare", str(remote))
+        work = tmp_path / "work"
+        work.mkdir()
+        _init_git_repo(work, "-b", "main")
+        _run_git(work, "remote", "add", "origin", str(remote))
+        (work / "base.txt").write_text("base")
+        _commit_all(work, BASE_COMMIT_MSG)
+        _run_git(work, "push", "-q", "origin", "main")
+        _run_git(work, "tag", "-a", "pushed", "-m", "on a commit the remote has")
+        (work / "mine.txt").write_text("mine")
+        _commit_all(work, "feat: mine")
+        _run_git(work, "tag", "-a", "unpushed", "-m", "on a commit it lacks")
+        pushed = _run_git(work, "rev-parse", "pushed")
+        unpushed = _run_git(work, "rev-parse", "unpushed")
+        assert unpushed != _run_git(work, "rev-parse", "unpushed^{commit}")
+
+        monkeypatch.chdir(work)
+        assert commits_new_to_remotes([unpushed, pushed]) == [unpushed]
+
+    def test_commits_that_are_all_new_take_one_git_call(self, mocker):
+        from commit_check.util import commits_new_to_remotes
+
+        run = mocker.patch(
+            "commit_check.util.subprocess.run",
+            return_value=mocker.Mock(returncode=0, stdout="b\na\n"),
+        )
+        assert commits_new_to_remotes(["a", "b"]) == ["a", "b"]
+        assert run.call_count == 1
+
+    def test_a_rev_that_names_no_commit_is_kept(self, mocker):
+        from commit_check.util import commits_new_to_remotes
+
+        mocker.patch(
+            "commit_check.util.subprocess.run",
+            side_effect=[
+                mocker.Mock(returncode=0, stdout="a\n"),
+                mocker.Mock(returncode=0, stdout="b^{commit} missing\n"),
+            ],
+        )
+        assert commits_new_to_remotes(["a", "b"]) == ["a", "b"]
+
+    def test_every_commit_is_kept_when_git_cannot_name_them(self, mocker):
+        from commit_check.util import commits_new_to_remotes
+
+        mocker.patch(
+            "commit_check.util.subprocess.run",
+            side_effect=[
+                mocker.Mock(returncode=0, stdout="a\n"),
+                mocker.Mock(returncode=128, stdout="", stderr="fatal"),
+            ],
+        )
+        assert commits_new_to_remotes(["a", "b"]) == ["a", "b"]
+
     def test_no_commits_ask_git_nothing(self, mocker):
         from commit_check.util import commits_new_to_remotes
 

@@ -530,7 +530,41 @@ def commits_new_to_remotes(revs: list[str]) -> list[str]:
     if result.returncode != 0:
         return list(revs)
     new = set(result.stdout.split())
-    return [rev for rev in revs if rev in new]
+    unlisted = [rev for rev in revs if rev not in new]
+    if not unlisted:
+        return list(revs)
+    # rev-list prints commits, and a rev need not be one: the push of an
+    # annotated tag names the tag object. Such a rev is new when the commit it
+    # points to is, so that commit is the one to look for.
+    commits = _commit_ids(unlisted)
+    if commits is None:
+        return list(revs)
+    known = {
+        rev
+        for rev, commit in zip(unlisted, commits)
+        if commit is not None and commit not in new
+    }
+    return [rev for rev in revs if rev not in known]
+
+
+def _commit_ids(revs: list[str]) -> list[str | None] | None:
+    """The commit each of *revs* names, in one git call.
+
+    :returns: One entry per rev, ``None`` where it resolves to no commit, or
+        ``None`` altogether when git cannot say.
+    """
+    result = subprocess.run(
+        ["git", "cat-file", "--batch-check=%(objectname)"],
+        input="".join(f"{rev}^{{commit}}\n" for rev in revs),
+        capture_output=True,
+        check=False,
+        encoding="utf-8",
+    )
+    lines = result.stdout.splitlines()
+    if result.returncode != 0 or len(lines) != len(revs):
+        return None
+    # What does not resolve is echoed back with a reason: "<rev> missing".
+    return [None if " " in line else line for line in lines]
 
 
 def get_push_commits(local_sha: str, remote_sha: str) -> list[str]:
