@@ -9,6 +9,7 @@ from unittest.mock import mock_open, patch
 
 import pytest
 
+from commit_check.config_merger import get_default_config
 from commit_check.engine import (
     AiAttributionValidator,
     AiAuthorValidator,
@@ -1307,6 +1308,191 @@ class TestSubjectLengthValidator:
         out = capsys.readouterr().out
         assert "Subject is 62 characters; it must be at most 20 characters" in out
         assert "Suggest: Shorten the subject by 42 characters, to 20 or fewer" in out
+
+    LONG_UPDATE = (
+        "chore(deps): Bump org.zalando:logbook-spring-boot-webflux-autoconfigure"
+        " from 4.0.3 to 4.0.4"
+    )
+
+    @pytest.mark.parametrize("bot", ["dependabot[bot]", "renovate[bot]"])
+    def test_dependency_bot_subject_length_is_skipped(self, bot, monkeypatch):
+        """The bot writes the subject from the package path and versions."""
+        monkeypatch.setenv("GIT_AUTHOR_NAME", bot)
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        assert len(self.LONG_UPDATE) > 80
+        result = validator.validate(ValidationContext(stdin_text=self.LONG_UPDATE))
+        assert result == ValidationResult.SKIP
+        assert validator._skip_reason == (
+            f"{bot} writes the subject from the package name and versions"
+        )
+
+    def test_a_person_with_the_same_subject_still_fails(self, monkeypatch):
+        monkeypatch.setenv("GIT_AUTHOR_NAME", "Jane Doe")
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        result = validator.validate(ValidationContext(stdin_text=self.LONG_UPDATE))
+        assert result == ValidationResult.FAIL
+        assert validator._skip_reason == ""
+
+    @pytest.mark.parametrize(
+        "author", ["dependabot", "Dependabot[bot]", "dependabot[bot] fork"]
+    )
+    def test_only_the_exact_bot_names_are_skipped(self, author, monkeypatch):
+        monkeypatch.setenv("GIT_AUTHOR_NAME", author)
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        result = validator.validate(ValidationContext(stdin_text=self.LONG_UPDATE))
+        assert result == ValidationResult.FAIL
+
+    def test_a_subject_within_bounds_looks_up_no_author(self, mocker):
+        """The author is asked only once a subject is out of bounds."""
+        info = mocker.patch(
+            "commit_check.engine.get_commit_info",
+            return_value="chore(deps): bump x from 1 to 2",
+        )
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        assert validator.validate(ValidationContext(rev="abc123")) == (
+            ValidationResult.PASS
+        )
+        assert [c.args[0] for c in info.call_args_list] == ["s"]
+
+    def test_a_piped_message_does_not_ask_git_config(self, mocker, monkeypatch):
+        """A local hook's author is a person: only GIT_AUTHOR_NAME can name
+        a bot for a message that is not committed yet."""
+        monkeypatch.delenv("GIT_AUTHOR_NAME", raising=False)
+        config = mocker.patch(
+            "commit_check.engine.get_git_config_value", return_value="dependabot[bot]"
+        )
+        info = mocker.patch("commit_check.engine.get_commit_info")
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        result = validator.validate(ValidationContext(stdin_text=self.LONG_UPDATE))
+        assert result == ValidationResult.FAIL
+        config.assert_not_called()
+        info.assert_not_called()
+
+    def test_dependency_bot_head_commit_is_skipped(self, mocker):
+        """With nothing piped in, HEAD is the commit, and its author decides."""
+        mocker.patch(
+            "commit_check.engine.get_commit_info",
+            side_effect=lambda fmt, rev=None: {
+                "s": self.LONG_UPDATE,
+                "an": "renovate[bot]",
+            }[fmt],
+        )
+        mocker.patch("commit_check.engine.has_commits", return_value=True)
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        assert validator.validate(ValidationContext()) == ValidationResult.SKIP
+
+    def test_dependency_bot_commit_by_rev_is_skipped(self, mocker):
+        """An existing commit is judged by its own author."""
+        mocker.patch(
+            "commit_check.engine.get_commit_info",
+            side_effect=lambda fmt, rev=None: {
+                "s": self.LONG_UPDATE,
+                "an": "dependabot[bot]",
+            }[fmt],
+        )
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        assert validator.validate(ValidationContext(rev="abc123")) == (
+            ValidationResult.SKIP
+        )
+
+    def test_other_rules_still_judge_dependency_bot_commits(self, monkeypatch):
+        """Only the length rules step aside; the format rule still applies."""
+        monkeypatch.setenv("GIT_AUTHOR_NAME", "dependabot[bot]")
+        rules = RuleBuilder(get_default_config()).build_all_rules()
+        engine = ValidationEngine(rules)
+        context = ValidationContext(
+            stdin_text="Bump org.zalando:logbook-spring-boot-webflux-autoconfigure"
+            " from 4.0.3 to 4.0.4 in /server",
+            no_banner=True,
+        )
+        results = {r.check: r.status for r in engine.validate_all_detailed(context)}
+        assert results["subject_max_length"] == "skip"
+        assert results["message"] == "fail"
+
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            # 79 characters of title; GitHub's squash merge adds " (#1698)".
+            "fix: return 404 if no member left after pick and omit when retrieving an entity (#1698)",
+            "feat: x" + "y" * 73 + " (#7)",
+        ],
+    )
+    def test_squash_pr_number_is_not_counted(self, subject):
+        """A title that fit the limit on the pull request still fits once the
+        squash merge lands it with the pull request's number on the end."""
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        assert len(subject) > 80
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.PASS
+        )
+
+    def test_a_title_ending_in_a_number_measures_the_same_after_the_merge(self):
+        """A backport titled "... (#12)" gets " (#34)" too; both are left out,
+        so the title that passed on the pull request still passes."""
+        title = "feat: " + "x" * 74 + " (#12)"
+        rule = ValidationRule(check="subject_max_length", value=80)
+        for subject in (title, title + " (#34)"):
+            validator = SubjectLengthValidator(rule)
+            assert validator.validate(ValidationContext(stdin_text=subject)) == (
+                ValidationResult.PASS
+            )
+        failure = self._failure("subject_max_length", 70, title + " (#34)")
+        assert failure["error"] == (
+            'Subject is 80 characters, not counting "(#12) (#34)"; '
+            "it must be at most 70 characters"
+        )
+
+    def test_squash_pr_number_is_not_counted_toward_the_minimum(self):
+        rule = ValidationRule(check="subject_min_length", value=5)
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        context = ValidationContext(stdin_text="fix (#12)")
+        assert validator.validate(context) == ValidationResult.FAIL
+
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "feat: " + "y" * 70 + " (#12) more",  # not at the end
+            "feat: " + "y" * 70 + "(#12)",  # no space before it
+            "feat: " + "y" * 70 + " (#12a)",  # not a number
+            "feat: " + "y" * 70 + " (GH-12)",  # another forge's wording
+        ],
+    )
+    def test_other_parentheses_are_counted(self, subject):
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        assert len(subject) > 80
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.FAIL
+        )
+
+    def test_failure_names_the_suffix_it_did_not_count(self):
+        subject = "feat: " + "y" * 80 + " (#1698)"
+        failure = self._failure("subject_max_length", 80, subject)
+        assert failure["error"] == (
+            'Subject is 86 characters, not counting "(#1698)"; '
+            "it must be at most 80 characters"
+        )
+        assert (
+            failure["suggest"] == "Shorten the subject by 6 characters, to 80 or fewer"
+        )
+        failure = self._failure("subject_min_length", 30, "fix: typo (#3)")
+        assert failure["error"] == (
+            'Subject is 9 characters, not counting "(#3)"; '
+            "it must be at least 30 characters"
+        )
 
 
 class TestSignoffValidator:
