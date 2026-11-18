@@ -12,6 +12,7 @@ from commit_check import supports_color
 from commit_check.util import (
     SCISSORS_LINE,
     _print_failure,
+    ci_source_commit,
     cmd_output,
     fetch_remote_ref,
     fetch_upstream_ref,
@@ -1245,6 +1246,40 @@ class TestUtil:
         def test_an_empty_suggestion_prints_nothing(self, capfd):
             print_suggestion("")
             assert capfd.readouterr() == ("", "")
+
+
+class TestCiSourceCommit:
+    """The pushed commit a CI system names when it builds a merge."""
+
+    NAMES = (
+        "BITBUCKET_PR_ID",
+        "BITBUCKET_COMMIT",
+        "CI_MERGE_REQUEST_SOURCE_BRANCH_SHA",
+    )
+
+    @pytest.mark.parametrize(
+        ("env", "expected"),
+        [
+            pytest.param(
+                {"BITBUCKET_PR_ID": "7", "BITBUCKET_COMMIT": " abc123 "},
+                "abc123",
+                id="bitbucket-pull-request",
+            ),
+            pytest.param(
+                {"BITBUCKET_COMMIT": "abc123"}, "", id="bitbucket-branch-step"
+            ),
+            pytest.param(
+                {"CI_MERGE_REQUEST_SOURCE_BRANCH_SHA": "def456"},
+                "def456",
+                id="gitlab-merged-results",
+            ),
+            pytest.param({}, "", id="none"),
+        ],
+    )
+    def test_names_the_pushed_commit(self, env, expected):
+        clean = dict.fromkeys(self.NAMES, "")
+        with patch.dict(os.environ, {**clean, **env}):
+            assert ci_source_commit() == expected
 
 
 class TestGetGitConfigValue:
