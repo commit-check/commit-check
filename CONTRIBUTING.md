@@ -46,6 +46,7 @@ commit_check/
 ├── __init__.py          # Package constants: DEFAULT_COMMIT_TYPES, DEFAULT_BRANCH_TYPES, DEFAULT_BOOLEAN_RULES
 ├── main.py              # CLI entry point, argument parsing, StdinReader
 ├── api.py               # Public Python API (validate_message, validate_branch, ...) without a subprocess
+├── ci.py                # commit-check-ci: checks a whole merge or pull request on GitLab CI and Bitbucket Pipelines
 ├── config.py            # TOML file loading (stdlib tomllib), inherit_from, deep_merge
 ├── config_merger.py     # ConfigMerger: merges CLI → Env → TOML → Defaults
 ├── rule_builder.py      # RuleBuilder: creates ValidationRule objects from config + catalog

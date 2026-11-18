@@ -1,15 +1,13 @@
-"""Tests for ``docker/commit_check_ci.py``, the container image's entry point.
+"""Tests for ``commit-check-ci``, which checks a whole merge or pull request.
 
-The script is not part of the package, so it is loaded from its file. The
-tests build real repositories shaped like a GitLab Runner's and a Bitbucket
+The tests build real repositories shaped like a GitLab Runner's and a Bitbucket
 Pipelines step's checkout, set the variables those systems set, and let the
-script run the installed ``commit-check``.
+command run ``commit-check`` on them.
 """
 
 from __future__ import annotations
 
 import http.server
-import importlib.util
 import json
 import os
 import subprocess
@@ -21,16 +19,10 @@ from typing import ClassVar
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parent.parent / "docker" / "commit_check_ci.py"
-_spec = importlib.util.spec_from_file_location("commit_check_ci", SCRIPT)
-assert _spec is not None
-assert _spec.loader is not None
-ci = importlib.util.module_from_spec(_spec)
-sys.modules["commit_check_ci"] = ci  # dataclasses look the module up by name
-_spec.loader.exec_module(ci)
+from commit_check import ci
 
 # Variables a CI system or the developer's shell may already have set, which
-# the script or commit-check would read.
+# the command or commit-check would read.
 _PREFIXES = ("GITHUB_", "CI_", "BITBUCKET_", "SYSTEM_", "BUILD_", "CCHK_")
 _NAMES = (
     "CHANGE_BRANCH",
@@ -42,7 +34,6 @@ _NAMES = (
     "HTTP_PROXY",
     "all_proxy",
     "ALL_PROXY",
-    *(ci.env_name(option) for option in ci.CHECKS),
 )
 
 
@@ -55,10 +46,6 @@ def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
     monkeypatch.setenv("NO_COLOR", "1")
     monkeypatch.setenv("NO_PROXY", "127.0.0.1,localhost")
-    # The script starts `commit-check` by name: the one installed next to
-    # the interpreter that runs these tests.
-    scripts = str(Path(sys.executable).parent)
-    monkeypatch.setenv("PATH", scripts + os.pathsep + os.environ.get("PATH", ""))
 
 
 def git(*args: str, cwd: Path) -> str:
@@ -158,7 +145,7 @@ def require_rebase(work: Path) -> None:
 
 class TestReadSettings:
     def test_defaults_are_the_actions_defaults(self) -> None:
-        assert ci.read_settings([], {}) == {
+        assert ci.read_settings([]) == {
             "message": True,
             "branch": True,
             "author-name": False,
@@ -168,34 +155,44 @@ class TestReadSettings:
             "pr-body-ai-attribution": False,
         }
 
-    def test_a_variable_sets_a_check(self) -> None:
-        settings = ci.read_settings([], {"MESSAGE": "false", "PR_TITLE": " True "})
-        assert settings["message"] is False
+    def test_an_option_alone_switches_its_check_on(self) -> None:
+        settings = ci.read_settings(["--author-email", "--pr-title"])
+        assert settings["author-email"] is True
         assert settings["pr-title"] is True
 
-    def test_an_option_wins_over_the_variable(self) -> None:
-        settings = ci.read_settings(["--branch=true"], {"BRANCH": "release"})
-        assert settings["branch"] is True
+    def test_an_option_takes_true_or_false(self) -> None:
+        settings = ci.read_settings(["--message=false", "--files= True "])
+        assert settings["message"] is False
+        assert settings["files"] is True
 
-    def test_an_empty_variable_leaves_the_default(self) -> None:
-        assert ci.read_settings([], {"BRANCH": " "})["branch"] is True
-
-    @pytest.mark.parametrize(
-        ("argv", "env", "named"),
-        [
-            (["--files=yes"], {}, "--files"),
-            ([], {"AUTHOR_NAME": "1"}, "AUTHOR_NAME"),
-        ],
-    )
-    def test_anything_but_true_or_false_is_refused(
-        self, argv: list[str], env: dict[str, str], named: str
+    def test_a_variable_named_like_a_check_changes_nothing(
+        self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        with pytest.raises(ci.Stop, match=f"{named} must be true or false"):
-            ci.read_settings(argv, env)
+        # A project variable called BRANCH or MESSAGE is common in CI.
+        monkeypatch.setenv("BRANCH", "release")
+        monkeypatch.setenv("MESSAGE", "false")
+
+        settings = ci.read_settings([])
+
+        assert settings["branch"] is True
+        assert settings["message"] is True
+
+    def test_anything_but_true_or_false_is_refused(self) -> None:
+        with pytest.raises(ci.Stop, match="--files must be true or false"):
+            ci.read_settings(["--files=yes"])
 
     def test_an_option_is_not_guessed_from_its_first_letters(self) -> None:
         with pytest.raises(SystemExit):
-            ci.read_settings(["--pr=true"], {})
+            ci.read_settings(["--pr=true"])
+
+    def test_version_names_the_command(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        with pytest.raises(SystemExit) as stopped:
+            ci.read_settings(["--version"])
+
+        assert stopped.value.code == 0
+        assert capsys.readouterr().out.startswith("commit-check-ci ")
 
     def test_main_reports_a_bad_value_and_exits_2(
         self, capsys: pytest.CaptureFixture[str]
@@ -481,7 +478,7 @@ class TestBitbucket:
         upstream.advance_target()
         work = bitbucket_checkout(upstream, tmp_path, monkeypatch)
         git("update-ref", "-d", "refs/remotes/origin/main", cwd=work)
-        # No remote to reach: a pipe's container has none.
+        # The remote is out of reach: nothing may be fetched.
         git("remote", "set-url", "origin", str(tmp_path / "unreachable.git"), cwd=work)
         require_rebase(work)
 
@@ -784,7 +781,7 @@ def test_a_commit_check_killed_by_a_signal_fails_the_job(
         args=[], returncode=-9
     )
     monkeypatch.setattr(ci.subprocess, "run", lambda *args, **kwargs: killed)
-    job = ci.Job(ci.read_settings([], {}), {})
+    job = ci.Job(ci.read_settings([]), {})
 
     job.check("Branch", ["--branch"])
 
@@ -793,9 +790,9 @@ def test_a_commit_check_killed_by_a_signal_fails_the_job(
     assert "passed" not in capfd.readouterr().out
 
 
-def test_the_file_runs_as_a_script() -> None:
+def test_the_module_runs_as_a_command() -> None:
     result = subprocess.run(
-        [sys.executable, str(SCRIPT), "--message=maybe"],
+        [sys.executable, "-m", "commit_check.ci", "--message=maybe"],
         capture_output=True,
         text=True,
         check=False,

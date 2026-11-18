@@ -1,15 +1,15 @@
-#!/usr/bin/env python3
-"""Check the merge or pull request a CI job runs for.
+"""Check the merge or pull request a CI job runs for: ``commit-check-ci``.
 
-The entry point of the Commit Check container image, which the GitLab CI/CD
-component and the Bitbucket pipe start. It is not part of the ``commit-check``
-package: it runs the installed ``commit-check`` command on the branch, on the
-request's title and description, and once for every commit the request adds.
+GitHub has the Commit Check Action for this. On GitLab CI and Bitbucket
+Pipelines a job runs this command instead: it finds the request from the
+variables the CI system sets, and runs ``commit-check`` on the source branch,
+on the request's title and description, and once for every commit the request
+adds.
 
-Each check is switched on or off by an option (``--message=false``) or, when
-the option is absent, by an environment variable of the same name
-(``MESSAGE=false``). A pipe has only variables; a GitLab job passes options,
-because a project variable named ``BRANCH`` would otherwise win.
+Each check is switched on or off by an option named after the Action's input:
+``--author-email`` or ``--author-email=true`` to run it, ``--message=false``
+to leave it out. The ``=true`` and ``=false`` forms are there for CI templates,
+which fill in a value.
 """
 
 from __future__ import annotations
@@ -25,6 +25,8 @@ import urllib.request
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from .main import _VersionAction
+
 # Option name -> on by default. The names are the Action's input names.
 CHECKS: dict[str, bool] = {
     "message": True,
@@ -38,6 +40,18 @@ CHECKS: dict[str, bool] = {
 
 # The checks that run once for every commit, with the commit-check flag each one is.
 COMMIT_CHECKS = ("message", "author-name", "author-email", "files")
+
+HELP = {
+    "message": "check the message of every commit the request adds",
+    "branch": "check the name of the source branch",
+    "author-name": "check the author name of every commit",
+    "author-email": "check the author email of every commit",
+    "files": "check the files every commit changes against the [files] rules",
+    "pr-title": "check the title against the commit message rules",
+    "pr-body-ai-attribution": (
+        "check the description against the AI attribution rules"
+    ),
+}
 
 BITBUCKET_API = "https://api.bitbucket.org/2.0"
 
@@ -76,44 +90,46 @@ class Request:
     """Its own last commit, which is not always the commit checked out."""
 
 
-def env_name(option: str) -> str:
-    """The environment variable that sets ``option``."""
-    return option.replace("-", "_").upper()
-
-
-def parse_bool(name: str, text: str) -> bool:
+def parse_bool(option: str, text: str) -> bool:
     value = text.strip().lower()
     if value == "true":
         return True
     if value == "false":
         return False
-    raise Stop(f"{name} must be true or false, got {text!r}")
+    raise Stop(f"--{option} must be true or false, got {text!r}")
 
 
-def read_settings(argv: Sequence[str], env: Mapping[str, str]) -> dict[str, bool]:
-    """Which checks to run: the option, else the variable, else the default."""
+def read_settings(argv: Sequence[str] | None) -> dict[str, bool]:
+    """Which checks to run: the option when it is given, else the default."""
     parser = argparse.ArgumentParser(
         prog="commit-check-ci",
-        description="Check the merge or pull request this CI job runs for.",
+        description=(
+            "Check the merge or pull request this CI job runs for, on GitLab CI "
+            "or Bitbucket Pipelines: the source branch, the title, the "
+            "description, and every commit the request adds. Outside a merge or "
+            "pull request it checks the branch and the last commit."
+        ),
+        epilog=(
+            "Rules come from cchk.toml, as for commit-check. On Bitbucket the "
+            "title and description are read from its API with the access token "
+            "in $BITBUCKET_ACCESS_TOKEN. Docs: https://commit-check.com/"
+        ),
         allow_abbrev=False,
     )
+    parser.add_argument("-v", "--version", action=_VersionAction)
     for option, default in CHECKS.items():
         parser.add_argument(
             f"--{option}",
-            metavar="BOOL",
-            help=f"true or false (default: ${env_name(option)}, "
-            f"else {str(default).lower()})",
+            nargs="?",
+            const="true",
+            metavar="true|false",
+            help=f"{HELP[option]} (default: {str(default).lower()})",
         )
     args = vars(parser.parse_args(argv))
     settings = {}
     for option, default in CHECKS.items():
         given = args[option.replace("-", "_")]
-        if given is not None:
-            settings[option] = parse_bool(f"--{option}", given)
-        elif env.get(env_name(option), "").strip():
-            settings[option] = parse_bool(env_name(option), env[env_name(option)])
-        else:
-            settings[option] = default
+        settings[option] = default if given is None else parse_bool(option, given)
     return settings
 
 
@@ -209,8 +225,7 @@ def prepare_target(request: Request, env: Mapping[str, str]) -> None:
                 f"which the rebase check needs: {fetch.stderr.strip()}"
             )
         return
-    # A pipe runs in a container of its own that cannot reach the repository's
-    # remote, and has no need to: the step already merged the destination
+    # Nothing is fetched on Bitbucket: the step already merged the destination
     # commit into the checkout, so the clone holds it.
     if resolve_commit(ref):
         return
@@ -293,7 +308,7 @@ class Job:
         """Run one ``commit-check`` call under a heading of its own."""
         print(heading, flush=True)
         result = subprocess.run(
-            ["commit-check", *args, "--no-banner"],
+            [sys.executable, "-m", "commit_check.main", *args, "--no-banner"],
             input=None if text is None else text.encode("utf-8"),
             check=False,
         )
@@ -408,8 +423,9 @@ class Job:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """The ``commit-check-ci`` command. Exits 0, 1 (a check failed) or 2."""
     try:
-        settings = read_settings(sys.argv[1:] if argv is None else argv, os.environ)
+        settings = read_settings(argv)
     except Stop as error:
         print(f"Error: {error}", file=sys.stderr)
         return 2
