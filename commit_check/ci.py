@@ -336,7 +336,9 @@ class Job:
             # request's checkout, ahead of the installed package and the
             # standard library on the module search path.
             [sys.executable, "-P", "-m", "commit_check.main", *args, "--no-banner"],
-            input=None if text is None else text.encode("utf-8"),
+            # A check that is given no text reads none: whatever the runner
+            # left on standard input is not the branch name or the message.
+            input=b"" if text is None else text.encode("utf-8"),
             check=False,
         )
         self.ran += 1
@@ -445,7 +447,10 @@ class Job:
         flags = [f"--{name}" for name in COMMIT_CHECKS if self.settings[name]]
         if flags:
             self.check(
-                f"Commit {resolve_commit('HEAD')[:8]} {subject_of('HEAD')}", flags
+                f"Commit {resolve_commit('HEAD')[:8]} {subject_of('HEAD')}",
+                # --rev: without it the author checks read the identity the
+                # runner would commit with, not the author of this commit.
+                [*flags, "--rev", "HEAD"],
             )
 
 

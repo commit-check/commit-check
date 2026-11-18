@@ -841,6 +841,44 @@ class TestOutsideARequest:
         assert f"Commit {upstream.head[:8]} fix: trim the user name\n  passed" in out
         assert "All 2 passed." in out
 
+    def test_the_author_checked_is_the_commits_not_the_runners(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capfd: pytest.CaptureFixture[str],
+    ) -> None:
+        upstream = Upstream(tmp_path, GOOD)
+        (upstream.path / "cchk.toml").write_text(
+            '[commit]\nauthor_email_pattern = "^.+@company\\\\.example$"\n'
+        )
+        # The identity the runner would commit with meets the rule. The
+        # commit's own author, dev@example.com, does not.
+        monkeypatch.setenv("GIT_AUTHOR_EMAIL", "ci@company.example")
+        monkeypatch.chdir(upstream.path)
+
+        assert ci.main(["--message=false", "--branch=false", "--author-email"]) == 1
+
+        captured = capfd.readouterr()
+        assert "CC102" in captured.out + captured.err
+
+    def test_text_on_standard_input_is_not_taken_for_the_branch_name(
+        self, tmp_path: Path
+    ) -> None:
+        upstream = Upstream(tmp_path, GOOD)
+        git("checkout", "--quiet", "feature/login", cwd=upstream.path)
+
+        result = subprocess.run(
+            [sys.executable, "-m", "commit_check.ci"],
+            input="not a branch name\n",
+            cwd=upstream.path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "All 2 passed." in result.stdout
+
     def test_nothing_runs_when_every_check_is_off(
         self,
         tmp_path: Path,
