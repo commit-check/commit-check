@@ -1183,7 +1183,7 @@ class FilesValidator(BaseValidator):
         if any(paths is None for _, paths in commits):
             self._skip_reason = (
                 "what the commit changed could not be read "
-                "(a shallow clone lacks its parent)"
+                "(in a shallow clone its parent may be missing)"
             )
             return ValidationResult.SKIP
         if unread:

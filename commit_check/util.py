@@ -472,12 +472,17 @@ def get_commit_changed_paths(rev: str = "HEAD") -> list[str] | None:
         # -c lists only the paths that differ from all parents.
         scope = ["-c", rev]
 
+    # --ignore-submodules=none: a submodule configured with ignore = all is
+    # otherwise left out of the diff, and a commit that moves it would be
+    # read as not touching it. Only the recorded commit is compared, never
+    # the submodule's working tree.
     diff = subprocess.run(
         [
             "git",
             "diff-tree",
             "--no-commit-id",
             "--name-only",
+            "--ignore-submodules=none",
             "-r",
             "-z",
             *scope,
@@ -503,11 +508,14 @@ def get_commit_authorship(rev: str = "HEAD") -> tuple[str, str, str] | None:
     """
     # --no-show-signature: with log.showSignature set, git prints the
     # signature check ahead of the format and it would be read as the name.
+    # --encoding=UTF-8: i18n.logOutputEncoding can ask for another encoding,
+    # and the output is decoded as UTF-8 below.
     result = subprocess.run(
         [
             "git",
             "log",
             "--no-show-signature",
+            "--encoding=UTF-8",
             "-n",
             "1",
             "--pretty=format:%an%x1f%ae%x1f%B",

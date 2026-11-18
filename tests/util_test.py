@@ -1916,6 +1916,39 @@ class TestGetCommitChangedPaths:
         monkeypatch.chdir(tmp_path)
         assert get_commit_changed_paths() == []
 
+    def test_a_moved_submodule_counts_even_when_set_to_be_ignored(
+        self, tmp_path, monkeypatch
+    ):
+        """``ignore = all`` keeps a submodule out of diffs; moving it is a change."""
+        from commit_check.util import get_commit_changed_paths
+
+        _init_git_repo(tmp_path, "-b", "main")
+        (tmp_path / ".gitmodules").write_text(
+            '[submodule "vendor/sdk"]\n'
+            "\tpath = vendor/sdk\n"
+            "\turl = ./sdk\n"
+            "\tignore = all\n"
+        )
+        self._git(tmp_path, "add", ".gitmodules")
+        # A gitlink needs no checkout: the index entry alone records the commit.
+        # No "add -A" from here on, which would stage the missing directory
+        # as a deletion.
+        self._git(
+            tmp_path,
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            f"160000,{'1' * 40},vendor/sdk",
+        )
+        self._git(tmp_path, "commit", "-qm", BASE_COMMIT_MSG)
+        self._git(
+            tmp_path, "update-index", "--cacheinfo", f"160000,{'2' * 40},vendor/sdk"
+        )
+        self._git(tmp_path, "commit", "-qm", "chore: move the sdk")
+
+        monkeypatch.chdir(tmp_path)
+        assert get_commit_changed_paths() == ["vendor/sdk"]
+
     def _diverged(self, tmp_path):
         """main and feature each one commit past a shared base, on feature."""
         _init_git_repo(tmp_path, "-b", "main")
@@ -2062,6 +2095,30 @@ class TestGetCommitAuthorship:
 
         monkeypatch.chdir(tmp_path)
         assert get_commit_authorship() == ("T", TEST_EMAIL, BASE_COMMIT_MSG + "\n")
+
+    def test_another_log_output_encoding_leaves_the_message_intact(
+        self, tmp_path, monkeypatch
+    ):
+        """``i18n.logOutputEncoding`` re-encodes what ``git log`` prints."""
+        from commit_check.util import get_commit_authorship
+
+        message = "feat: add a\n\nAssisted-by: Assistant Café\n"
+        _init_git_repo(tmp_path, "-b", "main")
+        _run_git(tmp_path, "config", "i18n.logOutputEncoding", "ISO-8859-1")
+        (tmp_path / "a.txt").write_text("a")
+        _run_git(tmp_path, "add", "-A")
+        commit = subprocess.run(
+            ["git", "commit", "-qF", "-"],
+            cwd=tmp_path,
+            input=message,
+            capture_output=True,
+            check=False,
+            encoding="utf-8",
+        )
+        assert commit.returncode == 0, commit.stderr
+
+        monkeypatch.chdir(tmp_path)
+        assert get_commit_authorship() == ("T", TEST_EMAIL, message)
 
     def test_signature_display_stays_out_of_the_author(self, tmp_path, monkeypatch):
         """``log.showSignature`` puts the signature check ahead of the format."""

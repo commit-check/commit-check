@@ -491,6 +491,7 @@ class TestFilesConfig:
         monkeypatch.setenv("CCHK_FILES_MAX_SIZE", "5MB")
         monkeypatch.setenv("CCHK_FILES_PROHIBITED_PATTERNS", "*.pem,.env")
         monkeypatch.setenv("CCHK_FILES_MAX_PATH_LENGTH", "200")
+        monkeypatch.delenv("CCHK_FILES_AI_PROHIBITED_PATTERNS", raising=False)
         config = ConfigMerger.parse_env_vars()
         assert config["files"] == {
             "max_size": "5MB",
@@ -504,6 +505,12 @@ class TestFilesConfig:
         monkeypatch.setenv(
             "CCHK_FILES_AI_PROHIBITED_PATTERNS", ".github/workflows/*,CODEOWNERS"
         )
+        for other in (
+            "CCHK_FILES_MAX_SIZE",
+            "CCHK_FILES_PROHIBITED_PATTERNS",
+            "CCHK_FILES_MAX_PATH_LENGTH",
+        ):
+            monkeypatch.delenv(other, raising=False)
         config = ConfigMerger.parse_env_vars()
         assert config["files"] == {
             "ai_prohibited_patterns": [".github/workflows/*", "CODEOWNERS"],
