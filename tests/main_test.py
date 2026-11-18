@@ -2430,6 +2430,129 @@ class TestAiAttributionOnly:
         assert "--ai-only" not in out
 
 
+class TestPrTitle:
+    """``--pr-title``: the message rules a one-line pull request title can meet."""
+
+    def _run_json(self, mocker, capsys, monkeypatch, title, *argv):
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=title)
+        monkeypatch.setattr("sys.argv", [CMD, "--format", "json", *argv])
+        rc = main()
+        return rc, json.loads(capsys.readouterr().out)
+
+    @staticmethod
+    def _strict_config(tmp_path):
+        config = tmp_path / "cchk.toml"
+        config.write_text(
+            "[commit]\n"
+            "require_body = true\n"
+            "require_signed_off_by = true\n"
+            'ai_attribution = "forbid"\n'
+        )
+        return str(config)
+
+    def test_the_commit_only_rules_do_not_run(
+        self, mocker, capsys, monkeypatch, tmp_path
+    ):
+        """A title has no body, no sign-off and no author of its own.
+
+        In a CI job git has no identity configured, so the author of a piped
+        message falls back to HEAD's: an AI agent's commit there must not fail
+        the title (CC017), nor may the body and sign-off rules (CC011, CC012).
+        """
+        mocker.patch(
+            "commit_check.engine.get_pending_author_identity",
+            return_value=("Claude", "noreply@anthropic.com"),
+        )
+        rc, data = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            "feat: add a login form\n",
+            "--pr-title",
+            "--config",
+            self._strict_config(tmp_path),
+        )
+        assert rc == 0
+        ran = {c["rule_id"] for c in data["checks"]}
+        assert "CC001" in ran
+        assert ran.isdisjoint({"CC011", "CC012", "CC017"})
+        assert data["ai_tools"] == []
+
+    def test_the_same_title_as_a_message_fails_those_rules(
+        self, mocker, capsys, monkeypatch, tmp_path
+    ):
+        """The contrast: piped to --message, the title is held to them."""
+        mocker.patch(
+            "commit_check.engine.get_pending_author_identity",
+            return_value=("Claude", "noreply@anthropic.com"),
+        )
+        rc, data = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            "feat: add a login form\n",
+            "--message",
+            "--config",
+            self._strict_config(tmp_path),
+        )
+        assert rc == 1
+        failed = {c["rule_id"] for c in data["checks"] if c["status"] == "fail"}
+        assert {"CC011", "CC012", "CC017"} <= failed
+
+    def test_a_title_off_the_format_fails(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        rc, data = self._run_json(
+            mocker, capsys, monkeypatch, "Added a login form\n", "--pr-title"
+        )
+        assert rc == 1
+        failed = [c["rule_id"] for c in data["checks"] if c["status"] == "fail"]
+        assert "CC001" in failed
+
+    def test_ai_attribution_in_a_title_fails_without_recommit_advice(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        rc, data = self._run_json(
+            mocker,
+            capsys,
+            monkeypatch,
+            "feat: add a parser 🤖 Generated with [Claude Code](https://claude.com/claude-code)\n",
+            "--pr-title",
+            "--ai-attribution",
+            "forbid",
+        )
+        assert rc == 1
+        (failure,) = [c for c in data["checks"] if c["rule_id"] == "CC013"]
+        assert failure["status"] == "fail"
+        assert failure["suggest"] == (
+            "This project does not accept AI attribution. Remove the AI lines."
+        )
+        assert data["ai_tools"] == ["Claude Code"]
+
+    def test_an_empty_title_is_not_read_from_head(
+        self, mocker, capsys, monkeypatch, pinned_author
+    ):
+        head = mocker.patch(
+            "commit_check.engine.get_commit_info", return_value="feat: add x"
+        )
+        rc, data = self._run_json(mocker, capsys, monkeypatch, "", "--pr-title")
+        assert rc == 1
+        assert data["checks"][0]["value"] == ""
+        head.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "other", [["--rev", "HEAD"], ["--ai-attribution-only"], ["msg.txt"]]
+    )
+    def test_it_names_its_own_text(self, capsys, monkeypatch, other):
+        """Each of these names a different text to check, so they are refused."""
+        monkeypatch.setattr("sys.argv", [CMD, "--pr-title", *other])
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 2
+        assert "--pr-title checks a title piped on stdin" in capsys.readouterr().err
+
+
 class TestAiToolsInJson:
     """``ai_tools`` names the AI tools of a checked message, whatever the policy."""
 

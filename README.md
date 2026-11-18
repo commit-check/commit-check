@@ -84,6 +84,7 @@ The same `cchk.toml` drives all of them:
 | Committed files — size, forbidden paths, path length | `--files` | CC302–CC304 |
 | Tag names — SemVer or your own pattern | `--tag` | CC401 |
 | AI declaration — the pull request description ticks one of the template's boxes | `--ai-attribution-only` | CC501 |
+| Pull or merge request title — the message rules a one-line title can meet | `--pr-title` | CC001–CC010, CC013–CC016 |
 
 Every rule, with examples: [commit-check.com/rules](https://commit-check.com/rules/)
 
