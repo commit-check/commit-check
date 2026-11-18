@@ -397,6 +397,29 @@ class TestGitLab:
 
         assert ci.main(["--message=false", "--branch=false", "--pr-title=true"]) == 1
 
+    def test_modules_in_the_checkout_do_not_replace_the_installed_ones(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capfd: pytest.CaptureFixture[str],
+    ) -> None:
+        # The checkout is the request's own content. A commit_check package or
+        # a module named like one from the standard library in it must not be
+        # what runs the checks.
+        upstream = Upstream(tmp_path, BAD)
+        work = gitlab_checkout(upstream, tmp_path, monkeypatch)
+        fake = work / "commit_check"
+        fake.mkdir()
+        (fake / "__init__.py").write_text("")
+        (fake / "main.py").write_text('print("replaced")\n')
+        (work / "argparse.py").write_text('raise SystemExit("replaced")\n')
+
+        assert ci.main(["--branch=false"]) == 1
+
+        out = capfd.readouterr().out
+        assert "CC001" in out
+        assert "replaced" not in out
+
     def test_a_clone_that_ends_inside_the_merge_request_fails(
         self,
         tmp_path: Path,

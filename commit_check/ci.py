@@ -242,15 +242,15 @@ def prepare_target(request: Request, env: Mapping[str, str]) -> None:
     # Nothing is fetched on Bitbucket: the step already merged the destination
     # commit into the checkout, so the clone holds it.
     commit = resolve_commit(request.base)
-    if resolve_commit(ref) and (not commit or is_ancestor(commit, ref)):
-        # The clone's own ref is at the destination commit or past it. One
-        # that is behind it would let a branch pass that is not rebased.
-        return
     if not commit:
         raise Stop(
             f"the destination commit {request.base!r} is not in the clone, "
             f"so the rebase check has nothing to compare with.{shallow_hint(request)}"
         )
+    if resolve_commit(ref) and is_ancestor(commit, ref):
+        # The clone's own ref is at the destination commit or past it. One
+        # that is behind it would let a branch pass that is not rebased.
+        return
     update = git("update-ref", ref, commit)
     if update.returncode != 0:
         raise Stop(f"could not write {ref}: {update.stderr.strip()}")
@@ -332,7 +332,10 @@ class Job:
         """Run one ``commit-check`` call under a heading of its own."""
         print(heading, flush=True)
         result = subprocess.run(
-            [sys.executable, "-m", "commit_check.main", *args, "--no-banner"],
+            # -P: -m would otherwise put the working directory, which is the
+            # request's checkout, ahead of the installed package and the
+            # standard library on the module search path.
+            [sys.executable, "-P", "-m", "commit_check.main", *args, "--no-banner"],
             input=None if text is None else text.encode("utf-8"),
             check=False,
         )
