@@ -19,9 +19,11 @@ LABEL org.opencontainers.image.title="Commit Check" \
 RUN apk add --no-cache git \
     && git config --system --add safe.directory '*'
 
-# --no-index: install the wheel from the build context and nothing else.
+# Install the wheel from the build context and nothing else: no index, no
+# dependencies, no source distribution whose setup script would run.
 RUN --mount=type=bind,source=dist,target=/dist \
-    pip install --no-cache-dir --no-index --no-deps --root-user-action=ignore /dist/commit_check-*.whl
+    pip install --no-cache-dir --no-index --no-deps --only-binary :all: \
+        --root-user-action=ignore /dist/commit_check-*.whl
 
 COPY --chmod=755 docker/commit_check_ci.py /usr/local/bin/commit-check-ci
 COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/commit-check-entrypoint

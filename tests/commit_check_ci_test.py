@@ -23,7 +23,8 @@ import pytest
 
 SCRIPT = Path(__file__).resolve().parent.parent / "docker" / "commit_check_ci.py"
 _spec = importlib.util.spec_from_file_location("commit_check_ci", SCRIPT)
-assert _spec is not None and _spec.loader is not None
+assert _spec is not None
+assert _spec.loader is not None
 ci = importlib.util.module_from_spec(_spec)
 sys.modules["commit_check_ci"] = ci  # dataclasses look the module up by name
 _spec.loader.exec_module(ci)
@@ -226,7 +227,8 @@ class TestFindRequest:
                 "CI_COMMIT_SHA": "merge",
             }
         )
-        assert request is not None and request.head == "tip"
+        assert request is not None
+        assert request.head == "tip"
 
     def test_a_bitbucket_pull_request_ends_at_its_own_commit(self) -> None:
         request = ci.find_request(
@@ -361,9 +363,11 @@ class TestGitLab:
 
         out = capfd.readouterr().out
         assert code == 1
-        assert "Merge request title\n" in out and "CC001" in out
+        assert "Merge request title\n" in out
+        assert "CC001" in out
         assert "only the first 2700 characters" in out
-        assert "Merge request description\n" in out and "CC013" in out
+        assert "Merge request description\n" in out
+        assert "CC013" in out
         assert "2 of 2 failed." in out
 
     @pytest.mark.parametrize(

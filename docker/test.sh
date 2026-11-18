@@ -69,6 +69,7 @@ as_dev -C "$work/gitlab" remote add origin "$server"
 as_dev -C "$work/gitlab" fetch --quiet origin "+$head:refs/pipelines/1"
 as_dev -C "$work/gitlab" checkout --quiet --detach "$head"
 gitlab() {
+    script="$1"
     docker run --rm \
         --volume "$work:$work" \
         --workdir "$work/gitlab" \
@@ -79,7 +80,7 @@ gitlab() {
         --env "CI_COMMIT_SHA=$head" \
         --env CI_PROJECT_ID=1 \
         --env CI_MERGE_REQUEST_PROJECT_ID=1 \
-        "$image" sh -c "$1"
+        "$image" sh -c "$script"
 }
 expect 1 "1 of 3 failed." gitlab "commit-check-ci --message=true --branch=true"
 expect 0 "All 1 passed." gitlab "commit-check-ci --message=false --branch=true"

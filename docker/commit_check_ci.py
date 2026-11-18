@@ -338,41 +338,50 @@ class Job:
         return self.exit_code
 
     def run_for(self, request: Request) -> None:
-        noun = request.noun.capitalize()
         if self.settings["branch"]:
-            try:
-                prepare_target(request, self.env)
-            except Stop as error:
-                self.stop("Branch", error)
-            else:
-                self.check("Branch", ["--branch"])
+            self.check_branch(request)
         if self.settings["pr-title"]:
-            try:
-                title = self.request_text(request, "title")
-            except Stop as error:
-                self.stop(f"{noun} title", error)
-            else:
-                self.check(f"{noun} title", ["--pr-title"], text=title + "\n")
+            self.check_title(request)
         if self.settings["pr-body-ai-attribution"]:
-            try:
-                description = self.request_text(request, "description")
-            except Stop as error:
-                self.stop(f"{noun} description", error)
-            else:
-                if self.env.get("CI_MERGE_REQUEST_DESCRIPTION_IS_TRUNCATED") == "true":
-                    print(
-                        f"Note: GitLab passed only the first {GITLAB_DESCRIPTION_LIMIT} "
-                        "characters of the description, so only that part is checked.",
-                        flush=True,
-                    )
-                self.check(
-                    f"{noun} description",
-                    ["--ai-attribution-only"],
-                    text=description + "\n",
-                )
+            self.check_description(request)
         flags = [f"--{name}" for name in COMMIT_CHECKS if self.settings[name]]
-        if not flags:
+        if flags:
+            self.check_commits(request, flags)
+
+    def check_branch(self, request: Request) -> None:
+        try:
+            prepare_target(request, self.env)
+        except Stop as error:
+            self.stop("Branch", error)
             return
+        self.check("Branch", ["--branch"])
+
+    def check_title(self, request: Request) -> None:
+        heading = f"{request.noun.capitalize()} title"
+        try:
+            title = self.request_text(request, "title")
+        except Stop as error:
+            self.stop(heading, error)
+            return
+        self.check(heading, ["--pr-title"], text=title + "\n")
+
+    def check_description(self, request: Request) -> None:
+        heading = f"{request.noun.capitalize()} description"
+        try:
+            description = self.request_text(request, "description")
+        except Stop as error:
+            self.stop(heading, error)
+            return
+        if self.env.get("CI_MERGE_REQUEST_DESCRIPTION_IS_TRUNCATED") == "true":
+            print(
+                f"Note: GitLab passed only the first {GITLAB_DESCRIPTION_LIMIT} "
+                "characters of the description, so only that part is checked.",
+                flush=True,
+            )
+        self.check(heading, ["--ai-attribution-only"], text=description + "\n")
+
+    def check_commits(self, request: Request, flags: list[str]) -> None:
+        """Run the per-commit checks on every commit the request adds."""
         try:
             commits = request_commits(request)
         except Stop as error:

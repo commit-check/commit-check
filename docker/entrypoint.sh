@@ -14,6 +14,5 @@ fi
 
 case "$1" in
     -*) exec commit-check "$@" ;;
+    *) exec "$@" ;;
 esac
-
-exec "$@"
