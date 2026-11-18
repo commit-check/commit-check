@@ -149,6 +149,24 @@ def _ci_branch_name() -> str:
     return ""
 
 
+def ci_source_commit() -> str:
+    """The pull request's own last commit, when a CI system builds a merge.
+
+    Bitbucket Pipelines merges the destination branch into the local source
+    branch before a pull request step runs, and a GitLab merged results
+    pipeline checks out a merge of the two. Either way the checkout already
+    contains the target, so asking whether the branch is rebased onto it
+    always says yes. The commit each system names instead is the branch tip
+    the author pushed: ``BITBUCKET_COMMIT`` in a pull request step
+    (``BITBUCKET_PR_ID`` set), ``CI_MERGE_REQUEST_SOURCE_BRANCH_SHA`` in a
+    merged results pipeline (empty in other merge request pipelines, which
+    check out the branch tip itself). ``""`` when neither applies.
+    """
+    if os.getenv("BITBUCKET_PR_ID"):
+        return (os.getenv("BITBUCKET_COMMIT") or "").strip()
+    return (os.getenv("CI_MERGE_REQUEST_SOURCE_BRANCH_SHA") or "").strip()
+
+
 def get_branch_name() -> str:
     """Identify current branch name.
     .. note::

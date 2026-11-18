@@ -70,6 +70,7 @@ The same `cchk.toml` drives all of them:
 |---|---|
 | GitHub, no workflow | [Install the GitHub App](https://github.com/apps/commit-check) — one check run per commit |
 | GitHub Actions | `uses: commit-check/commit-check-action@v2` — see [commit-check-action](https://github.com/commit-check/commit-check-action) |
+| GitLab CI, Bitbucket Pipelines, Azure Pipelines | A job in the pipeline — see the [CI guide](https://commit-check.com/guides/other-ci/) |
 | AI agents | The [agent skill](#agent-skill), `--format json`, the [Python API](#ai-native-usage), or the [MCP server](https://github.com/commit-check/commit-check-mcp) |
 
 ## What it checks
@@ -84,6 +85,7 @@ The same `cchk.toml` drives all of them:
 | Committed files — size, forbidden paths, path length, paths AI commits may not change | `--files` | CC302–CC305 |
 | Tag names — SemVer or your own pattern | `--tag` | CC401 |
 | AI declaration — the pull request description ticks one of the template's boxes | `--ai-attribution-only` | CC501 |
+| Pull or merge request title — the message rules a one-line title can meet | `--pr-title` | CC001–CC010, CC013–CC016 |
 
 Every rule, with examples: [commit-check.com/rules](https://commit-check.com/rules/)
 

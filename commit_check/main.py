@@ -25,6 +25,7 @@ from commit_check.rules_catalog import (
     BRANCH_CHECKS,
     FILES_CHECKS,
     MESSAGE_CHECKS,
+    PR_TITLE_CHECKS,
 )
 from commit_check.util import (
     get_remote_branch_sha,
@@ -225,6 +226,14 @@ def _get_parser() -> argparse.ArgumentParser:
         "for text that is not a commit message, such as a pull request "
         "description, and its AI declaration when [pull_request] "
         "ai_declaration_checkboxes is set (CC501); implies --message",
+    )
+    check_group.add_argument(
+        "--pr-title",
+        action="store_true",
+        help="check a pull or merge request title piped on stdin against the "
+        "message rules a one-line title can meet: every --message rule but a "
+        "body (CC011), a sign-off (CC012) and an AI author (CC017); implies "
+        "--message",
     )
     # The name it shipped with in 2.20.1, kept so existing scripts still work.
     check_group.add_argument(
@@ -660,10 +669,10 @@ def _resolve_commit_message_source(
         return None, args.commit_msg_file
 
     stdin_content = stdin_reader.read_piped_input()
-    if args.ai_attribution_only:
+    if args.ai_attribution_only or args.pr_title:
         # The text under test is what was piped, a pull request description
-        # say. None of it, an empty description, is empty text: falling back
-        # to HEAD would judge the last commit's message in its place.
+        # or title say. None of it is empty text: falling back to HEAD would
+        # judge the last commit's message in its place.
         return stdin_content or "", None
     return stdin_content or None, None
 
@@ -740,9 +749,12 @@ def _get_requested_checks(args: argparse.Namespace) -> set[str]:
     requested_checks: set[str] = set()
 
     if args.message:
-        requested_checks |= (
-            AI_TEXT_CHECKS if args.ai_attribution_only else MESSAGE_CHECKS
-        )
+        if args.ai_attribution_only:
+            requested_checks |= AI_TEXT_CHECKS
+        elif args.pr_title:
+            requested_checks |= PR_TITLE_CHECKS
+        else:
+            requested_checks |= MESSAGE_CHECKS
     if args.branch:
         requested_checks |= BRANCH_CHECKS
     if args.tag:
@@ -796,7 +808,7 @@ def _run_json_output(
         "checks": [o.to_dict() for o in outcomes],
     }
     if args.message:
-        report["ai_tools"] = ai_tools_in(context, author=not args.ai_attribution_only)
+        report["ai_tools"] = ai_tools_in(context, author=not context.not_a_commit)
     print(json.dumps(report, indent=2))
     # Only a failure is an error. A skipped run validated nothing, but that
     # is not a policy violation, so it must not turn into a non-zero exit.
@@ -812,8 +824,19 @@ def main() -> int:
     stdin_reader = StdinReader()
 
     try:
+        if args.pr_title and (
+            args.ai_attribution_only or args.commit_msg_file or args.rev is not None
+        ):
+            # Each of these names its own text to check; a title is only
+            # ever piped in, and stdin cannot be two texts at once.
+            parser.error(
+                "--pr-title checks a title piped on stdin; it cannot be "
+                "combined with --ai-attribution-only, --rev or a commit "
+                "message file"
+            )
+
         # Handle positional commit_msg_file argument for pre-commit compatibility
-        if args.commit_msg_file or args.ai_attribution_only:
+        if args.commit_msg_file or args.ai_attribution_only or args.pr_title:
             args.message = True
 
         if args.rev is not None:
@@ -924,7 +947,7 @@ def main() -> int:
             and (stdin_content is None or stdin_is_message),
             stdin_is_message=stdin_is_message,
             push_from_pre_commit=push_from_pre_commit,
-            not_a_commit=args.ai_attribution_only,
+            not_a_commit=args.ai_attribution_only or args.pr_title,
         )
 
         # Run validation – choose output mode based on --format

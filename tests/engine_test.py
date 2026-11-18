@@ -125,6 +125,87 @@ def _validate_merge_base(clone, branch="feat/work", target="main"):
         os.chdir(cwd)
 
 
+def _bitbucket_pull_request_clone(tmp_path, rebased):
+    """The checkout of a Bitbucket Pipelines pull request step.
+
+    Bitbucket clones the source branch, resets it to the pushed commit and
+    then runs ``git merge <destination commit> --no-edit`` on that local
+    branch, so the branch name resolves to a commit that contains the target
+    whether or not the author rebased. Returns the clone and the pushed tip.
+    """
+    clone, git = _pull_request_shaped_clone(tmp_path)
+    origin = tmp_path / "origin"
+    git("commit", "-q", "--allow-empty", "-m", "feat: main moved on", cwd=origin)
+    git("fetch", "-q", "origin", cwd=clone)
+    if rebased:
+        git("rebase", "-q", "origin/main", cwd=clone)
+    tip = git("rev-parse", "HEAD", cwd=clone).stdout.strip()
+    git("merge", "-q", "--no-edit", "origin/main", cwd=clone)
+    # Bitbucket clones only the source branch: no local main.
+    git("branch", "-q", "-D", "main", cwd=clone)
+    return clone, tip
+
+
+def _validate_merge_base_with_env(clone, env, target="main"):
+    """Run MergeBaseValidator inside ``clone`` with only ``env`` as CI variables."""
+    cwd = os.getcwd()
+    ci_names = (
+        "GITHUB_HEAD_REF",
+        "GITHUB_REF_NAME",
+        "BITBUCKET_PR_ID",
+        "BITBUCKET_COMMIT",
+        "CI_MERGE_REQUEST_SOURCE_BRANCH_SHA",
+    )
+    clean = {name: "" for name in ci_names}
+    try:
+        os.chdir(clone)
+        with patch.dict(os.environ, {**clean, **env}):
+            validator = MergeBaseValidator(
+                ValidationRule(check="merge_base", regex=target)
+            )
+            return validator.validate(ValidationContext(no_banner=True))
+    finally:
+        os.chdir(cwd)
+
+
+class TestMergeBaseOnCiMergeBuilds:
+    """CC202 judges the pushed commit when a CI system builds a merge."""
+
+    def test_bitbucket_pull_request_behind_the_target_fails(self, tmp_path):
+        """Before, the local branch held the merge and every branch passed."""
+        clone, tip = _bitbucket_pull_request_clone(tmp_path, rebased=False)
+        env = {"BITBUCKET_PR_ID": "7", "BITBUCKET_COMMIT": tip}
+        assert _validate_merge_base_with_env(clone, env) == ValidationResult.FAIL
+
+    def test_bitbucket_pull_request_rebased_passes(self, tmp_path):
+        clone, tip = _bitbucket_pull_request_clone(tmp_path, rebased=True)
+        env = {"BITBUCKET_PR_ID": "7", "BITBUCKET_COMMIT": tip}
+        assert _validate_merge_base_with_env(clone, env) == ValidationResult.PASS
+
+    def test_bitbucket_branch_step_judges_the_branch(self, tmp_path):
+        """With no pull request, BITBUCKET_COMMIT is HEAD and is not consulted."""
+        clone, tip = _bitbucket_pull_request_clone(tmp_path, rebased=False)
+        env = {"BITBUCKET_COMMIT": tip}
+        # The local branch holds the merge, so without a pull request id the
+        # branch itself is what is judged, as before.
+        assert _validate_merge_base_with_env(clone, env) == ValidationResult.PASS
+
+    def test_gitlab_merged_results_behind_the_target_fails(self, tmp_path):
+        clone, git = _diverged_merge_ref_clone(tmp_path)
+        tip = git("rev-parse", "HEAD^2", cwd=clone).stdout.strip()
+        env = {
+            "GITHUB_HEAD_REF": "feat/work",
+            "CI_MERGE_REQUEST_SOURCE_BRANCH_SHA": tip,
+        }
+        assert _validate_merge_base_with_env(clone, env) == ValidationResult.FAIL
+
+    def test_an_unknown_source_commit_falls_back_to_the_branch(self, tmp_path):
+        """A commit the clone does not have is ignored, not an error."""
+        clone, _ = _bitbucket_pull_request_clone(tmp_path, rebased=False)
+        env = {"BITBUCKET_PR_ID": "7", "BITBUCKET_COMMIT": "0" * 40}
+        assert _validate_merge_base_with_env(clone, env) == ValidationResult.PASS
+
+
 class TestValidationResult:
     @pytest.mark.benchmark
     def test_validation_result_enum(self):
