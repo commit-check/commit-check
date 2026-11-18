@@ -36,6 +36,7 @@ from commit_check.imperatives import IMPERATIVES, NON_IMPERATIVE_LOOKALIKES
 from commit_check.rule_builder import ValidationRule
 from commit_check.util import (
     _print_failure,
+    ci_source_commit,
     fetch_remote_ref,
     fetch_upstream_ref,
     format_size,
@@ -1132,7 +1133,15 @@ class MergeBaseValidator(BaseValidator):
             self._skip_reason = f"rebase target '{name}' not found"
             return ValidationResult.SKIP
 
-        result = git_merge_base(target_branch, current_branch)
+        source = ci_source_commit()
+        if source and git_rev_parse_verify(source):
+            # A CI build of a merge (Bitbucket's pull request step, GitLab's
+            # merged results pipeline): HEAD, and on Bitbucket the local
+            # branch too, already contain the target, so only the commit the
+            # author pushed says whether the branch was rebased.
+            result = git_merge_base(target_branch, source)
+        else:
+            result = git_merge_base(target_branch, current_branch)
         if result == 128:
             # 128 is git failing to resolve a name, not an answer about
             # ancestry. A CI checkout of a pull request leaves a detached HEAD
