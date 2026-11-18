@@ -24,6 +24,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 from .main import _VersionAction
 
@@ -187,6 +188,19 @@ def subject_of(rev: str) -> str:
     return "".join(char if char.isprintable() else "?" for char in subject)
 
 
+def is_ancestor(commit: str, of: str) -> bool:
+    return git("merge-base", "--is-ancestor", commit, of).returncode == 0
+
+
+def shallow_ends() -> set[str]:
+    """The commits a shallow clone stops at: their parents were not fetched."""
+    path = git("rev-parse", "--git-path", "shallow").stdout.strip()
+    try:
+        return set(Path(path).read_text(encoding="ascii").split())
+    except OSError:
+        return set()
+
+
 def shallow_hint(request: Request) -> str:
     if git("rev-parse", "--is-shallow-repository").stdout.strip() != "true":
         return ""
@@ -227,9 +241,11 @@ def prepare_target(request: Request, env: Mapping[str, str]) -> None:
         return
     # Nothing is fetched on Bitbucket: the step already merged the destination
     # commit into the checkout, so the clone holds it.
-    if resolve_commit(ref):
-        return
     commit = resolve_commit(request.base)
+    if resolve_commit(ref) and (not commit or is_ancestor(commit, ref)):
+        # The clone's own ref is at the destination commit or past it. One
+        # that is behind it would let a branch pass that is not rebased.
+        return
     if not commit:
         raise Stop(
             f"the destination commit {request.base!r} is not in the clone, "
@@ -250,7 +266,15 @@ def request_commits(request: Request) -> list[str]:
             f"could not list the {request.noun}'s commits "
             f"({request.base or '?'}..{request.head or '?'}).{shallow_hint(request)}"
         )
-    return result.stdout.split()
+    commits = result.stdout.split()
+    # git lists a range that runs into the end of a shallow clone without an
+    # error: the commits beyond it are simply absent, and would go unchecked.
+    if shallow_ends().intersection(commits):
+        raise Stop(
+            f"the clone ends inside the {request.noun}, so its older commits "
+            f"cannot be read.{shallow_hint(request)}"
+        )
+    return commits
 
 
 def bitbucket_pull_request(env: Mapping[str, str]) -> dict[str, object]:

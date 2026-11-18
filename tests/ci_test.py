@@ -397,6 +397,43 @@ class TestGitLab:
 
         assert ci.main(["--message=false", "--branch=false", "--pr-title=true"]) == 1
 
+    def test_a_clone_that_ends_inside_the_merge_request_fails(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capfd: pytest.CaptureFixture[str],
+    ) -> None:
+        # The first commit has the bad message, and a clone of depth 1 does
+        # not hold it. Fetching the target branch brings the base commit in,
+        # so git lists the range without an error: one commit instead of two.
+        upstream = Upstream(tmp_path, BAD)
+        work = tmp_path / "build"
+        git(
+            "clone",
+            "--quiet",
+            "--depth=1",
+            "--branch=feature/login",
+            upstream.path.as_uri(),
+            str(work),
+            cwd=tmp_path,
+        )
+        monkeypatch.chdir(work)
+        for name, value in {
+            "CI_MERGE_REQUEST_IID": "7",
+            "CI_MERGE_REQUEST_TARGET_BRANCH_NAME": "main",
+            "CI_MERGE_REQUEST_SOURCE_BRANCH_NAME": "feature/login",
+            "CI_MERGE_REQUEST_DIFF_BASE_SHA": upstream.base,
+            "CI_COMMIT_SHA": upstream.head,
+        }.items():
+            monkeypatch.setenv(name, value)
+
+        assert ci.main([]) == 1
+
+        out = capfd.readouterr().out
+        assert "the clone ends inside the merge request" in out
+        assert 'set GIT_DEPTH to "0"' in out
+        assert "All" not in out
+
     def test_a_range_that_cannot_be_read_fails_and_names_the_shallow_clone(
         self,
         tmp_path: Path,
@@ -496,6 +533,24 @@ class TestBitbucket:
 
         assert ci.main(["--message=false"]) == 0
         assert git("rev-parse", "origin/main", cwd=work) == upstream.commits[0]
+
+    def test_a_destination_ref_behind_the_destination_commit_is_moved_to_it(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capfd: pytest.CaptureFixture[str],
+    ) -> None:
+        upstream = Upstream(tmp_path, GOOD)
+        behind = upstream.target
+        upstream.advance_target()
+        work = bitbucket_checkout(upstream, tmp_path, monkeypatch)
+        git("update-ref", "refs/remotes/origin/main", behind, cwd=work)
+        require_rebase(work)
+
+        assert ci.main(["--message=false"]) == 1
+
+        assert "CC202" in capfd.readouterr().out
+        assert git("rev-parse", "origin/main", cwd=work) == upstream.target
 
     def test_a_destination_ref_that_cannot_be_written_fails_the_branch_check(
         self,
@@ -628,6 +683,7 @@ def api(monkeypatch: pytest.MonkeyPatch) -> Iterator[type[Api]]:
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     Api.seen = []
+    Api.reply = (200, {}, b"{}")
     monkeypatch.setattr(ci, "BITBUCKET_API", f"http://127.0.0.1:{server.server_port}")
     yield Api
     server.shutdown()
