@@ -2077,7 +2077,14 @@ class ValidationEngine:
             and not context.compact
             and not print_error_header.has_been_called
         ):
-            print_error_header(rejection_headline(failed), failed=len(failed))
+            # A pull request title or description is no commit, so the
+            # header must not send the reader to look for one.
+            headline = (
+                "Rejected by Commit Check"
+                if context.not_a_commit
+                else rejection_headline(failed)
+            )
+            print_error_header(headline, failed=len(failed))
         for rule_dict, value in blocks:
             _print_failure(
                 rule_dict,
