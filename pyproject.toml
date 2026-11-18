@@ -33,6 +33,8 @@ dynamic = ["version"]
 [project.scripts]
 commit-check = "commit_check.main:main"
 cchk = "commit_check.main:main"  # short alias without clobbering system cc
+# Checks a whole merge or pull request on GitLab CI and Bitbucket Pipelines.
+commit-check-ci = "commit_check.ci:main"
 
 [project.urls]
 documentation = "https://commit-check.com/"
