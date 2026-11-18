@@ -29,3 +29,16 @@ updates:
       pip:
         patterns:
           - "*"
+
+  # The base image of the Dockerfile, pinned by digest.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      docker:
+        patterns:
+          - "*"

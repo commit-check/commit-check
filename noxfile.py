@@ -46,6 +46,8 @@ def commit_check(session):
 @nox.session()
 def coverage(session):
     session.install(".[test]")
-    session.run("coverage", "run", "--source", "commit_check", "-m", "pytest")
+    # docker/ holds the container image's entry script, which the image ships
+    # and the wheel does not.
+    session.run("coverage", "run", "--source", "commit_check,docker", "-m", "pytest")
     session.run("coverage", "report")
     session.run("coverage", "xml")

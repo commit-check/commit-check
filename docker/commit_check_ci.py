@@ -1,0 +1,411 @@
+#!/usr/bin/env python3
+"""Check the merge or pull request a CI job runs for.
+
+The entry point of the Commit Check container image, which the GitLab CI/CD
+component and the Bitbucket pipe start. It is not part of the ``commit-check``
+package: it runs the installed ``commit-check`` command on the branch, on the
+request's title and description, and once for every commit the request adds.
+
+Each check is switched on or off by an option (``--message=false``) or, when
+the option is absent, by an environment variable of the same name
+(``MESSAGE=false``). A pipe has only variables; a GitLab job passes options,
+because a project variable named ``BRANCH`` would otherwise win.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import urllib.error
+import urllib.request
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+
+# Option name -> on by default. The names are the Action's input names.
+CHECKS: dict[str, bool] = {
+    "message": True,
+    "branch": True,
+    "author-name": False,
+    "author-email": False,
+    "files": False,
+    "pr-title": False,
+    "pr-body-ai-attribution": False,
+}
+
+# The checks that run once for every commit, with the commit-check flag each one is.
+COMMIT_CHECKS = ("message", "author-name", "author-email", "files")
+
+BITBUCKET_API = "https://api.bitbucket.org/2.0"
+
+# GitLab passes at most this much of a description to a job.
+GITLAB_DESCRIPTION_LIMIT = 2700
+
+# What marks a GitLab merge request as a draft. A draft cannot be merged, so
+# the marker is never part of the title that lands.
+GITLAB_DRAFT_MARKER = re.compile(
+    r"\A\s*(?:(?:\[draft\]|\(draft\)|draft:)\s*)+", re.IGNORECASE
+)
+
+
+class Stop(Exception):
+    """The job cannot do what it was asked; the message says why."""
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Refuse every redirect: one would carry the access token elsewhere."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[override]
+        raise urllib.error.URLError(f"redirect to {newurl} refused")
+
+
+@dataclass(frozen=True)
+class Request:
+    """The merge or pull request this job runs for."""
+
+    forge: str
+    noun: str
+    target: str
+    """The branch it merges into."""
+    base: str
+    """The commit its own commits start after."""
+    head: str
+    """Its own last commit, which is not always the commit checked out."""
+
+
+def env_name(option: str) -> str:
+    """The environment variable that sets ``option``."""
+    return option.replace("-", "_").upper()
+
+
+def parse_bool(name: str, text: str) -> bool:
+    value = text.strip().lower()
+    if value == "true":
+        return True
+    if value == "false":
+        return False
+    raise Stop(f"{name} must be true or false, got {text!r}")
+
+
+def read_settings(argv: Sequence[str], env: Mapping[str, str]) -> dict[str, bool]:
+    """Which checks to run: the option, else the variable, else the default."""
+    parser = argparse.ArgumentParser(
+        prog="commit-check-ci",
+        description="Check the merge or pull request this CI job runs for.",
+        allow_abbrev=False,
+    )
+    for option, default in CHECKS.items():
+        parser.add_argument(
+            f"--{option}",
+            metavar="BOOL",
+            help=f"true or false (default: ${env_name(option)}, "
+            f"else {str(default).lower()})",
+        )
+    args = vars(parser.parse_args(argv))
+    settings = {}
+    for option, default in CHECKS.items():
+        given = args[option.replace("-", "_")]
+        if given is not None:
+            settings[option] = parse_bool(f"--{option}", given)
+        elif env.get(env_name(option), "").strip():
+            settings[option] = parse_bool(env_name(option), env[env_name(option)])
+        else:
+            settings[option] = default
+    return settings
+
+
+def find_request(env: Mapping[str, str]) -> Request | None:
+    """The merge or pull request named by the CI system's variables."""
+    if env.get("CI_MERGE_REQUEST_IID"):
+        return Request(
+            forge="GitLab",
+            noun="merge request",
+            target=env.get("CI_MERGE_REQUEST_TARGET_BRANCH_NAME", ""),
+            base=env.get("CI_MERGE_REQUEST_DIFF_BASE_SHA", ""),
+            # A merged results pipeline checks out a merge commit GitLab made
+            # and names the request's own last commit here. In any other merge
+            # request pipeline this is empty and the checkout is that commit.
+            head=env.get("CI_MERGE_REQUEST_SOURCE_BRANCH_SHA")
+            or env.get("CI_COMMIT_SHA", ""),
+        )
+    if env.get("BITBUCKET_PR_ID"):
+        return Request(
+            forge="Bitbucket",
+            noun="pull request",
+            target=env.get("BITBUCKET_PR_DESTINATION_BRANCH", ""),
+            base=env.get("BITBUCKET_PR_DESTINATION_COMMIT", ""),
+            # Bitbucket merges the destination into the checkout before the
+            # step runs; this is the pull request's own last commit.
+            head=env.get("BITBUCKET_COMMIT", ""),
+        )
+    return None
+
+
+def git(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+
+
+def resolve_commit(rev: str) -> str:
+    """The full id of the commit ``rev`` names, or ``""`` when the clone lacks it."""
+    if not rev:
+        return ""
+    result = git(
+        "rev-parse", "--verify", "--quiet", "--end-of-options", f"{rev}^{{commit}}"
+    )
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def subject_of(rev: str) -> str:
+    """The commit's subject line, safe to print: it is text anyone can write."""
+    subject = git("log", "-1", "--format=%s", "--end-of-options", rev).stdout.strip()
+    return "".join(char if char.isprintable() else "?" for char in subject)
+
+
+def shallow_hint(request: Request) -> str:
+    if git("rev-parse", "--is-shallow-repository").stdout.strip() != "true":
+        return ""
+    if request.forge == "GitLab":
+        return ' The clone is shallow: set GIT_DEPTH to "0" for this job.'
+    return " The clone is shallow: set `clone: depth: full` on this step."
+
+
+def prepare_target(request: Request, env: Mapping[str, str]) -> None:
+    """Make ``origin/<target>`` exist, which the rebase check (CC202) reads.
+
+    Neither system fetches the target branch for a merge or pull request.
+    Without it the rule reports itself as skipped and the job would pass with
+    a branch that was never compared.
+    """
+    if not request.target:
+        raise Stop(f"the {request.noun}'s target branch is not set in the environment")
+    ref = f"refs/remotes/origin/{request.target}"
+    if request.forge == "GitLab":
+        # A pipeline that runs in a fork has the fork as origin; the target
+        # branch lives in the project the merge request was opened against.
+        source = "origin"
+        target_project = env.get("CI_MERGE_REQUEST_PROJECT_ID")
+        if target_project and target_project != env.get("CI_PROJECT_ID"):
+            source = env.get("CI_MERGE_REQUEST_PROJECT_URL", "") + ".git"
+        fetch = git(
+            "fetch",
+            "--quiet",
+            "--no-tags",
+            source,
+            f"+refs/heads/{request.target}:{ref}",
+        )
+        if fetch.returncode != 0:
+            raise Stop(
+                f"could not fetch the target branch {request.target!r} from {source}, "
+                f"which the rebase check needs: {fetch.stderr.strip()}"
+            )
+        return
+    # A pipe runs in a container of its own that cannot reach the repository's
+    # remote, and has no need to: the step already merged the destination
+    # commit into the checkout, so the clone holds it.
+    if resolve_commit(ref):
+        return
+    commit = resolve_commit(request.base)
+    if not commit:
+        raise Stop(
+            f"the destination commit {request.base!r} is not in the clone, "
+            f"so the rebase check has nothing to compare with.{shallow_hint(request)}"
+        )
+    update = git("update-ref", ref, commit)
+    if update.returncode != 0:
+        raise Stop(f"could not write {ref}: {update.stderr.strip()}")
+
+
+def request_commits(request: Request) -> list[str]:
+    """The commits the request adds, oldest first."""
+    result = git(
+        "rev-list", "--reverse", "--end-of-options", f"{request.base}..{request.head}"
+    )
+    if not request.base or not request.head or result.returncode != 0:
+        raise Stop(
+            f"could not list the {request.noun}'s commits "
+            f"({request.base or '?'}..{request.head or '?'}).{shallow_hint(request)}"
+        )
+    return result.stdout.split()
+
+
+def bitbucket_pull_request(env: Mapping[str, str]) -> dict[str, object]:
+    """Read the pull request from the Bitbucket API, which is where its text is."""
+    token = env.get("BITBUCKET_ACCESS_TOKEN", "").strip()
+    if not token:
+        raise Stop(
+            "Bitbucket does not pass a pull request's title or description to "
+            "the step. Set BITBUCKET_ACCESS_TOKEN to an access token with the "
+            "Pull requests: Read scope so they can be read from the API."
+        )
+    repository = env.get("BITBUCKET_REPO_FULL_NAME") or "/".join(
+        (
+            env.get("BITBUCKET_WORKSPACE") or env.get("BITBUCKET_REPO_OWNER", ""),
+            env.get("BITBUCKET_REPO_SLUG", ""),
+        )
+    )
+    number = env.get("BITBUCKET_PR_ID", "")
+    if (
+        not number.isdigit()
+        or repository.count("/") != 1
+        or "" in repository.split("/")
+    ):
+        raise Stop("the pull request's repository or id is not set in the environment")
+    api_request = urllib.request.Request(
+        f"{BITBUCKET_API}/repositories/{repository}/pullrequests/{number}",
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+    )
+    try:
+        with urllib.request.build_opener(NoRedirect()).open(
+            api_request, timeout=30
+        ) as response:
+            pull_request = json.load(response)
+    except (urllib.error.URLError, TimeoutError, ValueError) as error:
+        raise Stop(
+            f"could not read the pull request from the Bitbucket API: {error}"
+        ) from None
+    if not isinstance(pull_request, dict):
+        raise Stop("the Bitbucket API did not return a pull request")
+    return pull_request
+
+
+class Job:
+    """Runs the checks and remembers the worst result."""
+
+    def __init__(self, settings: dict[str, bool], env: Mapping[str, str]) -> None:
+        self.settings = settings
+        self.env = env
+        self.ran = 0
+        self.failed = 0
+        self.exit_code = 0
+        self._pull_request: dict[str, object] | None = None
+
+    def check(self, heading: str, args: list[str], text: str | None = None) -> None:
+        """Run one ``commit-check`` call under a heading of its own."""
+        print(heading, flush=True)
+        result = subprocess.run(
+            ["commit-check", *args, "--no-banner"],
+            input=None if text is None else text.encode("utf-8"),
+            check=False,
+        )
+        self.ran += 1
+        if result.returncode == 0:
+            print("  passed", flush=True)
+            return
+        self.failed += 1
+        # A commit-check killed by a signal reports a negative code; it failed too.
+        self.exit_code = max(self.exit_code, result.returncode, 1)
+
+    def stop(self, heading: str, error: Stop) -> None:
+        """Count a check that could not run as failed, and say why."""
+        print(heading, flush=True)
+        print(f"  Error: {error}", flush=True)
+        self.ran += 1
+        self.failed += 1
+        self.exit_code = max(self.exit_code, 1)
+
+    def request_text(self, request: Request, field: str) -> str:
+        """The request's ``title`` or ``description``."""
+        if request.forge == "GitLab":
+            text = self.env.get(f"CI_MERGE_REQUEST_{field.upper()}", "")
+            return GITLAB_DRAFT_MARKER.sub("", text) if field == "title" else text
+        if self._pull_request is None:
+            self._pull_request = bitbucket_pull_request(self.env)
+        value = self._pull_request.get(field)
+        return value if isinstance(value, str) else ""
+
+    def run(self) -> int:
+        request = find_request(self.env)
+        if request is None:
+            self.run_without_request()
+        else:
+            self.run_for(request)
+        if self.ran == 0:
+            print("Every check is switched off; nothing was checked.", flush=True)
+        elif self.failed:
+            print(f"\n{self.failed} of {self.ran} failed.", flush=True)
+        else:
+            print(f"\nAll {self.ran} passed.", flush=True)
+        return self.exit_code
+
+    def run_for(self, request: Request) -> None:
+        noun = request.noun.capitalize()
+        if self.settings["branch"]:
+            try:
+                prepare_target(request, self.env)
+            except Stop as error:
+                self.stop("Branch", error)
+            else:
+                self.check("Branch", ["--branch"])
+        if self.settings["pr-title"]:
+            try:
+                title = self.request_text(request, "title")
+            except Stop as error:
+                self.stop(f"{noun} title", error)
+            else:
+                self.check(f"{noun} title", ["--pr-title"], text=title + "\n")
+        if self.settings["pr-body-ai-attribution"]:
+            try:
+                description = self.request_text(request, "description")
+            except Stop as error:
+                self.stop(f"{noun} description", error)
+            else:
+                if self.env.get("CI_MERGE_REQUEST_DESCRIPTION_IS_TRUNCATED") == "true":
+                    print(
+                        f"Note: GitLab passed only the first {GITLAB_DESCRIPTION_LIMIT} "
+                        "characters of the description, so only that part is checked.",
+                        flush=True,
+                    )
+                self.check(
+                    f"{noun} description",
+                    ["--ai-attribution-only"],
+                    text=description + "\n",
+                )
+        flags = [f"--{name}" for name in COMMIT_CHECKS if self.settings[name]]
+        if not flags:
+            return
+        try:
+            commits = request_commits(request)
+        except Stop as error:
+            self.stop("Commits", error)
+            return
+        if not commits:
+            print(f"The {request.noun} adds no commits.", flush=True)
+        for sha in commits:
+            self.check(f"Commit {sha[:8]} {subject_of(sha)}", [*flags, "--rev", sha])
+
+    def run_without_request(self) -> None:
+        """Outside a merge or pull request there is one commit to check: HEAD."""
+        print(
+            "Not a merge or pull request pipeline: checking the last commit only.",
+            flush=True,
+        )
+        if self.settings["branch"]:
+            self.check("Branch", ["--branch"])
+        flags = [f"--{name}" for name in COMMIT_CHECKS if self.settings[name]]
+        if flags:
+            self.check(
+                f"Commit {resolve_commit('HEAD')[:8]} {subject_of('HEAD')}", flags
+            )
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    try:
+        settings = read_settings(sys.argv[1:] if argv is None else argv, os.environ)
+    except Stop as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 2
+    return Job(settings, os.environ).run()
+
+
+if __name__ == "__main__":  # pragma: no cover
+    sys.exit(main())

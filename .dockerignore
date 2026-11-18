@@ -1,0 +1,5 @@
+# The image is built from the wheel and the two files under docker/.
+*
+!dist/*.whl
+!docker/commit_check_ci.py
+!docker/entrypoint.sh
