@@ -133,8 +133,9 @@ class ValidationContext:
     # commits the remote lacks, so a ref pushed alongside it -- a tag that
     # ``git push --follow-tags`` sends after a branch -- is not in the line.
     push_from_pre_commit: bool = False
-    # Set by --ai-attribution-only: the text is not a commit message (a pull request
-    # description, say), so advice must not tell the reader to re-commit.
+    # Set by --ai-attribution-only and --pr-title: the text is not a commit
+    # message (a pull request description or title), so advice must not tell
+    # the reader to re-commit.
     not_a_commit: bool = False
 
     @property

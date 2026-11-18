@@ -355,5 +355,13 @@ MESSAGE_CHECKS: frozenset[str] = frozenset(
 AI_TEXT_CHECKS: frozenset[str] = frozenset(
     {"ai_attribution", "ai_disclosure", "ai_co_author", "ai_signoff"}
 ) | frozenset(entry.check for entry in PULL_REQUEST_RULES)
+#: What ``--pr-title`` runs: the ``--message`` rules a one-line pull or merge
+#: request title can meet. A title has no body (CC011), no trailer to carry a
+#: sign-off (CC012) and no author of its own (CC017); those stay with commits.
+PR_TITLE_CHECKS: frozenset[str] = MESSAGE_CHECKS - {
+    "require_body",
+    "require_signed_off_by",
+    "ai_author",
+}
 BRANCH_CHECKS: frozenset[str] = frozenset({"branch", "merge_base"})
 FILES_CHECKS: frozenset[str] = frozenset(entry.check for entry in FILES_RULES)
