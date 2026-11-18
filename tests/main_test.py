@@ -2524,6 +2524,29 @@ class TestPrTitle:
         failed = [c["rule_id"] for c in data["checks"] if c["status"] == "fail"]
         assert "CC001" in failed
 
+    @pytest.mark.parametrize(
+        ("flag", "text"),
+        [
+            ("--pr-title", "Added a login form\n"),
+            (
+                "--ai-attribution-only",
+                "🤖 Generated with [Claude Code](https://claude.com/claude-code)\n",
+            ),
+        ],
+    )
+    def test_the_header_does_not_call_the_text_a_commit(
+        self, mocker, capsys, monkeypatch, pinned_author, flag, text
+    ):
+        """A pull request title or description is no commit to go looking for."""
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=text)
+        argv = [CMD, flag, "--ai-attribution", "forbid"]
+        monkeypatch.setattr("sys.argv", argv)
+        assert main() == 1
+        out = capsys.readouterr().out
+        assert out.startswith("✖ Rejected by Commit Check · ")
+        assert "Commit rejected" not in out
+
     def test_ai_attribution_in_a_title_fails_without_recommit_advice(
         self, mocker, capsys, monkeypatch, pinned_author
     ):
