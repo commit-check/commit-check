@@ -14,7 +14,7 @@ from commit_check.util import print_quoted_message
 AI_MESSAGE = "Added the login page\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n"
 
 
-def run(config: dict, message: str, **context) -> str:
+def run(config: dict, message: str, **context) -> None:
     # The message rules only: the branch, tag and author rules read git.
     rules = [
         rule
