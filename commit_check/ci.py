@@ -26,6 +26,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from .config_merger import ConfigMerger
 from .main import _VersionAction
 
 # Option name -> on by default. The names are the Action's input names.
@@ -207,6 +208,20 @@ def shallow_hint(request: Request) -> str:
     if request.forge == "GitLab":
         return ' The clone is shallow: set GIT_DEPTH to "0" for this job.'
     return " The clone is shallow: set `clone: depth: full` on this step."
+
+
+def rebase_check_is_on() -> bool:
+    """Whether ``require_rebase_target`` is set, by the file or the environment.
+
+    It is the one rule that reads the target branch.
+    """
+    try:
+        config = ConfigMerger.from_all_sources(argparse.Namespace())
+    except (OSError, ValueError):
+        # commit-check says what is wrong with the configuration when it runs.
+        return True
+    branch = config.get("branch")
+    return isinstance(branch, dict) and bool(branch.get("require_rebase_target"))
 
 
 def prepare_target(request: Request, env: Mapping[str, str]) -> None:
@@ -396,8 +411,12 @@ class Job:
         try:
             prepare_target(request, self.env)
         except Stop as error:
-            self.stop("Branch", error)
-            return
+            # Only the rebase check reads the target branch. A pipeline that
+            # runs in a fork of a private project cannot fetch it at all, and
+            # without that rule there is nothing the fetch was needed for.
+            if rebase_check_is_on():
+                self.stop("Branch", error)
+                return
         self.check("Branch", ["--branch"])
 
     def check_title(self, request: Request) -> None:

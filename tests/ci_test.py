@@ -310,7 +310,8 @@ class TestGitLab:
         monkeypatch: pytest.MonkeyPatch,
         capfd: pytest.CaptureFixture[str],
     ) -> None:
-        gitlab_checkout(Upstream(tmp_path, GOOD), tmp_path, monkeypatch)
+        work = gitlab_checkout(Upstream(tmp_path, GOOD), tmp_path, monkeypatch)
+        require_rebase(work)
         monkeypatch.setenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME", "no-such-branch")
 
         assert ci.main(["--message=false"]) == 1
@@ -322,13 +323,59 @@ class TestGitLab:
         )
         assert "1 of 1 failed." in out
 
-    def test_a_merge_request_without_a_target_branch_fails_the_branch_check(
+    def test_a_target_that_cannot_be_fetched_is_no_failure_without_the_rebase_rule(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capfd: pytest.CaptureFixture[str],
+    ) -> None:
+        # A pipeline that runs in a fork of a private project: the project
+        # refuses the fork's job token, so its branches cannot be fetched.
+        work = gitlab_checkout(Upstream(tmp_path, GOOD), tmp_path, monkeypatch)
+        git("remote", "set-url", "origin", str(tmp_path / "the-fork.git"), cwd=work)
+        monkeypatch.setenv("CI_PROJECT_ID", "2")
+        monkeypatch.setenv("CI_MERGE_REQUEST_PROJECT_URL", str(tmp_path / "private"))
+
+        assert ci.main(["--message=false"]) == 0
+
+        out = capfd.readouterr().out
+        assert "Error" not in out
+        assert "All 1 passed." in out
+
+    def test_the_rebase_rule_can_be_set_in_the_environment(
         self,
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
         capfd: pytest.CaptureFixture[str],
     ) -> None:
         gitlab_checkout(Upstream(tmp_path, GOOD), tmp_path, monkeypatch)
+        monkeypatch.setenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME", "no-such-branch")
+        monkeypatch.setenv("CCHK_REQUIRE_REBASE_TARGET", "main")
+
+        assert ci.main(["--message=false"]) == 1
+        assert "Error: could not fetch the target branch" in capfd.readouterr().out
+
+    def test_a_configuration_that_cannot_be_read_keeps_the_failure(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capfd: pytest.CaptureFixture[str],
+    ) -> None:
+        work = gitlab_checkout(Upstream(tmp_path, GOOD), tmp_path, monkeypatch)
+        (work / "cchk.toml").write_text("[branch\n")
+        monkeypatch.setenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME", "no-such-branch")
+
+        assert ci.main(["--message=false"]) == 1
+        assert "Error: could not fetch the target branch" in capfd.readouterr().out
+
+    def test_a_merge_request_without_a_target_branch_fails_the_branch_check(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capfd: pytest.CaptureFixture[str],
+    ) -> None:
+        work = gitlab_checkout(Upstream(tmp_path, GOOD), tmp_path, monkeypatch)
+        require_rebase(work)
         monkeypatch.delenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME")
 
         assert ci.main(["--message=false"]) == 1
@@ -582,6 +629,7 @@ class TestBitbucket:
         capfd: pytest.CaptureFixture[str],
     ) -> None:
         work = bitbucket_checkout(Upstream(tmp_path, GOOD), tmp_path, monkeypatch)
+        require_rebase(work)
         git("update-ref", "-d", "refs/remotes/origin/main", cwd=work)
         # A branch of that name already exists, so git cannot write main below it.
         monkeypatch.setenv("BITBUCKET_PR_DESTINATION_BRANCH", "feature/login/next")
@@ -599,6 +647,7 @@ class TestBitbucket:
         capfd: pytest.CaptureFixture[str],
     ) -> None:
         work = bitbucket_checkout(Upstream(tmp_path, GOOD), tmp_path, monkeypatch)
+        require_rebase(work)
         git("update-ref", "-d", "refs/remotes/origin/main", cwd=work)
         monkeypatch.setenv("BITBUCKET_PR_DESTINATION_COMMIT", "0123456789ab")
 
@@ -607,6 +656,19 @@ class TestBitbucket:
             capfd.readouterr().out
         )
 
+    def test_a_missing_destination_commit_is_no_failure_without_the_rebase_rule(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capfd: pytest.CaptureFixture[str],
+    ) -> None:
+        work = bitbucket_checkout(Upstream(tmp_path, GOOD), tmp_path, monkeypatch)
+        git("update-ref", "-d", "refs/remotes/origin/main", cwd=work)
+        monkeypatch.setenv("BITBUCKET_PR_DESTINATION_COMMIT", "0123456789ab")
+
+        assert ci.main(["--message=false"]) == 0
+        assert "All 1 passed." in capfd.readouterr().out
+
     def test_a_pull_request_without_a_destination_commit_fails_the_branch_check(
         self,
         tmp_path: Path,
@@ -614,6 +676,7 @@ class TestBitbucket:
         capfd: pytest.CaptureFixture[str],
     ) -> None:
         work = bitbucket_checkout(Upstream(tmp_path, GOOD), tmp_path, monkeypatch)
+        require_rebase(work)
         git("update-ref", "-d", "refs/remotes/origin/main", cwd=work)
         monkeypatch.delenv("BITBUCKET_PR_DESTINATION_COMMIT")
 
