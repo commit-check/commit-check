@@ -72,6 +72,25 @@ class TestQuotedMessage:
         assert "<r>Co-Authored-By: Claude <noreply@anthropic.com></>" in out
         assert "failed: <r>Claude Code</>" in out
 
+    def test_subject_only_failures_still_quote_the_whole_message(
+        self, capsys, monkeypatch
+    ):
+        monkeypatch.setattr("commit_check.util.RED", "<r>")
+        monkeypatch.setattr("commit_check.util.RESET_COLOR", "</>")
+        run(
+            {
+                "commit": {
+                    "subject_imperative": True,
+                    "subject_max_length": 10,
+                    "ai_attribution": "forbid",
+                }
+            },
+            "feat: added x\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n",
+        )
+        out, _ = capsys.readouterr()
+        assert out.count("feat: added x") == 1
+        assert "<r>Co-Authored-By: Claude <noreply@anthropic.com></>" in out
+
     def test_a_missing_sign_off_is_shown_where_it_goes(self, capsys, no_colour):
         run(
             {"commit": {"subject_imperative": True, "require_signed_off_by": True}},

@@ -2175,6 +2175,10 @@ class ValidationEngine:
             )
             print_error_header(headline, failed=len(failed))
         message = None if context.compact else _shared_message(blocks)
+        if message is not None and "\n" not in message:
+            # Only subject rules reported it: quote the whole message, so a
+            # trailer an AI rule points at is on screen too.
+            message = BaseValidator._get_commit_message(context) or message
         if message is not None:
             print_quoted_message(
                 message,
