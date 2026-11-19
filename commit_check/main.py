@@ -35,7 +35,7 @@ from commit_check.util import (
     split_message_comments,
 )
 
-from . import AI_ATTRIBUTION_POLICIES
+from . import AI_ATTRIBUTION_POLICIES, BOLD, DIM, RESET_COLOR
 
 # Exit codes. ``1`` is a verdict on the commit; ``2`` means the run could not
 # be set up at all -- the same code argparse uses for a bad command line -- so
@@ -163,10 +163,46 @@ class _VersionAction(argparse.Action):
         parser.exit()
 
 
+def _print_intro(config: str | None) -> None:
+    """What a bare ``commit-check`` prints: one screen, not the full help.
+
+    Someone who types the name to see what it is gets the version, the few
+    commands that cover most uses, which config the run would read and where
+    the docs are. ``--help`` still lists every option.
+    """
+    from . import __version__
+
+    examples = (
+        ("commit-check -m -b", "check the last commit message and the branch"),
+        ("commit-check -m < msg.txt", "check a message before you commit it"),
+        ("commit-check --help", "list every option"),
+    )
+    width = max(len(cmd) for cmd, _ in examples)
+    title = f"{BOLD}Commit Check{RESET_COLOR} {__version__}"
+    lines = [f"{title}{DIM} · commit policy as code{RESET_COLOR}", ""]
+    lines += [
+        f"  {cmd.ljust(width)}   {DIM}{what}{RESET_COLOR}" for cmd, what in examples
+    ]
+    lines.append("")
+    found = find_config_path(config or "")
+    if found:
+        lines.append(f"  {DIM}Config{RESET_COLOR}  {os.path.relpath(found)}")
+    else:
+        lines.append(
+            f"  {DIM}Config{RESET_COLOR}  none found, using the defaults: Conventional Commits,"
+        )
+        lines.append("          Conventional Branch, subjects up to 80 characters")
+    lines.append(
+        f"  {DIM}Docs{RESET_COLOR}    https://commit-check.com/getting-started/"
+    )
+    print("\n".join(lines))
+
+
 def _get_parser() -> argparse.ArgumentParser:
     """Get parser to interpret CLI args."""
     parser = argparse.ArgumentParser(
         prog="commit-check",
+        usage="%(prog)s [options] [commit_msg_file]",
         description="Check commit message, branch name, author name, email, and more.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
@@ -875,7 +911,7 @@ def main() -> int:
         # Determine which checks to run
         requested_checks = _get_requested_checks(args)
         if not requested_checks:
-            parser.print_help()
+            _print_intro(args.config)
             return 0
 
         # Filter rules to only include requested checks
