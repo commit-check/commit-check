@@ -2057,13 +2057,22 @@ def _marked_lines(message: str, blocks: list[tuple[dict, str]]) -> set[int]:
             marked.add(0)
         fix = rule_dict.get("fix") or ""
         if check.startswith("ai_") and fix:
-            kept = fix.split("\n")
-            for number, line in enumerate(lines):
-                if line.strip() and line in kept:
-                    kept.remove(line)
-                elif line.strip():
-                    marked.add(number)
+            marked |= _removed_lines(lines, fix)
     return marked
+
+
+def _removed_lines(lines: list[str], fix: str) -> set[int]:
+    """The numbers of the non-blank *lines* that the *fix* message drops."""
+    kept = fix.split("\n")
+    removed: set[int] = set()
+    for number, line in enumerate(lines):
+        if not line.strip():
+            continue
+        if line in kept:
+            kept.remove(line)
+        else:
+            removed.add(number)
+    return removed
 
 
 class ValidationEngine:
