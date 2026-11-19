@@ -77,9 +77,41 @@ class TestMain:
 
     @pytest.mark.benchmark
     def test_no_args_shows_help(self, capfd, monkeypatch):
-        """When no arguments are provided, should show help and exit 0."""
+        """A bare run prints the one-screen intro, not the full help, and exits 0."""
         monkeypatch.setattr("sys.argv", [CMD])
         assert main() == 0
+        out, _ = capfd.readouterr()
+        assert "commit policy as code" in out
+        assert "commit-check -m -b" in out
+        assert "commit-check --help" in out
+        assert "https://commit-check.com/getting-started/" in out
+        assert "usage:" not in out
+        assert len(out.splitlines()) <= 12
+
+    def test_no_args_without_config_names_the_defaults(self, capfd, monkeypatch):
+        """With no config file, the intro says the defaults apply."""
+        monkeypatch.setattr("commit_check.main.find_config_path", lambda *a: None)
+        monkeypatch.setattr("sys.argv", [CMD])
+        assert main() == 0
+        out, _ = capfd.readouterr()
+        assert "none found, using the defaults" in out
+
+    def test_no_args_names_the_config(self, capfd, monkeypatch, tmp_path):
+        """With a config file, the intro names it, relative to where you are."""
+        (tmp_path / "cchk.toml").write_text("[commit]\n")
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.argv", [CMD, "-c", "cchk.toml"])
+        assert main() == 0
+        out, _ = capfd.readouterr()
+        assert "Config  cchk.toml" in out
+
+    def test_help_usage_is_one_line(self, capfd, monkeypatch):
+        """--help opens with a one-line usage, not a wall of bracketed flags."""
+        monkeypatch.setattr("sys.argv", [CMD, "--help"])
+        with pytest.raises(SystemExit):
+            main()
+        out, _ = capfd.readouterr()
+        assert out.splitlines()[0] == "usage: commit-check [options] [commit_msg_file]"
 
     @pytest.mark.benchmark
     def test_message_validation_with_valid_commit(self, mocker, monkeypatch):
