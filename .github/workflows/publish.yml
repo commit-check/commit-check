@@ -29,6 +29,28 @@ jobs:
       with:
         python-version: '3.x'
 
+    # README.md is the long description PyPI shows, so its pre-commit `rev:`
+    # is fixed at build time. Write this release's tag into it here, rather
+    # than relying on a README bump landing on main before the release is
+    # published. The workflow_dispatch dry run has no tag and skips this.
+    - name: Pin the README to this release
+      if: github.event_name == 'release'
+      env:
+        TAG: ${{ github.event.release.tag_name }}
+      run: |
+        python - <<'PY'
+        import os, pathlib, re, sys
+        p = pathlib.Path("README.md")
+        text, n = re.subn(r"(rev:\s*)v\d+\.\d+\.\d+", rf"\g<1>{os.environ['TAG']}", p.read_text())
+        if n == 0:
+            sys.exit("README.md has no `rev: vX.Y.Z` pin to update")
+        p.write_text(text)
+        PY
+        grep -n "rev: v" README.md
+        # The edit makes the tree dirty, and setuptools-scm would then build
+        # X.Y.Z.post1.dev0 instead of X.Y.Z. Give it the tag's version.
+        echo "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_COMMIT_CHECK=${TAG#v}" >> "$GITHUB_ENV"
+
     - name: Build wheel
       run: |
         # Install dependencies
