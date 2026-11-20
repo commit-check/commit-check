@@ -327,8 +327,10 @@ class TestWarnSeverityInTheEngine:
         )
         out, _ = capsys.readouterr()
         assert result == ValidationResult.FAIL
-        assert "message failed: added x" in out
-        assert "subject-imperative warning: added x" in out
+        # Both rules read the same message, so it is quoted once above them.
+        assert out.count("added x") == 1
+        assert "message failed\n" in out
+        assert "subject-imperative warning\n" in out
 
     def test_overall_status_only_counts_failures(self):
         assert overall_status(["warn", "pass"]) == "pass"

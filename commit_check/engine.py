@@ -56,6 +56,7 @@ from commit_check.util import (
     git_rev_parse_verify,
     has_commits,
     print_error_header,
+    print_quoted_message,
     read_commit_message_file,
     rejection_headline,
 )
@@ -453,6 +454,8 @@ class BaseValidator(ABC):
             rule_dict["error"] = error
         if fix or suggest:
             rule_dict["suggest"] = suggest or f'Use "{fix}"'
+        if fix:
+            rule_dict["fix"] = fix
 
         # Always store structured failure details for programmatic consumers.
         self._last_failure = {
@@ -1977,6 +1980,101 @@ class AiDeclarationValidator(BaseValidator):
         return ValidationResult.FAIL
 
 
+#: Checks whose value is the commit message, or its subject line.
+_MESSAGE_CHECKS = frozenset(
+    {
+        "message",
+        "subject_capitalized",
+        "subject_imperative",
+        "subject_max_length",
+        "subject_min_length",
+        "allow_merge_commits",
+        "allow_revert_commits",
+        "allow_empty_commits",
+        "allow_fixup_commits",
+        "allow_wip_commits",
+        "require_body",
+        "require_signed_off_by",
+    }
+)
+
+#: Of those, the ones that find fault with the subject line itself.
+_SUBJECT_CHECKS = _MESSAGE_CHECKS - {"require_body", "require_signed_off_by"}
+
+
+def _quotes(message: str, check: str, value: str) -> bool:
+    """Whether the quoted *message* already shows this failure's *value*."""
+    if check not in _MESSAGE_CHECKS:
+        return False
+    return value in (message, message.split("\n", 1)[0])
+
+
+def _shared_message(blocks: list[tuple[dict, str]]) -> str | None:
+    """The commit message to quote once above the failure blocks, if any.
+
+    When two or more message rules fail, each block used to repeat the
+    message after its rule name. Quoting it once reads like a diff: the
+    message, then what is wrong with it. Rules that report something else
+    (an AI tool's name, a branch) keep their own value on their own line.
+    """
+    candidates = [
+        value
+        for rule_dict, value in blocks
+        if rule_dict["check"] in _MESSAGE_CHECKS and value.strip()
+    ]
+    # The longest is the whole message; a subject-only value is its first line.
+    for message in sorted(set(candidates), key=len, reverse=True):
+        covered = sum(1 for value in candidates if _quotes(message, "message", value))
+        if covered >= 2:
+            return message
+    return None
+
+
+def _missing_lines(message: str, blocks: list[tuple[dict, str]]) -> list[str]:
+    """The trailer lines a sign-off rule's fix adds to *message*."""
+    present = set(message.split("\n"))
+    missing: list[str] = []
+    for rule_dict, _ in blocks:
+        if rule_dict["check"] != "require_signed_off_by":
+            continue
+        for line in (rule_dict.get("fix") or "").split("\n"):
+            if line.strip() and line not in present and line not in missing:
+                missing.append(line)
+    return missing
+
+
+def _marked_lines(message: str, blocks: list[tuple[dict, str]]) -> set[int]:
+    """The line numbers of *message* that a failing rule points at.
+
+    The subject when a subject rule failed on it, and the lines an AI rule's
+    fix would remove: those are what to change, not a guess at them.
+    """
+    lines = message.split("\n")
+    marked: set[int] = set()
+    for rule_dict, value in blocks:
+        check = rule_dict["check"]
+        if check in _SUBJECT_CHECKS and _quotes(message, check, value):
+            marked.add(0)
+        fix = rule_dict.get("fix") or ""
+        if check.startswith("ai_") and fix:
+            marked |= _removed_lines(lines, fix)
+    return marked
+
+
+def _removed_lines(lines: list[str], fix: str) -> set[int]:
+    """The numbers of the non-blank *lines* that the *fix* message drops."""
+    kept = fix.split("\n")
+    removed: set[int] = set()
+    for number, line in enumerate(lines):
+        if not line.strip():
+            continue
+        if line in kept:
+            kept.remove(line)
+        else:
+            removed.add(number)
+    return removed
+
+
 class ValidationEngine:
     """Main validation engine that orchestrates all validations."""
 
@@ -2085,12 +2183,25 @@ class ValidationEngine:
                 else rejection_headline(failed)
             )
             print_error_header(headline, failed=len(failed))
+        message = None if context.compact else _shared_message(blocks)
+        if message is not None and "\n" not in message:
+            # Only subject rules reported it: quote the whole message, so a
+            # trailer an AI rule points at is on screen too.
+            message = BaseValidator._get_commit_message(context) or message
+        if message is not None:
+            print_quoted_message(
+                message,
+                _marked_lines(message, blocks),
+                _missing_lines(message, blocks),
+            )
         for rule_dict, value in blocks:
             _print_failure(
                 rule_dict,
                 value,
                 no_banner=context.no_banner,
                 compact=context.compact,
+                value_shown=message is not None
+                and _quotes(message, rule_dict["check"], value),
             )
 
     @staticmethod
