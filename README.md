@@ -122,11 +122,11 @@ Priority: CLI > env > TOML > default. Booleans accept `true/false`, `yes/no`,
 | `commit.message_pattern` | `""` | — | `CCHK_MESSAGE_PATTERN` | Custom regex the whole message must match; when set it replaces the Conventional Commits check (still reported as CC001) |
 | `commit.subject_capitalized` | `false` | `--subject-capitalized` | `CCHK_SUBJECT_CAPITALIZED` | Require the subject to start with a capital letter (CC002) |
 | `commit.subject_imperative` | `false` | `--subject-imperative` | `CCHK_SUBJECT_IMPERATIVE` | Require the subject to use the imperative mood (CC003) |
-| `commit.subject_max_length` | `80` | `--subject-max-length` | `CCHK_SUBJECT_MAX_LENGTH` | Maximum subject length (CC004), not counting the ` (#123)` a GitHub squash merge adds; `0` turns it off. Commits by `dependabot[bot]` and `renovate[bot]` skip both length rules |
+| `commit.subject_max_length` | `80` | `--subject-max-length` | `CCHK_SUBJECT_MAX_LENGTH` | Maximum subject length (CC004), not counting the ` (#123)` a GitHub squash merge adds; the `Revert "..."` and `Reapply "..."` subjects `git revert` writes are not measured; `0` turns it off. Commits by `dependabot[bot]` and `renovate[bot]` skip both length rules |
 | `commit.subject_min_length` | `5` | `--subject-min-length` | `CCHK_SUBJECT_MIN_LENGTH` | Minimum subject length (CC005); `0` turns it off |
-| `commit.allow_commit_types` | `feat, fix, docs, style, refactor, test, chore, perf, build, ci` | `--allow-commit-types` | `CCHK_ALLOW_COMMIT_TYPES` | Allowed `<type>` values in the subject |
+| `commit.allow_commit_types` | `feat, fix, docs, style, refactor, test, chore, perf, build, ci, revert` | `--allow-commit-types` | `CCHK_ALLOW_COMMIT_TYPES` | Allowed `<type>` values in the subject |
 | `commit.allow_merge_commits` | `true` | `--allow-merge-commits` | `CCHK_ALLOW_MERGE_COMMITS` | Allow merge commits (CC006) |
-| `commit.allow_revert_commits` | `true` | `--allow-revert-commits` | `CCHK_ALLOW_REVERT_COMMITS` | Allow revert commits (CC007) |
+| `commit.allow_revert_commits` | `true` | `--allow-revert-commits` | `CCHK_ALLOW_REVERT_COMMITS` | Allow the `Revert "..."` and `Reapply "..."` commits `git revert` writes (CC007) |
 | `commit.allow_empty_commits` | `true` | `--allow-empty-commits` | `CCHK_ALLOW_EMPTY_COMMITS` | Allow empty commit messages (CC008) |
 | `commit.allow_fixup_commits` | `true` | `--allow-fixup-commits` | `CCHK_ALLOW_FIXUP_COMMITS` | Allow `fixup!`, `squash!` and `amend!` commits (CC009) |
 | `commit.allow_wip_commits` | `true` | `--allow-wip-commits` | `CCHK_ALLOW_WIP_COMMITS` | Allow WIP commits (CC010) |

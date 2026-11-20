@@ -1088,6 +1088,8 @@ class TestConventionalCommitGitPrefixes:
         "message",
         [
             'Revert "feat: init"',
+            'Reapply "feat: init"',
+            'Revert "Reapply "feat: init""',
             "Merge branch 'feature' into main",
             "Merge pull request #1 from org/feature",
             "Merge remote-tracking branch 'origin/main'",
@@ -1111,6 +1113,8 @@ class TestConventionalCommitGitPrefixes:
             "Merge lowercase added stuff",
             "fixup!! nonsense",
             "Reverted the thing",
+            "Reapply the parser change",
+            "Reapplied the thing",
             "fixup!feat: x",
         ],
     )
