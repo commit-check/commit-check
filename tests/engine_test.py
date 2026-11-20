@@ -34,6 +34,7 @@ from commit_check.engine import (
     ValidationResult,
     declaration_boxes,
     is_merge_subject,
+    is_revert_subject,
 )
 from commit_check.rule_builder import RuleBuilder, ValidationRule
 from commit_check.rules_catalog import RULES_BY_CHECK
@@ -266,6 +267,29 @@ class TestCommitMessageValidator:
         assert rule is not None
         validator = CommitMessageValidator(rule)
         context = ValidationContext(stdin_text='Revert "feat: init"')
+
+        assert validator.validate(context) == ValidationResult.PASS
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            # git 2.43+ writes "Reapply" when the commit reverted is a revert.
+            'Reapply "feat: init"\n\nThis reverts commit 3032208.',
+            # The Conventional Commits FAQ's way to write a revert by hand.
+            "revert: let us never again speak of the noodle incident",
+            "revert(parser): restore the old tables",
+        ],
+    )
+    def test_reverts_pass_under_the_default_config(self, message):
+        from commit_check.rule_builder import RuleBuilder
+        from commit_check.rules_catalog import RuleCatalogEntry
+
+        rule = RuleBuilder({})._build_conventional_commit_rule(
+            RuleCatalogEntry(check="message", regex="", error="", suggest="")
+        )
+        assert rule is not None
+        validator = CommitMessageValidator(rule)
+        context = ValidationContext(stdin_text=message)
 
         assert validator.validate(context) == ValidationResult.PASS
 
@@ -1197,6 +1221,25 @@ class TestCommitTypeValidator:
             result = validator.validate(context)
             assert result == ValidationResult.PASS
 
+    @pytest.mark.parametrize(
+        "message, allowed",
+        [
+            ('Revert "feat: add feature"', False),
+            ('Reapply "feat: add feature"', False),
+            ("revert: drop the cache", True),
+            ("Reapply the parser change", True),
+        ],
+    )
+    def test_revert_commits_not_allowed(self, message, allowed):
+        """With reverts disallowed, git's "Reapply" (the revert of a revert)
+        is rejected too, while a "revert:" type and prose are not git's."""
+        rule = ValidationRule(check="allow_revert_commits", value=False)
+        validator = CommitTypeValidator(rule)
+        validator._suppress_output = True
+        result = validator.validate(ValidationContext(stdin_text=message))
+        expected = ValidationResult.PASS if allowed else ValidationResult.FAIL
+        assert result == expected
+
     @pytest.mark.benchmark
     def test_validate_fixup_commit_not_allowed(self):
         """Test fixup commit validation when not allowed."""
@@ -1532,6 +1575,33 @@ class TestSubjectLengthValidator:
         assert failure["error"] == (
             'Subject is 80 characters, not counting "(#12) (#34)"; '
             "it must be at most 70 characters"
+        )
+
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            'Revert "feat: ' + "y" * 74 + '"',
+            'Reapply "feat: ' + "y" * 74 + '"',
+            'Revert "fix: ' + "y" * 70 + ' (#141)" (#142)',
+        ],
+    )
+    def test_git_revert_subject_is_not_measured(self, subject):
+        """A subject that fit the limit still fits once git wraps it in
+        'Revert "..."': the nine extra characters are git's."""
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        assert len(subject) > 80
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.SKIP
+        )
+
+    def test_author_revert_prose_is_measured(self):
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        subject = "Revert the parser change " + "y" * 60
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.FAIL
         )
 
     def test_squash_pr_number_is_not_counted_toward_the_minimum(self):
@@ -4271,6 +4341,21 @@ class TestIsMergeSubject:
     )
     def test_author_prose(self, subject):
         assert not is_merge_subject(subject)
+
+    @pytest.mark.parametrize(
+        "subject, expected",
+        [
+            ('Revert "feat: x"', True),
+            ('Reapply "feat: x"', True),
+            ('Revert "Reapply "feat: x""', True),
+            ("Revert the parser change", False),
+            ("Reapply the fix", False),
+            ('revert "feat: x"', False),
+            ("revert: drop the cache", False),
+        ],
+    )
+    def test_revert_subject(self, subject, expected):
+        assert is_revert_subject(subject) is expected
 
     @pytest.mark.parametrize(
         "check, value, expected",

@@ -19,6 +19,7 @@ from commit_check import (
     DEFAULT_PUSH_RULES,
     DEFAULT_TAG_REGEX,
     GIT_MERGE_SUBJECT_PATTERN,
+    GIT_REVERT_SUBJECT_PATTERN,
 )
 from commit_check.config import ConfigError
 from commit_check.config_merger import get_default_config
@@ -915,9 +916,7 @@ class RuleBuilder:
         # prefix exactly as below, trailing space or quote included, so author
         # prose such as "Merged ...", "Merge the parser tables" or
         # "fixup!! ..." is still held to the format.
-        git_prefixes = (
-            rf'^(?:{GIT_MERGE_SUBJECT_PATTERN}|Revert "|fixup! |squash! |amend! )'
-        )
+        git_prefixes = rf"^(?:{GIT_MERGE_SUBJECT_PATTERN}|{GIT_REVERT_SUBJECT_PATTERN}|fixup! |squash! |amend! )"
         return (
             rf"^({types_pattern})(\([\w\-\.]+\))?(!)?: [^\n]+([\s\S]*)|{git_prefixes}"
         )

@@ -18,6 +18,7 @@ from commit_check import (
     DEFAULT_AI_DISCLOSURE_TRAILERS,
     DEPENDENCY_UPDATE_BOTS,
     GIT_MERGE_SUBJECT_PATTERN,
+    GIT_REVERT_SUBJECT_PATTERN,
     ai_policy,
 )
 from commit_check.ai_signatures import (
@@ -62,6 +63,7 @@ from commit_check.util import (
 )
 
 _GIT_MERGE_SUBJECT = re.compile(GIT_MERGE_SUBJECT_PATTERN)
+_GIT_REVERT_SUBJECT = re.compile(GIT_REVERT_SUBJECT_PATTERN)
 
 
 def is_merge_subject(subject: str) -> bool:
@@ -72,6 +74,16 @@ def is_merge_subject(subject: str) -> bool:
     judged like any other.
     """
     return _GIT_MERGE_SUBJECT.match(subject) is not None
+
+
+def is_revert_subject(subject: str) -> bool:
+    """Whether *subject* is one ``git revert`` wrote, not the author.
+
+    'Revert "<subject>"', or 'Reapply "<subject>"' for the revert of a
+    revert. The quote is part of the match: "Revert the parser change" is
+    the author's, and is judged like any other subject.
+    """
+    return _GIT_REVERT_SUBJECT.match(subject) is not None
 
 
 # A work-in-progress marker at the start of the subject (CC010). "^" without
@@ -703,8 +715,10 @@ class SubjectLengthValidator(SubjectValidator):
         return True
 
     def _validate_subject(self, subject: str) -> ValidationResult:
-        # A merge subject's length is git's doing, not the author's.
-        if is_merge_subject(subject):
+        # A merge or revert subject's length is git's doing, not the
+        # author's: 'Revert "..."' adds nine characters to a subject that
+        # already fit.
+        if is_merge_subject(subject) or is_revert_subject(subject):
             return ValidationResult.SKIP
 
         suffix = _SQUASH_PR_NUMBER.search(subject)
@@ -1530,7 +1544,9 @@ class CommitTypeValidator(BaseValidator):
 
     def _is_revert_commit_allowed(self, message: str) -> bool:
         """Check if revert commits are allowed."""
-        is_revert = message.lower().startswith("revert ")
+        # 'Reapply "..."' is git's subject for reverting a revert, so it is
+        # one too.
+        is_revert = message.lower().startswith("revert ") or is_revert_subject(message)
         return not is_revert or self.rule.value
 
     def _is_empty_commit_allowed(self, message: str) -> bool:
