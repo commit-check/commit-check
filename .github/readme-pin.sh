@@ -6,9 +6,12 @@
 # Every `rev:` line under `repo: https://github.com/commit-check/commit-check`
 # counts, until the next `repo:` line or the end of the code block, whatever
 # its value: a pin this cannot read is reported as found, not skipped, so a
-# README that is only partly updated never passes. A trailing comment and
-# quotes are kept as they are. A snippet for another hook repository is not
-# this project's pin and is left alone.
+# README that is only partly updated never passes. The value is the whole
+# YAML scalar: a quoted one ends at its closing quote, a bare one where a
+# comment begins. Quotes and a trailing comment are kept. Anything else after
+# the value fails `check`, and `write` refuses before it changes the file. A
+# snippet for another hook repository is not this project's pin and is left
+# alone.
 #
 #   readme-pin.sh read            print the pins found, comma-separated
 #   readme-pin.sh write vX.Y.Z    set every pin to vX.Y.Z
@@ -26,16 +29,31 @@ scan() {
     own && /^[[:space:]]*rev:/ {
       match($0, /^[[:space:]]*rev:[[:space:]]*/)
       head = substr($0, 1, RLENGTH); rest = substr($0, RLENGTH + 1)
-      match(rest, /^[^[:space:]]*/)
-      value = substr(rest, 1, RLENGTH); tail = substr(rest, RLENGTH + 1)
-      q = substr(value, 1, 1)
-      if (q != "\"" && q != "\047") q = ""
-      bare = value
-      if (q != "" && length(value) >= 2 && substr(value, length(value), 1) == q) bare = substr(value, 2, length(value) - 2)
-      if (mode == "read") print (bare == "" ? "(empty)" : bare)
-      else $0 = head q tag q tail
+      q = substr(rest, 1, 1)
+      if (q == "\"" || q == "\047") {
+        # A quoted value ends at its closing quote.
+        shut = index(substr(rest, 2), q)
+        if (shut) { value = substr(rest, 2, shut - 1); tail = substr(rest, shut + 2) }
+        else { value = rest; tail = "unclosed" }
+      } else {
+        # A bare value ends where a comment begins: whitespace, then #.
+        q = ""
+        if (match(rest, /[[:space:]]+#/)) { value = substr(rest, 1, RSTART - 1); tail = substr(rest, RSTART) }
+        else { value = rest; tail = "" }
+        sub(/[[:space:]]+$/, "", value)
+      }
+      # After the value, only a comment may follow.
+      if (tail ~ /^([[:space:]]+#.*|[[:space:]]*)$/) {
+        if (mode == "read") print (value == "" ? "(empty)" : value)
+        else $0 = head q tag q tail
+      } else if (mode == "read") {
+        print "(unreadable: " rest ")"
+      } else {
+        bad = bad " " NR
+      }
     }
-    mode == "write" { print }' "$readme"
+    mode == "write" { print }
+    END { if (bad != "") { print "line" bad ": rev: is not a value this can rewrite" > "/dev/stderr"; exit 3 } }' "$readme"
 }
 
 pins() {
@@ -57,7 +75,11 @@ case "${1:-}" in
     ;;
   write)
     tag_arg "${2:-}"
-    scan write "$2" > "$readme.tmp"
+    if ! scan write "$2" > "$readme.tmp"; then
+      rm -f "$readme.tmp"
+      echo "::error file=$readme::$readme was left as it was" >&2
+      exit 1
+    fi
     mv "$readme.tmp" "$readme"
     # Read it back with the same rule the publish check uses.
     found=$(pins)
