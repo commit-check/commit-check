@@ -108,6 +108,7 @@ def get_default_config() -> dict[str, Any]:
             "max_size": "",
             "prohibited_patterns": [],
             "max_path_length": 0,
+            "ai_prohibited_patterns": [],
         },
     }
 
@@ -200,6 +201,11 @@ class ConfigMerger:
         "CCHK_FILES_MAX_SIZE": ("files", "max_size", str),
         "CCHK_FILES_PROHIBITED_PATTERNS": ("files", "prohibited_patterns", parse_list),
         "CCHK_FILES_MAX_PATH_LENGTH": ("files", "max_path_length", parse_int),
+        "CCHK_FILES_AI_PROHIBITED_PATTERNS": (
+            "files",
+            "ai_prohibited_patterns",
+            parse_list,
+        ),
     }
 
     # Mapping of CLI argument names to config keys
@@ -239,6 +245,7 @@ class ConfigMerger:
         "files_max_size": ("files", "max_size"),
         "files_prohibited_patterns": ("files", "prohibited_patterns"),
         "files_max_path_length": ("files", "max_path_length"),
+        "files_ai_prohibited_patterns": ("files", "ai_prohibited_patterns"),
     }
 
     @staticmethod

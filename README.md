@@ -82,7 +82,7 @@ The same `cchk.toml` drives all of them:
 | Author name and email | `--author-name` `--author-email` | CC101–CC102 |
 | Branch name — Conventional Branch, rebased onto a target | `--branch` | CC201–CC202 |
 | Force push | `--no-force-push` | CC301 |
-| Committed files — size, forbidden paths, path length | `--files` | CC302–CC304 |
+| Committed files — size, forbidden paths, path length, paths AI commits may not change | `--files` | CC302–CC305 |
 | Tag names — SemVer or your own pattern | `--tag` | CC401 |
 | AI declaration — the pull request description ticks one of the template's boxes | `--ai-attribution-only` | CC501 |
 | Pull or merge request title — the message rules a one-line title can meet | `--pr-title` | CC001–CC010, CC013–CC016 |
@@ -149,6 +149,7 @@ Priority: CLI > env > TOML > default. Booleans accept `true/false`, `yes/no`,
 | `files.max_size` | `""` (off) | `--files-max-size` | `CCHK_FILES_MAX_SIZE` | Largest committed file, in bytes or with `KB`/`MB`/`GB` (CC302) |
 | `files.prohibited_patterns` | `[]` | `--files-prohibited-patterns` | `CCHK_FILES_PROHIBITED_PATTERNS` | fnmatch patterns committed paths must not match (CC303) |
 | `files.max_path_length` | `0` (off) | `--files-max-path-length` | `CCHK_FILES_MAX_PATH_LENGTH` | Longest allowed committed path, in characters (CC304) |
+| `files.ai_prohibited_patterns` | `[]` | `--files-ai-prohibited-patterns` | `CCHK_FILES_AI_PROHIBITED_PATTERNS` | fnmatch patterns for paths a commit attributed to an AI tool (by its author, a co-author or sign-off line, a stamp or a disclosure) must not change, e.g. `.github/workflows/*`; deleting or renaming a path counts (CC305) |
 | `pull_request.ai_declaration_checkboxes` | `[]` (off) | — | — | The AI declaration checkboxes of your pull request template (often headed "AI disclosure"), e.g. `["No AI tools were used", "AI tools were used"]`. A description checked with `--ai-attribution-only` must tick exactly one of them (CC501). Each entry matches a box whose text starts with it, ignoring case and bold; boxes in HTML comments and code blocks do not count |
 
 Output and appearance are per-run flags, not configuration: `--format json`,
