@@ -14,3 +14,96 @@ jobs:
       contents: write
       pull-requests: write
     uses: commit-check/.github/.github/workflows/release-drafter.yml@main
+
+  # Keeps the README's commit-check `rev:` in step with the draft. When they
+  # differ, one pull request on one fixed branch carries the change, to be
+  # merged right before publishing; publish.yml refuses a tag whose README
+  # names another version.
+  readme-pin:
+    needs: draft-release
+    runs-on: ubuntu-latest
+    permissions: {}
+    # A later push supersedes this one: it sees the same draft or a newer one.
+    concurrency:
+      group: readme-pin
+      cancel-in-progress: true
+    env:
+      BRANCH: chore/readme-pin
+      # Not GITHUB_TOKEN. A pull request opened with it starts no workflow
+      # runs, so commit-check.yml would never check the one pull request that
+      # is merged right before every release. Needs contents and pull-requests
+      # write on this repository only.
+      GH_TOKEN: ${{ secrets.README_PIN_TOKEN }}
+    steps:
+      - name: Require the token
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::README_PIN_TOKEN is not set, so the README pin pull request cannot be opened or updated."
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ secrets.README_PIN_TOKEN }}
+          # Not written into .git/config; the push below authenticates
+          # through gh, which reads GH_TOKEN when git asks.
+          persist-credentials: false
+
+      - name: Read the draft's tag
+        id: draft
+        run: |
+          # Drafts are listed only to tokens with push access, which is why
+          # this reads with README_PIN_TOKEN. The reusable workflow above
+          # passes no outputs, so the draft is read back here.
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
+            --jq '.[] | select(.draft) | .tag_name' > drafts.txt
+          n=$(wc -l < drafts.txt)
+          if [ "$n" -ne 1 ]; then
+            echo "::error::expected one draft release, found $n: $(paste -sd' ' drafts.txt)"
+            exit 1
+          fi
+          echo "tag=$(cat drafts.txt)" >> "$GITHUB_OUTPUT"
+          rm drafts.txt
+
+      - name: Open or update the README pin pull request
+        env:
+          TAG: ${{ steps.draft.outputs.tag }}
+        run: |
+          pinned=$(sh .github/readme-pin.sh read)
+          open=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+
+          if [ "$pinned" = "$TAG" ]; then
+            echo "README.md already pins $TAG"
+            if [ -n "$open" ]; then
+              gh pr close "$open" --delete-branch --comment "README.md on main already pins $TAG."
+            fi
+            exit 0
+          fi
+
+          gh auth setup-git
+          git switch -c "$BRANCH"
+          sh .github/readme-pin.sh write "$TAG"
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "docs: pin README to $TAG" README.md
+
+          # Rebuilt on main every time, so it is always rebased onto main,
+          # as require_rebase_target asks. That makes this a force push, to
+          # this one branch only. Skipped when the branch already holds
+          # exactly this change on exactly this main, so a push that changes
+          # nothing does not restart the checks.
+          if git fetch -q --depth=2 origin "$BRANCH" 2>/dev/null \
+            && [ "$(git rev-parse FETCH_HEAD^)" = "$(git rev-parse HEAD^)" ] \
+            && git diff --quiet FETCH_HEAD HEAD; then
+            echo "$BRANCH already pins $TAG on this main"
+          else
+            git push --force origin "HEAD:refs/heads/$BRANCH"
+          fi
+
+          title="docs: pin README to $TAG"
+          body="Release Drafter's draft is $TAG and README.md pins ${pinned:-nothing}. Merge this right before publishing $TAG, so the tag's README, which PyPI shows as the project description, names $TAG. This pull request is updated, or closed, on every push to main."
+          if [ -n "$open" ]; then
+            gh pr edit "$open" --title "$title" --body "$body"
+          else
+            gh pr create --base main --head "$BRANCH" --title "$title" --body "$body" --label skip-changelog
+          fi
