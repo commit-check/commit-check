@@ -185,6 +185,22 @@ The failing entry of its `checks` array:
 
 A check that did not run has status `skip`, and `reason` says why when the
 author is on an `ignore_authors` list: `"author dependabot[bot] is in [commit].ignore_authors"`.
+The top-level `status` is `skip` when every check skipped, or when no check
+ran at all; the exit code is still `0`.
+
+A setting that is not in force, such as a misspelt key, an `inherit_from` that
+could not be loaded, a `[files]` value that cannot be used or an invalid
+`CCHK_*` value, is printed on stderr and also listed in `notices`, which is
+empty when there are none:
+
+```json
+"notices": [
+  {
+    "setting": "[commit] subject_max_lenght",
+    "message": "unknown setting [commit] subject_max_lenght is ignored; did you mean subject_max_length?"
+  }
+]
+```
 
 With a message checked, the output also has `ai_tools`: the AI tools found by
 their known signatures in the message (and by a commit's author), under any
@@ -192,9 +208,10 @@ their known signatures in the message (and by a commit's author), under any
 for text that is not a commit message, such as a pull request description.
 With `[pull_request] ai_declaration_checkboxes` set, it also checks that the
 description ticks exactly one of those boxes (CC501).
-Under the default `ai_attribution = "ignore"` no AI rule runs, so the result
-passes and only `ai_tools` reports what was found; set `forbid` or `disclose`
-to enforce a policy:
+Under the default `ai_attribution = "ignore"` no AI rule runs. Without
+`ai_declaration_checkboxes` no check runs at all, so the status is `skip` and
+only `ai_tools` reports what was found; set `forbid` or `disclose` to enforce
+a policy:
 
 ```bash
 commit-check --ai-attribution-only --format json < pr-description.md

@@ -8,7 +8,7 @@ import os
 import select
 import sys
 
-from commit_check.config import ConfigError, find_config_path
+from commit_check.config import ConfigError, find_config_path, report_notice
 from commit_check.config_merger import ConfigMerger, parse_bool, parse_int, parse_list
 from commit_check.engine import (
     CheckOutcome,
@@ -818,8 +818,13 @@ def _run_json_output(
     engine: ValidationEngine,
     context: ValidationContext,
     args: argparse.Namespace,
+    notices: list[dict[str, str]],
 ) -> int:
     """Run validation and print JSON output.
+
+    ``notices`` lists each setting that is not in force, the lines printed on
+    stderr as the config was read, so that they reach the result and not only
+    the terminal.
 
     When a message is checked, ``ai_tools`` lists the AI tools it names (and,
     for a commit, its author), whatever the policy: what a pull request
@@ -830,13 +835,15 @@ def _run_json_output(
     report: dict[str, object] = {
         "status": overall,
         "warnings": count_warnings(o.status for o in outcomes),
+        "notices": notices,
         "checks": [o.to_dict() for o in outcomes],
     }
     if args.message:
         report["ai_tools"] = ai_tools_in(context, author=not context.not_a_commit)
     print(json.dumps(report, indent=2))
-    # Only a failure is an error. A skipped run validated nothing, but that
-    # is not a policy violation, so it must not turn into a non-zero exit.
+    # Only a failure is an error. A skipped run, or one with no checks,
+    # validated nothing, but that is not a policy violation, so it must not
+    # turn into a non-zero exit.
     return 1 if overall == "fail" else 0
 
 
@@ -883,8 +890,11 @@ def main() -> int:
                 )
                 return EXIT_CONFIG_ERROR
 
-        # Load and merge configuration from all sources: CLI > Env > TOML > Defaults
-        config_data = ConfigMerger.from_all_sources(args, args.config)
+        # Load and merge configuration from all sources: CLI > Env > TOML > Defaults.
+        # Each setting found not to be in force is printed on stderr and
+        # collected here, for the JSON result.
+        notices: list[dict[str, str]] = []
+        config_data = ConfigMerger.from_all_sources(args, args.config, notices)
 
         # When --no-force-push is explicitly passed, override allow_force_push to
         # False so the rule is built even if the TOML config defaults to True.
@@ -893,7 +903,7 @@ def main() -> int:
 
         # Build validation rules from config
         try:
-            rule_builder = RuleBuilder(config_data)
+            rule_builder = RuleBuilder(config_data, notices)
             all_rules = rule_builder.build_all_rules()
         except ConfigError as e:
             # The merged dict no longer says which file a setting came from,
@@ -924,7 +934,7 @@ def main() -> int:
         built_checks = {rule.check for rule in filtered_rules}
         for requested, checks, hint in _UNCONFIGURED_HINTS:
             if getattr(args, requested) and built_checks.isdisjoint(checks):
-                print(f"⊘ {hint}", file=sys.stderr)
+                report_notice(notices, f"--{requested}", hint)
 
         engine = ValidationEngine(filtered_rules)
 
@@ -978,7 +988,7 @@ def main() -> int:
         # Run validation – choose output mode based on --format
         output_format: str = getattr(args, "output_format", "text")
         if output_format == "json":
-            exit_code = _run_json_output(engine, context, args)
+            exit_code = _run_json_output(engine, context, args, notices)
         else:
             result = engine.validate_all(context)
             exit_code = EXIT_PASS if result == ValidationResult.PASS else EXIT_FAIL

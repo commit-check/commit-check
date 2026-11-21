@@ -339,6 +339,11 @@ class TestWarnSeverityInTheEngine:
         assert overall_status(["skip", "skip"]) == "skip"
         assert count_warnings(["warn", "warn", "fail"]) == 2
 
+    def test_a_run_with_no_checks_is_a_skip(self):
+        """Nothing was validated, as when every check skipped."""
+        assert overall_status([]) == "skip"
+        assert overall_status(iter(())) == "skip"
+
 
 CLAUDE_STAMP = "🤖 Generated with [Claude Code](https://claude.com/claude-code)"
 CLAUDE_CO_AUTHOR = "Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"

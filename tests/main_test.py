@@ -1220,6 +1220,197 @@ class TestJsonFormat:
         assert all(c["status"] == "skip" for c in data["checks"])
 
 
+class TestNoticesInJson:
+    """A setting that is not in force is in the JSON result, not only on stderr.
+
+    Each case below used to print its line and return ``pass`` with nothing
+    in the result to say a setting had been left out, so the Action's
+    summary, an agent and any other reader of ``--format json`` saw a plain
+    pass.
+    """
+
+    def _run(self, mocker, capsys, monkeypatch, tmp_path, toml, *argv):
+        config = tmp_path / "cchk.toml"
+        config.write_text(toml)
+        monkeypatch.chdir(tmp_path)
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value="feat: add new feature\n")
+        monkeypatch.setattr(
+            "sys.argv", [CMD, "-m", "--format", "json", "--config", str(config), *argv]
+        )
+        rc = main()
+        out, err = capsys.readouterr()
+        return rc, json.loads(out), err
+
+    def test_every_result_carries_notices(
+        self, mocker, capsys, monkeypatch, pinned_author, tmp_path
+    ):
+        """An empty list when every setting is in force, as warnings is 0."""
+        rc, data, err = self._run(
+            mocker, capsys, monkeypatch, tmp_path, "[commit]\nsubject_max_length = 72\n"
+        )
+        assert rc == 0
+        assert data["notices"] == []
+        assert err == ""
+
+    @pytest.mark.parametrize(
+        ("toml", "notice"),
+        [
+            (
+                "[commit]\nsubject_max_lenght = 10\n",
+                {
+                    "setting": "[commit] subject_max_lenght",
+                    "message": (
+                        "unknown setting [commit] subject_max_lenght is ignored; "
+                        "did you mean subject_max_length?"
+                    ),
+                },
+            ),
+            (
+                '[pull_request]\nai_declaration_checkbox = ["No AI tools were used"]\n',
+                {
+                    "setting": "[pull_request] ai_declaration_checkbox",
+                    "message": (
+                        "unknown setting [pull_request] ai_declaration_checkbox is "
+                        "ignored; did you mean ai_declaration_checkboxes?"
+                    ),
+                },
+            ),
+            (
+                'files = "x"\n',
+                {
+                    "setting": "[files]",
+                    "message": (
+                        "[files] must be a table, got 'x'; the file rules are disabled"
+                    ),
+                },
+            ),
+            (
+                '[files]\nmax_size = "5M"\n',
+                {
+                    "setting": "[files] max_size",
+                    "message": (
+                        "[files] max_size = '5M' is not usable; "
+                        "CC302 file-size is disabled"
+                    ),
+                },
+            ),
+        ],
+        ids=[
+            "unknown-key",
+            "unknown-pull-request-key",
+            "files-not-a-table",
+            "max-size",
+        ],
+    )
+    def test_a_setting_out_of_force_is_a_notice(
+        self, mocker, capsys, monkeypatch, pinned_author, tmp_path, toml, notice
+    ):
+        rc, data, err = self._run(mocker, capsys, monkeypatch, tmp_path, toml)
+        assert data["notices"] == [notice]
+        # The verdict is the one it was: the setting is still left out.
+        assert (rc, data["status"]) == (0, "pass")
+        # And stderr still has the line, mark and all.
+        assert err.splitlines()[0].endswith(notice["message"])
+
+    def test_notices_follow_stderr_in_order(
+        self, mocker, capsys, monkeypatch, pinned_author, tmp_path
+    ):
+        """One entry per line printed, in the same order, with the mark removed.
+
+        The control on the instrument: every notice line on stderr has its
+        entry, so a site that printed without collecting would show here.
+        """
+        monkeypatch.setenv("CCHK_SUBJECT_MAX_LENGTH", "abc")
+        rc, data, err = self._run(
+            mocker,
+            capsys,
+            monkeypatch,
+            tmp_path,
+            'inherit_from = "missing-parent.toml"\n'
+            "[commit]\nsubject_max_lenght = 10\n"
+            '[files]\nmax_size = "lots"\n',
+        )
+        assert rc == 0
+        assert [n["setting"] for n in data["notices"]] == [
+            "inherit_from",
+            "[commit] subject_max_lenght",
+            "CCHK_SUBJECT_MAX_LENGTH",
+            "[files] max_size",
+        ]
+        marks = ["⊘", "⚠", "Warning:", "⊘"]
+        assert err.splitlines() == [
+            f"{mark} {n['message']}" for mark, n in zip(marks, data["notices"])
+        ]
+        assert data["notices"][0]["message"].startswith(
+            'inherit_from "missing-parent.toml" could not be loaded: '
+        )
+        assert data["notices"][2]["message"] == (
+            "Invalid value for CCHK_SUBJECT_MAX_LENGTH: Cannot parse 'abc' as integer"
+        )
+
+    def test_a_nested_inherit_from_is_a_notice(
+        self, mocker, capsys, monkeypatch, pinned_author, tmp_path
+    ):
+        (tmp_path / "parent.toml").write_text('inherit_from = "grandparent.toml"\n')
+        _, data, _ = self._run(
+            mocker, capsys, monkeypatch, tmp_path, 'inherit_from = "parent.toml"\n'
+        )
+        assert data["notices"] == [
+            {
+                "setting": "inherit_from",
+                "message": (
+                    'inherit_from "grandparent.toml" in the parent config '
+                    '"parent.toml" is ignored: only one level of inherit_from '
+                    "is followed"
+                ),
+            }
+        ]
+
+    def test_jira_is_still_not_checked(
+        self, mocker, capsys, monkeypatch, pinned_author, tmp_path
+    ):
+        """[jira] is the GitHub App's; its keys are left alone, as before."""
+        _, data, _ = self._run(
+            mocker, capsys, monkeypatch, tmp_path, "[jira]\nanything = true\n"
+        )
+        assert data["notices"] == []
+
+    def test_files_with_nothing_configured_is_a_notice_and_a_skip(
+        self, capfd, monkeypatch, tmp_path
+    ):
+        """No check ran, so the run is a skip, not a pass; the exit code stays 0."""
+        subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.argv", [CMD, "--files", "--format", "json"])
+        assert main() == 0
+        out, err = capfd.readouterr()
+        data = json.loads(out)
+        assert data["status"] == "skip"
+        assert data["checks"] == []
+        hint = "--files requested but nothing is configured in the [files] section"
+        assert data["notices"] == [{"setting": "--files", "message": hint}]
+        assert f"⊘ {hint}" in err
+
+    def test_branch_with_no_branch_rules_is_a_notice_and_a_skip(
+        self, capsys, monkeypatch, tmp_path
+    ):
+        config = tmp_path / "cchk.toml"
+        config.write_text("[branch]\nconventional_branch = false\n")
+        monkeypatch.setattr(
+            "sys.argv", [CMD, "--branch", "--format", "json", "--config", str(config)]
+        )
+        assert main() == 0
+        data = json.loads(capsys.readouterr().out)
+        assert data["status"] == "skip"
+        assert data["notices"] == [
+            {
+                "setting": "--branch",
+                "message": TestBranchUnconfigured.HINT.removeprefix("⊘ "),
+            }
+        ]
+
+
 class TestNoBanner:
     """Tests for --no-banner flag."""
 
@@ -2333,12 +2524,12 @@ class TestAiAttributionOnly:
     def test_ignore_runs_nothing_but_still_names_the_tools(
         self, mocker, capsys, monkeypatch, pinned_author
     ):
-        """Label-only: no verdict, but the tools are reported."""
+        """Label-only: no verdict, so a skip, but the tools are reported."""
         rc, data = self._run_json(
             mocker, capsys, monkeypatch, self.BODY, "--ai-attribution-only"
         )
         assert rc == 0
-        assert data["status"] == "pass"
+        assert data["status"] == "skip"
         assert data["checks"] == []
         assert data["ai_tools"] == ["Claude Code"]
 
