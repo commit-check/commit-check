@@ -230,14 +230,17 @@ def overall_status(statuses: Iterable[str]) -> str:
     after the skip status existed.
 
     ``"skip"`` requires that *every* check skipped: a single real verdict
-    means something was actually validated. Only ``"fail"`` is an error: a
-    ``"warn"`` is a verdict the config asked to report without enforcing,
-    so a run whose only findings are warnings passes.
+    means something was actually validated. A run with no checks at all
+    validated nothing either, so it is ``"skip"`` too, not ``"pass"``. Only
+    ``"fail"`` is an error: a ``"warn"`` is a verdict the config asked to
+    report without enforcing, so a run whose only findings are warnings
+    passes.
     """
+    # all() of nothing is True, so an empty run reads as skipped.
     seen = list(statuses)
     if any(s == "fail" for s in seen):
         return "fail"
-    if seen and all(s == "skip" for s in seen):
+    if all(s == "skip" for s in seen):
         return "skip"
     return "pass"
 

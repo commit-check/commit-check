@@ -887,3 +887,31 @@ class TestRelativeInheritFrom:
         err = capsys.readouterr().err
         assert f'inherit_from "{grandparent}" in the parent config "{parent}"' in err
         assert "only one level of inherit_from is followed" in err
+
+    def test_a_parent_not_loaded_is_collected(self, tmp_path, monkeypatch, capsys):
+        """Given a list, load_config adds the notice to it as well as printing it."""
+        (tmp_path / "cchk.toml").write_text('inherit_from = "missing.toml"\n')
+        monkeypatch.chdir(tmp_path)
+        notices: list[dict[str, str]] = []
+        assert load_config(notices=notices) == {}
+        [notice] = notices
+        assert notice["setting"] == "inherit_from"
+        assert notice["message"].startswith(
+            'inherit_from "missing.toml" could not be loaded: '
+        )
+        assert capsys.readouterr().err == f"⊘ {notice['message']}\n"
+
+    def test_a_nested_inherit_from_is_collected(self, tmp_path, capsys):
+        parent = tmp_path / "parent.toml"
+        parent.write_text(
+            'inherit_from = "gp.toml"\n[commit]\nsubject_max_length = 50\n'
+        )
+        notices: list[dict[str, str]] = []
+        _resolve_inherit_from({"inherit_from": str(parent)}, tmp_path, notices)
+        assert notices == [
+            {
+                "setting": "inherit_from",
+                "message": f'inherit_from "gp.toml" in the parent config "{parent}" '
+                "is ignored: only one level of inherit_from is followed",
+            }
+        ]

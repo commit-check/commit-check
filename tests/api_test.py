@@ -288,10 +288,10 @@ class TestValidateAll:
         assert "branch" in check_names
 
     @pytest.mark.benchmark
-    def test_no_args_returns_pass(self):
-        """Called with no args, validate_all returns pass with empty checks."""
+    def test_no_args_returns_skip(self):
+        """Called with no args, validate_all checks nothing, so it is a skip."""
         result = validate_all()
-        assert result["status"] == "pass"
+        assert result["status"] == "skip"
         assert result["checks"] == []
 
     @pytest.mark.benchmark
@@ -612,3 +612,67 @@ class TestWarnLevelInTheApi:
 
         result = validate_message("feat: add x")
         assert result["warnings"] == 0
+
+
+class TestNoticesInTheApi:
+    """A setting the config dict gives but the rules cannot use is in the result.
+
+    It used to reach stderr only, which a caller of the API does not read.
+    """
+
+    UNUSABLE_SIZE: ClassVar[dict] = {"files": {"max_size": "huge"}}
+    NOTICE: ClassVar[dict] = {
+        "setting": "[files] max_size",
+        "message": (
+            "[files] max_size = 'huge' is not usable; CC302 file-size is disabled"
+        ),
+    }
+
+    @pytest.mark.parametrize(
+        "call",
+        [
+            lambda: validate_message("feat: add x"),
+            lambda: validate_branch("feature/x"),
+            lambda: validate_tag("v1.2.3"),
+            lambda: validate_push(None),
+            lambda: validate_author(name="Ada Lovelace", email="ada@example.com"),
+            lambda: validate_all(),
+        ],
+        ids=["message", "branch", "tag", "push", "author", "all"],
+    )
+    def test_every_result_carries_notices(self, call):
+        """An empty list when every setting is in force, as warnings is 0."""
+        assert call()["notices"] == []
+
+    def test_an_unusable_files_value_is_a_notice(self, capsys):
+        result = validate_message("feat: add x", config=self.UNUSABLE_SIZE)
+
+        assert result["notices"] == [self.NOTICE]
+        # The verdict is unchanged: the rule is off, as before.
+        assert result["status"] == "pass"
+        # And the line on stderr is the one it always was.
+        assert capsys.readouterr().err == f"⊘ {self.NOTICE['message']}\n"
+
+    def test_a_combined_call_lists_a_notice_once(self):
+        """Each pass of validate_all builds its rules from the same config."""
+        result = validate_all(
+            message="feat: add x",
+            branch="feature/x",
+            author_name="Ada Lovelace",
+            author_email="ada@example.com",
+            config=self.UNUSABLE_SIZE,
+        )
+        assert result["notices"] == [self.NOTICE]
+
+    def test_the_combined_author_call_lists_a_notice_once(self):
+        result = validate_author(
+            name="Ada Lovelace", email="ada@example.com", config=self.UNUSABLE_SIZE
+        )
+        assert result["notices"] == [self.NOTICE]
+
+    def test_a_dicts_keys_are_not_checked(self):
+        """Unlike a config file's, which the CLI checks; this is unchanged."""
+        result = validate_message(
+            "feat: add x", config={"commit": {"subject_max_lenght": 10}}
+        )
+        assert result["notices"] == []

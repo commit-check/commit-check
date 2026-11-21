@@ -36,6 +36,29 @@ class ConfigError(ValueError):
         self.setting = setting
 
 
+def report_notice(
+    notices: list[dict[str, str]] | None,
+    setting: str,
+    message: str,
+    mark: str = "⊘",
+) -> None:
+    """Say that a setting is not in force, on stderr and in *notices*.
+
+    The line on stderr is what a person reads in a terminal; *notices* is
+    what reaches the result, ``--format json`` and the Python API, where a
+    line printed beside the output is lost. Each entry is
+    ``{"setting": ..., "message": ...}``: *setting* names what is not in
+    force, as the CLI already writes it (``[files] max_size``,
+    ``inherit_from``, a ``CCHK_*`` variable, ``--files``), and *message* is
+    the stderr line without its leading *mark*.
+
+    :param notices: The list to add the notice to, or ``None`` to print it only.
+    """
+    print(f"{mark} {message}", file=sys.stderr)
+    if notices is not None:
+        notices.append({"setting": setting, "message": message})
+
+
 DEFAULT_CONFIG_PATHS = [
     Path("cchk.toml"),
     Path("commit-check.toml"),
@@ -208,7 +231,9 @@ def _load_parent_config(
 
 
 def _resolve_inherit_from(
-    config: dict[str, Any], base_dir: Path | None = None
+    config: dict[str, Any],
+    base_dir: Path | None = None,
+    notices: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     """Resolve ``inherit_from`` directive, merging parent config with local.
 
@@ -226,6 +251,8 @@ def _resolve_inherit_from(
 
     :param config: Already-parsed local TOML dict (may contain ``inherit_from``).
     :param base_dir: Directory of the config file, for a relative local path.
+    :param notices: Where to add a notice for a parent that was not loaded,
+        as well as printing it; see :func:`report_notice`.
     :returns: Merged config with parent settings applied as base.
     """
     inherit_from = config.pop("inherit_from", None)
@@ -233,16 +260,17 @@ def _resolve_inherit_from(
         return config
 
     # Fail open, as documented: a parent that cannot be loaded leaves the
-    # local config in force. Say so on stderr rather than silently, and keep
-    # stdout clean for --format json.
+    # local config in force. Say so rather than silently, on stderr so that
+    # stdout stays clean for --format json, and in the notices it carries.
     # TOMLDecodeError is a ValueError; URLError is an OSError.
     try:
         parent = _load_parent_config(inherit_from, base_dir)
     except (OSError, ValueError) as e:
-        print(
-            f'⊘ inherit_from "{inherit_from}" could not be loaded: {e}; '
+        report_notice(
+            notices,
+            "inherit_from",
+            f'inherit_from "{inherit_from}" could not be loaded: {e}; '
             "continuing with the local config",
-            file=sys.stderr,
         )
         parent = {}
 
@@ -250,10 +278,11 @@ def _resolve_inherit_from(
     # unknown setting, which reads as a typo rather than a limit.
     if "inherit_from" in parent:
         nested = parent.pop("inherit_from")
-        print(
-            f'⊘ inherit_from "{nested}" in the parent config "{inherit_from}" is '
+        report_notice(
+            notices,
+            "inherit_from",
+            f'inherit_from "{nested}" in the parent config "{inherit_from}" is '
             "ignored: only one level of inherit_from is followed",
-            file=sys.stderr,
         )
 
     if parent:
@@ -331,13 +360,17 @@ def find_config_path(path_hint: str = "") -> Path | None:
     return None
 
 
-def load_config(path_hint: str = "") -> dict[str, Any]:
+def load_config(
+    path_hint: str = "", notices: list[dict[str, str]] | None = None
+) -> dict[str, Any]:
     """Load and validate config from TOML file.
 
     Supports ``inherit_from`` at the top level to merge an organization-level
     configuration from a local file path, a ``github:`` shorthand, or an HTTPS
     URL before applying local overrides.
 
+    :param notices: Where to add a notice for an ``inherit_from`` that was not
+        followed, as well as printing it; see :func:`report_notice`.
     :raises FileNotFoundError: If ``path_hint`` names a file that does not exist.
     :raises ConfigError: If the file is not valid TOML; the message names it.
     """
@@ -348,5 +381,5 @@ def load_config(path_hint: str = "") -> dict[str, Any]:
         # No default config file: run on the built-in defaults.
         return {}
     return _resolve_inherit_from(
-        _load_toml_file(path, shown_as=path_hint or None), path.parent
+        _load_toml_file(path, shown_as=path_hint or None), path.parent, notices
     )

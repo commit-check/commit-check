@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-import sys
 from dataclasses import dataclass, replace
 from typing import Any
 
@@ -21,7 +20,7 @@ from commit_check import (
     GIT_MERGE_SUBJECT_PATTERN,
     GIT_REVERT_SUBJECT_PATTERN,
 )
-from commit_check.config import ConfigError
+from commit_check.config import ConfigError, report_notice
 from commit_check.config_merger import get_default_config
 from commit_check.rules_catalog import (
     BRANCH_RULES,
@@ -275,10 +274,20 @@ def _check_author_lists(config: dict[str, Any]) -> None:
 
 
 class RuleBuilder:
-    """Builds validation rules from config and catalog entries."""
+    """Builds validation rules from config and catalog entries.
 
-    def __init__(self, config: dict[str, Any]):
+    :param notices: Where to add a notice for each ``[files]`` setting that
+        cannot be used, as well as printing it; see
+        :func:`~commit_check.config.report_notice`.
+    """
+
+    def __init__(
+        self,
+        config: dict[str, Any],
+        notices: list[dict[str, str]] | None = None,
+    ):
         self.config = config
+        self.notices = notices
         self.commit_config = config.get("commit", {})
         self.branch_config = config.get("branch", {})
         self.push_config = config.get("push", {})
@@ -386,10 +395,11 @@ class RuleBuilder:
             # below would report "not configured" — say what is actually
             # wrong instead of letting the section disappear silently.
             if self.files_config:
-                print(
-                    f"⊘ [files] must be a table, got {self.files_config!r}; "
+                report_notice(
+                    self.notices,
+                    "[files]",
+                    f"[files] must be a table, got {self.files_config!r}; "
                     "the file rules are disabled",
-                    file=sys.stderr,
                 )
             files_config = {}
         builders = {
@@ -417,10 +427,11 @@ class RuleBuilder:
             key = settings.get(catalog_entry.check)
             configured = files_config.get(key) if key else None
             if configured:
-                print(
-                    f"⊘ [files] {key} = {configured!r} is not usable; "
+                report_notice(
+                    self.notices,
+                    f"[files] {key}",
+                    f"[files] {key} = {configured!r} is not usable; "
                     f"{catalog_entry.rule_id} {catalog_entry.name} is disabled",
-                    file=sys.stderr,
                 )
         return rules
 

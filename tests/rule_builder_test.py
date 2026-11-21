@@ -790,6 +790,39 @@ class TestFilesRules:
         assert "must be a table" in err
         assert "garbage" in err
 
+    def test_each_unusable_files_value_is_collected(self, capsys):
+        """Given a list, each notice is added to it as well as printed."""
+        notices: list[dict[str, str]] = []
+        RuleBuilder(
+            {"files": {"max_size": "5M", "max_path_length": -1}}, notices
+        ).build_all_rules()
+        assert notices == [
+            {
+                "setting": "[files] max_size",
+                "message": "[files] max_size = '5M' is not usable; "
+                "CC302 file-size is disabled",
+            },
+            {
+                "setting": "[files] max_path_length",
+                "message": "[files] max_path_length = -1 is not usable; "
+                "CC304 path-length is disabled",
+            },
+        ]
+        assert capsys.readouterr().err.splitlines() == [
+            f"⊘ {n['message']}" for n in notices
+        ]
+
+    def test_a_non_table_files_section_is_collected(self, capsys):
+        notices: list[dict[str, str]] = []
+        RuleBuilder({"files": "garbage"}, notices).build_all_rules()
+        assert notices == [
+            {
+                "setting": "[files]",
+                "message": "[files] must be a table, got 'garbage'; "
+                "the file rules are disabled",
+            }
+        ]
+
     def test_a_false_files_value_opts_out_quietly(self, capsys):
         """files = false reads as "no file rules", which needs no warning."""
         rules = RuleBuilder({"files": False}).build_all_rules()
