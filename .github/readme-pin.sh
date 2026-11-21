@@ -3,8 +3,11 @@
 # release-drafter job that writes it and the publish check that reads it
 # cannot disagree about which lines count.
 #
-# Only `rev:` lines under `repo: https://github.com/commit-check/commit-check`
-# count. A snippet for another hook repository, or a `rev:` in prose, is not
+# Every `rev:` line under `repo: https://github.com/commit-check/commit-check`
+# counts, until the next `repo:` line or the end of the code block, whatever
+# its value: a pin this cannot read is reported as found, not skipped, so a
+# README that is only partly updated never passes. A trailing comment and
+# quotes are kept as they are. A snippet for another hook repository is not
 # this project's pin and is left alone.
 #
 #   readme-pin.sh read            print the pins found, comma-separated
@@ -14,12 +17,29 @@ set -eu
 
 readme=README.md
 
-pins() {
-  awk '
+# mode=read prints each pin's value; mode=write prints the README with every
+# pin set to tag.
+scan() {
+  awk -v mode="$1" -v tag="${2:-}" '
+    /^[[:space:]]*```/ { own = 0 }
     /^[[:space:]]*-?[[:space:]]*repo:/ { own = ($0 ~ /github\.com\/commit-check\/commit-check([[:space:]]|$)/) }
-    own && /^[[:space:]]*rev:[[:space:]]*v[0-9]+\.[0-9]+\.[0-9]+[[:space:]]*$/ {
-      sub(/^[[:space:]]*rev:[[:space:]]*/, ""); sub(/[[:space:]]*$/, ""); print
-    }' "$readme" | sort -u | paste -sd, -
+    own && /^[[:space:]]*rev:/ {
+      match($0, /^[[:space:]]*rev:[[:space:]]*/)
+      head = substr($0, 1, RLENGTH); rest = substr($0, RLENGTH + 1)
+      match(rest, /^[^[:space:]]*/)
+      value = substr(rest, 1, RLENGTH); tail = substr(rest, RLENGTH + 1)
+      q = substr(value, 1, 1)
+      if (q != "\"" && q != "\047") q = ""
+      bare = value
+      if (q != "" && length(value) >= 2 && substr(value, length(value), 1) == q) bare = substr(value, 2, length(value) - 2)
+      if (mode == "read") print (bare == "" ? "(empty)" : bare)
+      else $0 = head q tag q tail
+    }
+    mode == "write" { print }' "$readme"
+}
+
+pins() {
+  scan read | sort -u | paste -sd, -
 }
 
 tag_arg() {
@@ -37,12 +57,7 @@ case "${1:-}" in
     ;;
   write)
     tag_arg "${2:-}"
-    awk -v tag="$2" '
-      /^[[:space:]]*-?[[:space:]]*repo:/ { own = ($0 ~ /github\.com\/commit-check\/commit-check([[:space:]]|$)/) }
-      own && /^[[:space:]]*rev:[[:space:]]*v[0-9]+\.[0-9]+\.[0-9]+[[:space:]]*$/ {
-        match($0, /^[[:space:]]*rev:[[:space:]]*/); $0 = substr($0, 1, RLENGTH) tag
-      }
-      { print }' "$readme" > "$readme.tmp"
+    scan write "$2" > "$readme.tmp"
     mv "$readme.tmp" "$readme"
     # Read it back with the same rule the publish check uses.
     found=$(pins)
