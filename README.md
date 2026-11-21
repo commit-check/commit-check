@@ -208,9 +208,10 @@ their known signatures in the message (and by a commit's author), under any
 for text that is not a commit message, such as a pull request description.
 With `[pull_request] ai_declaration_checkboxes` set, it also checks that the
 description ticks exactly one of those boxes (CC501).
-Under the default `ai_attribution = "ignore"` no AI rule runs, so the status
-is `skip` and only `ai_tools` reports what was found; set `forbid` or `disclose`
-to enforce a policy:
+Under the default `ai_attribution = "ignore"` no AI rule runs. Without
+`ai_declaration_checkboxes` no check runs at all, so the status is `skip` and
+only `ai_tools` reports what was found; set `forbid` or `disclose` to enforce
+a policy:
 
 ```bash
 commit-check --ai-attribution-only --format json < pr-description.md
