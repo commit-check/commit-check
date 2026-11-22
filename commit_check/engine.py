@@ -1360,8 +1360,10 @@ class BodyValidator(BaseValidator):
 #: cannot be wrapped, so the body line length rule does not count it, as
 #: commitlint and checkpatch do not. Schemes are case-insensitive. There is
 #: no word boundary before it: Chinese and Japanese text runs straight into
-#: an address (参见https://...), with no space or punctuation between.
-_URL = re.compile(r"[a-z][a-z0-9+.-]*://\S", re.IGNORECASE)
+#: an address (参见https://...), with no space or punctuation between. The
+#: lookbehind starts the scheme where a run of scheme characters starts, so a
+#: long run with no ``://`` is scanned once, not once per character.
+_URL = re.compile(r"(?<![a-z0-9+.-])[a-z][a-z0-9+.-]*://\S", re.IGNORECASE)
 
 
 def long_body_lines(message: str, limit: int) -> list[int]:
