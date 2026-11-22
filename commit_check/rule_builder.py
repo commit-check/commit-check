@@ -579,6 +579,8 @@ class RuleBuilder:
             return self._build_length_rule(catalog_entry, "subject_max_length")
         elif check == "subject_min_length":
             return self._build_length_rule(catalog_entry, "subject_min_length")
+        elif check == "body_max_line_length":
+            return self._build_length_rule(catalog_entry, "body_max_line_length")
         elif check == "ignore_authors":
             return self._build_author_list_rule(catalog_entry, "ignore_authors")
         elif check in _AI_CHECKS:
@@ -665,7 +667,7 @@ class RuleBuilder:
     def _build_length_rule(
         self, catalog_entry: RuleCatalogEntry, config_key: str
     ) -> ValidationRule | None:
-        """Build subject length validation rule; 0 switches the rule off."""
+        """Build a subject or body line length rule; 0 switches the rule off."""
         length = self.commit_config.get(config_key)
         if length is None:
             return None

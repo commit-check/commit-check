@@ -2835,3 +2835,43 @@ class TestAiToolsInJson:
         mocker.patch("commit_check.engine.get_branch_name", return_value="feature/x")
         data = self._run_json(mocker, capsys, monkeypatch, "", "-b")
         assert "ai_tools" not in data
+
+
+class TestBodyMaxLineLength:
+    """``--body-max-line-length`` reaches CC018 from the command line."""
+
+    MESSAGE = (
+        "feat: add a login form\n\n"
+        "This line was never wrapped, so it runs on well past the seventy-two columns.\n"
+    )
+
+    def _run(self, mocker, monkeypatch, capsys, *argv):
+        monkeypatch.setenv("GIT_AUTHOR_NAME", "Jane Dev")
+        monkeypatch.setenv("GIT_AUTHOR_EMAIL", "jane@example.com")
+        mocker.patch("sys.stdin.isatty", return_value=False)
+        mocker.patch("sys.stdin.read", return_value=self.MESSAGE)
+        monkeypatch.setattr("sys.argv", [CMD, "--format", "json", *argv])
+        rc = main()
+        return rc, json.loads(capsys.readouterr().out)
+
+    def test_the_flag_turns_the_rule_on(self, mocker, monkeypatch, capsys):
+        rc, data = self._run(
+            mocker, monkeypatch, capsys, "--message", "--body-max-line-length", "72"
+        )
+        assert rc == 1
+        failed = [c for c in data["checks"] if c["status"] == "fail"]
+        assert [c["rule_id"] for c in failed] == ["CC018"]
+
+    def test_off_by_default(self, mocker, monkeypatch, capsys):
+        rc, data = self._run(mocker, monkeypatch, capsys, "--message")
+        assert rc == 0
+        assert "CC018" not in {c.get("rule_id") for c in data["checks"]}
+
+    def test_a_pull_request_title_is_not_judged_by_it(
+        self, mocker, monkeypatch, capsys
+    ):
+        rc, data = self._run(
+            mocker, monkeypatch, capsys, "--pr-title", "--body-max-line-length", "72"
+        )
+        assert rc == 0
+        assert "CC018" not in {c.get("rule_id") for c in data["checks"]}

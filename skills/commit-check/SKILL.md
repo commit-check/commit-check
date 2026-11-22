@@ -25,7 +25,7 @@ commit-check.toml
 .github/commit-check.toml
 ```
 
-Read it before you write a commit. It is the project's own rulebook: allowed commit types, subject length, whether a body or a `Signed-off-by` trailer is required, branch prefixes, and the AI attribution policy. If there is no file, the defaults apply: [Conventional Commits](https://www.conventionalcommits.org) messages and [Conventional Branch](https://conventionalbranch.org) names.
+Read it before you write a commit. It is the project's own rulebook: allowed commit types, subject length, the width to wrap the body at (`body_max_line_length`), whether a body or a `Signed-off-by` trailer is required, branch prefixes, and the AI attribution policy. If there is no file, the defaults apply: [Conventional Commits](https://www.conventionalcommits.org) messages and [Conventional Branch](https://conventionalbranch.org) names.
 
 Check that the CLI is available with `commit-check --version`. If it is not installed, use `uvx commit-check` in place of `commit-check` in the commands below.
 

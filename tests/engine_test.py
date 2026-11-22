@@ -16,6 +16,7 @@ from commit_check.engine import (
     AiDeclarationValidator,
     AuthorValidator,
     BaseValidator,
+    BodyLineLengthValidator,
     BodyValidator,
     BranchValidator,
     CommitMessageValidator,
@@ -35,6 +36,7 @@ from commit_check.engine import (
     declaration_boxes,
     is_merge_subject,
     is_revert_subject,
+    long_body_lines,
 )
 from commit_check.rule_builder import RuleBuilder, ValidationRule
 from commit_check.rules_catalog import RULES_BY_CHECK
@@ -5175,3 +5177,141 @@ class TestAiDeclarationValidator:
             config={"commit": {"ignore_authors": ["dependabot[bot]"]}},
         )
         assert validator.validate(context) == ValidationResult.SKIP
+
+
+class TestBodyLineLength:
+    """CC018: no body line longer than [commit] body_max_line_length."""
+
+    LONG = "This sentence runs on well past the seventy-two columns that git log shows."
+
+    @staticmethod
+    def _validate(message, limit=72, **context):
+        validator = BodyLineLengthValidator(
+            ValidationRule(check="body_max_line_length", value=limit)
+        )
+        validator._suppress_output = True
+        result = validator.validate(ValidationContext(stdin_text=message, **context))
+        return result, validator
+
+    def test_a_wrapped_body_passes(self):
+        message = "feat: x\n\nA short line.\nAnother short line."
+        assert self._validate(message)[0] == ValidationResult.PASS
+
+    def test_a_line_over_the_limit_fails_with_its_length(self):
+        assert len(self.LONG) == 75
+        result, validator = self._validate(f"feat: x\n\n{self.LONG}")
+        assert result == ValidationResult.FAIL
+        failure = validator._last_failure
+        assert failure["error"] == (
+            "A body line is 75 characters; body lines must be at most 72 characters"
+        )
+        assert failure["suggest"] == "Wrap the body at 72 characters"
+
+    def test_several_long_lines_are_counted(self):
+        longer = self.LONG + " And more."
+        message = f"feat: x\n\n{self.LONG}\nshort\n{longer}"
+        result, validator = self._validate(message)
+        assert result == ValidationResult.FAIL
+        assert validator._last_failure["error"] == (
+            "2 body lines are longer than 72 characters, the longest 85 characters"
+        )
+
+    def test_a_line_at_the_limit_passes(self):
+        line = ("word " * 15)[:72]
+        assert len(line) == 72
+        assert self._validate(f"feat: x\n\n{line}")[0] == ValidationResult.PASS
+
+    def test_the_subject_is_not_counted(self):
+        """The subject's length is CC004's to judge."""
+        assert self._validate(f"feat: {self.LONG}")[0] == ValidationResult.PASS
+
+    @pytest.mark.parametrize(
+        "line",
+        [
+            "See https://example.com/a/path/long/enough/to/push/the/line/past/the/limit for it",
+            "Logs: http://ci.example.com/job/12345/console and the rest of this long line",
+            "src/commit_check/a/deeply/nested/module/path/that/is/longer/than/the/limit.py",
+            "    " + "x" * 90,
+        ],
+        ids=["https", "http", "path", "no-space-indented"],
+    )
+    def test_lines_that_cannot_be_wrapped_are_not_counted(self, line):
+        assert len(line) > 72
+        assert self._validate(f"feat: x\n\n{line}")[0] == ValidationResult.PASS
+
+    def test_the_trailer_block_is_not_counted(self):
+        trailer = "Co-authored-by: Someone With A Long Name <someone.with.a.long.name@example.com>"
+        assert len(trailer) > 72
+        message = f"feat: x\n\nWhy.\n\nSigned-off-by: T <t@e.com>\n{trailer}\n"
+        assert self._validate(message)[0] == ValidationResult.PASS
+
+    def test_a_long_line_in_a_paragraph_that_is_not_all_trailers_counts(self):
+        message = f"feat: x\n\nFixes: #12\n{self.LONG}"
+        assert self._validate(message)[0] == ValidationResult.FAIL
+
+    def test_trailers_right_under_the_subject_are_body_text(self):
+        """With no blank line, git reads no trailer block, and neither does this."""
+        trailer = "Co-authored-by: Someone With A Long Name <someone.with.a.long.name@example.com>"
+        assert self._validate(f"feat: x\n{trailer}")[0] == ValidationResult.FAIL
+
+    def test_merge_commits_are_skipped(self):
+        message = f"Merge branch 'main' into feature\n\n{self.LONG}"
+        assert self._validate(message)[0] == ValidationResult.SKIP
+
+    def test_an_empty_message_passes(self):
+        assert self._validate("")[0] == ValidationResult.PASS
+
+    @pytest.mark.parametrize("bot", ["dependabot[bot]", "renovate[bot]"])
+    def test_dependency_bots_are_skipped(self, bot, monkeypatch):
+        """The bot copies the release notes into the body."""
+        monkeypatch.setenv("GIT_AUTHOR_NAME", bot)
+        result, validator = self._validate(f"chore(deps): bump x\n\n{self.LONG}")
+        assert result == ValidationResult.SKIP
+        assert validator._skip_reason == f"{bot} writes the body from the release notes"
+
+    def test_a_person_is_not_skipped(self, monkeypatch):
+        monkeypatch.setenv("GIT_AUTHOR_NAME", "Jane Doe")
+        result, _ = self._validate(f"chore(deps): bump x\n\n{self.LONG}")
+        assert result == ValidationResult.FAIL
+
+    def test_ignored_authors_skip_it(self):
+        result, _ = self._validate(
+            f"feat: x\n\n{self.LONG}\n\nCo-authored-by: Bot <bot@example.com>",
+            config={"commit": {"ignore_authors": ["Bot"]}},
+        )
+        assert result == ValidationResult.SKIP
+
+    def test_long_body_lines_numbers_point_into_the_message(self):
+        message = f"feat: x\n\nshort\n{self.LONG}\n\nhttps://example.com/{'x' * 80}"
+        assert long_body_lines(message, 72) == [3]
+
+    def test_the_rule_is_off_by_default(self):
+        rules = RuleBuilder(get_default_config()).build_all_rules()
+        assert "body_max_line_length" not in {rule.check for rule in rules}
+
+    def test_the_engine_quotes_the_message_and_marks_the_long_line(self, capsys):
+        config = get_default_config()
+        config["commit"]["body_max_line_length"] = 72
+        rules = RuleBuilder(config).build_all_rules()
+        message = f"feat: add login\n\nshort\n{self.LONG}"
+        result = ValidationEngine(rules).validate_all(
+            ValidationContext(stdin_text=message, no_banner=True)
+        )
+        assert result == ValidationResult.FAIL
+        out = capsys.readouterr().out
+        assert f"\u2502 {self.LONG}" in out or f"| {self.LONG}" in out
+        assert "CC018" in out
+        # The quote shows the whole message, so the block does not repeat it.
+        assert out.count(self.LONG) == 1
+
+    def test_a_subject_rule_and_this_one_share_one_quote(self, capsys):
+        config = get_default_config()
+        config["commit"]["body_max_line_length"] = 72
+        rules = RuleBuilder(config).build_all_rules()
+        message = f"bad subject\n\n{self.LONG}"
+        ValidationEngine(rules).validate_all(
+            ValidationContext(stdin_text=message, no_banner=True)
+        )
+        out = capsys.readouterr().out
+        assert "CC001" in out and "CC018" in out
+        assert out.count(self.LONG) == 1
