@@ -1355,9 +1355,10 @@ class BodyValidator(BaseValidator):
         return ValidationResult.FAIL
 
 
-#: A line that holds a web address. It cannot be wrapped, so the body line
-#: length rule does not count it, as commitlint and checkpatch do not.
-_URL = re.compile(r"\bhttps?://\S", re.IGNORECASE)
+#: A line that holds an address with a scheme (https://, ftp://, ssh://). It
+#: cannot be wrapped, so the body line length rule does not count it, as
+#: commitlint and checkpatch do not. Schemes are case-insensitive.
+_URL = re.compile(r"\b[a-z][a-z0-9+.-]*://\S", re.IGNORECASE)
 
 
 def long_body_lines(message: str, limit: int) -> list[int]:
@@ -1377,8 +1378,14 @@ def long_body_lines(message: str, limit: int) -> list[int]:
     start = end
     while start > 1 and lines[start - 1].strip():
         start -= 1
-    if start > 1 and all(
-        _BODY_TRAILER_LINE.match(line.strip()) for line in lines[start:end]
+    # git lets a trailer's value continue on an indented line.
+    if (
+        start > 1
+        and _BODY_TRAILER_LINE.match(lines[start].strip())
+        and all(
+            _BODY_TRAILER_LINE.match(line.strip()) or line[:1] in (" ", "\t")
+            for line in lines[start:end]
+        )
     ):
         trailers = set(range(start, end))
     return [
@@ -1399,7 +1406,7 @@ class BodyLineLengthValidator(BaseValidator):
         if self._should_skip_commit_validation(context):
             return ValidationResult.SKIP
 
-        message = self._get_commit_message(context)
+        message = self._get_raw_message(context)
         if not message:
             return ValidationResult.PASS
 
@@ -1435,6 +1442,18 @@ class BodyLineLengthValidator(BaseValidator):
         suggest = f"Wrap the body at {limit} characters"
         self._print_failure(message, error=error, suggest=suggest)
         return ValidationResult.FAIL
+
+    def _get_raw_message(self, context: ValidationContext) -> str:
+        """The message with its line breaks as committed.
+
+        ``%s`` joins a first paragraph into one line, so a body line written
+        right under the subject would vanish into it; ``%B`` keeps it.
+        """
+        if context.stdin_text is not None or context.commit_file:
+            return self._get_commit_message(context)
+        if context.rev is not None:
+            return get_commit_info("B", context.rev).strip()
+        return get_commit_info("B").strip()
 
 
 class ForcePushValidator(BaseValidator):

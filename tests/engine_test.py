@@ -5234,8 +5234,17 @@ class TestBodyLineLength:
             "    " + "x" * 90,
             "See HTTPS://EXAMPLE.COM/a/path/long/enough/to/push/the/line/past/the/limit for it",
             "See Https://example.com/a/path/long/enough/to/push/the/line/past/the/limit for it",
+            "Mirror at ftp://ftp.example.com/pub/a/path/long/enough/to/pass/the/limit too",
         ],
-        ids=["https", "http", "path", "no-space-indented", "upper-case", "mixed-case"],
+        ids=[
+            "https",
+            "http",
+            "path",
+            "no-space-indented",
+            "upper-case",
+            "mixed-case",
+            "ftp",
+        ],
     )
     def test_lines_that_cannot_be_wrapped_are_not_counted(self, line):
         assert len(line) > 72
@@ -5246,6 +5255,34 @@ class TestBodyLineLength:
         assert len(trailer) > 72
         message = f"feat: x\n\nWhy.\n\nSigned-off-by: T <t@e.com>\n{trailer}\n"
         assert self._validate(message)[0] == ValidationResult.PASS
+
+    def test_a_folded_trailer_value_stays_in_the_trailer_block(self):
+        """git lets a trailer value continue on an indented line."""
+        long = "Co-authored-by: Someone With A Long Name <someone.with.a.long.name@example.com>"
+        message = f"feat: x\n\nWhy.\n\nFixes: #12\n  and the follow-up in #13\n{long}"
+        assert self._validate(message)[0] == ValidationResult.PASS
+
+    def test_an_indented_paragraph_is_not_a_trailer_block(self):
+        message = f"feat: x\n\nWhy.\n\n  {self.LONG}\n  and more"
+        assert self._validate(message)[0] == ValidationResult.FAIL
+
+    @pytest.mark.parametrize("rev", [None, "abc123"])
+    def test_an_existing_commit_is_read_with_its_line_breaks(self, mocker, rev):
+        """%s would join a line right under the subject into the subject."""
+        info = mocker.patch(
+            "commit_check.engine.get_commit_info",
+            side_effect=lambda fmt, sha="HEAD": {
+                "B": f"feat: x\n{self.LONG}\n",
+                "an": "Jane Doe",
+            }[fmt],
+        )
+        mocker.patch("commit_check.engine.has_commits", return_value=True)
+        validator = BodyLineLengthValidator(
+            ValidationRule(check="body_max_line_length", value=72)
+        )
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext(rev=rev)) == ValidationResult.FAIL
+        assert info.call_args_list[0].args[0] == "B"
 
     def test_a_long_line_in_a_paragraph_that_is_not_all_trailers_counts(self):
         message = f"feat: x\n\nFixes: #12\n{self.LONG}"
