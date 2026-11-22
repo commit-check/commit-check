@@ -5313,5 +5313,6 @@ class TestBodyLineLength:
             ValidationContext(stdin_text=message, no_banner=True)
         )
         out = capsys.readouterr().out
-        assert "CC001" in out and "CC018" in out
+        assert "CC001" in out
+        assert "CC018" in out
         assert out.count(self.LONG) == 1
