@@ -5242,7 +5242,8 @@ class TestBodyLineLength:
     )
     def test_prose_without_spaces_is_counted(self, line):
         """Chinese, Japanese and Korean put no spaces between words."""
-        assert " " not in line and len(line) > 72
+        assert " " not in line
+        assert len(line) > 72
         assert self._validate(f"feat: x\n\n{line}")[0] == ValidationResult.FAIL
 
     def test_a_short_line_of_wide_characters_passes(self):
