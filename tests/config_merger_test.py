@@ -164,6 +164,11 @@ class TestConfigMergerParseEnvVars:
         config = ConfigMerger.parse_env_vars()
         assert config["commit"]["subject_max_length"] == 100
 
+    def test_parse_body_line_length_env_var(self, monkeypatch):
+        monkeypatch.setenv("CCHK_BODY_MAX_LINE_LENGTH", "72")
+        config = ConfigMerger.parse_env_vars()
+        assert config["commit"]["body_max_line_length"] == 72
+
     def test_parse_list_env_var(self, monkeypatch):
         monkeypatch.setenv("CCHK_ALLOW_COMMIT_TYPES", "feat,fix,docs")
         config = ConfigMerger.parse_env_vars()
@@ -233,6 +238,11 @@ class TestConfigMergerParseCliArgs:
         args = argparse.Namespace(subject_max_length=100)
         config = ConfigMerger.parse_cli_args(args)
         assert config["commit"]["subject_max_length"] == 100
+
+    def test_parse_body_line_length_cli_arg(self):
+        args = argparse.Namespace(body_max_line_length=72)
+        config = ConfigMerger.parse_cli_args(args)
+        assert config["commit"]["body_max_line_length"] == 72
 
     def test_parse_list_cli_arg(self):
         args = argparse.Namespace(allow_commit_types=["feat", "fix", "docs"])

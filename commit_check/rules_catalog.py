@@ -151,6 +151,15 @@ COMMIT_RULES = [
         error="Commit body is required",
         suggest="Add a body explaining the change",
     ),
+    # Off until [commit] body_max_line_length is set. The validator words
+    # the failure from the lines it measured.
+    RuleCatalogEntry(
+        rule_id="CC018",
+        check="body_max_line_length",
+        regex=None,
+        error="Body lines must be at most {max_len} characters",
+        suggest="Wrap the body at {max_len} characters",
+    ),
     RuleCatalogEntry(
         rule_id="CC101",
         check="author_name",
@@ -356,10 +365,12 @@ AI_TEXT_CHECKS: frozenset[str] = frozenset(
     {"ai_attribution", "ai_disclosure", "ai_co_author", "ai_signoff"}
 ) | frozenset(entry.check for entry in PULL_REQUEST_RULES)
 #: What ``--pr-title`` runs: the ``--message`` rules a one-line pull or merge
-#: request title can meet. A title has no body (CC011), no trailer to carry a
-#: sign-off (CC012) and no author of its own (CC017); those stay with commits.
+#: request title can meet. A title has no body (CC011, CC018), no trailer to
+#: carry a sign-off (CC012) and no author of its own (CC017); those stay with
+#: commits.
 PR_TITLE_CHECKS: frozenset[str] = MESSAGE_CHECKS - {
     "require_body",
+    "body_max_line_length",
     "require_signed_off_by",
     "ai_author",
 }

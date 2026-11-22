@@ -1221,7 +1221,9 @@ class TestWrongTypeSettings:
         assert setting in str(excinfo.value)
         assert excinfo.value.setting == setting
 
-    @pytest.mark.parametrize("key", ["subject_max_length", "subject_min_length"])
+    @pytest.mark.parametrize(
+        "key", ["subject_max_length", "subject_min_length", "body_max_line_length"]
+    )
     @pytest.mark.parametrize("value", [True, False, "50", 5.5])
     def test_a_non_integer_length_names_the_setting(self, key, value):
         with pytest.raises(ConfigError, match="must be a whole number") as excinfo:
@@ -1352,3 +1354,26 @@ class TestAiDeclarationRule:
         )
         (rule,) = [r for r in builder.build_all_rules() if r.check == "ai_declaration"]
         assert rule.severity == "warn"
+
+
+class TestBodyLineLengthRuleBuilder:
+    """[commit] body_max_line_length builds CC018; 0 or unset builds nothing."""
+
+    @staticmethod
+    def _checks(commit):
+        return {
+            rule.check: rule
+            for rule in RuleBuilder({"commit": commit}).build_all_rules()
+        }
+
+    @pytest.mark.parametrize("commit", [{}, {"body_max_line_length": 0}])
+    def test_off_unless_set(self, commit):
+        assert "body_max_line_length" not in self._checks(commit)
+
+    def test_a_limit_builds_the_rule(self):
+        rule = self._checks({"body_max_line_length": 72})["body_max_line_length"]
+        assert rule.rule_id == "CC018"
+        assert rule.value == 72
+        assert rule.error == "Body lines must be at most 72 characters"
+        assert rule.suggest == "Wrap the body at 72 characters"
+        assert rule.docs_url == "https://commit-check.com/rules/#cc018"

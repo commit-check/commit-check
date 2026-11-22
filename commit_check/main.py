@@ -472,6 +472,14 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     commit_group.add_argument(
+        "--body-max-line-length",
+        type=parse_int,
+        default=None,
+        metavar="INT",
+        help="maximum length of a commit body line; 0 (the default) turns the check off",
+    )
+
+    commit_group.add_argument(
         "--require-signed-off-by",
         type=parse_bool,
         default=None,

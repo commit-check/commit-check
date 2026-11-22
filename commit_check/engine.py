@@ -7,6 +7,7 @@ import re
 import shlex
 import subprocess
 import sys
+import unicodedata
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from dataclasses import dataclass, field
@@ -689,6 +690,25 @@ def _characters(count: int) -> str:
     return f"{count} character{'' if count == 1 else 's'}"
 
 
+def _dependency_bot(context: ValidationContext) -> str:
+    """The dependency update bot that wrote the commit, or "" for anyone else.
+
+    The length rules let these bots through: they write the subject from the
+    package name and versions, and the body from the release notes.
+    """
+    if context.rev is not None:
+        author = get_commit_info("an", context.rev)
+    elif context.stdin_text is not None or context.commit_file is not None:
+        # A message not yet committed is a bot's only when the caller says
+        # so through git's author variable, as the Action does for each
+        # pull request commit. Bots do not commit through a local hook,
+        # so the local git config is not asked.
+        author = os.environ.get("GIT_AUTHOR_NAME", "").strip()
+    else:
+        author = get_commit_info("an")
+    return author if author in DEPENDENCY_UPDATE_BOTS else ""
+
+
 class SubjectLengthValidator(SubjectValidator):
     """Validates subject line length constraints."""
 
@@ -699,18 +719,8 @@ class SubjectLengthValidator(SubjectValidator):
         return super().validate(context)
 
     def _written_by_dependency_bot(self) -> bool:
-        context = self._context
-        if context.rev is not None:
-            author = get_commit_info("an", context.rev)
-        elif context.stdin_text is not None or context.commit_file is not None:
-            # A message not yet committed is a bot's only when the caller says
-            # so through git's author variable, as the Action does for each
-            # pull request commit. Bots do not commit through a local hook,
-            # so the local git config is not asked.
-            author = os.environ.get("GIT_AUTHOR_NAME", "").strip()
-        else:
-            author = get_commit_info("an")
-        if author not in DEPENDENCY_UPDATE_BOTS:
+        author = _dependency_bot(self._context)
+        if not author:
             return False
         self._skip_reason = (
             f"{author} writes the subject from the package name and versions"
@@ -1344,6 +1354,139 @@ class BodyValidator(BaseValidator):
 
         self._print_failure(message)
         return ValidationResult.FAIL
+
+
+#: A line that holds an address with a scheme (https://, ftp://, ssh://). It
+#: cannot be wrapped, so the body line length rule does not count it, as
+#: commitlint and checkpatch do not. Schemes are case-insensitive. There is
+#: no word boundary before it: Chinese and Japanese text runs straight into
+#: an address (参见https://...), with no space or punctuation between. The
+#: lookbehind starts the scheme where a run of scheme characters starts, so a
+#: long run with no ``://`` is scanned once, not once per character.
+_URL = re.compile(r"(?<![a-z0-9+.-])[a-z][a-z0-9+.-]*://\S", re.IGNORECASE)
+
+
+def long_body_lines(message: str, limit: int) -> list[int]:
+    """The numbers of *message*'s body lines longer than *limit*, from 0.
+
+    Counted in the message as given, so the numbers point into the quoted
+    message. The subject is CC004's, and three kinds of line are left out
+    because wrapping them breaks them: a line with a web address, a single
+    word with no space in it (a path, a hash), and the trailer block at the
+    end, where a ``Co-authored-by:`` line is as long as the name and address
+    in it. Chinese, Japanese and Korean prose has no spaces between words, so
+    a line with one of their characters is counted even without a space.
+    """
+    # Trailing blank lines change no line's number, and are never long.
+    lines = message.rstrip().split("\n")
+    # The trailer block is the last paragraph when every line in it is one.
+    trailers: set[int] = set()
+    end = len(lines)
+    start = end
+    while start > 1 and lines[start - 1].strip():
+        start -= 1
+    # git lets a trailer's value continue on an indented line.
+    if (
+        start > 1
+        and _BODY_TRAILER_LINE.match(lines[start].strip())
+        and all(
+            _BODY_TRAILER_LINE.match(line.strip()) or line[:1] in (" ", "\t")
+            for line in lines[start:end]
+        )
+    ):
+        trailers = set(range(start, end))
+    return [
+        number
+        for number, line in enumerate(lines)
+        if number > 0
+        and number not in trailers
+        and len(line.rstrip()) > limit
+        and not _one_word(line)
+        and not _URL.search(line)
+    ]
+
+
+def _one_word(line: str) -> bool:
+    """Whether *line* is one word that wrapping would break: a path, a hash.
+
+    A line of Chinese, Japanese or Korean has no spaces either, yet it is
+    prose that wraps anywhere, so a wide character makes it more than a word.
+    """
+    text = line.strip()
+    return " " not in text and not any(
+        unicodedata.east_asian_width(char) in ("W", "F") for char in text
+    )
+
+
+def _line_numbers(numbers: list[int]) -> str:
+    """``Line 3``, ``Lines 3 and 5``, ``Lines 3, 5, 8 and 2 more``, from 1."""
+    shown = [str(number + 1) for number in numbers[:3]]
+    if len(numbers) == 1:
+        return f"Line {shown[0]}"
+    rest = len(numbers) - len(shown)
+    if rest:
+        return f"Lines {', '.join(shown)} and {rest} more"
+    return f"Lines {', '.join(shown[:-1])} and {shown[-1]}"
+
+
+class BodyLineLengthValidator(BaseValidator):
+    """Validates that no line of the commit body is longer than the limit."""
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        if self._should_skip_commit_validation(context):
+            return ValidationResult.SKIP
+
+        message = self._get_raw_message(context)
+        if not message:
+            return ValidationResult.PASS
+
+        self._checked_value = message
+
+        # git writes a merge commit's body (the conflict list) itself.
+        subject = message.split("\n", 1)[0]
+        if is_merge_subject(subject):
+            return ValidationResult.SKIP
+
+        limit = self.rule.value
+        long_lines = long_body_lines(message, limit)
+        if not long_lines:
+            return ValidationResult.PASS
+
+        bot = _dependency_bot(context)
+        if bot:
+            self._skip_reason = f"{bot} writes the body from the release notes"
+            return ValidationResult.SKIP
+
+        lines = message.split("\n")
+        longest = max(len(lines[number].rstrip()) for number in long_lines)
+        # The numbers count the subject as line 1, as an editor does, and
+        # point into the message quoted above the failure.
+        where = _line_numbers(long_lines)
+        if len(long_lines) == 1:
+            error = (
+                f"{where} is {_characters(longest)}; "
+                f"body lines must be at most {_characters(limit)}"
+            )
+        else:
+            error = (
+                f"{where} are longer than {_characters(limit)}, "
+                f"the longest {_characters(longest)}"
+            )
+        suggest = f"Wrap the body at {limit} characters"
+        self._print_failure(message, error=error, suggest=suggest)
+        return ValidationResult.FAIL
+
+    def _get_raw_message(self, context: ValidationContext) -> str:
+        """The message with its line breaks as committed.
+
+        ``%s`` joins a first paragraph into one line, so a body line written
+        right under the subject would vanish into it; ``%B`` keeps it.
+        """
+        if context.stdin_text is not None or context.commit_file:
+            return self._get_commit_message(context)
+        if context.rev is not None:
+            return get_commit_info("B", context.rev).strip()
+        return get_commit_info("B").strip()
 
 
 class ForcePushValidator(BaseValidator):
@@ -2013,12 +2156,22 @@ _MESSAGE_CHECKS = frozenset(
         "allow_fixup_commits",
         "allow_wip_commits",
         "require_body",
+        "body_max_line_length",
         "require_signed_off_by",
     }
 )
 
 #: Of those, the ones that find fault with the subject line itself.
-_SUBJECT_CHECKS = _MESSAGE_CHECKS - {"require_body", "require_signed_off_by"}
+_SUBJECT_CHECKS = _MESSAGE_CHECKS - {
+    "require_body",
+    "body_max_line_length",
+    "require_signed_off_by",
+}
+
+#: Of those, the ones that point at lines inside the body: the message is
+#: quoted for them even when no other rule reports it, since the line to
+#: change is what the reader needs to see.
+_BODY_LINE_CHECKS = frozenset({"body_max_line_length"})
 
 
 def _quotes(message: str, check: str, value: str) -> bool:
@@ -2046,6 +2199,9 @@ def _shared_message(blocks: list[tuple[dict, str]]) -> str | None:
         covered = sum(1 for value in candidates if _quotes(message, "message", value))
         if covered >= 2:
             return message
+    for rule_dict, value in blocks:
+        if rule_dict["check"] in _BODY_LINE_CHECKS and value.strip():
+            return value
     return None
 
 
@@ -2077,6 +2233,8 @@ def _marked_lines(message: str, blocks: list[tuple[dict, str]]) -> set[int]:
         fix = rule_dict.get("fix") or ""
         if check.startswith("ai_") and fix:
             marked |= _removed_lines(lines, fix)
+        if check == "body_max_line_length" and _quotes(message, check, value):
+            marked |= set(long_body_lines(message, rule_dict["value"]))
     return marked
 
 
@@ -2109,6 +2267,7 @@ class ValidationEngine:
         "merge_base": MergeBaseValidator,
         "require_signed_off_by": SignoffValidator,
         "require_body": BodyValidator,
+        "body_max_line_length": BodyLineLengthValidator,
         "allow_merge_commits": CommitTypeValidator,
         "allow_revert_commits": CommitTypeValidator,
         "allow_empty_commits": CommitTypeValidator,
