@@ -5269,6 +5269,7 @@ class TestBodyLineLength:
             "See HTTPS://EXAMPLE.COM/a/path/long/enough/to/push/the/line/past/the/limit for it",
             "See Https://example.com/a/path/long/enough/to/push/the/line/past/the/limit for it",
             "Mirror at ftp://ftp.example.com/pub/a/path/long/enough/to/pass/the/limit too",
+            "参见https://example.com/issues/1234/a-link-long-enough-to-go-past-the-limit",
         ],
         ids=[
             "https",
@@ -5278,6 +5279,7 @@ class TestBodyLineLength:
             "upper-case",
             "mixed-case",
             "ftp",
+            "after-cjk",
         ],
     )
     def test_lines_that_cannot_be_wrapped_are_not_counted(self, line):
