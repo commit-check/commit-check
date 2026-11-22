@@ -5203,7 +5203,7 @@ class TestBodyLineLength:
         assert result == ValidationResult.FAIL
         failure = validator._last_failure
         assert failure["error"] == (
-            "A body line is 75 characters; body lines must be at most 72 characters"
+            "Line 3 is 75 characters; body lines must be at most 72 characters"
         )
         assert failure["suggest"] == "Wrap the body at 72 characters"
 
@@ -5213,8 +5213,41 @@ class TestBodyLineLength:
         result, validator = self._validate(message)
         assert result == ValidationResult.FAIL
         assert validator._last_failure["error"] == (
-            "2 body lines are longer than 72 characters, the longest 85 characters"
+            "Lines 3 and 5 are longer than 72 characters, the longest 85 characters"
         )
+
+    def test_many_long_lines_name_the_first_three(self):
+        message = "feat: x\n\n" + "\n".join([self.LONG] * 5)
+        result, validator = self._validate(message)
+        assert result == ValidationResult.FAIL
+        assert validator._last_failure["error"] == (
+            "Lines 3, 4, 5 and 2 more are longer than 72 characters, "
+            "the longest 75 characters"
+        )
+
+    def test_the_line_number_counts_lines_right_under_the_subject(self):
+        result, validator = self._validate(f"feat: x\n{self.LONG}")
+        assert result == ValidationResult.FAIL
+        assert validator._last_failure["error"].startswith("Line 2 is ")
+
+    @pytest.mark.parametrize(
+        "line",
+        [
+            "修复上传在令牌过期时永久失败的问题，现在会自动刷新令牌并重试一次，这样用户就不需要从头开始重新上传整个文件了，也不会丢失已经上传的部分数据，体验更好",
+            "トークンの有効期限が切れたときにアップロードが失敗し続ける問題を修正しました。現在はトークンを自動的に更新して一度だけ再試行するので最初からやり直す必要はありません",
+            "토큰이만료되면업로드가영구적으로실패하던문제를수정했습니다이제는토큰을자동으로새로고침하고한번다시시도하므로처음부터다시업로드할필요가없습니다그리고이미올린데이터도잃지않습니다",
+            "ｆｕｌｌｗｉｄｔｈ" * 9,
+        ],
+        ids=["chinese", "japanese", "korean", "fullwidth"],
+    )
+    def test_prose_without_spaces_is_counted(self, line):
+        """Chinese, Japanese and Korean put no spaces between words."""
+        assert " " not in line and len(line) > 72
+        assert self._validate(f"feat: x\n\n{line}")[0] == ValidationResult.FAIL
+
+    def test_a_short_line_of_wide_characters_passes(self):
+        """The limit counts characters, as subject_max_length does."""
+        assert self._validate("feat: x\n\n" + "修" * 72)[0] == ValidationResult.PASS
 
     def test_a_line_at_the_limit_passes(self):
         line = ("word " * 15)[:72]

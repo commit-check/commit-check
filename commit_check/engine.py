@@ -7,6 +7,7 @@ import re
 import shlex
 import subprocess
 import sys
+import unicodedata
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from dataclasses import dataclass, field
@@ -1366,9 +1367,11 @@ def long_body_lines(message: str, limit: int) -> list[int]:
 
     Counted in the message as given, so the numbers point into the quoted
     message. The subject is CC004's, and three kinds of line are left out
-    because wrapping them breaks them: a line with a web address, a line with
-    no space in it (a path, a hash), and the trailer block at the end, where
-    a ``Co-authored-by:`` line is as long as the name and address in it.
+    because wrapping them breaks them: a line with a web address, a single
+    word with no space in it (a path, a hash), and the trailer block at the
+    end, where a ``Co-authored-by:`` line is as long as the name and address
+    in it. Chinese, Japanese and Korean prose has no spaces between words, so
+    a line with one of their characters is counted even without a space.
     """
     # Trailing blank lines change no line's number, and are never long.
     lines = message.rstrip().split("\n")
@@ -1394,9 +1397,32 @@ def long_body_lines(message: str, limit: int) -> list[int]:
         if number > 0
         and number not in trailers
         and len(line.rstrip()) > limit
-        and " " in line.strip()
+        and not _one_word(line)
         and not _URL.search(line)
     ]
+
+
+def _one_word(line: str) -> bool:
+    """Whether *line* is one word that wrapping would break: a path, a hash.
+
+    A line of Chinese, Japanese or Korean has no spaces either, yet it is
+    prose that wraps anywhere, so a wide character makes it more than a word.
+    """
+    text = line.strip()
+    return " " not in text and not any(
+        unicodedata.east_asian_width(char) in ("W", "F") for char in text
+    )
+
+
+def _line_numbers(numbers: list[int]) -> str:
+    """``Line 3``, ``Lines 3 and 5``, ``Lines 3, 5, 8 and 2 more``, from 1."""
+    shown = [str(number + 1) for number in numbers[:3]]
+    if len(numbers) == 1:
+        return f"Line {shown[0]}"
+    rest = len(numbers) - len(shown)
+    if rest:
+        return f"Lines {', '.join(shown)} and {rest} more"
+    return f"Lines {', '.join(shown[:-1])} and {shown[-1]}"
 
 
 class BodyLineLengthValidator(BaseValidator):
@@ -1429,14 +1455,17 @@ class BodyLineLengthValidator(BaseValidator):
 
         lines = message.split("\n")
         longest = max(len(lines[number].rstrip()) for number in long_lines)
+        # The numbers count the subject as line 1, as an editor does, and
+        # point into the message quoted above the failure.
+        where = _line_numbers(long_lines)
         if len(long_lines) == 1:
             error = (
-                f"A body line is {_characters(longest)}; "
+                f"{where} is {_characters(longest)}; "
                 f"body lines must be at most {_characters(limit)}"
             )
         else:
             error = (
-                f"{len(long_lines)} body lines are longer than {_characters(limit)}, "
+                f"{where} are longer than {_characters(limit)}, "
                 f"the longest {_characters(longest)}"
             )
         suggest = f"Wrap the body at {limit} characters"

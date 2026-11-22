@@ -131,7 +131,7 @@ Priority: CLI > env > TOML > default. Booleans accept `true/false`, `yes/no`,
 | `commit.allow_fixup_commits` | `true` | `--allow-fixup-commits` | `CCHK_ALLOW_FIXUP_COMMITS` | Allow `fixup!`, `squash!` and `amend!` commits (CC009) |
 | `commit.allow_wip_commits` | `true` | `--allow-wip-commits` | `CCHK_ALLOW_WIP_COMMITS` | Allow WIP commits (CC010) |
 | `commit.require_body` | `false` | `--require-body` | `CCHK_REQUIRE_BODY` | Require a commit body (CC011) |
-| `commit.body_max_line_length` | `0` | `--body-max-line-length` | `CCHK_BODY_MAX_LINE_LENGTH` | Maximum length of a body line (CC018); `0` turns it off. Lines with a URL, lines with no space and the trailer block are not counted, and `dependabot[bot]` and `renovate[bot]` commits skip it |
+| `commit.body_max_line_length` | `0` | `--body-max-line-length` | `CCHK_BODY_MAX_LINE_LENGTH` | Maximum length of a body line (CC018); `0` turns it off. Lines with a URL, a single word with no space (a path, a hash) and the trailer block are not counted, and `dependabot[bot]` and `renovate[bot]` commits skip it |
 | `commit.require_signed_off_by` | `false` | `--require-signed-off-by` | `CCHK_REQUIRE_SIGNED_OFF_BY` | Require a `Signed-off-by:` trailer (CC012) |
 | `commit.ignore_authors` | `[]` | `--ignore-authors` | `CCHK_IGNORE_AUTHORS` | Authors and co-authors whose commits skip the commit checks |
 | `commit.ai_attribution` | `"ignore"` | `--ai-attribution` | `CCHK_AI_ATTRIBUTION` | `ignore`, `forbid` or `disclose`. `forbid` rejects commits carrying known AI tool signatures (CC013); `disclose` accepts AI assistance disclosed with one of `ai_disclosure_trailers` (CC014) and rejects the tool as a co-author (CC015) or as a sign-off (CC016); both reject a commit whose author is an AI tool (CC017) |
