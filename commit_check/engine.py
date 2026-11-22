@@ -1357,7 +1357,7 @@ class BodyValidator(BaseValidator):
 
 #: A line that holds a web address. It cannot be wrapped, so the body line
 #: length rule does not count it, as commitlint and checkpatch do not.
-_URL = re.compile(r"\bhttps?://\S")
+_URL = re.compile(r"\bhttps?://\S", re.IGNORECASE)
 
 
 def long_body_lines(message: str, limit: int) -> list[int]:

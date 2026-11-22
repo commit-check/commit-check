@@ -5232,8 +5232,10 @@ class TestBodyLineLength:
             "Logs: http://ci.example.com/job/12345/console and the rest of this long line",
             "src/commit_check/a/deeply/nested/module/path/that/is/longer/than/the/limit.py",
             "    " + "x" * 90,
+            "See HTTPS://EXAMPLE.COM/a/path/long/enough/to/push/the/line/past/the/limit for it",
+            "See Https://example.com/a/path/long/enough/to/push/the/line/past/the/limit for it",
         ],
-        ids=["https", "http", "path", "no-space-indented"],
+        ids=["https", "http", "path", "no-space-indented", "upper-case", "mixed-case"],
     )
     def test_lines_that_cannot_be_wrapped_are_not_counted(self, line):
         assert len(line) > 72
