@@ -87,6 +87,25 @@ def is_revert_subject(subject: str) -> bool:
     return _GIT_REVERT_SUBJECT.match(subject) is not None
 
 
+# "git commit --fixup" writes "fixup! <subject>", "--squash" writes
+# "squash! <subject>" and "--fixup=amend:"/"--fixup=reword:" write
+# "amend! <subject>", each in front of the target commit's subject.
+# "git rebase --autosquash" folds these commits into their target, so the
+# subject behind the prefix is one already judged on its own commit, or,
+# after "amend! ", one about to be replaced. Git writes the prefix exactly
+# so, trailing space included: "fixup!! ..." or "Fixup! ..." is the author's.
+_GIT_AUTOSQUASH_SUBJECT = re.compile(r"^(?:fixup|squash|amend)! ")
+
+
+def is_autosquash_subject(subject: str) -> bool:
+    """Whether *subject* is one ``git commit --fixup`` or ``--squash`` wrote.
+
+    The subject rules decline to judge these, as they do a merge or revert
+    subject. Whether they are allowed at all is ``allow_fixup_commits``'.
+    """
+    return _GIT_AUTOSQUASH_SUBJECT.match(subject) is not None
+
+
 # A work-in-progress marker at the start of the subject (CC010). "^" without
 # re.MULTILINE and "[ \t]*" rather than "\s*" keep the match on the first
 # line, so a body that merely mentions WIP is not a WIP commit.
@@ -582,10 +601,11 @@ class SubjectCapitalizationValidator(SubjectValidator):
     """Validates that subject starts with capital letter."""
 
     def _validate_subject(self, subject: str) -> ValidationResult:
-        # A merge subject is machine-written; the rule declines to judge it.
-        # Only the subjects merge tools write count, so anything else is
+        # Merge and fixup subjects are machine-written; the rule declines to
+        # judge them. Only the subjects merge tools write, and git's exact
+        # "fixup! ", "squash! " and "amend! ", count, so anything else is
         # author prose.
-        if is_merge_subject(subject):
+        if is_merge_subject(subject) or is_autosquash_subject(subject):
             return ValidationResult.SKIP
 
         if self._is_capitalized(subject):
@@ -629,8 +649,8 @@ class SubjectImperativeValidator(SubjectValidator):
     def _validate_subject(self, subject: str) -> ValidationResult:
         # Merge and fixup subjects are machine-written; decline to judge them.
         # Only the subjects merge tools write, and git's exact "fixup! ",
-        # count, so anything else is author prose.
-        if is_merge_subject(subject) or subject.startswith("fixup! "):
+        # "squash! " and "amend! ", count, so anything else is author prose.
+        if is_merge_subject(subject) or is_autosquash_subject(subject):
             return ValidationResult.SKIP
 
         # Extract first word, past a Conventional Commits prefix (including
@@ -728,10 +748,14 @@ class SubjectLengthValidator(SubjectValidator):
         return True
 
     def _validate_subject(self, subject: str) -> ValidationResult:
-        # A merge or revert subject's length is git's doing, not the
+        # A merge, revert or fixup subject's length is git's doing, not the
         # author's: 'Revert "..."' adds nine characters to a subject that
-        # already fit.
-        if is_merge_subject(subject) or is_revert_subject(subject):
+        # already fit, and "fixup! " seven.
+        if (
+            is_merge_subject(subject)
+            or is_revert_subject(subject)
+            or is_autosquash_subject(subject)
+        ):
             return ValidationResult.SKIP
 
         suffix = _SQUASH_PR_NUMBER.search(subject)
