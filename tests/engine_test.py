@@ -34,6 +34,7 @@ from commit_check.engine import (
     ValidationEngine,
     ValidationResult,
     declaration_boxes,
+    is_autosquash_subject,
     is_merge_subject,
     is_revert_subject,
     long_body_lines,
@@ -1597,6 +1598,40 @@ class TestSubjectLengthValidator:
             ValidationResult.SKIP
         )
 
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "fixup! feat(parser): accept trailing commas in the argument list of a call",
+            "squash! feat(parser): accept trailing commas in the argument list of a call",
+            "amend! feat(parser): accept trailing commas in the argument list of a call",
+            "fixup! fixup! feat(parser): accept trailing commas in the argument list of a call",
+        ],
+    )
+    def test_git_fixup_subject_is_not_measured(self, subject):
+        """A subject that fit the limit still fits once git puts "fixup! "
+        in front of it: the prefix is git's, and --autosquash folds it away."""
+        rule = ValidationRule(check="subject_max_length", value=72)
+        validator = SubjectLengthValidator(rule)
+        assert len(subject) > 72
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.SKIP
+        )
+
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "fixup!! feat(parser): accept trailing commas in the argument list of a call",
+            "Fixup! feat(parser): accept trailing commas in the argument list of a call",
+        ],
+    )
+    def test_author_fixup_lookalike_is_measured(self, subject):
+        rule = ValidationRule(check="subject_max_length", value=72)
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.FAIL
+        )
+
     def test_author_revert_prose_is_measured(self):
         rule = ValidationRule(check="subject_max_length", value=80)
         validator = SubjectLengthValidator(rule)
@@ -1894,6 +1929,27 @@ class TestSubjectCapitalizationValidator:
 
         result = validator.validate(context)
         assert result == ValidationResult.FAIL
+
+    @pytest.mark.parametrize(
+        "subject",
+        ["fixup! feat: add x", "squash! add x", "amend! fix: add x"],
+    )
+    def test_git_fixup_subject_is_not_judged(self, subject):
+        """git writes the lower-case prefix; capitalizing it would stop
+        --autosquash from finding the commit."""
+        rule = ValidationRule(check="subject_capitalized")
+        validator = SubjectCapitalizationValidator(rule)
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.SKIP
+        )
+
+    def test_author_fixup_lookalike_is_judged(self):
+        rule = ValidationRule(check="subject_capitalized")
+        validator = SubjectCapitalizationValidator(rule)
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext(stdin_text="fixup!! add x")) == (
+            ValidationResult.FAIL
+        )
 
 
 class TestBodyValidator:
@@ -4293,6 +4349,11 @@ class TestImperativeMorphology:
         assert self._verdict("Merge branch 'main' into topic") == ValidationResult.SKIP
         assert self._verdict("fixup! fixed the parser") == ValidationResult.SKIP
 
+    @pytest.mark.parametrize("prefix", ["squash! ", "amend! "])
+    def test_squash_and_amend_subjects_bypass_the_rule(self, prefix):
+        """git writes these the way it writes "fixup! ", so they bypass too."""
+        assert self._verdict(prefix + "fixed the parser") == ValidationResult.SKIP
+
     @pytest.mark.benchmark
     def test_author_subject_starting_with_merge_is_judged(self):
         """Only a merge tool's own subject bypasses the rule; an author's
@@ -4343,6 +4404,22 @@ class TestIsMergeSubject:
     )
     def test_author_prose(self, subject):
         assert not is_merge_subject(subject)
+
+    @pytest.mark.parametrize(
+        "subject, expected",
+        [
+            ("fixup! feat: x", True),
+            ("squash! feat: x", True),
+            ("amend! feat: x", True),
+            ("fixup! fixup! feat: x", True),
+            ("fixup!feat: x", False),
+            ("fixup!! feat: x", False),
+            ("Fixup! feat: x", False),
+            ("feat: fixup! x", False),
+        ],
+    )
+    def test_autosquash_subject(self, subject, expected):
+        assert is_autosquash_subject(subject) is expected
 
     @pytest.mark.parametrize(
         "subject, expected",
