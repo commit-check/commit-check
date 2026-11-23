@@ -4348,8 +4348,11 @@ class TestImperativeMorphology:
         not judged, and SKIP keeps that distinct from having passed."""
         assert self._verdict("Merge branch 'main' into topic") == ValidationResult.SKIP
         assert self._verdict("fixup! fixed the parser") == ValidationResult.SKIP
-        assert self._verdict("squash! fixed the parser") == ValidationResult.SKIP
-        assert self._verdict("amend! fixed the parser") == ValidationResult.SKIP
+
+    @pytest.mark.parametrize("prefix", ["squash! ", "amend! "])
+    def test_squash_and_amend_subjects_bypass_the_rule(self, prefix):
+        """git writes these the way it writes "fixup! ", so they bypass too."""
+        assert self._verdict(prefix + "fixed the parser") == ValidationResult.SKIP
 
     @pytest.mark.benchmark
     def test_author_subject_starting_with_merge_is_judged(self):
