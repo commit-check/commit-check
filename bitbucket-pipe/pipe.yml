@@ -1,5 +1,5 @@
 name: Commit Check
-image: ghcr.io/commit-check/commit-check-pipe:2.25.0
+image: ghcr.io/commit-check/commit-check-pipe:2.24.2
 category: Code quality
 description: Check a pull request's branch name, title, description and every commit message and author against your team's rules in cchk.toml. Commit policy as code for teams and AI agents.
 repository: https://bitbucket.org/commit-check/commit-check
