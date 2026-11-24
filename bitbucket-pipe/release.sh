@@ -11,6 +11,8 @@ set -euo pipefail
 
 version=${1:?usage: $0 <version> <requirements.txt>}
 requirements=${2:?usage: $0 <version> <requirements.txt>}
+# Read before the script changes into the clone, so a relative path works.
+requirements=$(realpath "$requirements")
 here=$(cd "$(dirname "$0")" && pwd)
 remote=${PIPE_REMOTE:-https://bitbucket.org/commit-check/commit-check.git}
 

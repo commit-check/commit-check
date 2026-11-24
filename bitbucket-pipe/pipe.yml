@@ -25,7 +25,8 @@ variables:
   - name: PR_BODY_AI_ATTRIBUTION
     default: "false"
   - name: BITBUCKET_ACCESS_TOKEN
-    default: '"<string>"'
+    # Pipelines reads a default of this form from the pipeline's variables.
+    default: '${BITBUCKET_ACCESS_TOKEN}'
 tags:
   - commit-message
   - conventional-commits
