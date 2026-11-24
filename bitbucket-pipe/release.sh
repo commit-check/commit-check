@@ -20,7 +20,7 @@ if [[ ! $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 fi
 
 auth=()
-if [ -n "${BITBUCKET_PIPE_TOKEN:-}" ]; then
+if [[ -n ${BITBUCKET_PIPE_TOKEN:-} ]]; then
   basic=$(printf 'x-token-auth:%s' "$BITBUCKET_PIPE_TOKEN" | base64 -w0)
   echo "::add-mask::$basic"
   auth=(-c "http.extraHeader=Authorization: Basic $basic")

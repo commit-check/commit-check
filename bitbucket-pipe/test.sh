@@ -13,8 +13,9 @@ failures=0
 git_quiet() { git -c init.defaultBranch=main -c advice.detachedHead=false "$@" >/dev/null 2>&1; }
 
 commit() {  # commit <repo> <message>
-  git -C "$1" -c user.name="Ada Lovelace" -c user.email=ada@example.com \
-    commit --quiet --allow-empty -m "$2"
+  local repo=$1 message=$2
+  git -C "$repo" -c user.name="Ada Lovelace" -c user.email=ada@example.com \
+    commit --quiet --allow-empty -m "$message"
 }
 
 # The repository on "bitbucket.org": main, and a feature branch off it.
@@ -40,7 +41,7 @@ git -C "$origin" checkout --quiet main
 # (shallow, destination merged in). It is then handed to another user, as the
 # clone a pipe's container sees is not owned by the container's user.
 clone() {
-  local root
+  local branch=$1 source=$2 root
   root=$(mktemp -d "$work/build-XXXX")
   build=$root/opt/atlassian/pipelines/agent/build
   mkdir -p "$build"
@@ -50,16 +51,16 @@ clone() {
     umask 000
     git_quiet init
     git_quiet remote add origin "file://$origin"
-    git_quiet fetch origin "$2:refs/remotes/origin/$1" --no-tags --depth 4
+    git_quiet fetch origin "$source:refs/remotes/origin/$branch" --no-tags --depth 4
     git_quiet fetch origin "$destination" --no-tags --depth 2
-    git_quiet checkout -B "$1" "refs/remotes/origin/$1"
+    git_quiet checkout -B "$branch" "refs/remotes/origin/$branch"
     git_quiet -c user.name=bitbucket-pipelines -c user.email=commits-noreply@bitbucket.org \
       merge "${destination:0:12}" --no-edit
   )
   chmod 777 "$build"
   # Root (as on a developer's machine) hands it to another user; a runner's
   # own user already differs from the container's.
-  if [ "$(id -u)" = 0 ]; then chown -R 1000:1000 "$root"; fi
+  if [[ $(id -u) == 0 ]]; then chown -R 1000:1000 "$root"; fi
   echo "$build"
 }
 
@@ -80,7 +81,7 @@ expect() {
   got=$?
   set -e
   echo "::endgroup::"
-  if [ "$got" = "$want" ]; then
+  if [[ $got == "$want" ]]; then
     echo "ok: $name (exit $got)"
   else
     echo "FAILED: $name: exit $got, expected $want"
@@ -111,7 +112,7 @@ expect "the rebase check fails a branch behind the destination" 1 feature/add-se
   "${pull_request[@]}" --env=CCHK_REQUIRE_REBASE_TARGET=main
 expect "a branch pipeline checks the last commit" 0 feature/add-search "$good"
 
-if [ "$failures" -ne 0 ]; then
+if (( failures != 0 )); then
   echo "$failures case(s) failed"
   exit 1
 fi
