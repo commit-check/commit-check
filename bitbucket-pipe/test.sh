@@ -31,6 +31,10 @@ bad=$(git -C "$origin" rev-parse HEAD)
 git -C "$origin" checkout --quiet main
 commit "$origin" "docs: describe search"
 destination=$(git -C "$origin" rev-parse HEAD)
+git -C "$origin" checkout --quiet -b feature/rebased
+commit "$origin" "feat: build on the docs"
+rebased=$(git -C "$origin" rev-parse HEAD)
+git -C "$origin" checkout --quiet main
 
 # clone <branch> <source commit>: the checkout a pull request pipeline makes
 # (shallow, destination merged in). It is then handed to another user, as the
@@ -42,6 +46,8 @@ clone() {
   mkdir -p "$build"
   (
     cd "$build"
+    # As Pipelines does: everything in the clone is writable to every user.
+    umask 000
     git_quiet init
     git_quiet remote add origin "file://$origin"
     git_quiet fetch origin "$2:refs/remotes/origin/$1" --no-tags --depth 4
@@ -50,8 +56,9 @@ clone() {
     git_quiet -c user.name=bitbucket-pipelines -c user.email=commits-noreply@bitbucket.org \
       merge "${destination:0:12}" --no-edit
   )
+  chmod 777 "$build"
   # Root (as on a developer's machine) hands it to another user; a runner's
-  # own user already differs from the container's root.
+  # own user already differs from the container's.
   if [ "$(id -u)" = 0 ]; then chown -R 1000:1000 "$root"; fi
   echo "$build"
 }
@@ -97,6 +104,11 @@ expect "PR_TITLE without a token fails and says why" 1 feature/add-search "$good
   "${pull_request[@]}" --env=PR_TITLE=true
 expect "AUTHOR_NAME and AUTHOR_EMAIL pass" 0 feature/add-search "$good" \
   "${pull_request[@]}" --env=AUTHOR_NAME=TRUE --env=AUTHOR_EMAIL=True
+# The rebase check writes the destination's ref into the clone first.
+expect "the rebase check passes a rebased branch" 0 feature/rebased "$rebased" \
+  "${pull_request[@]}" --env=CCHK_REQUIRE_REBASE_TARGET=main
+expect "the rebase check fails a branch behind the destination" 1 feature/add-search "$good" \
+  "${pull_request[@]}" --env=CCHK_REQUIRE_REBASE_TARGET=main
 expect "a branch pipeline checks the last commit" 0 feature/add-search "$good"
 
 if [ "$failures" -ne 0 ]; then

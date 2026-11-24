@@ -23,4 +23,10 @@ RUN pip install --no-cache-dir --disable-pip-version-check --root-user-action=ig
  && rm -rf /tmp/pipe
 
 COPY pipe.sh /pipe.sh
+
+# Not root. Pipelines checks out with umask 000, so the clone is writable to
+# any user; the rebase check writes the destination branch's ref into it.
+RUN adduser -D -H -u 10001 pipe
+USER pipe
+
 ENTRYPOINT ["/pipe.sh"]
