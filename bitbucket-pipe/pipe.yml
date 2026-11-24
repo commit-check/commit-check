@@ -1,0 +1,37 @@
+name: Commit Check
+image: ghcr.io/commit-check/commit-check-pipe:2.25.0
+category: Code quality
+description: Check a pull request's branch name, title, description and every commit message and author against your team's rules in cchk.toml. Commit policy as code for teams and AI agents.
+repository: https://bitbucket.org/commit-check/commit-check
+maintainer:
+  name: Commit Check
+  website: https://commit-check.com/
+vendor:
+  name: Commit Check
+  website: https://commit-check.com/
+variables:
+  - name: MESSAGE
+    default: "true"
+  - name: BRANCH
+    default: "true"
+  - name: AUTHOR_NAME
+    default: "false"
+  - name: AUTHOR_EMAIL
+    default: "false"
+  - name: FILES
+    default: "false"
+  - name: PR_TITLE
+    default: "false"
+  - name: PR_BODY_AI_ATTRIBUTION
+    default: "false"
+  - name: BITBUCKET_ACCESS_TOKEN
+    default: '"<string>"'
+tags:
+  - commit-message
+  - conventional-commits
+  - conventional-branch
+  - branch-name
+  - pull-request
+  - lint
+  - policy-as-code
+  - ai-agents
