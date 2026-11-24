@@ -104,7 +104,7 @@ expect "a value that is not true or false stops the pipe" 2 feature/add-search "
 expect "PR_TITLE without a token fails and says why" 1 feature/add-search "$good" \
   "${pull_request[@]}" --env=PR_TITLE=true
 expect "AUTHOR_NAME and AUTHOR_EMAIL pass" 0 feature/add-search "$good" \
-  "${pull_request[@]}" --env=AUTHOR_NAME=TRUE --env=AUTHOR_EMAIL=True
+  "${pull_request[@]}" --env=AUTHOR_NAME=TRUE --env="AUTHOR_EMAIL= True "
 # The rebase check writes the destination's ref into the clone first.
 expect "the rebase check passes a rebased branch" 0 feature/rebased "$rebased" \
   "${pull_request[@]}" --env=CCHK_REQUIRE_REBASE_TARGET=main

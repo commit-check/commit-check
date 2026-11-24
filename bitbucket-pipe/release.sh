@@ -56,5 +56,6 @@ git add --all
 git commit --quiet -m "Release $version" \
   -m "Published from https://github.com/commit-check/commit-check/releases/tag/v$version"
 git tag "$version"
-git "${auth[@]}" push --quiet origin HEAD "refs/tags/$version"
+# Both or neither: a tag pushed without its commit would make a rerun skip.
+git "${auth[@]}" push --quiet --atomic origin HEAD "refs/tags/$version"
 echo "Published pipe $version to $remote"

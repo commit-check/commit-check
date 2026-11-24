@@ -112,3 +112,19 @@ jobs:
           docker build -t commit-check-pipe:test build
       - name: Test the image
         run: bash bitbucket-pipe/test.sh commit-check-pipe:test
+      - name: Test the release script
+        # As publish.yml calls it, against a local repository in place of
+        # bitbucket.org: a first release, and a rerun that finds the tag.
+        env:
+          GIT_AUTHOR_NAME: CI
+          GIT_AUTHOR_EMAIL: ci@example.com
+          GIT_COMMITTER_NAME: CI
+          GIT_COMMITTER_EMAIL: ci@example.com
+        run: |
+          git init --quiet --bare -b main "$RUNNER_TEMP/pipe.git"
+          export PIPE_REMOTE="$RUNNER_TEMP/pipe.git"
+          bash bitbucket-pipe/release.sh 1.2.3 build/requirements.txt
+          bash bitbucket-pipe/release.sh 1.2.3 build/requirements.txt
+          git -C "$PIPE_REMOTE" show 1.2.3:pipe.yml | grep -q "commit-check-pipe:1.2.3"
+          git -C "$PIPE_REMOTE" show 1.2.3:README.md | grep -q "commit-check/commit-check:1.2.3"
+          git -C "$PIPE_REMOTE" show 1.2.3:requirements.txt

@@ -18,7 +18,8 @@ do
   option=${pair#*:}
   eval "value=\${$name-}"
   [ -n "$value" ] || continue
-  case $(printf '%s' "$value" | tr '[:upper:]' '[:lower:]') in
+  # Case and surrounding spaces do not matter, as for commit-check-ci.
+  case $(printf '%s' "$value" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]') in
     true) set -- "$@" "--$option=true" ;;
     false) set -- "$@" "--$option=false" ;;
     *)
