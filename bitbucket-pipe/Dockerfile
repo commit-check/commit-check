@@ -1,7 +1,7 @@
 # The Commit Check pipe for Bitbucket Pipelines: commit-check-ci in a container.
 # Build it from this directory, next to a requirements.txt that pins
 # commit-check by hash; the release workflow writes one for every release.
-FROM python:3.13-alpine@sha256:9ef1a599f863231c3d91e941389bfdc4a2d6070557243d54df1a4e57015b960e
+FROM python:3.15-alpine@sha256:0f9552bb28711333da16915ec146f5e6bb44a7fdac9ced15dc17c2e0206346dd
 
 LABEL org.opencontainers.image.title="Commit Check pipe" \
       org.opencontainers.image.description="Bitbucket Pipelines pipe that checks a pull request's branch, title, description and every commit against the rules in cchk.toml." \
