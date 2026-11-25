@@ -17,6 +17,8 @@
 [Rules](https://commit-check.com/rules/) ·
 [GitHub Action](https://github.com/commit-check/commit-check-action) ·
 [GitHub App](https://github.com/apps/commit-check) ·
+[GitLab CI](https://commit-check.com/guides/other-ci/#gitlab-ci) ·
+[Bitbucket Pipelines](https://commit-check.com/guides/other-ci/#bitbucket-pipelines) ·
 [MCP server](https://github.com/commit-check/commit-check-mcp)
 
 </div>
@@ -24,8 +26,8 @@
 **Commit Check** is commit policy as code for teams and AI agents. It validates
 commit messages, branch names, authors, sign-offs, tags, committed files and AI
 attribution against one `cchk.toml` — in your commit hook, in CI, on every
-pull request and inside your AI agent. When the fix is obvious, it hands you
-the line.
+pull or merge request on GitHub, GitLab and Bitbucket, and inside your AI
+agent. When the fix is obvious, it hands you the line.
 
 **On GitHub?** [Install the Commit Check App](https://github.com/apps/commit-check)
 and every push and pull request gets a check run, with no workflow file. It is
