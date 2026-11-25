@@ -34,10 +34,14 @@ and a stale pin is invisible: the snippet keeps working, it just installs an old
 
 3. **Say so in the pull request description** when you moved them, so the bump is not a silent diff in an unrelated change.
 
-The one exception is a pull request that prepares an unpublished release: there the pins are written **ahead** of the tag, on purpose,
-and the pull request merges **before** the release is published. `pyproject.toml` sets `readme = "README.md"`, so this file is the long description PyPI shows,
-and the publish workflow builds from whatever `main` holds at that moment. A README bumped after the release ships the old pin to PyPI, where it cannot be corrected
-without another release. Check it afterwards: `rev:` on the release's PyPI page must name that release.
+The one exception is the release itself, and it is not done by hand. After every push to `main`, the `readme-pin` job in
+`release-drafter.yml` compares the draft release's tag with the README's pin. When they differ, it opens or updates one pull request,
+`docs: pin README to <tag>`, on the branch `chore/readme-pin`, labelled `skip-changelog`. The maintainer merges it right before publishing.
+Do not write a pin ahead of the tag in any other pull request, and do not push to `chore/readme-pin`: the job rebuilds that branch from `main` each time.
+
+`pyproject.toml` sets `readme = "README.md"`, so this file is the long description PyPI shows, and the publish workflow builds from the release tag.
+A README bumped after the release would ship the old pin to PyPI, where it cannot be corrected without another release, so `publish.yml` checks the tag's
+README before it builds anything and stops if the pin names another version.
 
 `.pre-commit-config.yaml` is a different case and is **not** covered by this rule. That pin is this repository running its own hooks,
 and pre-commit resolves it against real tags when CI runs — so pointing it at a version that is not published yet breaks the build. Bump it only after the release exists.
