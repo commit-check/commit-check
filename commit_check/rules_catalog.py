@@ -288,14 +288,14 @@ AGENT_CONFIG_RULES = [
         check="agent_mcp_auto_approve",
         regex=None,
         error="MCP servers are approved without asking",
-        suggest="Remove it, or list trusted servers in allowed_mcp_servers",
+        suggest="Remove it, or list trusted servers in allow_mcp_servers",
     ),
     RuleCatalogEntry(
         rule_id="CC602",
         check="agent_api_endpoint",
         regex=None,
         error="API requests are sent to another endpoint",
-        suggest="Remove it, or list the endpoint in allowed_api_endpoints",
+        suggest="Remove it, or list the endpoint in allow_api_endpoints",
     ),
     RuleCatalogEntry(
         rule_id="CC603",

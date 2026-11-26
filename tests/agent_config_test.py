@@ -314,6 +314,65 @@ class TestFindSettings:
         text = "steps:\n  - uses: some/other-action@v1\n    with:\n      allowed_bots: '*'\n"
         assert _settings(".github/workflows/a.yml", text) == []
 
+    def test_a_star_in_a_path_stays_in_one_directory(self):
+        text = (
+            "- uses: anthropics/claude-code-action@v1\n  with:\n    allowed_bots: '*'\n"
+        )
+        assert _settings(".github/workflows/old/claude.yml", text) == []
+
+    def test_a_composite_action_is_read(self):
+        text = (
+            "runs:\n  using: composite\n  steps:\n"
+            "    - uses: anthropics/claude-code-action@v1\n"
+            "      with:\n        allowed_bots: '*'\n"
+        )
+        assert _settings(".github/actions/claude/action.yml", text) == [
+            'allowed_bots = "*"'
+        ]
+
+    def test_only_the_actions_own_step_counts(self):
+        text = (
+            "jobs:\n"
+            "  triage:\n    steps:\n"
+            "      # anthropics/claude-code-action runs in the other job\n"
+            "      - uses: some/other-action@v1\n"
+            "        with:\n          allowed_bots: '*'\n"
+            "  claude:\n    steps:\n"
+            "      - name: Claude\n"
+            "        uses: anthropics/claude-code-action@v1\n"
+            "        with:\n          allowed_non_write_users: '*'\n"
+            "      - uses: actions/checkout@v7\n"
+            "        with:\n          allowed_bots: '*'\n"
+        )
+        assert _settings(".github/workflows/a.yml", text) == [
+            'allowed_non_write_users = "*"'
+        ]
+
+    def test_a_step_with_lines_before_uses_is_read_whole(self):
+        text = (
+            "steps:\n"
+            "  - name: Claude\n"
+            "    if: github.event_name == 'issue_comment'\n"
+            "    uses: anthropics/claude-code-action@v1\n"
+            "    with:\n      allowed_bots: '*'\n"
+        )
+        assert _settings(".github/workflows/a.yml", text) == ['allowed_bots = "*"']
+
+    def test_a_uses_line_with_no_step_above_reads_to_the_end(self):
+        text = "uses: anthropics/claude-code-action@v1\nwith:\n  allowed_bots: '*'\n"
+        assert _settings(".github/workflows/a.yml", text) == ['allowed_bots = "*"']
+
+    def test_an_action_named_only_in_a_comment_is_not_used(self):
+        text = (
+            "# see anthropics/claude-code-action\n"
+            "- uses: some/other-action@v1\n  with:\n    allowed_bots: '*'\n"
+        )
+        assert _settings(".github/workflows/a.yml", text) == []
+
+    def test_a_longer_action_name_is_another_action(self):
+        text = "- uses: anthropics/claude-code-action-fork@v1\n  with:\n    allowed_bots: '*'\n"
+        assert _settings(".github/workflows/a.yml", text) == []
+
     def test_a_finding_reads_setting_then_file(self):
         finding = find_settings(".codex/config.toml", 'approval_policy = "never"\n')[0]
         assert str(finding) == 'approval_policy = "never" in .codex/config.toml'
@@ -401,8 +460,8 @@ class TestRuleBuilder:
         config = {
             "agent_config": {
                 "enabled": True,
-                "allowed_mcp_servers": ["github"],
-                "allowed_api_endpoints": "https://a.example.com, https://b.example.com",
+                "allow_mcp_servers": ["github"],
+                "allow_api_endpoints": "https://a.example.com, https://b.example.com",
             }
         }
         rules = {
@@ -424,8 +483,8 @@ class TestRuleBuilder:
             RuleBuilder({"agent_config": {"enabled": "false"}})
 
     def test_an_allowlist_must_be_strings(self):
-        config = {"agent_config": {"enabled": True, "allowed_mcp_servers": [1]}}
-        with pytest.raises(ConfigError, match="allowed_mcp_servers"):
+        config = {"agent_config": {"enabled": True, "allow_mcp_servers": [1]}}
+        with pytest.raises(ConfigError, match="allow_mcp_servers"):
             RuleBuilder(config).build_all_rules()
 
     def test_a_scalar_section_is_a_notice(self):
@@ -455,14 +514,14 @@ def _no_args():
 class TestConfigSources:
     def test_env_vars(self, monkeypatch):
         monkeypatch.setenv("CCHK_AGENT_CONFIG_ENABLED", "true")
-        monkeypatch.setenv("CCHK_AGENT_CONFIG_ALLOWED_MCP_SERVERS", "github,notes")
+        monkeypatch.setenv("CCHK_AGENT_CONFIG_ALLOW_MCP_SERVERS", "github,notes")
         monkeypatch.setenv(
-            "CCHK_AGENT_CONFIG_ALLOWED_API_ENDPOINTS", "https://llm.example.com"
+            "CCHK_AGENT_CONFIG_ALLOW_API_ENDPOINTS", "https://llm.example.com"
         )
         assert ConfigMerger.parse_env_vars()["agent_config"] == {
             "enabled": True,
-            "allowed_mcp_servers": ["github", "notes"],
-            "allowed_api_endpoints": ["https://llm.example.com"],
+            "allow_mcp_servers": ["github", "notes"],
+            "allow_api_endpoints": ["https://llm.example.com"],
         }
 
     def test_a_misspelt_key_is_named(self):
@@ -553,6 +612,50 @@ class TestAgentConfigValidator:
         assert validator.validate(context) == ValidationResult.SKIP
         mock_files.assert_not_called()
 
+    @patch("commit_check.engine.get_file_text")
+    @patch("commit_check.engine.get_commit_files")
+    def test_every_finding_is_listed(self, mock_files, mock_text):
+        mock_files.return_value = [
+            (".claude/settings.json", 40),
+            (".codex/config.toml", 30),
+        ]
+        mock_text.side_effect = lambda rev, path: {
+            ".claude/settings.json": '{"permissions": {"allow": ["Bash"]}}',
+            ".codex/config.toml": 'approval_policy = "never"\n',
+        }[path]
+        validator = _validator("agent_full_access")
+        assert validator.validate(ValidationContext()) == ValidationResult.FAIL
+        assert validator._checked_value == (
+            'permissions.allow has "Bash" in .claude/settings.json\n'
+            'approval_policy = "never" in .codex/config.toml'
+        )
+        [(rule_dict, _)] = validator._failure_blocks
+        assert rule_dict["value_head"] == "2 settings"
+
+    @patch("commit_check.engine.get_push_commits")
+    @patch("commit_check.engine.get_file_text")
+    @patch("commit_check.engine.get_commit_files")
+    def test_a_push_names_the_newest_commit_with_the_setting(
+        self, mock_files, mock_text, mock_range
+    ):
+        mock_range.return_value = ["c" * 40, "b" * 40, "a" * 40]
+        mock_files.side_effect = lambda rev: {
+            "c" * 40: [(".claude/settings.json", 2)],
+            "b" * 40: [(".claude/settings.json", 40)],
+            "a" * 40: [(".claude/settings.json", 40)],
+        }[rev]
+        mock_text.side_effect = lambda rev, path: (
+            "{}" if rev == "c" * 40 else '{"permissions": {"allow": ["Bash"]}}'
+        )
+        validator = _validator("agent_full_access")
+        context = ValidationContext(
+            stdin_text="refs/heads/main aaa refs/heads/main bbb"
+        )
+        assert validator.validate(context) == ValidationResult.FAIL
+        assert validator._checked_value == (
+            'permissions.allow has "Bash" in .claude/settings.json at bbbbbbb'
+        )
+
     @patch("commit_check.engine.get_push_commits")
     @patch("commit_check.engine.get_file_text")
     @patch("commit_check.engine.get_commit_files")
@@ -573,6 +676,36 @@ class TestAgentConfigValidator:
 
 def _git(cwd, *args):
     subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True)
+
+
+class TestListedOutput:
+    def _block(self, value, head):
+        return {
+            "check": "agent_full_access",
+            "rule_id": "CC603",
+            "error": "The agent runs without asking or without a sandbox",
+            "suggest": "Remove it",
+            "value_head": head,
+        }, value
+
+    def test_every_item_is_printed_under_the_head(self, capsys):
+        from commit_check.util import _print_failure
+
+        check, value = self._block("a in x\nb in y", "2 settings")
+        _print_failure(check, value, no_banner=True)
+        lines = capsys.readouterr().out.splitlines()
+        assert lines[0].endswith("failed: 2 settings")
+        assert [line.strip()[2:] for line in lines[1:3]] == ["a in x", "b in y"]
+        assert lines[3].strip() == "The agent runs without asking or without a sandbox"
+
+    def test_compact_shows_the_first_and_a_count(self, capsys):
+        from commit_check.util import _print_failure
+
+        check, value = self._block("a in x\nb in y", "2 settings")
+        _print_failure(check, value, compact=True)
+        assert capsys.readouterr().out.strip() == (
+            "[FAIL] CC603 agent-full-access: a in x (+1 more)"
+        )
 
 
 class TestGetFileText:

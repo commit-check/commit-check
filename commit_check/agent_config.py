@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import re
+import tomllib
 from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
@@ -39,8 +40,8 @@ RULES = {
 #: for the checks that have one. A server is let through by its name, an
 #: endpoint by its URL.
 ALLOWLISTS = {
-    "agent_mcp_auto_approve": "allowed_mcp_servers",
-    "agent_api_endpoint": "allowed_api_endpoints",
+    "agent_mcp_auto_approve": "allow_mcp_servers",
+    "agent_api_endpoint": "allow_api_endpoints",
 }
 
 #: The formats a catalog file may be in, by file name ending.
@@ -72,7 +73,8 @@ class AgentSetting:
     :param files: Globs of the files it is read from.
     :param key: The setting's path, split on ``.``; ``*`` is any one key.
     :param value: The risky value, or :data:`ANY`.
-    :param uses: For a YAML file, text it must contain to be the agent's.
+    :param uses: For a YAML file, the action a step's ``uses:`` names;
+        only that step's settings count.
     :param docs: Where the agent documents the setting.
     """
 
@@ -89,8 +91,17 @@ class AgentSetting:
         return ".".join(self.key)
 
     def reads(self, path: str) -> bool:
-        """Whether *path* is one of the files this setting is read from."""
-        return any(fnmatchcase(path, pattern) for pattern in self.files)
+        """Whether *path* is one of the files this setting is read from.
+
+        A ``*`` stays within one directory, as it does in a shell:
+        ``.github/workflows/*.yml`` is not ``.github/workflows/old/ci.yml``,
+        which GitHub does not run.
+        """
+        depth = path.count("/")
+        return any(
+            depth == pattern.count("/") and fnmatchcase(path, pattern)
+            for pattern in self.files
+        )
 
 
 @dataclass(frozen=True)
@@ -149,7 +160,7 @@ def parse_catalog(data: dict[str, Any]) -> tuple[AgentSetting, ...]:
                 )
         uses = agent.get("uses")
         if uses is not None and (not isinstance(uses, str) or not uses.strip()):
-            raise CatalogError(f"{where}: uses must be text the file contains")
+            raise CatalogError(f"{where}: uses must name the action")
         docs = agent.get("docs")
         if not _https_url(docs):
             raise CatalogError(f"{where}: docs must be an https:// link")
@@ -196,13 +207,7 @@ def parse_catalog(data: dict[str, Any]) -> tuple[AgentSetting, ...]:
 
 @cache
 def load_settings() -> tuple[AgentSetting, ...]:
-    """Every setting in the catalog, read once per run.
-
-    ``tomllib`` is imported here rather than at the top: a run that changes
-    no agent config file never reads the catalog.
-    """
-    import tomllib
-
+    """Every setting in the catalog, read from disk once per process."""
     with CATALOG_PATH.open("rb") as f:
         return parse_catalog(tomllib.load(f))
 
@@ -250,8 +255,6 @@ def _parse(fmt: str, text: str) -> Any:
     try:
         if fmt == "json":
             return _loads_jsonc(text)
-        import tomllib
-
         return tomllib.loads(text)
     except ValueError:
         return None
@@ -340,16 +343,63 @@ def _yaml_scalar(raw: str) -> str | None:
     return raw
 
 
+def _indent(line: str) -> int:
+    return len(line) - len(line.lstrip(" "))
+
+
+def _steps_using(lines: list[str], uses: str) -> list[list[str]]:
+    """The lines of each YAML step whose ``uses:`` names *uses*.
+
+    A step runs from its ``-`` to the next line indented no deeper than
+    that ``-``, so a setting of another step, another job's action or a
+    comment that names the action is not taken for this one's.
+    """
+    pattern = re.compile(
+        rf"^(?P<dash>\s*-\s+)?\s*uses\s*:\s*['\"]?{re.escape(uses)}(?:[@'\"\s]|$)"
+    )
+    steps = []
+    for number, line in enumerate(lines):
+        match = pattern.match(line)
+        if not match:
+            continue
+        start = number
+        if match.group("dash"):
+            dash = _indent(line)
+        else:
+            # "uses:" under the step's "- name:" line: the step starts at the
+            # nearest line above that begins with a "-" further left.
+            dash = _indent(line) - 2
+            while start > 0:
+                start -= 1
+                above = lines[start]
+                if above.strip().startswith("-") and _indent(above) <= dash:
+                    dash = _indent(above)
+                    break
+        end = number + 1
+        while end < len(lines):
+            stripped = lines[end].strip()
+            if (
+                stripped
+                and not stripped.startswith("#")
+                and _indent(lines[end]) <= dash
+            ):
+                break
+            end += 1
+        steps.append(lines[start:end])
+    return steps
+
+
 def _yaml_findings(
     path: str, text: str, settings: Iterable[AgentSetting]
 ) -> Iterator[Finding]:
     lines = text.splitlines()
     for setting in settings:
+        scopes = [lines] if setting.uses is None else _steps_using(lines, setting.uses)
         key = setting.key[-1]
         pattern = re.compile(
             rf"^\s*(?:-\s+)?(['\"]?){re.escape(key)}\1\s*:(?P<value>.*)$"
         )
-        for line in lines:
+        for line in (line for scope in scopes for line in scope):
             match = pattern.match(line)
             if not match:
                 continue
@@ -383,7 +433,6 @@ def find_settings(
     if settings is None:
         settings = load_settings()
     relevant = [s for s in settings if s.reads(path)]
-    relevant = [s for s in relevant if s.uses is None or s.uses in text]
     if not relevant:
         return []
     # The catalog admits only files whose format is known.

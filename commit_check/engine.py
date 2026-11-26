@@ -23,7 +23,7 @@ from commit_check import (
     ai_policy,
 )
 from commit_check.agent_config import MAX_FILE_SIZE as MAX_AGENT_FILE_SIZE
-from commit_check.agent_config import find_settings, is_allowed
+from commit_check.agent_config import Finding, find_settings, is_allowed
 from commit_check.agent_config import load_settings as load_agent_settings
 from commit_check.ai_signatures import (
     detect_ai_author,
@@ -164,7 +164,7 @@ class ValidationContext:
     )
     # Per-run memo of the agent config findings in each (revision, path):
     # the four agent config rules read the same files.
-    agent_findings_cache: dict[tuple[str, str], list] = field(
+    agent_findings_cache: dict[tuple[str, str], list[Finding]] = field(
         default_factory=dict, repr=False, compare=False
     )
     # Set when stdin_text is a piped commit message: checks with a value of
@@ -481,6 +481,7 @@ class BaseValidator(ABC):
         error: str | None = None,
         fix: str | None = None,
         suggest: str | None = None,
+        head: str | None = None,
     ) -> None:
         """Record and (unless suppressed) print a standardised failure message.
 
@@ -492,8 +493,14 @@ class BaseValidator(ABC):
         guessing; it replaces the rule's generic suggestion with a concrete
         one (``suggest`` overrides the wording) and travels to structured
         consumers as its own field.
+
+        ``head`` is for a value that is a list, one item a line: the failure
+        line then says *head* (``3 settings``) and every item is printed
+        below it, rather than the first item and a count of the rest.
         """
         rule_dict = self.rule.to_dict()
+        if head is not None:
+            rule_dict["value_head"] = head
         if error is not None:
             rule_dict["error"] = error
         if fix or suggest:
@@ -1183,12 +1190,24 @@ class AgentConfigValidator(FilesValidator):
     touches files but no agent config file passes.
     """
 
+    def _fail(self, offenders: list[str]) -> ValidationResult:
+        """Report every finding, one a line.
+
+        They are often in different files; showing one and a count of the
+        rest would have the reader fix them one run at a time.
+        """
+        value = "\n".join(offenders)
+        self._checked_value = value
+        head = f"{len(offenders)} settings" if len(offenders) > 1 else None
+        self._print_failure(value, head=head)
+        return ValidationResult.FAIL
+
     def _findings(
         self, context: ValidationContext, rev: str, path: str, size: int
-    ) -> list:
+    ) -> list[Finding]:
         key = (rev, path)
         if key not in context.agent_findings_cache:
-            findings = []
+            findings: list[Finding] = []
             if size <= MAX_AGENT_FILE_SIZE:
                 text = get_file_text(rev, path)
                 if text is not None:
@@ -1202,25 +1221,29 @@ class AgentConfigValidator(FilesValidator):
             return ValidationResult.SKIP
         settings = load_agent_settings()
         allowed = self.rule.allowed or []
+        # Over several commits, a setting may be in one that a later commit
+        # undid, so the file on disk no longer shows it: name the commit.
+        name_commit = len(revs) > 1
         touched = False
         checked: set[str] = set()
-        offenders: list[str] = []
+        offenders: dict[str, str] = {}
         for rev in revs:
             for path, size in self._files_for_rev(context, rev):
                 touched = True
                 if not any(s.reads(path) for s in settings):
                     continue
                 checked.add(path)
-                offenders.extend(
-                    str(finding)
-                    for finding in self._findings(context, rev, path, size)
-                    if finding.check == self.rule.check
-                    and not is_allowed(finding, allowed)
-                )
+                for finding in self._findings(context, rev, path, size):
+                    if finding.check != self.rule.check or is_allowed(finding, allowed):
+                        continue
+                    # The newest commit that carries it: revs come newest
+                    # first, as git rev-list lists them.
+                    where = f" at {rev[:7]}" if name_commit else ""
+                    offenders.setdefault(str(finding), f"{finding}{where}")
         if not touched:
             return ValidationResult.SKIP
         if offenders:
-            return self._fail(list(dict.fromkeys(offenders)))
+            return self._fail(list(offenders.values()))
         self._checked_value = (
             f"{len(checked)} agent config file(s)"
             if checked

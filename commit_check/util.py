@@ -11,7 +11,7 @@ import os
 import re
 import subprocess
 import sys
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from subprocess import CalledProcessError
 
 from commit_check import BOLD, DIM, GREEN, RED, RESET_COLOR, YELLOW
@@ -65,8 +65,13 @@ def _print_failure(
     """
     rule_id = check.get("rule_id", "")
     warn = check.get("severity") == "warn"
+    # A list of findings, one a line, under a head such as "3 settings".
+    head = check.get("value_head")
+    items = actual.splitlines() if head else []
     if compact:
         compact_value = printable(actual.splitlines()[0]) if actual else actual
+        if len(items) > 1:
+            compact_value += f" (+{len(items) - 1} more)"
         name = display_name(check["check"])
         label = f"{rule_id} {name}" if rule_id else name
         print(f"[{'WARN' if warn else 'FAIL'}] {label}: {compact_value}")
@@ -80,7 +85,8 @@ def _print_failure(
     print_error_message(
         check["check"],
         printable(check.get("error", "")),
-        printable(actual),
+        printable(head or actual),
+        items=[printable(item) for item in items],
         rule_id=rule_id,
         docs_url=docs_url,
         warn=warn,
@@ -953,6 +959,7 @@ def print_error_message(
     spec_name: str = "",
     spec_url: str = "",
     show_value: bool = True,
+    items: Sequence[str] = (),
 ) -> None:
     """Print error message.
 
@@ -970,6 +977,8 @@ def print_error_message(
         trailing ``. See {spec_url}``, dropped once the name is a link
     :param show_value: print ``reason`` after the verdict; off when the value
         is already quoted above, so the line names the rule only
+    :param items: what ``reason`` counts, such as ``3 settings``: printed
+        one a line under the verdict, before the explanation
 
     :returns: Give error messages to user
     """
@@ -996,6 +1005,9 @@ def print_error_message(
             tail = f" {DIM}(+{more} more line{'s' if more > 1 else ''}){RESET_COLOR}"
         head += f": {colour}{first}{RESET_COLOR}{tail}"
     print(head)
+    bullet = _symbol("•", "-")
+    for item in items:
+        print(f"{_DETAIL_INDENT}{colour}{bullet} {item}{RESET_COLOR}")
     if error:
         # Same trade-off as the Docs: line above — once the spec name is a
         # link, spelling out its address only adds noise; without hyperlink

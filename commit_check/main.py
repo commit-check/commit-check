@@ -658,7 +658,7 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     agent_group.add_argument(
-        "--agent-config-allowed-mcp-servers",
+        "--agent-config-allow-mcp-servers",
         type=parse_list,
         default=None,
         metavar="LIST",
@@ -667,7 +667,7 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     agent_group.add_argument(
-        "--agent-config-allowed-api-endpoints",
+        "--agent-config-allow-api-endpoints",
         type=parse_list,
         default=None,
         metavar="LIST",

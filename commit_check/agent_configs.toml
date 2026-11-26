@@ -8,9 +8,9 @@
 #
 #   name      the agent, as people know it
 #   files     the committed files it reads, as paths from the repository
-#             root; * and ? work as in a shell (fnmatch)
-#   uses      YAML files only: text a file must contain to be this agent's,
-#             such as the action's name; other YAML files are skipped
+#             root; * and ? work as in a shell and stay within one directory
+#   uses      YAML files only: the action a step's "uses:" names; only the
+#             settings of such a step count
 #   docs      where the agent documents these settings
 #   settings  one inline table per setting:
 #     rule    the rule that reports it:
@@ -32,6 +32,9 @@
 # value written across several lines, or through an anchor, is not seen.
 #
 # Only settings an agent documents belong here, with the page that says so.
+# Values are matched as the docs write them: "Bash" and "Bash(*)" are, a
+# rule such as "Bash(python3:*)" that also allows any command is not. These
+# rules catch the settings that open everything up, not every risky one.
 
 [[agent]]
 name = "Claude Code"
@@ -55,7 +58,12 @@ settings = [
 
 [[agent]]
 name = "Claude Code GitHub Action"
-files = [".github/workflows/*.yml", ".github/workflows/*.yaml"]
+files = [
+    ".github/workflows/*.yml",
+    ".github/workflows/*.yaml",
+    ".github/actions/*/action.yml",
+    ".github/actions/*/action.yaml",
+]
 uses = "anthropics/claude-code-action"
 docs = "https://github.com/anthropics/claude-code-action/blob/main/docs/security.md"
 settings = [
@@ -71,6 +79,8 @@ settings = [
     { rule = "agent-full-access", key = "sandbox_mode", value = "danger-full-access" },
     { rule = "agent-full-access", key = "default_permissions", value = ":danger-full-access" },
     { rule = "agent-full-access", key = "approval_policy", value = "never" },
+    # [profiles.*] is not listed: Codex ignores profile and profiles in a
+    # project's .codex/config.toml.
 ]
 
 [[agent]]
