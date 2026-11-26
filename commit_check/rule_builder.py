@@ -20,9 +20,11 @@ from commit_check import (
     GIT_MERGE_SUBJECT_PATTERN,
     GIT_REVERT_SUBJECT_PATTERN,
 )
+from commit_check.agent_config import ALLOWLISTS
 from commit_check.config import ConfigError, report_notice
 from commit_check.config_merger import get_default_config
 from commit_check.rules_catalog import (
+    AGENT_CONFIG_RULES,
     BRANCH_RULES,
     COMMIT_RULES,
     FILES_RULES,
@@ -304,6 +306,7 @@ class RuleBuilder:
         rules.extend(self._build_branch_rules())
         rules.extend(self._build_push_rules())
         rules.extend(self._build_files_rules())
+        rules.extend(self._build_agent_config_rules())
         rules.extend(self._build_tag_rules())
         rules.extend(self._build_pull_request_rules())
         if not self.warn_checks:
@@ -485,6 +488,41 @@ class RuleBuilder:
             suggest=(catalog_entry.suggest or "").format(max_len=max_len),
             value=max_len,
         )
+
+    def _build_agent_config_rules(self) -> list[ValidationRule]:
+        """Build the agent config rules, CC601 to CC604.
+
+        Off by default, all four at once: ``[agent_config] enabled = true``
+        turns them on. Each rule that has an allowlist carries it as
+        ``allowed``. ``warn`` can demote any of them on its own.
+        """
+        section = self.config.get("agent_config", {})
+        if not isinstance(section, dict):
+            if section:
+                report_notice(
+                    self.notices,
+                    "[agent_config]",
+                    f"[agent_config] must be a table, got {section!r}; "
+                    "the agent config rules are disabled",
+                )
+            return []
+        if section.get("enabled") is not True:
+            return []
+        rules = []
+        for catalog_entry in AGENT_CONFIG_RULES:
+            key = ALLOWLISTS.get(catalog_entry.check)
+            allowed = (
+                _string_list(section, key, [], f"[agent_config] {key}") if key else None
+            )
+            rules.append(
+                ValidationRule(
+                    check=catalog_entry.check,
+                    error=catalog_entry.error,
+                    suggest=catalog_entry.suggest,
+                    allowed=allowed,
+                )
+            )
+        return rules
 
     def _build_pull_request_rules(self) -> list[ValidationRule]:
         """Build the pull request rules.

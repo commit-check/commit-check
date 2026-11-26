@@ -10,6 +10,7 @@ import pytest
 
 from commit_check.rule_builder import RuleBuilder
 from commit_check.rules_catalog import (
+    AGENT_CONFIG_RULES,
     AI_TEXT_CHECKS,
     ALL_RULES,
     BRANCH_CHECKS,
@@ -165,4 +166,6 @@ class TestCheckGroups:
         assert checks.isdisjoint(MESSAGE_CHECKS)
 
     def test_files_checks_are_every_files_rule(self):
-        assert FILES_CHECKS == {entry.check for entry in FILES_RULES}
+        assert FILES_CHECKS == {
+            entry.check for entry in (*FILES_RULES, *AGENT_CONFIG_RULES)
+        }

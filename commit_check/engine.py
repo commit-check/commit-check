@@ -22,6 +22,9 @@ from commit_check import (
     GIT_REVERT_SUBJECT_PATTERN,
     ai_policy,
 )
+from commit_check.agent_config import MAX_FILE_SIZE as MAX_AGENT_FILE_SIZE
+from commit_check.agent_config import find_settings, is_allowed
+from commit_check.agent_config import load_settings as load_agent_settings
 from commit_check.ai_signatures import (
     detect_ai_author,
     detect_ai_signatures,
@@ -46,6 +49,7 @@ from commit_check.util import (
     get_commit_author_identity,
     get_commit_files,
     get_commit_info,
+    get_file_text,
     get_git_config_value,
     get_git_remotes,
     get_git_user_identity,
@@ -156,6 +160,11 @@ class ValidationContext:
     # rules each get their own validator, so without this they would re-run
     # the same git plumbing over the same commits three times.
     files_cache: dict[str, list[tuple[str, int]]] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    # Per-run memo of the agent config findings in each (revision, path):
+    # the four agent config rules read the same files.
+    agent_findings_cache: dict[tuple[str, str], list] = field(
         default_factory=dict, repr=False, compare=False
     )
     # Set when stdin_text is a piped commit message: checks with a value of
@@ -1012,7 +1021,8 @@ class FilesValidator(BaseValidator):
     patterns, path length — branching on the rule's check name. Only the
     paths and sizes recorded in the commit are read, never file contents:
     content scanning is a different tool's job. A commit touching no files
-    (or an unresolvable revision) is a skip.
+    (or an unresolvable revision) is a skip. The agent config rules, which
+    do read contents, are :class:`AgentConfigValidator`.
     """
 
     @staticmethod
@@ -1161,6 +1171,61 @@ class FilesValidator(BaseValidator):
         ]
         if offenders:
             return self._fail(offenders)
+        return ValidationResult.PASS
+
+
+class AgentConfigValidator(FilesValidator):
+    """Validates the agent config files a commit touches (CC601 to CC604).
+
+    Unlike the other file rules this reads contents, but only of the files
+    ``agent_configs.toml`` names, as committed, and only to find the
+    settings it lists; see :mod:`commit_check.agent_config`. A commit that
+    touches files but no agent config file passes.
+    """
+
+    def _findings(
+        self, context: ValidationContext, rev: str, path: str, size: int
+    ) -> list:
+        key = (rev, path)
+        if key not in context.agent_findings_cache:
+            findings = []
+            if size <= MAX_AGENT_FILE_SIZE:
+                text = get_file_text(rev, path)
+                if text is not None:
+                    findings = find_settings(path, text)
+            context.agent_findings_cache[key] = findings
+        return context.agent_findings_cache[key]
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        revs = self._revs_to_check(context)
+        if revs is None:
+            return ValidationResult.SKIP
+        settings = load_agent_settings()
+        allowed = self.rule.allowed or []
+        touched = False
+        checked: set[str] = set()
+        offenders: list[str] = []
+        for rev in revs:
+            for path, size in self._files_for_rev(context, rev):
+                touched = True
+                if not any(s.reads(path) for s in settings):
+                    continue
+                checked.add(path)
+                offenders.extend(
+                    str(finding)
+                    for finding in self._findings(context, rev, path, size)
+                    if finding.check == self.rule.check
+                    and not is_allowed(finding, allowed)
+                )
+        if not touched:
+            return ValidationResult.SKIP
+        if offenders:
+            return self._fail(list(dict.fromkeys(offenders)))
+        self._checked_value = (
+            f"{len(checked)} agent config file(s)"
+            if checked
+            else "no agent config file"
+        )
         return ValidationResult.PASS
 
 
@@ -2309,6 +2374,10 @@ class ValidationEngine:
         "file_size": FilesValidator,
         "file_pattern": FilesValidator,
         "path_length": FilesValidator,
+        "agent_mcp_auto_approve": AgentConfigValidator,
+        "agent_api_endpoint": AgentConfigValidator,
+        "agent_full_access": AgentConfigValidator,
+        "agent_open_trigger": AgentConfigValidator,
     }
 
     def __init__(self, rules: list[ValidationRule]):

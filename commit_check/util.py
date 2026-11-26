@@ -417,6 +417,25 @@ def get_commit_files(rev: str = "HEAD") -> list[tuple[str, int]]:
     return files
 
 
+def get_file_text(rev: str, path: str) -> str | None:
+    """The contents of *path* as committed in *rev*, or ``None``.
+
+    Read from the commit, not the working tree, for the same reason
+    :func:`get_commit_files` measures blob sizes: what is checked is what
+    was committed. Bytes that are not UTF-8 are replaced rather than
+    refused; the files read this way are config files, and a stray byte in
+    a comment should not hide the settings around it.
+    """
+    result = subprocess.run(
+        ["git", "cat-file", "blob", f"{rev}:{path}"],
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout.decode("utf-8", errors="replace")
+
+
 def get_push_commits(local_sha: str, remote_sha: str) -> list[str]:
     """List the commits a push introduces, newest first.
 

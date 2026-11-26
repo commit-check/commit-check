@@ -55,7 +55,7 @@ zip-safe = false
 packages = ["commit_check"]
 
 [tool.setuptools.package-data]
-commit_check = ["py.typed"]
+commit_check = ["py.typed", "agent_configs.toml"]
 
 [tool.setuptools_scm]
 # It would be nice to include the commit hash in the version, but that

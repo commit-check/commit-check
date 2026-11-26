@@ -1388,7 +1388,10 @@ class TestNoticesInJson:
         data = json.loads(out)
         assert data["status"] == "skip"
         assert data["checks"] == []
-        hint = "--files requested but nothing is configured in the [files] section"
+        hint = (
+            "--files requested but nothing is configured in the [files] or "
+            "[agent_config] section"
+        )
         assert data["notices"] == [{"setting": "--files", "message": hint}]
         assert f"⊘ {hint}" in err
 
@@ -1833,6 +1836,10 @@ class TestFilesFlag:
             "file_size",
             "file_pattern",
             "path_length",
+            "agent_mcp_auto_approve",
+            "agent_api_endpoint",
+            "agent_full_access",
+            "agent_open_trigger",
         }
 
     def test_files_cli_options_reach_config(self):
@@ -1865,8 +1872,8 @@ class TestFilesFlag:
         assert main() == 0
         _, err = capfd.readouterr()
         assert (
-            "⊘ --files requested but nothing is configured in the [files] section"
-            in err
+            "⊘ --files requested but nothing is configured in the [files] or "
+            "[agent_config] section" in err
         )
 
 

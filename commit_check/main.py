@@ -300,8 +300,9 @@ def _get_parser() -> argparse.ArgumentParser:
         "-f",
         "--files",
         help="check the files the commit at HEAD (or --rev) touches: size "
-        "limit, prohibited path patterns, path length (all off until "
-        "configured in the [files] config section)",
+        "limit, prohibited path patterns, path length, and risky settings in "
+        "agent config files (all off until configured in the [files] and "
+        "[agent_config] config sections)",
         action="store_true",
         required=False,
     )
@@ -641,6 +642,38 @@ def _get_parser() -> argparse.ArgumentParser:
         help="maximum number of characters in a committed file path",
     )
 
+    # Agent config options
+    agent_group = parser.add_argument_group(
+        "agent config options",
+        "Configuration options for the agent config rules, run by --files",
+    )
+
+    agent_group.add_argument(
+        "--agent-config-enabled",
+        type=parse_bool,
+        default=None,
+        metavar="BOOL",
+        help="report risky settings in the agent config files a commit "
+        "touches, such as .claude/settings.json (true/false)",
+    )
+
+    agent_group.add_argument(
+        "--agent-config-allowed-mcp-servers",
+        type=parse_list,
+        default=None,
+        metavar="LIST",
+        help="comma-separated MCP server names the agent config may "
+        "approve without asking",
+    )
+
+    agent_group.add_argument(
+        "--agent-config-allowed-api-endpoints",
+        type=parse_list,
+        default=None,
+        metavar="LIST",
+        help="comma-separated API endpoint URLs the agent config may send requests to",
+    )
+
     return parser
 
 
@@ -808,8 +841,11 @@ def _get_requested_checks(args: argparse.Namespace) -> set[str]:
 _UNCONFIGURED_HINTS = (
     (
         "files",
-        ("file_size", "file_pattern", "path_length"),
-        "--files requested but nothing is configured in the [files] section",
+        tuple(sorted(FILES_CHECKS)),
+        (
+            "--files requested but nothing is configured in the [files] or "
+            "[agent_config] section"
+        ),
     ),
     (
         "branch",

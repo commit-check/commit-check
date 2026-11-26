@@ -109,6 +109,11 @@ def get_default_config() -> dict[str, Any]:
             "prohibited_patterns": [],
             "max_path_length": 0,
         },
+        "agent_config": {
+            "enabled": False,
+            "allowed_mcp_servers": [],
+            "allowed_api_endpoints": [],
+        },
     }
 
 
@@ -223,6 +228,18 @@ class ConfigMerger:
         "CCHK_FILES_MAX_SIZE": ("files", "max_size", str),
         "CCHK_FILES_PROHIBITED_PATTERNS": ("files", "prohibited_patterns", parse_list),
         "CCHK_FILES_MAX_PATH_LENGTH": ("files", "max_path_length", parse_int),
+        # Agent config section
+        "CCHK_AGENT_CONFIG_ENABLED": ("agent_config", "enabled", parse_bool),
+        "CCHK_AGENT_CONFIG_ALLOWED_MCP_SERVERS": (
+            "agent_config",
+            "allowed_mcp_servers",
+            parse_list,
+        ),
+        "CCHK_AGENT_CONFIG_ALLOWED_API_ENDPOINTS": (
+            "agent_config",
+            "allowed_api_endpoints",
+            parse_list,
+        ),
     }
 
     # Mapping of CLI argument names to config keys
@@ -263,6 +280,13 @@ class ConfigMerger:
         "files_max_size": ("files", "max_size"),
         "files_prohibited_patterns": ("files", "prohibited_patterns"),
         "files_max_path_length": ("files", "max_path_length"),
+        # Agent config section
+        "agent_config_enabled": ("agent_config", "enabled"),
+        "agent_config_allowed_mcp_servers": ("agent_config", "allowed_mcp_servers"),
+        "agent_config_allowed_api_endpoints": (
+            "agent_config",
+            "allowed_api_endpoints",
+        ),
     }
 
     @staticmethod
@@ -279,6 +303,7 @@ class ConfigMerger:
             "push": {},
             "tag": {},
             "files": {},
+            "agent_config": {},
         }
 
         for env_var, (section, key, parser) in ConfigMerger.ENV_VAR_MAPPING.items():
@@ -310,6 +335,7 @@ class ConfigMerger:
             "push": {},
             "tag": {},
             "files": {},
+            "agent_config": {},
         }
 
         for arg_name, (section, key) in ConfigMerger.CLI_ARG_MAPPING.items():
