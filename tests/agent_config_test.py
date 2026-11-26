@@ -274,6 +274,17 @@ class TestFindSettings:
     def test_a_file_that_does_not_parse_is_not_reported(self, path, text):
         assert _settings(path, text) == []
 
+    @pytest.mark.parametrize(
+        "path,text",
+        [
+            (".claude/settings.json", "[" * 100_000 + "]" * 100_000),
+            (".claude/settings.json", "[" * 100_000 + "]" * 100_000 + ","),
+            (".codex/config.toml", "a = " + "[" * 100_000 + "]" * 100_000),
+        ],
+    )
+    def test_a_file_nested_too_deep_to_parse_is_not_reported(self, path, text):
+        assert _settings(path, text) == []
+
     def test_a_dotted_key_is_also_matched_nested(self):
         text = '{"chat": {"tools": {"global.autoApprove": true}}}'
         assert _settings(".vscode/settings.json", text) == [
@@ -432,6 +443,17 @@ class TestFindSettings:
             '    allowed_bots: "*"\n'
             "  uses: anthropics/claude-code-action@v1\n"
         )
+        assert _settings(".github/workflows/a.yml", text) == ['allowed_bots = "*"']
+
+    @pytest.mark.parametrize(
+        "step",
+        [
+            '- "uses": anthropics/claude-code-action@v1\n  "with":\n',
+            "- 'uses': anthropics/claude-code-action@v1\n  'with':\n",
+        ],
+    )
+    def test_quoted_uses_and_with_keys_count(self, step):
+        text = f"{step}    allowed_bots: '*'\n"
         assert _settings(".github/workflows/a.yml", text) == ['allowed_bots = "*"']
 
     def test_an_action_named_only_in_a_comment_is_not_used(self):

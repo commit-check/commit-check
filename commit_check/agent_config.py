@@ -260,7 +260,8 @@ def _parse(fmt: str, text: str) -> Any:
         if fmt == "json":
             return _loads_jsonc(text)
         return tomllib.loads(text)
-    except ValueError:
+    except (ValueError, RecursionError):
+        # Nested deeper than Python's parsers go: no agent reads it either.
         return None
 
 
@@ -385,7 +386,7 @@ def _steps_using(lines: list[str], uses: str) -> list[list[str]]:
     comment that names the action is not taken for this one's.
     """
     pattern = re.compile(
-        rf"^(?P<dash>\s*-\s+)?\s*uses\s*:\s*['\"]?{re.escape(uses)}(?:[@'\"\s]|$)"
+        rf"^(?P<dash>\s*-\s+)?\s*(['\"]?)uses\2\s*:\s*['\"]?{re.escape(uses)}(?:[@'\"\s]|$)"
     )
     steps = []
     for number, line in enumerate(lines):
@@ -427,7 +428,7 @@ def _inputs(step: list[str]) -> list[str]:
     """
     inputs: list[str] = []
     for number, line in enumerate(step):
-        if not re.match(r"^\s*(?:-\s+)?with\s*:\s*(?:#.*)?$", line):
+        if not re.match(r"^\s*(?:-\s+)?(['\"]?)with\1\s*:\s*(?:#.*)?$", line):
             continue
         column = len(line) - len(line.lstrip(" -"))
         depth = None
