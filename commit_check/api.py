@@ -21,6 +21,13 @@ Return-value schema (all functions)::
     {
         "status": "pass" | "fail" | "skip",
         "warnings": <number of checks with status "warn">,
+        "notices": [
+            {
+                "setting": "<the setting that is not in force, e.g. [files] max_size>",
+                "message": "<what was wrong with it, as the CLI prints it>",
+            },
+            ...
+        ],
         "checks": [
             {
                 "check":   "<rule name>",
@@ -39,9 +46,16 @@ Return-value schema (all functions)::
 list, or there was nothing to check. It is deliberately not ``"pass"``: a
 skipped rule validated nothing, and collapsing the two makes a bypassed
 policy indistinguishable from an enforced one. The top-level ``status`` is
-``"skip"`` only when *every* check skipped; a run with any real verdict
-reports ``"pass"`` or ``"fail"`` as before. Only ``"fail"`` is an error, so
-code branching on ``status == "fail"`` keeps working unchanged.
+``"skip"`` only when *every* check skipped, or when no check ran at all; a
+run with any real verdict reports ``"pass"`` or ``"fail"`` as before. Only
+``"fail"`` is an error, so code branching on ``status == "fail"`` keeps
+working unchanged.
+
+``notices`` lists the settings in the ``config`` dict that are not in force,
+such as a ``[files]`` value that cannot be used and so turns its rule off; it
+is an empty list when there are none. The dict's keys are not checked
+against the known settings, as the CLI checks a config file's: an unknown
+key in it is ignored without a notice.
 """
 
 from __future__ import annotations
@@ -66,13 +80,36 @@ from commit_check.rules_catalog import BRANCH_CHECKS, MESSAGE_CHECKS
 # ---------------------------------------------------------------------------
 
 
-def _build_result(outcomes: list[CheckOutcome]) -> dict[str, Any]:
+def _build_result(
+    outcomes: list[CheckOutcome], notices: list[dict[str, str]]
+) -> dict[str, Any]:
     """Convert a list of :class:`~commit_check.engine.CheckOutcome` into the
     public return-value dict."""
     return {
         "status": overall_status(o.status for o in outcomes),
         "warnings": count_warnings(o.status for o in outcomes),
+        "notices": notices,
         "checks": [o.to_dict() for o in outcomes],
+    }
+
+
+def _combine(results: list[dict[str, Any]]) -> dict[str, Any]:
+    """One result from several, for the calls that run more than one pass.
+
+    Each pass builds its rules from the same config, so a notice about it
+    comes back from every pass; it is listed once.
+    """
+    checks = [c for r in results for c in r["checks"]]
+    notices: list[dict[str, str]] = []
+    for r in results:
+        notices.extend(n for n in r["notices"] if n not in notices)
+    # Shared reducer, not a local "fail or else pass": a combined call in
+    # which every nested check skipped is still a skip.
+    return {
+        "status": overall_status(c["status"] for c in checks),
+        "warnings": count_warnings(c["status"] for c in checks),
+        "notices": notices,
+        "checks": checks,
     }
 
 
@@ -82,12 +119,13 @@ def _run_checks(
     config: dict[str, Any],
 ) -> dict[str, Any]:
     """Build rules, filter to *check_names*, run the engine, return result."""
-    rule_builder = RuleBuilder(config)
+    notices: list[dict[str, str]] = []
+    rule_builder = RuleBuilder(config, notices)
     all_rules = rule_builder.build_all_rules()
     filtered = [r for r in all_rules if r.check in check_names]
     engine = ValidationEngine(filtered)
     outcomes = engine.validate_all_detailed(context)
-    return _build_result(outcomes)
+    return _build_result(outcomes, notices)
 
 
 def _merge_config(user_config: dict[str, Any] | None) -> dict[str, Any]:
@@ -116,8 +154,8 @@ def validate_message(
         override only the keys you care about, e.g.
         ``{"commit": {"allow_commit_types": ["feat", "fix"]}}``.
     :returns: A dict with ``"status"`` (``"pass"``/``"fail"``/``"skip"``), a
-        ``"warnings"`` count and ``"checks"``
-        (list of per-rule outcomes).
+        ``"warnings"`` count, ``"notices"`` (settings not in force) and
+        ``"checks"`` (list of per-rule outcomes).
 
     Example::
 
@@ -142,7 +180,8 @@ def validate_branch(
     :param branch: Branch name to validate.  If *None*, the current git branch
         is used (via ``git branch --show-current``).
     :param config: Optional configuration override dict.
-    :returns: A dict with ``"status"``, a ``"warnings"`` count and ``"checks"``.
+    :returns: A dict with ``"status"``, a ``"warnings"`` count, ``"notices"``
+        and ``"checks"``.
 
     Example::
 
@@ -175,7 +214,8 @@ def validate_tag(
     :param config: Optional configuration override dict. The pattern comes
         from ``config["tag"]["regex"]`` and defaults to SemVer with an
         optional leading ``v`` (``v1.2.3`` or ``1.2.3``).
-    :returns: A dict with ``"status"``, a ``"warnings"`` count and ``"checks"``.
+    :returns: A dict with ``"status"``, a ``"warnings"`` count, ``"notices"``
+        and ``"checks"``.
 
     Example::
 
@@ -213,7 +253,7 @@ def validate_push(
         the result unless ``no_force_push`` is listed under ``warn``, in which
         case the check reports ``"warn"`` and the result passes.
     :returns: A dict with ``"status"`` (``"pass"``/``"fail"``/``"skip"``), a
-        ``"warnings"`` count and ``"checks"``.
+        ``"warnings"`` count, ``"notices"`` and ``"checks"``.
 
     Example::
 
@@ -247,7 +287,8 @@ def validate_author(
     :param email: Author email to validate.  If *None*, the value from
         ``git config user.email`` is used.
     :param config: Optional configuration override dict.
-    :returns: A dict with ``"status"``, a ``"warnings"`` count and ``"checks"``.
+    :returns: A dict with ``"status"``, a ``"warnings"`` count, ``"notices"``
+        and ``"checks"``.
 
     Example::
 
@@ -279,15 +320,7 @@ def validate_author(
             ValidationContext(stdin_text=email.strip(), config=cfg),
             cfg,
         )
-        all_checks = name_result["checks"] + email_result["checks"]
-        # Shared reducer, not a local "fail or else pass": a combined call
-        # in which every nested check skipped is still a skip.
-        overall = overall_status(c["status"] for c in all_checks)
-        return {
-            "status": overall,
-            "warnings": count_warnings(c["status"] for c in all_checks),
-            "checks": all_checks,
-        }
+        return _combine([name_result, email_result])
 
     stdin = None
     if name is not None:
@@ -317,8 +350,9 @@ def validate_all(
     :param author_name: Author name to validate, or *None* to skip.
     :param author_email: Author email to validate, or *None* to skip.
     :param config: Optional configuration override dict.
-    :returns: A dict with ``"status"``, a ``"warnings"`` count and ``"checks"``
-        combining all requested validations.
+    :returns: A dict with ``"status"``, a ``"warnings"`` count, ``"notices"``
+        and ``"checks"``, combining all requested validations. A notice that
+        more than one of them raised is listed once.
 
     Example::
 
@@ -330,23 +364,15 @@ def validate_all(
         >>> result["status"]
         'pass'
     """
-    all_checks: list[dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
 
     if message is not None:
-        msg_result = validate_message(message, config=config)
-        all_checks.extend(msg_result["checks"])
+        results.append(validate_message(message, config=config))
 
     if branch is not None:
-        branch_result = validate_branch(branch, config=config)
-        all_checks.extend(branch_result["checks"])
+        results.append(validate_branch(branch, config=config))
 
     if author_name is not None or author_email is not None:
-        author_result = validate_author(author_name, author_email, config=config)
-        all_checks.extend(author_result["checks"])
+        results.append(validate_author(author_name, author_email, config=config))
 
-    overall = overall_status(c["status"] for c in all_checks)
-    return {
-        "status": overall,
-        "warnings": count_warnings(c["status"] for c in all_checks),
-        "checks": all_checks,
-    }
+    return _combine(results)

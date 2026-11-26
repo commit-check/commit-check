@@ -790,6 +790,39 @@ class TestFilesRules:
         assert "must be a table" in err
         assert "garbage" in err
 
+    def test_each_unusable_files_value_is_collected(self, capsys):
+        """Given a list, each notice is added to it as well as printed."""
+        notices: list[dict[str, str]] = []
+        RuleBuilder(
+            {"files": {"max_size": "5M", "max_path_length": -1}}, notices
+        ).build_all_rules()
+        assert notices == [
+            {
+                "setting": "[files] max_size",
+                "message": "[files] max_size = '5M' is not usable; "
+                "CC302 file-size is disabled",
+            },
+            {
+                "setting": "[files] max_path_length",
+                "message": "[files] max_path_length = -1 is not usable; "
+                "CC304 path-length is disabled",
+            },
+        ]
+        assert capsys.readouterr().err.splitlines() == [
+            f"⊘ {n['message']}" for n in notices
+        ]
+
+    def test_a_non_table_files_section_is_collected(self, capsys):
+        notices: list[dict[str, str]] = []
+        RuleBuilder({"files": "garbage"}, notices).build_all_rules()
+        assert notices == [
+            {
+                "setting": "[files]",
+                "message": "[files] must be a table, got 'garbage'; "
+                "the file rules are disabled",
+            }
+        ]
+
     def test_a_false_files_value_opts_out_quietly(self, capsys):
         """files = false reads as "no file rules", which needs no warning."""
         rules = RuleBuilder({"files": False}).build_all_rules()
@@ -1088,6 +1121,8 @@ class TestConventionalCommitGitPrefixes:
         "message",
         [
             'Revert "feat: init"',
+            'Reapply "feat: init"',
+            'Revert "Reapply "feat: init""',
             "Merge branch 'feature' into main",
             "Merge pull request #1 from org/feature",
             "Merge remote-tracking branch 'origin/main'",
@@ -1111,6 +1146,8 @@ class TestConventionalCommitGitPrefixes:
             "Merge lowercase added stuff",
             "fixup!! nonsense",
             "Reverted the thing",
+            "Reapply the parser change",
+            "Reapplied the thing",
             "fixup!feat: x",
         ],
     )
@@ -1184,7 +1221,9 @@ class TestWrongTypeSettings:
         assert setting in str(excinfo.value)
         assert excinfo.value.setting == setting
 
-    @pytest.mark.parametrize("key", ["subject_max_length", "subject_min_length"])
+    @pytest.mark.parametrize(
+        "key", ["subject_max_length", "subject_min_length", "body_max_line_length"]
+    )
     @pytest.mark.parametrize("value", [True, False, "50", 5.5])
     def test_a_non_integer_length_names_the_setting(self, key, value):
         with pytest.raises(ConfigError, match="must be a whole number") as excinfo:
@@ -1315,3 +1354,26 @@ class TestAiDeclarationRule:
         )
         (rule,) = [r for r in builder.build_all_rules() if r.check == "ai_declaration"]
         assert rule.severity == "warn"
+
+
+class TestBodyLineLengthRuleBuilder:
+    """[commit] body_max_line_length builds CC018; 0 or unset builds nothing."""
+
+    @staticmethod
+    def _checks(commit):
+        return {
+            rule.check: rule
+            for rule in RuleBuilder({"commit": commit}).build_all_rules()
+        }
+
+    @pytest.mark.parametrize("commit", [{}, {"body_max_line_length": 0}])
+    def test_off_unless_set(self, commit):
+        assert "body_max_line_length" not in self._checks(commit)
+
+    def test_a_limit_builds_the_rule(self):
+        rule = self._checks({"body_max_line_length": 72})["body_max_line_length"]
+        assert rule.rule_id == "CC018"
+        assert rule.value == 72
+        assert rule.error == "Body lines must be at most 72 characters"
+        assert rule.suggest == "Wrap the body at 72 characters"
+        assert rule.docs_url == "https://commit-check.com/rules/#cc018"

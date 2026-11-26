@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "commit-check"
 description = "Commit policy as code for teams and AI agents: check commit messages, branch names, authors, tags, files and AI attribution."
 readme = "README.md"
-keywords = ["commit conventions", "conventional commits", "conventional branch", "branch naming", "commit-check", "message", "lint message", "devops", "policy as code", "ai agents"]
+keywords = ["commit conventions", "conventional commits", "conventional branch", "branch naming", "commit-check", "message", "lint message", "devops", "policy as code", "ai agents", "github actions", "gitlab ci", "bitbucket pipelines"]
 license = "MIT"
 authors = [
     { name = "Xianpeng Shen", email = "xianpeng.shen@gmail.com" },
@@ -33,11 +33,14 @@ dynamic = ["version"]
 [project.scripts]
 commit-check = "commit_check.main:main"
 cchk = "commit_check.main:main"  # short alias without clobbering system cc
+# Checks a whole merge or pull request on GitLab CI and Bitbucket Pipelines.
+commit-check-ci = "commit_check.ci:main"
 
 [project.urls]
-documentation = "https://commit-check.com/"
-source = "https://github.com/commit-check/commit-check"
-tracker = "https://github.com/commit-check/commit-check/issues"
+Documentation = "https://commit-check.com/"
+Changelog = "https://commit-check.com/changelog/"
+Source = "https://github.com/commit-check/commit-check"
+Issues = "https://github.com/commit-check/commit-check/issues"
 
 # ... other project metadata fields as specified in:
 #     https://packaging.python.org/en/latest/specifications/declaring-project-metadata/

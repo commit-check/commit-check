@@ -327,8 +327,10 @@ class TestWarnSeverityInTheEngine:
         )
         out, _ = capsys.readouterr()
         assert result == ValidationResult.FAIL
-        assert "message failed: added x" in out
-        assert "subject-imperative warning: added x" in out
+        # Both rules read the same message, so it is quoted once above them.
+        assert out.count("added x") == 1
+        assert "message failed\n" in out
+        assert "subject-imperative warning\n" in out
 
     def test_overall_status_only_counts_failures(self):
         assert overall_status(["warn", "pass"]) == "pass"
@@ -336,6 +338,11 @@ class TestWarnSeverityInTheEngine:
         assert overall_status(["warn", "fail"]) == "fail"
         assert overall_status(["skip", "skip"]) == "skip"
         assert count_warnings(["warn", "warn", "fail"]) == 2
+
+    def test_a_run_with_no_checks_is_a_skip(self):
+        """Nothing was validated, as when every check skipped."""
+        assert overall_status([]) == "skip"
+        assert overall_status(iter(())) == "skip"
 
 
 CLAUDE_STAMP = "🤖 Generated with [Claude Code](https://claude.com/claude-code)"

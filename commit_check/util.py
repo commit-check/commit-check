@@ -51,8 +51,13 @@ def _print_failure(
     actual: str,
     no_banner: bool = False,
     compact: bool = False,
+    value_shown: bool = False,
 ) -> None:
     """Print a standardized failure message.
+
+    ``value_shown`` says the value is already on screen, quoted above the
+    blocks by :func:`print_quoted_message`, so the block's first line names
+    the rule only instead of repeating the value.
 
     A rule whose ``severity`` is ``"warn"`` prints the same block with the
     word ``warning`` in place of ``failed``, no rejection header, and one
@@ -81,6 +86,7 @@ def _print_failure(
         warn=warn,
         spec_name=check.get("spec_name", "") or "",
         spec_url=check.get("spec_url", "") or "",
+        show_value=not value_shown,
     )
     if check.get("suggest"):
         print_suggestion(printable(check["suggest"]))
@@ -1109,6 +1115,7 @@ def print_error_message(
     warn: bool = False,
     spec_name: str = "",
     spec_url: str = "",
+    show_value: bool = True,
 ) -> None:
     """Print error message.
 
@@ -1124,6 +1131,8 @@ def print_error_message(
         from the name when the terminal supports it
     :param spec_url: address of that specification; ``error`` carries it as a
         trailing ``. See {spec_url}``, dropped once the name is a link
+    :param show_value: print ``reason`` after the verdict; off when the value
+        is already quoted above, so the line names the rule only
 
     :returns: Give error messages to user
     """
@@ -1136,17 +1145,20 @@ def print_error_message(
         marker, verdict, colour = _symbol("▲", "!"), "warning", YELLOW
     else:
         marker, verdict, colour = _symbol("✖", "x"), "failed", RED
-    # A whole commit message is the value of several rules; its subject names
-    # the commit, and the rest would push the explanation off the screen.
-    first, _, rest = reason.partition("\n")
-    more = sum(1 for line in rest.splitlines() if line.strip())
-    tail = ""
-    if more:
-        tail = f" {DIM}(+{more} more line{'s' if more > 1 else ''}){RESET_COLOR}"
-    print(
-        f"{colour}{marker}{RESET_COLOR} {prefix}{YELLOW}{name}{RESET_COLOR} "
-        f"{verdict}: {colour}{first}{RESET_COLOR}{tail}"
+    head = (
+        f"{colour}{marker}{RESET_COLOR} {prefix}{YELLOW}{name}{RESET_COLOR} {verdict}"
     )
+    if show_value:
+        # A whole commit message is the value of several rules; its subject
+        # names the commit, and the rest would push the explanation off the
+        # screen.
+        first, _, rest = reason.partition("\n")
+        more = sum(1 for line in rest.splitlines() if line.strip())
+        tail = ""
+        if more:
+            tail = f" {DIM}(+{more} more line{'s' if more > 1 else ''}){RESET_COLOR}"
+        head += f": {colour}{first}{RESET_COLOR}{tail}"
+    print(head)
     if error:
         # Same trade-off as the Docs: line above — once the spec name is a
         # link, spelling out its address only adds noise; without hyperlink
@@ -1155,6 +1167,47 @@ def print_error_message(
             error = error.replace(f". See {spec_url}", "")
             error = error.replace(spec_name, hyperlink(spec_name, spec_url))
         print(f"{_DETAIL_INDENT}{error}")
+
+
+#: Lines of a quoted message shown before the rest is folded into one
+#: ``…`` line. A line a rule points at is shown wherever it is.
+_QUOTE_MAX_LINES = 12
+
+
+def print_quoted_message(
+    message: str, marked: Iterable[int] = (), missing: Iterable[str] = ()
+) -> None:
+    """Print a commit message once, in a gutter, above the rules it failed.
+
+    Several rules read the same message. Quoting it here lets each failure
+    block name its rule without repeating the message, and the lines a rule
+    points at (the ``marked`` line numbers, from 0) are shown in red, the
+    way a diff shows what to change. Lines a rule requires and the message
+    lacks (a ``Signed-off-by`` trailer) follow in green, marked missing.
+    """
+    lines = printable(message).split("\n")
+    while lines and not lines[-1].strip():
+        lines.pop()
+    marked = set(marked)
+    shown = set(range(min(len(lines), _QUOTE_MAX_LINES))) | marked
+    bar = f"{DIM}{_symbol('│', '|')}{RESET_COLOR}"
+    folded = 0
+    for number, line in enumerate(lines):
+        if number not in shown:
+            folded += 1
+            continue
+        if folded:
+            print(f"{_DETAIL_INDENT}{bar} {DIM}… {folded} more{RESET_COLOR}")
+            folded = 0
+        if number in marked:
+            line = f"{RED}{line}{RESET_COLOR}"
+        print(f"{_DETAIL_INDENT}{bar} {line}".rstrip())
+    if folded:
+        print(f"{_DETAIL_INDENT}{bar} {DIM}… {folded} more{RESET_COLOR}")
+    for line in missing:
+        note = f"{DIM}{_symbol('←', '<-')} missing{RESET_COLOR}"
+        print(f"{_DETAIL_INDENT}{bar} {GREEN}{printable(line)}{RESET_COLOR}  {note}")
+    print()
 
 
 def print_suggestion(suggest: str) -> None:

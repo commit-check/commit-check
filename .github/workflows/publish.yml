@@ -47,6 +47,13 @@ jobs:
       with:
         subject-path: "dist/commit_check*"
 
+    # The pipe job pins the image to this wheel's hash.
+    - name: Upload wheel
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: commit-check_wheel
+        path: dist/commit_check-*.whl
+
     - name: Publish package to TestPyPI
       if: github.event_name == 'workflow_dispatch' && github.repository == 'commit-check/commit-check'
       uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
@@ -60,3 +67,118 @@ jobs:
     - name: Publish package to PyPI
       if: github.event_name != 'workflow_dispatch' && github.repository == 'commit-check/commit-check'
       uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+
+  # The Bitbucket Pipelines pipe: an image on ghcr.io that runs this release's
+  # commit-check-ci, and the pipe's repository on bitbucket.org, tagged with
+  # the same version. See bitbucket-pipe/README.md.
+  pipe:
+    needs: publish
+    if: github.event_name == 'release' && github.repository == 'commit-check/commit-check'
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    runs-on: ubuntu-24.04
+    env:
+      IMAGE: ghcr.io/commit-check/commit-check-pipe
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: commit-check_wheel
+        path: dist
+
+    - name: Pin the release
+      run: |
+        version="${GITHUB_REF_NAME#v}"
+        wheel="dist/commit_check-${version}-py3-none-any.whl"
+        if [ ! -f "$wheel" ]; then
+          echo "::error::$wheel was not built; is $GITHUB_REF_NAME a release tag?"
+          exit 1
+        fi
+        echo "VERSION=$version" >> "$GITHUB_ENV"
+        echo "MAJOR=${version%%.*}" >> "$GITHUB_ENV"
+        mkdir build
+        cp bitbucket-pipe/Dockerfile bitbucket-pipe/pipe.sh build/
+        echo "commit-check==${version} --hash=sha256:$(sha256sum "$wheel" | cut -d' ' -f1)" > build/requirements.txt
+        cat build/requirements.txt
+
+    # The image installs the release from PyPI, by hash, so it can be rebuilt
+    # from the pipe's repository alone. PyPI can take a moment to serve it.
+    - name: Wait for PyPI
+      run: |
+        for attempt in $(seq 30); do
+          if pip download --quiet --no-deps --only-binary :all: --require-hashes \
+               -r build/requirements.txt -d /tmp/pypi; then
+            exit 0
+          fi
+          sleep 10
+        done
+        echo "::error::PyPI does not serve commit-check $VERSION with the built wheel's hash"
+        exit 1
+
+    - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+    - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+    - name: Build the image
+      uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      with:
+        context: build
+        load: true
+        tags: commit-check-pipe:test
+    - name: Test the image
+      run: bash bitbucket-pipe/test.sh commit-check-pipe:test
+
+    - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Push the image
+      id: image
+      uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      with:
+        context: build
+        # Bitbucket Pipelines runs steps on x86 and, since 2025, on Arm.
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          ${{ env.IMAGE }}:${{ env.VERSION }}
+          ${{ env.IMAGE }}:${{ env.MAJOR }}
+
+    - name: Create attestation
+      uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+      with:
+        subject-name: ${{ env.IMAGE }}
+        subject-digest: ${{ steps.image.outputs.digest }}
+        push-to-registry: true
+
+    # Pipelines pulls the image without signing in. A new package on ghcr.io
+    # starts out private, which only its settings page can change.
+    - name: Check the image is public
+      run: |
+        docker logout ghcr.io
+        if ! docker buildx imagetools inspect "$IMAGE:$VERSION" >/dev/null; then
+          echo "::error::$IMAGE cannot be pulled anonymously. Make the package public: https://github.com/orgs/commit-check/packages/container/package/commit-check-pipe"
+          exit 1
+        fi
+
+    # Needs the secret BITBUCKET_PIPE_TOKEN: a repository access token of
+    # bitbucket.org/commit-check/commit-check with the Repositories: Write
+    # scope. Without it the image is still published and this step says so.
+    - name: Publish the pipe to Bitbucket
+      env:
+        BITBUCKET_PIPE_TOKEN: ${{ secrets.BITBUCKET_PIPE_TOKEN }}
+        GIT_AUTHOR_NAME: Xianpeng Shen
+        GIT_AUTHOR_EMAIL: 3353385+shenxianpeng@users.noreply.github.com
+        GIT_COMMITTER_NAME: Xianpeng Shen
+        GIT_COMMITTER_EMAIL: 3353385+shenxianpeng@users.noreply.github.com
+      run: |
+        if [ -z "$BITBUCKET_PIPE_TOKEN" ]; then
+          echo "::warning::BITBUCKET_PIPE_TOKEN is not set: the image is published, the pipe's Bitbucket repository is not."
+          exit 0
+        fi
+        bash bitbucket-pipe/release.sh "$VERSION" build/requirements.txt

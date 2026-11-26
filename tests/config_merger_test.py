@@ -164,6 +164,11 @@ class TestConfigMergerParseEnvVars:
         config = ConfigMerger.parse_env_vars()
         assert config["commit"]["subject_max_length"] == 100
 
+    def test_parse_body_line_length_env_var(self, monkeypatch):
+        monkeypatch.setenv("CCHK_BODY_MAX_LINE_LENGTH", "72")
+        config = ConfigMerger.parse_env_vars()
+        assert config["commit"]["body_max_line_length"] == 72
+
     def test_parse_list_env_var(self, monkeypatch):
         monkeypatch.setenv("CCHK_ALLOW_COMMIT_TYPES", "feat,fix,docs")
         config = ConfigMerger.parse_env_vars()
@@ -233,6 +238,11 @@ class TestConfigMergerParseCliArgs:
         args = argparse.Namespace(subject_max_length=100)
         config = ConfigMerger.parse_cli_args(args)
         assert config["commit"]["subject_max_length"] == 100
+
+    def test_parse_body_line_length_cli_arg(self):
+        args = argparse.Namespace(body_max_line_length=72)
+        config = ConfigMerger.parse_cli_args(args)
+        assert config["commit"]["body_max_line_length"] == 72
 
     def test_parse_list_cli_arg(self):
         args = argparse.Namespace(allow_commit_types=["feat", "fix", "docs"])
@@ -440,6 +450,71 @@ class TestUnknownSettings:
     def test_a_known_section_that_is_not_a_table_names_no_keys(self):
         """There are no keys to read in a scalar section, so none is reported."""
         assert unknown_setting_warnings({"commit": "feat", "files": False}) == []
+        assert unknown_setting_warnings({"pull_request": "squash"}) == []
+
+    def test_the_pull_request_keys_something_reads_are_known(self):
+        """ai_declaration_checkboxes is the CLI's; the other three the App's."""
+        section = {
+            "check": "squash",
+            "ai_label": "ai",
+            "body_ai_attribution": "forbid",
+            "ai_declaration_checkboxes": ["No AI tools were used"],
+        }
+        assert unknown_setting_warnings({"pull_request": section}) == []
+
+    def test_any_other_pull_request_key_is_unknown(self):
+        """The singular form used to leave CC501 off without a word."""
+        config = {
+            "pull_request": {"ai_declaration_checkbox": ["No AI tools were used"]}
+        }
+        assert unknown_setting_warnings(config) == [
+            (
+                "⚠ unknown setting [pull_request] ai_declaration_checkbox is ignored; "
+                "did you mean ai_declaration_checkboxes?"
+            )
+        ]
+
+    def test_jira_and_warn_are_still_not_checked(self):
+        assert unknown_setting_warnings({"jira": {"anything": 1}, "warn": []}) == []
+
+    def test_the_run_collects_each_notice(self, tmp_path, monkeypatch, capsys):
+        """from_all_sources prints each notice and, given a list, adds it there."""
+        for env_var in ConfigMerger.ENV_VAR_MAPPING:
+            monkeypatch.delenv(env_var, raising=False)
+        monkeypatch.setenv("CCHK_ALLOW_MERGE_COMMITS", "maybe")
+        (tmp_path / "cchk.toml").write_text(
+            'inherit_from = "missing.toml"\n[commit]\nsubject_max_lenght = 10\n'
+        )
+        monkeypatch.chdir(tmp_path)
+        notices: list[dict[str, str]] = []
+
+        ConfigMerger.from_all_sources(argparse.Namespace(), notices=notices)
+
+        assert [n["setting"] for n in notices] == [
+            "inherit_from",
+            "[commit] subject_max_lenght",
+            "CCHK_ALLOW_MERGE_COMMITS",
+        ]
+        assert notices[2]["message"] == (
+            "Invalid value for CCHK_ALLOW_MERGE_COMMITS: Cannot parse 'maybe' as boolean"
+        )
+        err = capsys.readouterr().err.splitlines()
+        assert err == [
+            f"⊘ {notices[0]['message']}",
+            f"⚠ {notices[1]['message']}",
+            f"Warning: {notices[2]['message']}",
+        ]
+
+    def test_without_a_list_the_notices_are_printed_only(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """The callers that pass no list see what they saw before."""
+        (tmp_path / "cchk.toml").write_text("[commit]\nsubject_max_lenght = 10\n")
+        monkeypatch.chdir(tmp_path)
+        ConfigMerger.from_all_sources(argparse.Namespace())
+        assert (
+            "⚠ unknown setting [commit] subject_max_lenght" in capsys.readouterr().err
+        )
 
     def test_the_run_warns_and_carries_on(self, tmp_path, monkeypatch, capsys):
         (tmp_path / "cchk.toml").write_text("[commit]\nsubject_max_lenght = 10\n")

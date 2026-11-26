@@ -65,6 +65,10 @@ DEFAULT_COMMIT_TYPES = [
     "perf",
     "build",
     "ci",
+    # The type the Conventional Commits FAQ recommends for a revert written
+    # by hand ("revert: ..."), also in commitlint's config-conventional.
+    # v1 accepted it; git's own 'Revert "..."' subjects are a separate case.
+    "revert",
 ]
 # Follow conventional branch (https://conventionalbranch.org/)
 # Includes AI agent prefixes (spec v1.1.0) and bot prefixes
@@ -130,6 +134,13 @@ GIT_MERGE_SUBJECT_PATTERN = (
     r"|pull request #|[0-9a-f]{7,64} into [0-9a-f]{7,64}\b"
     r"|[a-z][a-z0-9+.-]*://|[\w.-]+@[\w.-]+:)"
 )
+
+# The subjects `git revert` writes: 'Revert "<subject>"', and since git 2.43
+# 'Reapply "<subject>"' when the commit reverted is itself a revert. GitHub's
+# and GitLab's revert buttons write the same 'Revert "' subject. Their length
+# and format are git's doing, not the author's; CC007 alone decides whether
+# they are allowed. Unanchored, like GIT_MERGE_SUBJECT_PATTERN.
+GIT_REVERT_SUBJECT_PATTERN = r'(?:Revert|Reapply) "'
 
 # Push-related defaults
 DEFAULT_PUSH_RULES = {

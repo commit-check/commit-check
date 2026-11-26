@@ -8,7 +8,7 @@ import os
 import select
 import sys
 
-from commit_check.config import ConfigError, find_config_path
+from commit_check.config import ConfigError, find_config_path, report_notice
 from commit_check.config_merger import ConfigMerger, parse_bool, parse_int, parse_list
 from commit_check.engine import (
     CheckOutcome,
@@ -35,7 +35,7 @@ from commit_check.util import (
     split_message_comments,
 )
 
-from . import AI_ATTRIBUTION_POLICIES
+from . import AI_ATTRIBUTION_POLICIES, BOLD, DIM, RESET_COLOR
 
 # Exit codes. ``1`` is a verdict on the commit; ``2`` means the run could not
 # be set up at all -- the same code argparse uses for a bad command line -- so
@@ -163,10 +163,46 @@ class _VersionAction(argparse.Action):
         parser.exit()
 
 
+def _print_intro(config: str | None) -> None:
+    """What a bare ``commit-check`` prints: one screen, not the full help.
+
+    Someone who types the name to see what it is gets the version, the few
+    commands that cover most uses, which config the run would read and where
+    the docs are. ``--help`` still lists every option.
+    """
+    from . import __version__
+
+    examples = (
+        ("commit-check -m -b", "check the last commit message and the branch"),
+        ("commit-check -m < msg.txt", "check a message before you commit it"),
+        ("commit-check --help", "list every option"),
+    )
+    width = max(len(cmd) for cmd, _ in examples)
+    title = f"{BOLD}Commit Check{RESET_COLOR} {__version__}"
+    lines = [f"{title}{DIM} · commit policy as code{RESET_COLOR}", ""]
+    lines += [
+        f"  {cmd.ljust(width)}   {DIM}{what}{RESET_COLOR}" for cmd, what in examples
+    ]
+    lines.append("")
+    found = find_config_path(config or "")
+    if found:
+        lines.append(f"  {DIM}Config{RESET_COLOR}  {os.path.relpath(found)}")
+    else:
+        lines.append(
+            f"  {DIM}Config{RESET_COLOR}  none found, using the defaults: Conventional Commits,"
+        )
+        lines.append("          Conventional Branch, subjects up to 80 characters")
+    lines.append(
+        f"  {DIM}Docs{RESET_COLOR}    https://commit-check.com/getting-started/"
+    )
+    print("\n".join(lines))
+
+
 def _get_parser() -> argparse.ArgumentParser:
     """Get parser to interpret CLI args."""
     parser = argparse.ArgumentParser(
         prog="commit-check",
+        usage="%(prog)s [options] [commit_msg_file]",
         description="Check commit message, branch name, author name, email, and more.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
@@ -434,6 +470,14 @@ def _get_parser() -> argparse.ArgumentParser:
         default=None,
         metavar="BOOL",
         help="require commit body (true/false)",
+    )
+
+    commit_group.add_argument(
+        "--body-max-line-length",
+        type=parse_int,
+        default=None,
+        metavar="INT",
+        help="maximum length of a commit body line; 0 (the default) turns the check off",
     )
 
     commit_group.add_argument(
@@ -793,8 +837,13 @@ def _run_json_output(
     engine: ValidationEngine,
     context: ValidationContext,
     args: argparse.Namespace,
+    notices: list[dict[str, str]],
 ) -> int:
     """Run validation and print JSON output.
+
+    ``notices`` lists each setting that is not in force, the lines printed on
+    stderr as the config was read, so that they reach the result and not only
+    the terminal.
 
     When a message is checked, ``ai_tools`` lists the AI tools it names (and,
     for a commit, its author), whatever the policy: what a pull request
@@ -805,13 +854,15 @@ def _run_json_output(
     report: dict[str, object] = {
         "status": overall,
         "warnings": count_warnings(o.status for o in outcomes),
+        "notices": notices,
         "checks": [o.to_dict() for o in outcomes],
     }
     if args.message:
         report["ai_tools"] = ai_tools_in(context, author=not context.not_a_commit)
     print(json.dumps(report, indent=2))
-    # Only a failure is an error. A skipped run validated nothing, but that
-    # is not a policy violation, so it must not turn into a non-zero exit.
+    # Only a failure is an error. A skipped run, or one with no checks,
+    # validated nothing, but that is not a policy violation, so it must not
+    # turn into a non-zero exit.
     return 1 if overall == "fail" else 0
 
 
@@ -858,8 +909,11 @@ def main() -> int:
                 )
                 return EXIT_CONFIG_ERROR
 
-        # Load and merge configuration from all sources: CLI > Env > TOML > Defaults
-        config_data = ConfigMerger.from_all_sources(args, args.config)
+        # Load and merge configuration from all sources: CLI > Env > TOML > Defaults.
+        # Each setting found not to be in force is printed on stderr and
+        # collected here, for the JSON result.
+        notices: list[dict[str, str]] = []
+        config_data = ConfigMerger.from_all_sources(args, args.config, notices)
 
         # When --no-force-push is explicitly passed, override allow_force_push to
         # False so the rule is built even if the TOML config defaults to True.
@@ -868,7 +922,7 @@ def main() -> int:
 
         # Build validation rules from config
         try:
-            rule_builder = RuleBuilder(config_data)
+            rule_builder = RuleBuilder(config_data, notices)
             all_rules = rule_builder.build_all_rules()
         except ConfigError as e:
             # The merged dict no longer says which file a setting came from,
@@ -886,7 +940,7 @@ def main() -> int:
         # Determine which checks to run
         requested_checks = _get_requested_checks(args)
         if not requested_checks:
-            parser.print_help()
+            _print_intro(args.config)
             return 0
 
         # Filter rules to only include requested checks
@@ -899,7 +953,7 @@ def main() -> int:
         built_checks = {rule.check for rule in filtered_rules}
         for requested, checks, hint in _UNCONFIGURED_HINTS:
             if getattr(args, requested) and built_checks.isdisjoint(checks):
-                print(f"⊘ {hint}", file=sys.stderr)
+                report_notice(notices, f"--{requested}", hint)
 
         engine = ValidationEngine(filtered_rules)
 
@@ -953,7 +1007,7 @@ def main() -> int:
         # Run validation – choose output mode based on --format
         output_format: str = getattr(args, "output_format", "text")
         if output_format == "json":
-            exit_code = _run_json_output(engine, context, args)
+            exit_code = _run_json_output(engine, context, args, notices)
         else:
             result = engine.validate_all(context)
             exit_code = EXIT_PASS if result == ValidationResult.PASS else EXIT_FAIL

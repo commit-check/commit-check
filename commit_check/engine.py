@@ -7,6 +7,7 @@ import re
 import shlex
 import subprocess
 import sys
+import unicodedata
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from dataclasses import dataclass, field
@@ -18,6 +19,7 @@ from commit_check import (
     DEFAULT_AI_DISCLOSURE_TRAILERS,
     DEPENDENCY_UPDATE_BOTS,
     GIT_MERGE_SUBJECT_PATTERN,
+    GIT_REVERT_SUBJECT_PATTERN,
     ai_policy,
 )
 from commit_check.ai_signatures import (
@@ -60,11 +62,13 @@ from commit_check.util import (
     git_rev_parse_verify,
     has_commits,
     print_error_header,
+    print_quoted_message,
     read_commit_message_file,
     rejection_headline,
 )
 
 _GIT_MERGE_SUBJECT = re.compile(GIT_MERGE_SUBJECT_PATTERN)
+_GIT_REVERT_SUBJECT = re.compile(GIT_REVERT_SUBJECT_PATTERN)
 
 
 def is_merge_subject(subject: str) -> bool:
@@ -75,6 +79,35 @@ def is_merge_subject(subject: str) -> bool:
     judged like any other.
     """
     return _GIT_MERGE_SUBJECT.match(subject) is not None
+
+
+def is_revert_subject(subject: str) -> bool:
+    """Whether *subject* is one ``git revert`` wrote, not the author.
+
+    'Revert "<subject>"', or 'Reapply "<subject>"' for the revert of a
+    revert. The quote is part of the match: "Revert the parser change" is
+    the author's, and is judged like any other subject.
+    """
+    return _GIT_REVERT_SUBJECT.match(subject) is not None
+
+
+# "git commit --fixup" writes "fixup! <subject>", "--squash" writes
+# "squash! <subject>" and "--fixup=amend:"/"--fixup=reword:" write
+# "amend! <subject>", each in front of the target commit's subject.
+# "git rebase --autosquash" folds these commits into their target, so the
+# subject behind the prefix is one already judged on its own commit, or,
+# after "amend! ", one about to be replaced. Git writes the prefix exactly
+# so, trailing space included: "fixup!! ..." or "Fixup! ..." is the author's.
+_GIT_AUTOSQUASH_SUBJECT = re.compile(r"^(?:fixup|squash|amend)! ")
+
+
+def is_autosquash_subject(subject: str) -> bool:
+    """Whether *subject* is one ``git commit --fixup`` or ``--squash`` wrote.
+
+    The subject rules decline to judge these, as they do a merge or revert
+    subject. Whether they are allowed at all is ``allow_fixup_commits``'.
+    """
+    return _GIT_AUTOSQUASH_SUBJECT.match(subject) is not None
 
 
 # A work-in-progress marker at the start of the subject (CC010). "^" without
@@ -221,14 +254,17 @@ def overall_status(statuses: Iterable[str]) -> str:
     after the skip status existed.
 
     ``"skip"`` requires that *every* check skipped: a single real verdict
-    means something was actually validated. Only ``"fail"`` is an error: a
-    ``"warn"`` is a verdict the config asked to report without enforcing,
-    so a run whose only findings are warnings passes.
+    means something was actually validated. A run with no checks at all
+    validated nothing either, so it is ``"skip"`` too, not ``"pass"``. Only
+    ``"fail"`` is an error: a ``"warn"`` is a verdict the config asked to
+    report without enforcing, so a run whose only findings are warnings
+    passes.
     """
+    # all() of nothing is True, so an empty run reads as skipped.
     seen = list(statuses)
     if any(s == "fail" for s in seen):
         return "fail"
-    if seen and all(s == "skip" for s in seen):
+    if all(s == "skip" for s in seen):
         return "skip"
     return "pass"
 
@@ -457,6 +493,8 @@ class BaseValidator(ABC):
             rule_dict["error"] = error
         if fix or suggest:
             rule_dict["suggest"] = suggest or f'Use "{fix}"'
+        if fix:
+            rule_dict["fix"] = fix
 
         # Always store structured failure details for programmatic consumers.
         self._last_failure = {
@@ -567,10 +605,11 @@ class SubjectCapitalizationValidator(SubjectValidator):
     """Validates that subject starts with capital letter."""
 
     def _validate_subject(self, subject: str) -> ValidationResult:
-        # A merge subject is machine-written; the rule declines to judge it.
-        # Only the subjects merge tools write count, so anything else is
+        # Merge and fixup subjects are machine-written; the rule declines to
+        # judge them. Only the subjects merge tools write, and git's exact
+        # "fixup! ", "squash! " and "amend! ", count, so anything else is
         # author prose.
-        if is_merge_subject(subject):
+        if is_merge_subject(subject) or is_autosquash_subject(subject):
             return ValidationResult.SKIP
 
         if self._is_capitalized(subject):
@@ -614,8 +653,8 @@ class SubjectImperativeValidator(SubjectValidator):
     def _validate_subject(self, subject: str) -> ValidationResult:
         # Merge and fixup subjects are machine-written; decline to judge them.
         # Only the subjects merge tools write, and git's exact "fixup! ",
-        # count, so anything else is author prose.
-        if is_merge_subject(subject) or subject.startswith("fixup! "):
+        # "squash! " and "amend! ", count, so anything else is author prose.
+        if is_merge_subject(subject) or is_autosquash_subject(subject):
             return ValidationResult.SKIP
 
         # Extract first word, past a Conventional Commits prefix (including
@@ -675,6 +714,25 @@ def _characters(count: int) -> str:
     return f"{count} character{'' if count == 1 else 's'}"
 
 
+def _dependency_bot(context: ValidationContext) -> str:
+    """The dependency update bot that wrote the commit, or "" for anyone else.
+
+    The length rules let these bots through: they write the subject from the
+    package name and versions, and the body from the release notes.
+    """
+    if context.rev is not None:
+        author = get_commit_info("an", context.rev)
+    elif context.stdin_text is not None or context.commit_file is not None:
+        # A message not yet committed is a bot's only when the caller says
+        # so through git's author variable, as the Action does for each
+        # pull request commit. Bots do not commit through a local hook,
+        # so the local git config is not asked.
+        author = os.environ.get("GIT_AUTHOR_NAME", "").strip()
+    else:
+        author = get_commit_info("an")
+    return author if author in DEPENDENCY_UPDATE_BOTS else ""
+
+
 class SubjectLengthValidator(SubjectValidator):
     """Validates subject line length constraints."""
 
@@ -685,18 +743,8 @@ class SubjectLengthValidator(SubjectValidator):
         return super().validate(context)
 
     def _written_by_dependency_bot(self) -> bool:
-        context = self._context
-        if context.rev is not None:
-            author = get_commit_info("an", context.rev)
-        elif context.stdin_text is not None or context.commit_file is not None:
-            # A message not yet committed is a bot's only when the caller says
-            # so through git's author variable, as the Action does for each
-            # pull request commit. Bots do not commit through a local hook,
-            # so the local git config is not asked.
-            author = os.environ.get("GIT_AUTHOR_NAME", "").strip()
-        else:
-            author = get_commit_info("an")
-        if author not in DEPENDENCY_UPDATE_BOTS:
+        author = _dependency_bot(self._context)
+        if not author:
             return False
         self._skip_reason = (
             f"{author} writes the subject from the package name and versions"
@@ -704,8 +752,14 @@ class SubjectLengthValidator(SubjectValidator):
         return True
 
     def _validate_subject(self, subject: str) -> ValidationResult:
-        # A merge subject's length is git's doing, not the author's.
-        if is_merge_subject(subject):
+        # A merge, revert or fixup subject's length is git's doing, not the
+        # author's: 'Revert "..."' adds nine characters to a subject that
+        # already fit, and "fixup! " seven.
+        if (
+            is_merge_subject(subject)
+            or is_revert_subject(subject)
+            or is_autosquash_subject(subject)
+        ):
             return ValidationResult.SKIP
 
         suffix = _SQUASH_PR_NUMBER.search(subject)
@@ -1423,6 +1477,139 @@ class BodyValidator(BaseValidator):
         return ValidationResult.FAIL
 
 
+#: A line that holds an address with a scheme (https://, ftp://, ssh://). It
+#: cannot be wrapped, so the body line length rule does not count it, as
+#: commitlint and checkpatch do not. Schemes are case-insensitive. There is
+#: no word boundary before it: Chinese and Japanese text runs straight into
+#: an address (参见https://...), with no space or punctuation between. The
+#: lookbehind starts the scheme where a run of scheme characters starts, so a
+#: long run with no ``://`` is scanned once, not once per character.
+_URL = re.compile(r"(?<![a-z0-9+.-])[a-z][a-z0-9+.-]*://\S", re.IGNORECASE)
+
+
+def long_body_lines(message: str, limit: int) -> list[int]:
+    """The numbers of *message*'s body lines longer than *limit*, from 0.
+
+    Counted in the message as given, so the numbers point into the quoted
+    message. The subject is CC004's, and three kinds of line are left out
+    because wrapping them breaks them: a line with a web address, a single
+    word with no space in it (a path, a hash), and the trailer block at the
+    end, where a ``Co-authored-by:`` line is as long as the name and address
+    in it. Chinese, Japanese and Korean prose has no spaces between words, so
+    a line with one of their characters is counted even without a space.
+    """
+    # Trailing blank lines change no line's number, and are never long.
+    lines = message.rstrip().split("\n")
+    # The trailer block is the last paragraph when every line in it is one.
+    trailers: set[int] = set()
+    end = len(lines)
+    start = end
+    while start > 1 and lines[start - 1].strip():
+        start -= 1
+    # git lets a trailer's value continue on an indented line.
+    if (
+        start > 1
+        and _BODY_TRAILER_LINE.match(lines[start].strip())
+        and all(
+            _BODY_TRAILER_LINE.match(line.strip()) or line[:1] in (" ", "\t")
+            for line in lines[start:end]
+        )
+    ):
+        trailers = set(range(start, end))
+    return [
+        number
+        for number, line in enumerate(lines)
+        if number > 0
+        and number not in trailers
+        and len(line.rstrip()) > limit
+        and not _one_word(line)
+        and not _URL.search(line)
+    ]
+
+
+def _one_word(line: str) -> bool:
+    """Whether *line* is one word that wrapping would break: a path, a hash.
+
+    A line of Chinese, Japanese or Korean has no spaces either, yet it is
+    prose that wraps anywhere, so a wide character makes it more than a word.
+    """
+    text = line.strip()
+    return " " not in text and not any(
+        unicodedata.east_asian_width(char) in ("W", "F") for char in text
+    )
+
+
+def _line_numbers(numbers: list[int]) -> str:
+    """``Line 3``, ``Lines 3 and 5``, ``Lines 3, 5, 8 and 2 more``, from 1."""
+    shown = [str(number + 1) for number in numbers[:3]]
+    if len(numbers) == 1:
+        return f"Line {shown[0]}"
+    rest = len(numbers) - len(shown)
+    if rest:
+        return f"Lines {', '.join(shown)} and {rest} more"
+    return f"Lines {', '.join(shown[:-1])} and {shown[-1]}"
+
+
+class BodyLineLengthValidator(BaseValidator):
+    """Validates that no line of the commit body is longer than the limit."""
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        if self._should_skip_commit_validation(context):
+            return ValidationResult.SKIP
+
+        message = self._get_raw_message(context)
+        if not message:
+            return ValidationResult.PASS
+
+        self._checked_value = message
+
+        # git writes a merge commit's body (the conflict list) itself.
+        subject = message.split("\n", 1)[0]
+        if is_merge_subject(subject):
+            return ValidationResult.SKIP
+
+        limit = self.rule.value
+        long_lines = long_body_lines(message, limit)
+        if not long_lines:
+            return ValidationResult.PASS
+
+        bot = _dependency_bot(context)
+        if bot:
+            self._skip_reason = f"{bot} writes the body from the release notes"
+            return ValidationResult.SKIP
+
+        lines = message.split("\n")
+        longest = max(len(lines[number].rstrip()) for number in long_lines)
+        # The numbers count the subject as line 1, as an editor does, and
+        # point into the message quoted above the failure.
+        where = _line_numbers(long_lines)
+        if len(long_lines) == 1:
+            error = (
+                f"{where} is {_characters(longest)}; "
+                f"body lines must be at most {_characters(limit)}"
+            )
+        else:
+            error = (
+                f"{where} are longer than {_characters(limit)}, "
+                f"the longest {_characters(longest)}"
+            )
+        suggest = f"Wrap the body at {limit} characters"
+        self._print_failure(message, error=error, suggest=suggest)
+        return ValidationResult.FAIL
+
+    def _get_raw_message(self, context: ValidationContext) -> str:
+        """The message with its line breaks as committed.
+
+        ``%s`` joins a first paragraph into one line, so a body line written
+        right under the subject would vanish into it; ``%B`` keeps it.
+        """
+        if context.stdin_text is not None or context.commit_file:
+            return self._get_commit_message(context)
+        if context.rev is not None:
+            return get_commit_info("B", context.rev).strip()
+        return get_commit_info("B").strip()
+
+
 class ForcePushValidator(BaseValidator):
     """Validates that no force push is being performed.
 
@@ -1624,7 +1811,9 @@ class CommitTypeValidator(BaseValidator):
 
     def _is_revert_commit_allowed(self, message: str) -> bool:
         """Check if revert commits are allowed."""
-        is_revert = message.lower().startswith("revert ")
+        # 'Reapply "..."' is git's subject for reverting a revert, so it is
+        # one too.
+        is_revert = message.lower().startswith("revert ") or is_revert_subject(message)
         return not is_revert or self.rule.value
 
     def _is_empty_commit_allowed(self, message: str) -> bool:
@@ -2097,6 +2286,116 @@ class AiDeclarationValidator(BaseValidator):
         return ValidationResult.FAIL
 
 
+#: Checks whose value is the commit message, or its subject line.
+_MESSAGE_CHECKS = frozenset(
+    {
+        "message",
+        "subject_capitalized",
+        "subject_imperative",
+        "subject_max_length",
+        "subject_min_length",
+        "allow_merge_commits",
+        "allow_revert_commits",
+        "allow_empty_commits",
+        "allow_fixup_commits",
+        "allow_wip_commits",
+        "require_body",
+        "body_max_line_length",
+        "require_signed_off_by",
+    }
+)
+
+#: Of those, the ones that find fault with the subject line itself.
+_SUBJECT_CHECKS = _MESSAGE_CHECKS - {
+    "require_body",
+    "body_max_line_length",
+    "require_signed_off_by",
+}
+
+#: Of those, the ones that point at lines inside the body: the message is
+#: quoted for them even when no other rule reports it, since the line to
+#: change is what the reader needs to see.
+_BODY_LINE_CHECKS = frozenset({"body_max_line_length"})
+
+
+def _quotes(message: str, check: str, value: str) -> bool:
+    """Whether the quoted *message* already shows this failure's *value*."""
+    if check not in _MESSAGE_CHECKS:
+        return False
+    return value in (message, message.split("\n", 1)[0])
+
+
+def _shared_message(blocks: list[tuple[dict, str]]) -> str | None:
+    """The commit message to quote once above the failure blocks, if any.
+
+    When two or more message rules fail, each block used to repeat the
+    message after its rule name. Quoting it once reads like a diff: the
+    message, then what is wrong with it. Rules that report something else
+    (an AI tool's name, a branch) keep their own value on their own line.
+    """
+    candidates = [
+        value
+        for rule_dict, value in blocks
+        if rule_dict["check"] in _MESSAGE_CHECKS and value.strip()
+    ]
+    # The longest is the whole message; a subject-only value is its first line.
+    for message in sorted(set(candidates), key=len, reverse=True):
+        covered = sum(1 for value in candidates if _quotes(message, "message", value))
+        if covered >= 2:
+            return message
+    for rule_dict, value in blocks:
+        if rule_dict["check"] in _BODY_LINE_CHECKS and value.strip():
+            return value
+    return None
+
+
+def _missing_lines(message: str, blocks: list[tuple[dict, str]]) -> list[str]:
+    """The trailer lines a sign-off rule's fix adds to *message*."""
+    present = set(message.split("\n"))
+    missing: list[str] = []
+    for rule_dict, _ in blocks:
+        if rule_dict["check"] != "require_signed_off_by":
+            continue
+        for line in (rule_dict.get("fix") or "").split("\n"):
+            if line.strip() and line not in present and line not in missing:
+                missing.append(line)
+    return missing
+
+
+def _marked_lines(message: str, blocks: list[tuple[dict, str]]) -> set[int]:
+    """The line numbers of *message* that a failing rule points at.
+
+    The subject when a subject rule failed on it, and the lines an AI rule's
+    fix would remove: those are what to change, not a guess at them.
+    """
+    lines = message.split("\n")
+    marked: set[int] = set()
+    for rule_dict, value in blocks:
+        check = rule_dict["check"]
+        if check in _SUBJECT_CHECKS and _quotes(message, check, value):
+            marked.add(0)
+        fix = rule_dict.get("fix") or ""
+        if check.startswith("ai_") and fix:
+            marked |= _removed_lines(lines, fix)
+        if check == "body_max_line_length" and _quotes(message, check, value):
+            marked |= set(long_body_lines(message, rule_dict["value"]))
+    return marked
+
+
+def _removed_lines(lines: list[str], fix: str) -> set[int]:
+    """The numbers of the non-blank *lines* that the *fix* message drops."""
+    kept = fix.split("\n")
+    removed: set[int] = set()
+    for number, line in enumerate(lines):
+        if not line.strip():
+            continue
+        if line in kept:
+            kept.remove(line)
+        else:
+            removed.add(number)
+    return removed
+
+
 class ValidationEngine:
     """Main validation engine that orchestrates all validations."""
 
@@ -2112,6 +2411,7 @@ class ValidationEngine:
         "merge_base": MergeBaseValidator,
         "require_signed_off_by": SignoffValidator,
         "require_body": BodyValidator,
+        "body_max_line_length": BodyLineLengthValidator,
         "allow_merge_commits": CommitTypeValidator,
         "allow_revert_commits": CommitTypeValidator,
         "allow_empty_commits": CommitTypeValidator,
@@ -2206,12 +2506,25 @@ class ValidationEngine:
                 else rejection_headline(failed)
             )
             print_error_header(headline, failed=len(failed))
+        message = None if context.compact else _shared_message(blocks)
+        if message is not None and "\n" not in message:
+            # Only subject rules reported it: quote the whole message, so a
+            # trailer an AI rule points at is on screen too.
+            message = BaseValidator._get_commit_message(context) or message
+        if message is not None:
+            print_quoted_message(
+                message,
+                _marked_lines(message, blocks),
+                _missing_lines(message, blocks),
+            )
         for rule_dict, value in blocks:
             _print_failure(
                 rule_dict,
                 value,
                 no_banner=context.no_banner,
                 compact=context.compact,
+                value_shown=message is not None
+                and _quotes(message, rule_dict["check"], value),
             )
 
     @staticmethod

@@ -17,6 +17,8 @@
 [Rules](https://commit-check.com/rules/) ·
 [GitHub Action](https://github.com/commit-check/commit-check-action) ·
 [GitHub App](https://github.com/apps/commit-check) ·
+[GitLab CI](https://commit-check.com/guides/other-ci/#gitlab-ci) ·
+[Bitbucket Pipelines](https://commit-check.com/guides/other-ci/#bitbucket-pipelines) ·
 [MCP server](https://github.com/commit-check/commit-check-mcp)
 
 </div>
@@ -24,8 +26,8 @@
 **Commit Check** is commit policy as code for teams and AI agents. It validates
 commit messages, branch names, authors, sign-offs, tags, committed files and AI
 attribution against one `cchk.toml` — in your commit hook, in CI, on every
-pull request and inside your AI agent. When the fix is obvious, it hands you
-the line.
+pull or merge request on GitHub, GitLab and Bitbucket, and inside your AI
+agent. When the fix is obvious, it hands you the line.
 
 **On GitHub?** [Install the Commit Check App](https://github.com/apps/commit-check)
 and every push and pull request gets a check run, with no workflow file. It is
@@ -50,7 +52,7 @@ Stop bad commits before they exist. In `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/commit-check/commit-check
-    rev: v2.22.0
+    rev: v2.24.2
     hooks:
       - id: check-message
       - id: check-branch
@@ -70,14 +72,15 @@ The same `cchk.toml` drives all of them:
 |---|---|
 | GitHub, no workflow | [Install the GitHub App](https://github.com/apps/commit-check) — one check run per commit |
 | GitHub Actions | `uses: commit-check/commit-check-action@v2` — see [commit-check-action](https://github.com/commit-check/commit-check-action) |
-| GitLab CI, Bitbucket Pipelines, Azure Pipelines | A job in the pipeline — see the [CI guide](https://commit-check.com/guides/other-ci/) |
+| GitLab CI, Azure Pipelines | A job in the pipeline — see the [CI guide](https://commit-check.com/guides/other-ci/) |
+| Bitbucket Pipelines | The Commit Check pipe, one of Atlassian's [official pipes](https://bitbucket.org/product/features/pipelines/integrations) — see the [CI guide](https://commit-check.com/guides/other-ci/#bitbucket-pipelines) |
 | AI agents | The [agent skill](#agent-skill), `--format json`, the [Python API](#ai-native-usage), or the [MCP server](https://github.com/commit-check/commit-check-mcp) |
 
 ## What it checks
 
 | Check | Flag | Rules |
 |---|---|---|
-| Commit message — Conventional Commits, subject length, case and mood, WIP and fixup commits, body, sign-off | `--message` | CC001–CC012 |
+| Commit message — Conventional Commits, subject length, case and mood, WIP and fixup commits, body and its line length, sign-off | `--message` | CC001–CC012, CC018 |
 | AI attribution — forbid it, or require an `Assisted-by:` disclosure | `--message` | CC013–CC017 |
 | Author name and email | `--author-name` `--author-email` | CC101–CC102 |
 | Branch name — Conventional Branch, rebased onto a target | `--branch` | CC201–CC202 |
@@ -122,15 +125,16 @@ Priority: CLI > env > TOML > default. Booleans accept `true/false`, `yes/no`,
 | `commit.message_pattern` | `""` | — | `CCHK_MESSAGE_PATTERN` | Custom regex the whole message must match; when set it replaces the Conventional Commits check (still reported as CC001) |
 | `commit.subject_capitalized` | `false` | `--subject-capitalized` | `CCHK_SUBJECT_CAPITALIZED` | Require the subject to start with a capital letter (CC002) |
 | `commit.subject_imperative` | `false` | `--subject-imperative` | `CCHK_SUBJECT_IMPERATIVE` | Require the subject to use the imperative mood (CC003) |
-| `commit.subject_max_length` | `80` | `--subject-max-length` | `CCHK_SUBJECT_MAX_LENGTH` | Maximum subject length (CC004), not counting the ` (#123)` a GitHub squash merge adds; `0` turns it off. Commits by `dependabot[bot]` and `renovate[bot]` skip both length rules |
+| `commit.subject_max_length` | `80` | `--subject-max-length` | `CCHK_SUBJECT_MAX_LENGTH` | Maximum subject length (CC004), not counting the ` (#123)` a GitHub squash merge adds; the `Revert "..."` and `Reapply "..."` subjects `git revert` writes, and the `fixup!`, `squash!` and `amend!` subjects `git commit --fixup` and `--squash` write, are not measured; `0` turns it off. Commits by `dependabot[bot]` and `renovate[bot]` skip both length rules |
 | `commit.subject_min_length` | `5` | `--subject-min-length` | `CCHK_SUBJECT_MIN_LENGTH` | Minimum subject length (CC005); `0` turns it off |
-| `commit.allow_commit_types` | `feat, fix, docs, style, refactor, test, chore, perf, build, ci` | `--allow-commit-types` | `CCHK_ALLOW_COMMIT_TYPES` | Allowed `<type>` values in the subject |
+| `commit.allow_commit_types` | `feat, fix, docs, style, refactor, test, chore, perf, build, ci, revert` | `--allow-commit-types` | `CCHK_ALLOW_COMMIT_TYPES` | Allowed `<type>` values in the subject |
 | `commit.allow_merge_commits` | `true` | `--allow-merge-commits` | `CCHK_ALLOW_MERGE_COMMITS` | Allow merge commits (CC006) |
-| `commit.allow_revert_commits` | `true` | `--allow-revert-commits` | `CCHK_ALLOW_REVERT_COMMITS` | Allow revert commits (CC007) |
+| `commit.allow_revert_commits` | `true` | `--allow-revert-commits` | `CCHK_ALLOW_REVERT_COMMITS` | Allow the `Revert "..."` and `Reapply "..."` commits `git revert` writes (CC007) |
 | `commit.allow_empty_commits` | `true` | `--allow-empty-commits` | `CCHK_ALLOW_EMPTY_COMMITS` | Allow empty commit messages (CC008) |
 | `commit.allow_fixup_commits` | `true` | `--allow-fixup-commits` | `CCHK_ALLOW_FIXUP_COMMITS` | Allow `fixup!`, `squash!` and `amend!` commits (CC009) |
 | `commit.allow_wip_commits` | `true` | `--allow-wip-commits` | `CCHK_ALLOW_WIP_COMMITS` | Allow WIP commits (CC010) |
 | `commit.require_body` | `false` | `--require-body` | `CCHK_REQUIRE_BODY` | Require a commit body (CC011) |
+| `commit.body_max_line_length` | `0` | `--body-max-line-length` | `CCHK_BODY_MAX_LINE_LENGTH` | Maximum length of a body line (CC018); `0` turns it off. Lines with a URL, a single word with no space (a path, a hash) and the trailer block are not counted, and `dependabot[bot]` and `renovate[bot]` commits skip it |
 | `commit.require_signed_off_by` | `false` | `--require-signed-off-by` | `CCHK_REQUIRE_SIGNED_OFF_BY` | Require a `Signed-off-by:` trailer (CC012) |
 | `commit.ignore_authors` | `[]` | `--ignore-authors` | `CCHK_IGNORE_AUTHORS` | Authors and co-authors whose commits skip the commit checks |
 | `commit.ai_attribution` | `"ignore"` | `--ai-attribution` | `CCHK_AI_ATTRIBUTION` | `ignore`, `forbid` or `disclose`. `forbid` rejects commits carrying known AI tool signatures (CC013); `disclose` accepts AI assistance disclosed with one of `ai_disclosure_trailers` (CC014) and rejects the tool as a co-author (CC015) or as a sign-off (CC016); both reject a commit whose author is an AI tool (CC017) |
@@ -186,6 +190,22 @@ The failing entry of its `checks` array:
 
 A check that did not run has status `skip`, and `reason` says why when the
 author is on an `ignore_authors` list: `"author dependabot[bot] is in [commit].ignore_authors"`.
+The top-level `status` is `skip` when every check skipped, or when no check
+ran at all; the exit code is still `0`.
+
+A setting that is not in force, such as a misspelt key, an `inherit_from` that
+could not be loaded, a `[files]` value that cannot be used or an invalid
+`CCHK_*` value, is printed on stderr and also listed in `notices`, which is
+empty when there are none:
+
+```json
+"notices": [
+  {
+    "setting": "[commit] subject_max_lenght",
+    "message": "unknown setting [commit] subject_max_lenght is ignored; did you mean subject_max_length?"
+  }
+]
+```
 
 With a message checked, the output also has `ai_tools`: the AI tools found by
 their known signatures in the message (and by a commit's author), under any
@@ -193,9 +213,10 @@ their known signatures in the message (and by a commit's author), under any
 for text that is not a commit message, such as a pull request description.
 With `[pull_request] ai_declaration_checkboxes` set, it also checks that the
 description ticks exactly one of those boxes (CC501).
-Under the default `ai_attribution = "ignore"` no AI rule runs, so the result
-passes and only `ai_tools` reports what was found; set `forbid` or `disclose`
-to enforce a policy:
+Under the default `ai_attribution = "ignore"` no AI rule runs. Without
+`ai_declaration_checkboxes` no check runs at all, so the status is `skip` and
+only `ai_tools` reports what was found; set `forbid` or `disclose` to enforce
+a policy:
 
 ```bash
 commit-check --ai-attribution-only --format json < pr-description.md

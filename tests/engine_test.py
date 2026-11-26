@@ -16,6 +16,7 @@ from commit_check.engine import (
     AiDeclarationValidator,
     AuthorValidator,
     BaseValidator,
+    BodyLineLengthValidator,
     BodyValidator,
     BranchValidator,
     CommitMessageValidator,
@@ -33,7 +34,10 @@ from commit_check.engine import (
     ValidationEngine,
     ValidationResult,
     declaration_boxes,
+    is_autosquash_subject,
     is_merge_subject,
+    is_revert_subject,
+    long_body_lines,
 )
 from commit_check.rule_builder import RuleBuilder, ValidationRule
 from commit_check.rules_catalog import RULES_BY_CHECK
@@ -266,6 +270,29 @@ class TestCommitMessageValidator:
         assert rule is not None
         validator = CommitMessageValidator(rule)
         context = ValidationContext(stdin_text='Revert "feat: init"')
+
+        assert validator.validate(context) == ValidationResult.PASS
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            # git 2.43+ writes "Reapply" when the commit reverted is a revert.
+            'Reapply "feat: init"\n\nThis reverts commit 3032208.',
+            # The Conventional Commits FAQ's way to write a revert by hand.
+            "revert: let us never again speak of the noodle incident",
+            "revert(parser): restore the old tables",
+        ],
+    )
+    def test_reverts_pass_under_the_default_config(self, message):
+        from commit_check.rule_builder import RuleBuilder
+        from commit_check.rules_catalog import RuleCatalogEntry
+
+        rule = RuleBuilder({})._build_conventional_commit_rule(
+            RuleCatalogEntry(check="message", regex="", error="", suggest="")
+        )
+        assert rule is not None
+        validator = CommitMessageValidator(rule)
+        context = ValidationContext(stdin_text=message)
 
         assert validator.validate(context) == ValidationResult.PASS
 
@@ -1197,6 +1224,25 @@ class TestCommitTypeValidator:
             result = validator.validate(context)
             assert result == ValidationResult.PASS
 
+    @pytest.mark.parametrize(
+        "message, allowed",
+        [
+            ('Revert "feat: add feature"', False),
+            ('Reapply "feat: add feature"', False),
+            ("revert: drop the cache", True),
+            ("Reapply the parser change", True),
+        ],
+    )
+    def test_revert_commits_not_allowed(self, message, allowed):
+        """With reverts disallowed, git's "Reapply" (the revert of a revert)
+        is rejected too, while a "revert:" type and prose are not git's."""
+        rule = ValidationRule(check="allow_revert_commits", value=False)
+        validator = CommitTypeValidator(rule)
+        validator._suppress_output = True
+        result = validator.validate(ValidationContext(stdin_text=message))
+        expected = ValidationResult.PASS if allowed else ValidationResult.FAIL
+        assert result == expected
+
     @pytest.mark.benchmark
     def test_validate_fixup_commit_not_allowed(self):
         """Test fixup commit validation when not allowed."""
@@ -1534,6 +1580,67 @@ class TestSubjectLengthValidator:
             "it must be at most 70 characters"
         )
 
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            'Revert "feat: ' + "y" * 74 + '"',
+            'Reapply "feat: ' + "y" * 74 + '"',
+            'Revert "fix: ' + "y" * 70 + ' (#141)" (#142)',
+        ],
+    )
+    def test_git_revert_subject_is_not_measured(self, subject):
+        """A subject that fit the limit still fits once git wraps it in
+        'Revert "..."': the nine extra characters are git's."""
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        assert len(subject) > 80
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.SKIP
+        )
+
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "fixup! feat(parser): accept trailing commas in the argument list of a call",
+            "squash! feat(parser): accept trailing commas in the argument list of a call",
+            "amend! feat(parser): accept trailing commas in the argument list of a call",
+            "fixup! fixup! feat(parser): accept trailing commas in the argument list of a call",
+        ],
+    )
+    def test_git_fixup_subject_is_not_measured(self, subject):
+        """A subject that fit the limit still fits once git puts "fixup! "
+        in front of it: the prefix is git's, and --autosquash folds it away."""
+        rule = ValidationRule(check="subject_max_length", value=72)
+        validator = SubjectLengthValidator(rule)
+        assert len(subject) > 72
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.SKIP
+        )
+
+    @pytest.mark.parametrize(
+        "subject",
+        [
+            "fixup!! feat(parser): accept trailing commas in the argument list of a call",
+            "Fixup! feat(parser): accept trailing commas in the argument list of a call",
+        ],
+    )
+    def test_author_fixup_lookalike_is_measured(self, subject):
+        rule = ValidationRule(check="subject_max_length", value=72)
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.FAIL
+        )
+
+    def test_author_revert_prose_is_measured(self):
+        rule = ValidationRule(check="subject_max_length", value=80)
+        validator = SubjectLengthValidator(rule)
+        validator._suppress_output = True
+        subject = "Revert the parser change " + "y" * 60
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.FAIL
+        )
+
     def test_squash_pr_number_is_not_counted_toward_the_minimum(self):
         rule = ValidationRule(check="subject_min_length", value=5)
         validator = SubjectLengthValidator(rule)
@@ -1822,6 +1929,27 @@ class TestSubjectCapitalizationValidator:
 
         result = validator.validate(context)
         assert result == ValidationResult.FAIL
+
+    @pytest.mark.parametrize(
+        "subject",
+        ["fixup! feat: add x", "squash! add x", "amend! fix: add x"],
+    )
+    def test_git_fixup_subject_is_not_judged(self, subject):
+        """git writes the lower-case prefix; capitalizing it would stop
+        --autosquash from finding the commit."""
+        rule = ValidationRule(check="subject_capitalized")
+        validator = SubjectCapitalizationValidator(rule)
+        assert validator.validate(ValidationContext(stdin_text=subject)) == (
+            ValidationResult.SKIP
+        )
+
+    def test_author_fixup_lookalike_is_judged(self):
+        rule = ValidationRule(check="subject_capitalized")
+        validator = SubjectCapitalizationValidator(rule)
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext(stdin_text="fixup!! add x")) == (
+            ValidationResult.FAIL
+        )
 
 
 class TestBodyValidator:
@@ -4221,6 +4349,11 @@ class TestImperativeMorphology:
         assert self._verdict("Merge branch 'main' into topic") == ValidationResult.SKIP
         assert self._verdict("fixup! fixed the parser") == ValidationResult.SKIP
 
+    @pytest.mark.parametrize("prefix", ["squash! ", "amend! "])
+    def test_squash_and_amend_subjects_bypass_the_rule(self, prefix):
+        """git writes these the way it writes "fixup! ", so they bypass too."""
+        assert self._verdict(prefix + "fixed the parser") == ValidationResult.SKIP
+
     @pytest.mark.benchmark
     def test_author_subject_starting_with_merge_is_judged(self):
         """Only a merge tool's own subject bypasses the rule; an author's
@@ -4271,6 +4404,37 @@ class TestIsMergeSubject:
     )
     def test_author_prose(self, subject):
         assert not is_merge_subject(subject)
+
+    @pytest.mark.parametrize(
+        "subject, expected",
+        [
+            ("fixup! feat: x", True),
+            ("squash! feat: x", True),
+            ("amend! feat: x", True),
+            ("fixup! fixup! feat: x", True),
+            ("fixup!feat: x", False),
+            ("fixup!! feat: x", False),
+            ("Fixup! feat: x", False),
+            ("feat: fixup! x", False),
+        ],
+    )
+    def test_autosquash_subject(self, subject, expected):
+        assert is_autosquash_subject(subject) is expected
+
+    @pytest.mark.parametrize(
+        "subject, expected",
+        [
+            ('Revert "feat: x"', True),
+            ('Reapply "feat: x"', True),
+            ('Revert "Reapply "feat: x""', True),
+            ("Revert the parser change", False),
+            ("Reapply the fix", False),
+            ('revert "feat: x"', False),
+            ("revert: drop the cache", False),
+        ],
+    )
+    def test_revert_subject(self, subject, expected):
+        assert is_revert_subject(subject) is expected
 
     @pytest.mark.parametrize(
         "check, value, expected",
@@ -5090,3 +5254,217 @@ class TestAiDeclarationValidator:
             config={"commit": {"ignore_authors": ["dependabot[bot]"]}},
         )
         assert validator.validate(context) == ValidationResult.SKIP
+
+
+class TestBodyLineLength:
+    """CC018: no body line longer than [commit] body_max_line_length."""
+
+    LONG = "This sentence runs on well past the seventy-two columns that git log shows."
+
+    @staticmethod
+    def _validate(message, limit=72, **context):
+        validator = BodyLineLengthValidator(
+            ValidationRule(check="body_max_line_length", value=limit)
+        )
+        validator._suppress_output = True
+        result = validator.validate(ValidationContext(stdin_text=message, **context))
+        return result, validator
+
+    def test_a_wrapped_body_passes(self):
+        message = "feat: x\n\nA short line.\nAnother short line."
+        assert self._validate(message)[0] == ValidationResult.PASS
+
+    def test_a_line_over_the_limit_fails_with_its_length(self):
+        assert len(self.LONG) == 75
+        result, validator = self._validate(f"feat: x\n\n{self.LONG}")
+        assert result == ValidationResult.FAIL
+        failure = validator._last_failure
+        assert failure["error"] == (
+            "Line 3 is 75 characters; body lines must be at most 72 characters"
+        )
+        assert failure["suggest"] == "Wrap the body at 72 characters"
+
+    def test_several_long_lines_are_counted(self):
+        longer = self.LONG + " And more."
+        message = f"feat: x\n\n{self.LONG}\nshort\n{longer}"
+        result, validator = self._validate(message)
+        assert result == ValidationResult.FAIL
+        assert validator._last_failure["error"] == (
+            "Lines 3 and 5 are longer than 72 characters, the longest 85 characters"
+        )
+
+    def test_many_long_lines_name_the_first_three(self):
+        message = "feat: x\n\n" + "\n".join([self.LONG] * 5)
+        result, validator = self._validate(message)
+        assert result == ValidationResult.FAIL
+        assert validator._last_failure["error"] == (
+            "Lines 3, 4, 5 and 2 more are longer than 72 characters, "
+            "the longest 75 characters"
+        )
+
+    def test_the_line_number_counts_lines_right_under_the_subject(self):
+        result, validator = self._validate(f"feat: x\n{self.LONG}")
+        assert result == ValidationResult.FAIL
+        assert validator._last_failure["error"].startswith("Line 2 is ")
+
+    @pytest.mark.parametrize(
+        "line",
+        [
+            "修复上传在令牌过期时永久失败的问题，现在会自动刷新令牌并重试一次，这样用户就不需要从头开始重新上传整个文件了，也不会丢失已经上传的部分数据，体验更好",
+            "トークンの有効期限が切れたときにアップロードが失敗し続ける問題を修正しました。現在はトークンを自動的に更新して一度だけ再試行するので最初からやり直す必要はありません",
+            "토큰이만료되면업로드가영구적으로실패하던문제를수정했습니다이제는토큰을자동으로새로고침하고한번다시시도하므로처음부터다시업로드할필요가없습니다그리고이미올린데이터도잃지않습니다",
+            "ｆｕｌｌｗｉｄｔｈ" * 9,
+        ],
+        ids=["chinese", "japanese", "korean", "fullwidth"],
+    )
+    def test_prose_without_spaces_is_counted(self, line):
+        """Chinese, Japanese and Korean put no spaces between words."""
+        assert " " not in line
+        assert len(line) > 72
+        assert self._validate(f"feat: x\n\n{line}")[0] == ValidationResult.FAIL
+
+    def test_a_short_line_of_wide_characters_passes(self):
+        """The limit counts characters, as subject_max_length does."""
+        assert self._validate("feat: x\n\n" + "修" * 72)[0] == ValidationResult.PASS
+
+    def test_a_line_at_the_limit_passes(self):
+        line = ("word " * 15)[:72]
+        assert len(line) == 72
+        assert self._validate(f"feat: x\n\n{line}")[0] == ValidationResult.PASS
+
+    def test_the_subject_is_not_counted(self):
+        """The subject's length is CC004's to judge."""
+        assert self._validate(f"feat: {self.LONG}")[0] == ValidationResult.PASS
+
+    @pytest.mark.parametrize(
+        "line",
+        [
+            "See https://example.com/a/path/long/enough/to/push/the/line/past/the/limit for it",
+            "Logs: http://ci.example.com/job/12345/console and the rest of this long line",
+            "src/commit_check/a/deeply/nested/module/path/that/is/longer/than/the/limit.py",
+            "    " + "x" * 90,
+            "See HTTPS://EXAMPLE.COM/a/path/long/enough/to/push/the/line/past/the/limit for it",
+            "See Https://example.com/a/path/long/enough/to/push/the/line/past/the/limit for it",
+            "Mirror at ftp://ftp.example.com/pub/a/path/long/enough/to/pass/the/limit too",
+            "参见https://example.com/issues/1234/a-link-long-enough-to-go-past-the-limit",
+        ],
+        ids=[
+            "https",
+            "http",
+            "path",
+            "no-space-indented",
+            "upper-case",
+            "mixed-case",
+            "ftp",
+            "after-cjk",
+        ],
+    )
+    def test_lines_that_cannot_be_wrapped_are_not_counted(self, line):
+        assert len(line) > 72
+        assert self._validate(f"feat: x\n\n{line}")[0] == ValidationResult.PASS
+
+    def test_the_trailer_block_is_not_counted(self):
+        trailer = "Co-authored-by: Someone With A Long Name <someone.with.a.long.name@example.com>"
+        assert len(trailer) > 72
+        message = f"feat: x\n\nWhy.\n\nSigned-off-by: T <t@e.com>\n{trailer}\n"
+        assert self._validate(message)[0] == ValidationResult.PASS
+
+    def test_a_folded_trailer_value_stays_in_the_trailer_block(self):
+        """git lets a trailer value continue on an indented line."""
+        long = "Co-authored-by: Someone With A Long Name <someone.with.a.long.name@example.com>"
+        message = f"feat: x\n\nWhy.\n\nFixes: #12\n  and the follow-up in #13\n{long}"
+        assert self._validate(message)[0] == ValidationResult.PASS
+
+    def test_an_indented_paragraph_is_not_a_trailer_block(self):
+        message = f"feat: x\n\nWhy.\n\n  {self.LONG}\n  and more"
+        assert self._validate(message)[0] == ValidationResult.FAIL
+
+    @pytest.mark.parametrize("rev", [None, "abc123"])
+    def test_an_existing_commit_is_read_with_its_line_breaks(self, mocker, rev):
+        """%s would join a line right under the subject into the subject."""
+        info = mocker.patch(
+            "commit_check.engine.get_commit_info",
+            side_effect=lambda fmt, sha="HEAD": {
+                "B": f"feat: x\n{self.LONG}\n",
+                "an": "Jane Doe",
+            }[fmt],
+        )
+        mocker.patch("commit_check.engine.has_commits", return_value=True)
+        validator = BodyLineLengthValidator(
+            ValidationRule(check="body_max_line_length", value=72)
+        )
+        validator._suppress_output = True
+        assert validator.validate(ValidationContext(rev=rev)) == ValidationResult.FAIL
+        assert info.call_args_list[0].args[0] == "B"
+
+    def test_a_long_line_in_a_paragraph_that_is_not_all_trailers_counts(self):
+        message = f"feat: x\n\nFixes: #12\n{self.LONG}"
+        assert self._validate(message)[0] == ValidationResult.FAIL
+
+    def test_trailers_right_under_the_subject_are_body_text(self):
+        """With no blank line, git reads no trailer block, and neither does this."""
+        trailer = "Co-authored-by: Someone With A Long Name <someone.with.a.long.name@example.com>"
+        assert self._validate(f"feat: x\n{trailer}")[0] == ValidationResult.FAIL
+
+    def test_merge_commits_are_skipped(self):
+        message = f"Merge branch 'main' into feature\n\n{self.LONG}"
+        assert self._validate(message)[0] == ValidationResult.SKIP
+
+    def test_an_empty_message_passes(self):
+        assert self._validate("")[0] == ValidationResult.PASS
+
+    @pytest.mark.parametrize("bot", ["dependabot[bot]", "renovate[bot]"])
+    def test_dependency_bots_are_skipped(self, bot, monkeypatch):
+        """The bot copies the release notes into the body."""
+        monkeypatch.setenv("GIT_AUTHOR_NAME", bot)
+        result, validator = self._validate(f"chore(deps): bump x\n\n{self.LONG}")
+        assert result == ValidationResult.SKIP
+        assert validator._skip_reason == f"{bot} writes the body from the release notes"
+
+    def test_a_person_is_not_skipped(self, monkeypatch):
+        monkeypatch.setenv("GIT_AUTHOR_NAME", "Jane Doe")
+        result, _ = self._validate(f"chore(deps): bump x\n\n{self.LONG}")
+        assert result == ValidationResult.FAIL
+
+    def test_ignored_authors_skip_it(self):
+        result, _ = self._validate(
+            f"feat: x\n\n{self.LONG}\n\nCo-authored-by: Bot <bot@example.com>",
+            config={"commit": {"ignore_authors": ["Bot"]}},
+        )
+        assert result == ValidationResult.SKIP
+
+    def test_long_body_lines_numbers_point_into_the_message(self):
+        message = f"feat: x\n\nshort\n{self.LONG}\n\nhttps://example.com/{'x' * 80}"
+        assert long_body_lines(message, 72) == [3]
+
+    def test_the_rule_is_off_by_default(self):
+        rules = RuleBuilder(get_default_config()).build_all_rules()
+        assert "body_max_line_length" not in {rule.check for rule in rules}
+
+    def test_the_engine_quotes_the_message_and_marks_the_long_line(self, capsys):
+        config = get_default_config()
+        config["commit"]["body_max_line_length"] = 72
+        rules = RuleBuilder(config).build_all_rules()
+        message = f"feat: add login\n\nshort\n{self.LONG}"
+        result = ValidationEngine(rules).validate_all(
+            ValidationContext(stdin_text=message, no_banner=True)
+        )
+        assert result == ValidationResult.FAIL
+        out = capsys.readouterr().out
+        assert f"\u2502 {self.LONG}" in out or f"| {self.LONG}" in out
+        assert "CC018" in out
+        # The quote shows the whole message, so the block does not repeat it.
+        assert out.count(self.LONG) == 1
+
+    def test_a_subject_rule_and_this_one_share_one_quote(self, capsys):
+        config = get_default_config()
+        config["commit"]["body_max_line_length"] = 72
+        rules = RuleBuilder(config).build_all_rules()
+        message = f"bad subject\n\n{self.LONG}"
+        ValidationEngine(rules).validate_all(
+            ValidationContext(stdin_text=message, no_banner=True)
+        )
+        out = capsys.readouterr().out
+        assert "CC001" in out
+        assert "CC018" in out
+        assert out.count(self.LONG) == 1

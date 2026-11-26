@@ -29,3 +29,16 @@ updates:
       pip:
         patterns:
           - "*"
+
+  # The Bitbucket pipe's base image.
+  - package-ecosystem: docker
+    directory: /bitbucket-pipe
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      docker:
+        patterns:
+          - "*"
