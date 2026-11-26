@@ -72,7 +72,8 @@ The same `cchk.toml` drives all of them:
 |---|---|
 | GitHub, no workflow | [Install the GitHub App](https://github.com/apps/commit-check) — one check run per commit |
 | GitHub Actions | `uses: commit-check/commit-check-action@v2` — see [commit-check-action](https://github.com/commit-check/commit-check-action) |
-| GitLab CI, Bitbucket Pipelines, Azure Pipelines | A job in the pipeline — see the [CI guide](https://commit-check.com/guides/other-ci/) |
+| GitLab CI, Azure Pipelines | A job in the pipeline — see the [CI guide](https://commit-check.com/guides/other-ci/) |
+| Bitbucket Pipelines | The Commit Check pipe, one of Atlassian's [official pipes](https://bitbucket.org/product/features/pipelines/integrations) — see the [CI guide](https://commit-check.com/guides/other-ci/#bitbucket-pipelines) |
 | AI agents | The [agent skill](#agent-skill), `--format json`, the [Python API](#ai-native-usage), or the [MCP server](https://github.com/commit-check/commit-check-mcp) |
 
 ## What it checks
