@@ -2,6 +2,7 @@
 
 import json
 import subprocess
+import time
 import tomllib
 from unittest.mock import patch
 
@@ -279,6 +280,31 @@ class TestFindSettings:
             "chat.tools.global.autoApprove = true"
         ]
 
+    def test_a_decoy_dotted_key_does_not_hide_the_block_beside_it(self):
+        text = json.dumps(
+            {
+                "env.ANTHROPIC_BASE_URL": "",
+                "env": {"ANTHROPIC_BASE_URL": "https://x.test"},
+            }
+        )
+        assert _settings(".claude/settings.json", text) == [
+            'env.ANTHROPIC_BASE_URL = "https://x.test"'
+        ]
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "/*a" * 350_000,
+            '"\\"' * 350_000,
+            '{"a": "' + '\\"' * 500_000,
+            '"a' * 500_000,
+        ],
+    )
+    def test_jsonc_that_never_closes_is_read_in_linear_time(self, text):
+        started = time.perf_counter()
+        assert _settings(".vscode/settings.json", text) == []
+        assert time.perf_counter() - started < 2
+
     def test_a_star_key_names_what_it_stood_for(self):
         text = json.dumps({"mcpServers": {"a": {"trust": True}, "b": {"trust": False}}})
         findings = find_settings(".gemini/settings.json", text)
@@ -300,8 +326,13 @@ class TestFindSettings:
         ],
     )
     def test_yaml_lines_that_are_not_a_wildcard(self, line):
-        text = f"steps:\n  - uses: anthropics/claude-code-action@v1\n{line}\n"
+        text = (
+            f"steps:\n  - uses: anthropics/claude-code-action@v1\n    with:\n{line}\n"
+        )
         assert _settings(".github/workflows/claude.yml", text) == []
+        # The same step with a "*" is reported, so the line above was read.
+        starred = text.replace(line, '      allowed_bots: "*"')
+        assert _settings(".github/workflows/claude.yml", starred) != []
 
     def test_yaml_value_with_a_comment(self):
         text = (
@@ -360,6 +391,47 @@ class TestFindSettings:
 
     def test_a_uses_line_with_no_step_above_reads_to_the_end(self):
         text = "uses: anthropics/claude-code-action@v1\nwith:\n  allowed_bots: '*'\n"
+        assert _settings(".github/workflows/a.yml", text) == ['allowed_bots = "*"']
+
+    @pytest.mark.parametrize(
+        "value", ['"\\u002a"', '"\\x2a"', '"\\U0000002a"', "'*'", '"*"']
+    )
+    def test_a_quoted_value_is_read_as_yaml_reads_it(self, value):
+        text = f"- uses: anthropics/claude-code-action@v1\n  with:\n    allowed_bots: {value}\n"
+        assert _settings(".github/workflows/a.yml", text) == ['allowed_bots = "*"']
+
+    @pytest.mark.parametrize("value", ["'it''s'", '"\\q"', '"\\UFFFFFFFF"', '"*', "'*"])
+    def test_other_quoted_values_are_not_the_star(self, value):
+        text = f"- uses: anthropics/claude-code-action@v1\n  with:\n    allowed_bots: {value}\n"
+        assert _settings(".github/workflows/a.yml", text) == []
+
+    def test_text_in_a_prompt_is_not_an_input(self):
+        text = (
+            "- uses: anthropics/claude-code-action@v1\n"
+            "  with:\n"
+            "    prompt: |\n"
+            "      Document this example:\n"
+            '      allowed_bots: "*"\n'
+            "    # a comment between inputs\n"
+            '    allowed_non_write_users: "*"\n'
+        )
+        assert _settings(".github/workflows/a.yml", text) == [
+            'allowed_non_write_users = "*"'
+        ]
+
+    def test_only_with_inputs_count(self):
+        text = (
+            '- uses: anthropics/claude-code-action@v1\n  env:\n    allowed_bots: "*"\n'
+        )
+        assert _settings(".github/workflows/a.yml", text) == []
+
+    def test_with_before_uses_counts(self):
+        text = (
+            "- name: Claude\n"
+            "  with:\n"
+            '    allowed_bots: "*"\n'
+            "  uses: anthropics/claude-code-action@v1\n"
+        )
         assert _settings(".github/workflows/a.yml", text) == ['allowed_bots = "*"']
 
     def test_an_action_named_only_in_a_comment_is_not_used(self):
@@ -589,19 +661,36 @@ class TestAgentConfigValidator:
 
     @patch("commit_check.engine.get_file_text")
     @patch("commit_check.engine.get_commit_files")
-    def test_an_oversized_file_is_not_read(self, mock_files, mock_text):
+    def test_an_oversized_file_is_not_read_and_not_passed(self, mock_files, mock_text):
         mock_files.return_value = [(".claude/settings.json", 2 * 1024 * 1024)]
         validator = _validator("agent_full_access")
-        assert validator.validate(ValidationContext()) == ValidationResult.PASS
+        assert validator.validate(ValidationContext()) == ValidationResult.SKIP
+        assert validator._skip_reason == (
+            "not read (over 1 MiB or unreadable): .claude/settings.json"
+        )
         mock_text.assert_not_called()
 
     @patch("commit_check.engine.get_file_text")
     @patch("commit_check.engine.get_commit_files")
-    def test_a_file_git_cannot_read_passes(self, mock_files, mock_text):
+    def test_a_file_git_cannot_read_is_a_skip(self, mock_files, mock_text):
         mock_files.return_value = [(".claude/settings.json", 40)]
         mock_text.return_value = None
         validator = _validator("agent_full_access")
+        assert validator.validate(ValidationContext()) == ValidationResult.SKIP
+
+    @patch("commit_check.engine.get_file_text")
+    @patch("commit_check.engine.get_commit_files")
+    def test_a_file_not_read_is_named_beside_those_read(self, mock_files, mock_text):
+        mock_files.return_value = [
+            (".claude/settings.json", 2 * 1024 * 1024),
+            (".codex/config.toml", 20),
+        ]
+        mock_text.return_value = 'model = "o4"\n'
+        validator = _validator("agent_full_access")
         assert validator.validate(ValidationContext()) == ValidationResult.PASS
+        assert validator._checked_value == (
+            "1 agent config file(s); not read: .claude/settings.json"
+        )
 
     @patch("commit_check.engine.get_commit_files")
     def test_a_push_that_only_deletes_is_a_skip(self, mock_files):

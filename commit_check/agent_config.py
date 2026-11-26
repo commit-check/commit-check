@@ -220,10 +220,14 @@ def _format(path: str) -> str | None:
 
 
 # A string or a comment: comments are dropped and strings kept as they are,
-# so "//" inside a URL survives. Left as text, not compiled at import: most
-# runs read no JSON file that needs them.
-_JSONC_TOKEN = r'"(?:\\.|[^"\\])*"|//[^\n]*|/\*.*?\*/'
-_TRAILING_COMMA = r'"(?:\\.|[^"\\])*"|,(\s*[}\]])'
+# so "//" inside a URL survives. One left open runs to the end of the text,
+# so each character is read once: retrying a "/*" that never closes from
+# every later "/*" would take time that grows with the square of the size.
+# Left as text, not compiled at import: most runs read no JSON file that
+# needs them.
+_JSON_STRING = r'"(?:\\.|[^"\\])*(?:"|\\?\Z)'
+_JSONC_TOKEN = rf"{_JSON_STRING}|//[^\n]*|/\*.*?(?:\*/|\Z)"
+_TRAILING_COMMA = rf"{_JSON_STRING}|,(\s*[}}\]])"
 
 
 def _loads_jsonc(text: str) -> Any:
@@ -267,8 +271,9 @@ def _lookup(
 
     *name* is the key ``*`` stood for, *path* the keys as found. A key that
     holds dots itself, as VS Code's ``chat.tools.autoApprove`` does, is
-    tried whole before its first part: the longest run of keys that is
-    present wins.
+    tried whole as well as split: every run of keys that is present is
+    followed, so a decoy ``"env.X"`` key cannot hide the ``env`` block
+    beside it.
     """
     if not keys:
         yield name, (), node
@@ -286,7 +291,6 @@ def _lookup(
         if joined in node:
             for found_name, path, found in _lookup(node[joined], keys[end:], name):
                 yield found_name, (joined, *path), found
-            return
 
 
 def _same(found: Any, value: Any) -> bool:
@@ -330,13 +334,39 @@ def _structured_findings(
                 )
 
 
+# YAML's double-quoted escapes, besides \x, \u and \U.
+_YAML_ESCAPES = {
+    "0": "\0", "a": "\a", "b": "\b", "t": "\t", "\t": "\t", "n": "\n",
+    "v": "\v", "f": "\f", "r": "\r", "e": "\x1b", " ": " ", '"': '"',
+    "/": "/", "\\": "\\", "N": "\x85", "_": "\xa0", "L": "\u2028",
+    "P": "\u2029",
+}  # fmt: skip
+_YAML_ESCAPE = r"\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8}|.)"
+_YAML_QUOTED = {'"': r'"((?:\\.|[^"\\])*)"', "'": r"'((?:''|[^'])*)'"}
+
+
+def _yaml_unescape(match: re.Match[str]) -> str:
+    code = match.group(1)
+    if code[0] in "xuU" and len(code) > 1:
+        point = int(code[1:], 16)
+        return chr(point) if point <= 0x10FFFF else match.group(0)
+    return _YAML_ESCAPES.get(code, match.group(0))
+
+
 def _yaml_scalar(raw: str) -> str | None:
     """The value on a ``key: value`` line, unquoted, or ``None`` for one
-    that starts a block, a mapping or a list on the lines below."""
+    that starts a block, a mapping or a list on the lines below.
+
+    A quoted value is read as YAML reads it, so ``"\\u002a"`` is ``*``.
+    """
     raw = raw.strip()
-    if raw[:1] in ("'", '"'):
-        end = raw.find(raw[0], 1)
-        return raw[1:end] if end > 0 else None
+    if raw[:1] in _YAML_QUOTED:
+        quoted = re.match(_YAML_QUOTED[raw[0]], raw)
+        if quoted is None:
+            return None
+        if raw[0] == "'":
+            return quoted.group(1).replace("''", "'")
+        return re.sub(_YAML_ESCAPE, _yaml_unescape, quoted.group(1))
     raw = re.split(r"\s#", raw, maxsplit=1)[0].strip()
     if not raw or raw[0] in "|>&*{[":
         return None
@@ -389,12 +419,42 @@ def _steps_using(lines: list[str], uses: str) -> list[list[str]]:
     return steps
 
 
+def _inputs(step: list[str]) -> list[str]:
+    """The lines of a step's ``with:`` inputs, one input each.
+
+    Lines nested deeper, such as those of a multi-line ``prompt``, are left
+    out: text in a prompt is not a setting.
+    """
+    inputs: list[str] = []
+    for number, line in enumerate(step):
+        if not re.match(r"^\s*(?:-\s+)?with\s*:\s*(?:#.*)?$", line):
+            continue
+        column = len(line) - len(line.lstrip(" -"))
+        depth = None
+        for below in step[number + 1 :]:
+            stripped = below.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            indent = _indent(below)
+            if indent <= column:
+                break
+            if depth is None:
+                depth = indent
+            if indent == depth:
+                inputs.append(below)
+    return inputs
+
+
 def _yaml_findings(
     path: str, text: str, settings: Iterable[AgentSetting]
 ) -> Iterator[Finding]:
     lines = text.splitlines()
     for setting in settings:
-        scopes = [lines] if setting.uses is None else _steps_using(lines, setting.uses)
+        scopes = (
+            [lines]
+            if setting.uses is None
+            else [_inputs(step) for step in _steps_using(lines, setting.uses)]
+        )
         key = setting.key[-1]
         pattern = re.compile(
             rf"^\s*(?:-\s+)?(['\"]?){re.escape(key)}\1\s*:(?P<value>.*)$"

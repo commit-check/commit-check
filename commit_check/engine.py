@@ -164,7 +164,7 @@ class ValidationContext:
     )
     # Per-run memo of the agent config findings in each (revision, path):
     # the four agent config rules read the same files.
-    agent_findings_cache: dict[tuple[str, str], list[Finding]] = field(
+    agent_findings_cache: dict[tuple[str, str], list[Finding] | None] = field(
         default_factory=dict, repr=False, compare=False
     )
     # Set when stdin_text is a piped commit message: checks with a value of
@@ -1204,10 +1204,12 @@ class AgentConfigValidator(FilesValidator):
 
     def _findings(
         self, context: ValidationContext, rev: str, path: str, size: int
-    ) -> list[Finding]:
+    ) -> list[Finding] | None:
+        """The findings in *path* at *rev*, or ``None`` when it was not read:
+        too large, or its contents could not be had from git."""
         key = (rev, path)
         if key not in context.agent_findings_cache:
-            findings: list[Finding] = []
+            findings: list[Finding] | None = None
             if size <= MAX_AGENT_FILE_SIZE:
                 text = get_file_text(rev, path)
                 if text is not None:
@@ -1226,14 +1228,19 @@ class AgentConfigValidator(FilesValidator):
         name_commit = len(revs) > 1
         touched = False
         checked: set[str] = set()
+        unread: set[str] = set()
         offenders: dict[str, str] = {}
         for rev in revs:
             for path, size in self._files_for_rev(context, rev):
                 touched = True
                 if not any(s.reads(path) for s in settings):
                     continue
+                findings = self._findings(context, rev, path, size)
+                if findings is None:
+                    unread.add(path)
+                    continue
                 checked.add(path)
-                for finding in self._findings(context, rev, path, size):
+                for finding in findings:
                     if finding.check != self.rule.check or is_allowed(finding, allowed):
                         continue
                     # The newest commit that carries it: revs come newest
@@ -1244,11 +1251,19 @@ class AgentConfigValidator(FilesValidator):
             return ValidationResult.SKIP
         if offenders:
             return self._fail(list(offenders.values()))
+        # A file too large to read passes nothing: say so, rather than count
+        # it as checked.
+        not_read = ", ".join(sorted(unread))
+        if not_read and not checked:
+            self._skip_reason = f"not read (over 1 MiB or unreadable): {not_read}"
+            return ValidationResult.SKIP
         self._checked_value = (
             f"{len(checked)} agent config file(s)"
             if checked
             else "no agent config file"
         )
+        if not_read:
+            self._checked_value += f"; not read: {not_read}"
         return ValidationResult.PASS
 
 
