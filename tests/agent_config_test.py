@@ -381,7 +381,7 @@ class TestFindSettings:
 def _setting(files, key, value=ANY, uses=None):
     return AgentSetting(
         agent="Some agent",
-        check="agent_open_trigger",
+        check="agent_unrestricted_trigger",
         files=(files,),
         key=tuple(key.split(".")),
         value=value,

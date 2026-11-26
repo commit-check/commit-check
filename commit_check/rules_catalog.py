@@ -306,7 +306,7 @@ AGENT_CONFIG_RULES = [
     ),
     RuleCatalogEntry(
         rule_id="CC604",
-        check="agent_open_trigger",
+        check="agent_unrestricted_trigger",
         regex=None,
         error="Anyone can start the agent",
         suggest='List the allowed users or bots instead of "*"',

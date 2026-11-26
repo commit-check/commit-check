@@ -14,12 +14,13 @@
 #   docs      where the agent documents these settings
 #   settings  one inline table per setting:
 #     rule    the rule that reports it:
-#               agent-mcp-auto-approve  MCP servers or their tools run
-#                                       without asking
-#               agent-api-endpoint      requests go to another API endpoint
-#               agent-full-access       commands run without asking or
-#                                       outside the sandbox
-#               agent-open-trigger      anyone can start the agent in CI
+#               agent-mcp-auto-approve      MCP servers or their tools run
+#                                           without asking
+#               agent-api-endpoint          requests go to another API
+#                                           endpoint
+#               agent-full-access           commands run without asking or
+#                                           outside the sandbox
+#               agent-unrestricted-trigger  anyone can start the agent in CI
 #     key     the setting, keys joined with "."; * stands for any one key,
 #             such as a server's name. A key that itself holds dots, as in
 #             VS Code's settings, is matched whole first
@@ -67,8 +68,8 @@ files = [
 uses = "anthropics/claude-code-action"
 docs = "https://github.com/anthropics/claude-code-action/blob/main/docs/security.md"
 settings = [
-    { rule = "agent-open-trigger", key = "allowed_bots", value = "*" },
-    { rule = "agent-open-trigger", key = "allowed_non_write_users", value = "*" },
+    { rule = "agent-unrestricted-trigger", key = "allowed_bots", value = "*" },
+    { rule = "agent-unrestricted-trigger", key = "allowed_non_write_users", value = "*" },
 ]
 
 [[agent]]

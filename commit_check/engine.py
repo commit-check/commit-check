@@ -2400,7 +2400,7 @@ class ValidationEngine:
         "agent_mcp_auto_approve": AgentConfigValidator,
         "agent_api_endpoint": AgentConfigValidator,
         "agent_full_access": AgentConfigValidator,
-        "agent_open_trigger": AgentConfigValidator,
+        "agent_unrestricted_trigger": AgentConfigValidator,
     }
 
     def __init__(self, rules: list[ValidationRule]):

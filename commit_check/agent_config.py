@@ -33,7 +33,7 @@ RULES = {
     "agent-mcp-auto-approve": "agent_mcp_auto_approve",
     "agent-api-endpoint": "agent_api_endpoint",
     "agent-full-access": "agent_full_access",
-    "agent-open-trigger": "agent_open_trigger",
+    "agent-unrestricted-trigger": "agent_unrestricted_trigger",
 }
 
 #: The ``[agent_config]`` list that lets a finding of each check through,

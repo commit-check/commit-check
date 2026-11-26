@@ -1839,7 +1839,7 @@ class TestFilesFlag:
             "agent_mcp_auto_approve",
             "agent_api_endpoint",
             "agent_full_access",
-            "agent_open_trigger",
+            "agent_unrestricted_trigger",
         }
 
     def test_files_cli_options_reach_config(self):
