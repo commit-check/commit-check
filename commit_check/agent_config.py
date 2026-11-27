@@ -344,6 +344,15 @@ _YAML_ESCAPES = {
 }  # fmt: skip
 _YAML_ESCAPE = r"\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8}|.)"
 _YAML_QUOTED = {'"': r'"((?:\\.|[^"\\])*)"', "'": r"'((?:''|[^'])*)'"}
+# A node's tag and anchor, such as "!!str " and "&name ", before its key or value.
+_YAML_PROPERTIES = r"(?:[!&]\S*\s+)*"
+# A "key: rest" line of a block mapping, as a list item or not. Only keys
+# spelled with word characters, dots and dashes are read unquoted: no key
+# this module looks for is spelled otherwise.
+_YAML_ENTRY = re.compile(
+    rf"""^(?P<dash>\s*-\s+)?\s*{_YAML_PROPERTIES}"""
+    r"""(?P<key>"(?:\\.|[^"\\])*"|'(?:''|[^'])*'|[\w.-]+)\s*:(?P<rest>.*)$"""
+)
 
 
 def _yaml_unescape(match: re.Match[str]) -> str:
@@ -358,9 +367,10 @@ def _yaml_scalar(raw: str) -> str | None:
     """The value on a ``key: value`` line, unquoted, or ``None`` for one
     that starts a block, a mapping or a list on the lines below.
 
-    A quoted value is read as YAML reads it, so ``"\\u002a"`` is ``*``.
+    A quoted value is read as YAML reads it, so ``"\\u002a"`` is ``*``, and
+    a tag or anchor before it, as in ``!!str "*"``, is passed over.
     """
-    raw = raw.strip()
+    raw = re.sub(rf"^{_YAML_PROPERTIES}", "", raw.strip(), count=1)
     if raw[:1] in _YAML_QUOTED:
         quoted = re.match(_YAML_QUOTED[raw[0]], raw)
         if quoted is None:
@@ -374,6 +384,21 @@ def _yaml_scalar(raw: str) -> str | None:
     return raw
 
 
+def _yaml_entry(line: str) -> tuple[str, str, bool] | None:
+    """The key of a ``key: value`` line, the text after its colon, and
+    whether the line starts a list item; ``None`` for any other line.
+
+    The key is read as YAML reads it, so ``"wi\\u0074h"`` is ``with``.
+    """
+    match = _YAML_ENTRY.match(line)
+    if match is None:
+        return None
+    key = match.group("key")
+    if key[0] in _YAML_QUOTED:
+        key = _yaml_scalar(key) or ""
+    return key, match.group("rest"), match.group("dash") is not None
+
+
 def _indent(line: str) -> int:
     return len(line) - len(line.lstrip(" "))
 
@@ -385,16 +410,16 @@ def _steps_using(lines: list[str], uses: str) -> list[list[str]]:
     that ``-``, so a setting of another step, another job's action or a
     comment that names the action is not taken for this one's.
     """
-    pattern = re.compile(
-        rf"^(?P<dash>\s*-\s+)?\s*(['\"]?)uses\2\s*:\s*['\"]?{re.escape(uses)}(?:[@'\"\s]|$)"
-    )
     steps = []
     for number, line in enumerate(lines):
-        match = pattern.match(line)
-        if not match:
+        entry = _yaml_entry(line)
+        if entry is None or entry[0] != "uses":
+            continue
+        action = _yaml_scalar(entry[1]) or ""
+        if action != uses and not action.startswith(f"{uses}@"):
             continue
         start = number
-        if match.group("dash"):
+        if entry[2]:
             dash = _indent(line)
         else:
             # "uses:" under the step's "- name:" line: the step starts at the
@@ -428,7 +453,10 @@ def _inputs(step: list[str]) -> list[str]:
     """
     inputs: list[str] = []
     for number, line in enumerate(step):
-        if not re.match(r"^\s*(?:-\s+)?(['\"]?)with\1\s*:\s*(?:#.*)?$", line):
+        entry = _yaml_entry(line)
+        if entry is None or entry[0] != "with":
+            continue
+        if not re.fullmatch(r"\s*(?:#.*)?", entry[1]):
             continue
         column = len(line) - len(line.lstrip(" -"))
         depth = None
@@ -457,14 +485,11 @@ def _yaml_findings(
             else [_inputs(step) for step in _steps_using(lines, setting.uses)]
         )
         key = setting.key[-1]
-        pattern = re.compile(
-            rf"^\s*(?:-\s+)?(['\"]?){re.escape(key)}\1\s*:(?P<value>.*)$"
-        )
         for line in (line for scope in scopes for line in scope):
-            match = pattern.match(line)
-            if not match:
+            entry = _yaml_entry(line)
+            if entry is None or entry[0] != key:
                 continue
-            value = _yaml_scalar(match.group("value"))
+            value = _yaml_scalar(entry[1])
             if value is None:
                 continue
             if setting.value is ANY:

@@ -456,6 +456,57 @@ class TestFindSettings:
         text = f"{step}    allowed_bots: '*'\n"
         assert _settings(".github/workflows/a.yml", text) == ['allowed_bots = "*"']
 
+    @pytest.mark.parametrize(
+        ("uses", "with_", "setting"),
+        [
+            (
+                '"us\\u0065s": anthropics/claude-code-action@v1',
+                '"wi\\u0074h":',
+                '"allowed_b\\x6fts": "*"',
+            ),
+            (
+                'uses: "anthropics/claude-code-actio\\u006e@v1"',
+                "with:",
+                "allowed_bots: '*'",
+            ),
+            (
+                "!!str uses: anthropics/claude-code-action@v1",
+                "&inputs with:",
+                '!!str allowed_bots: !!str "*"',
+            ),
+            (
+                "uses: anthropics/claude-code-action@v1",
+                "with: # inputs",
+                "allowed_bots: &all '*'",
+            ),
+        ],
+    )
+    def test_keys_and_values_are_read_as_yaml_reads_them(self, uses, with_, setting):
+        text = f"- {uses}\n  {with_}\n    {setting}\n"
+        assert _settings(".github/workflows/a.yml", text) == ['allowed_bots = "*"']
+
+    @pytest.mark.parametrize(
+        ("with_", "setting"),
+        [
+            ('"within": x', 'allowed_bots: "*"'),
+            ("with: {}", 'allowed_bots: "*"'),
+            ("with:", '"allowed_bots\\"": "*"'),
+        ],
+    )
+    def test_other_keys_are_not_with_or_the_setting(self, with_, setting):
+        text = f"- uses: anthropics/claude-code-action@v1\n  {with_}\n    {setting}\n"
+        assert _settings(".github/workflows/a.yml", text) == []
+
+    @pytest.mark.parametrize(
+        "line",
+        [" " * 500_000 + "x", "! " * 250_000 + "x", "!" * 500_000, '"\\' * 250_000],
+    )
+    def test_a_long_yaml_line_is_read_in_linear_time(self, line):
+        text = f"- uses: anthropics/claude-code-action@v1\n  with:\n{line}\n"
+        started = time.perf_counter()
+        assert _settings(".github/workflows/a.yml", text) == []
+        assert time.perf_counter() - started < 2
+
     def test_an_action_named_only_in_a_comment_is_not_used(self):
         text = (
             "# see anthropics/claude-code-action\n"
