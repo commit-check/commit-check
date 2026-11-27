@@ -22,6 +22,9 @@ from commit_check import (
     GIT_REVERT_SUBJECT_PATTERN,
     ai_policy,
 )
+from commit_check.agent_config import MAX_FILE_SIZE as MAX_AGENT_FILE_SIZE
+from commit_check.agent_config import Finding, find_settings, is_allowed
+from commit_check.agent_config import load_settings as load_agent_settings
 from commit_check.ai_signatures import (
     detect_ai_author,
     detect_ai_signatures,
@@ -46,6 +49,7 @@ from commit_check.util import (
     get_commit_author_identity,
     get_commit_files,
     get_commit_info,
+    get_file_text,
     get_git_config_value,
     get_git_remotes,
     get_git_user_identity,
@@ -156,6 +160,11 @@ class ValidationContext:
     # rules each get their own validator, so without this they would re-run
     # the same git plumbing over the same commits three times.
     files_cache: dict[str, list[tuple[str, int]]] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    # Per-run memo of the agent config findings in each (revision, path):
+    # the four agent config rules read the same files.
+    agent_findings_cache: dict[tuple[str, str], list[Finding] | None] = field(
         default_factory=dict, repr=False, compare=False
     )
     # Set when stdin_text is a piped commit message: checks with a value of
@@ -472,6 +481,7 @@ class BaseValidator(ABC):
         error: str | None = None,
         fix: str | None = None,
         suggest: str | None = None,
+        head: str | None = None,
     ) -> None:
         """Record and (unless suppressed) print a standardised failure message.
 
@@ -483,8 +493,14 @@ class BaseValidator(ABC):
         guessing; it replaces the rule's generic suggestion with a concrete
         one (``suggest`` overrides the wording) and travels to structured
         consumers as its own field.
+
+        ``head`` is for a value that is a list, one item a line: the failure
+        line then says *head* (``3 settings``) and every item is printed
+        below it, rather than the first item and a count of the rest.
         """
         rule_dict = self.rule.to_dict()
+        if head is not None:
+            rule_dict["value_head"] = head
         if error is not None:
             rule_dict["error"] = error
         if fix or suggest:
@@ -1012,7 +1028,8 @@ class FilesValidator(BaseValidator):
     patterns, path length — branching on the rule's check name. Only the
     paths and sizes recorded in the commit are read, never file contents:
     content scanning is a different tool's job. A commit touching no files
-    (or an unresolvable revision) is a skip.
+    (or an unresolvable revision) is a skip. The agent config rules, which
+    do read contents, are :class:`AgentConfigValidator`.
     """
 
     @staticmethod
@@ -1161,6 +1178,92 @@ class FilesValidator(BaseValidator):
         ]
         if offenders:
             return self._fail(offenders)
+        return ValidationResult.PASS
+
+
+class AgentConfigValidator(FilesValidator):
+    """Validates the agent config files a commit touches (CC601 to CC604).
+
+    Unlike the other file rules this reads contents, but only of the files
+    ``agent_configs.toml`` names, as committed, and only to find the
+    settings it lists; see :mod:`commit_check.agent_config`. A commit that
+    touches files but no agent config file passes.
+    """
+
+    def _fail(self, offenders: list[str]) -> ValidationResult:
+        """Report every finding, one a line.
+
+        They are often in different files; showing one and a count of the
+        rest would have the reader fix them one run at a time.
+        """
+        value = "\n".join(offenders)
+        self._checked_value = value
+        head = f"{len(offenders)} settings" if len(offenders) > 1 else None
+        self._print_failure(value, head=head)
+        return ValidationResult.FAIL
+
+    def _findings(
+        self, context: ValidationContext, rev: str, path: str, size: int
+    ) -> list[Finding] | None:
+        """The findings in *path* at *rev*, or ``None`` when it was not read:
+        too large, or its contents could not be had from git."""
+        key = (rev, path)
+        if key not in context.agent_findings_cache:
+            findings: list[Finding] | None = None
+            if size <= MAX_AGENT_FILE_SIZE:
+                text = get_file_text(rev, path)
+                if text is not None:
+                    findings = find_settings(path, text)
+            context.agent_findings_cache[key] = findings
+        return context.agent_findings_cache[key]
+
+    def validate(self, context: ValidationContext) -> ValidationResult:
+        revs = self._revs_to_check(context)
+        if revs is None:
+            return ValidationResult.SKIP
+        settings = load_agent_settings()
+        allowed = self.rule.allowed or []
+        # Over several commits, a setting may be in one that a later commit
+        # undid, so the file on disk no longer shows it: name the commit.
+        name_commit = len(revs) > 1
+        touched = False
+        checked: set[str] = set()
+        unread: set[str] = set()
+        offenders: dict[str, str] = {}
+        for rev in revs:
+            for path, size in self._files_for_rev(context, rev):
+                touched = True
+                if not any(s.reads(path) for s in settings):
+                    continue
+                findings = self._findings(context, rev, path, size)
+                if findings is None:
+                    unread.add(path)
+                    continue
+                checked.add(path)
+                for finding in findings:
+                    if finding.check != self.rule.check or is_allowed(finding, allowed):
+                        continue
+                    # The newest commit that carries it: revs come newest
+                    # first, as git rev-list lists them.
+                    where = f" at {rev[:7]}" if name_commit else ""
+                    offenders.setdefault(str(finding), f"{finding}{where}")
+        if not touched:
+            return ValidationResult.SKIP
+        if offenders:
+            return self._fail(list(offenders.values()))
+        # A file too large to read passes nothing: say so, rather than count
+        # it as checked.
+        not_read = ", ".join(sorted(unread))
+        if not_read and not checked:
+            self._skip_reason = f"not read (over 1 MiB or unreadable): {not_read}"
+            return ValidationResult.SKIP
+        self._checked_value = (
+            f"{len(checked)} agent config file(s)"
+            if checked
+            else "no agent config file"
+        )
+        if not_read:
+            self._checked_value += f"; not read: {not_read}"
         return ValidationResult.PASS
 
 
@@ -2309,6 +2412,10 @@ class ValidationEngine:
         "file_size": FilesValidator,
         "file_pattern": FilesValidator,
         "path_length": FilesValidator,
+        "agent_mcp_auto_approve": AgentConfigValidator,
+        "agent_api_endpoint": AgentConfigValidator,
+        "agent_full_access": AgentConfigValidator,
+        "agent_unrestricted_trigger": AgentConfigValidator,
     }
 
     def __init__(self, rules: list[ValidationRule]):

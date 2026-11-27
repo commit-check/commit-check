@@ -13,6 +13,7 @@ ID ranges
 ``CC3xx``  Push and file rules
 ``CC4xx``  Tag rules
 ``CC5xx``  Pull request rules
+``CC6xx``  Agent config rules
 =========  ==================================
 
 Internal bookkeeping entries that never produce a diagnostic (such as
@@ -277,6 +278,41 @@ FILES_RULES = [
     ),
 ]
 
+# Agent config rules: settings in the agent config files a commit changes
+# that, once committed, hold for everyone who opens the repository. They run
+# with the file rules, under --files, and read those files' contents. The
+# settings each rule looks for are listed per agent in agent_configs.toml.
+AGENT_CONFIG_RULES = [
+    RuleCatalogEntry(
+        rule_id="CC601",
+        check="agent_mcp_auto_approve",
+        regex=None,
+        error="MCP servers are approved without asking",
+        suggest="Remove it, or list trusted servers in allow_mcp_servers",
+    ),
+    RuleCatalogEntry(
+        rule_id="CC602",
+        check="agent_api_endpoint",
+        regex=None,
+        error="API requests are sent to another endpoint",
+        suggest="Remove it, or list the endpoint in allow_api_endpoints",
+    ),
+    RuleCatalogEntry(
+        rule_id="CC603",
+        check="agent_full_access",
+        regex=None,
+        error="The agent runs without asking or without a sandbox",
+        suggest="Remove it; set it in your user settings if you need it",
+    ),
+    RuleCatalogEntry(
+        rule_id="CC604",
+        check="agent_unrestricted_trigger",
+        regex=None,
+        error="Anyone can start the agent",
+        suggest='List the allowed users or bots instead of "*"',
+    ),
+]
+
 # Branch rules
 BRANCH_RULES = [
     RuleCatalogEntry(
@@ -337,6 +373,7 @@ ALL_RULES = [
         *BRANCH_RULES,
         *PUSH_RULES,
         *FILES_RULES,
+        *AGENT_CONFIG_RULES,
         *TAG_RULES,
         *PULL_REQUEST_RULES,
     )
@@ -375,4 +412,11 @@ PR_TITLE_CHECKS: frozenset[str] = MESSAGE_CHECKS - {
     "ai_author",
 }
 BRANCH_CHECKS: frozenset[str] = frozenset({"branch", "merge_base"})
-FILES_CHECKS: frozenset[str] = frozenset(entry.check for entry in FILES_RULES)
+#: What ``--files`` runs: the file rules and the agent config rules, which
+#: read the same files.
+FILES_CHECKS: frozenset[str] = frozenset(
+    entry.check for entry in (*FILES_RULES, *AGENT_CONFIG_RULES)
+)
+AGENT_CONFIG_CHECKS: frozenset[str] = frozenset(
+    entry.check for entry in AGENT_CONFIG_RULES
+)

@@ -1,0 +1,111 @@
+# The agent settings the agent config rules (CC601 to CC604) look for.
+#
+# Each [[agent]] table is one coding agent: the files it reads project
+# settings from, and the settings in them that, once committed, change what
+# the agent does for everyone who opens the repository. To cover another
+# agent, add a table here and a case for each setting in
+# tests/agent_config_test.py. No code changes are needed.
+#
+#   name      the agent, as people know it
+#   files     the committed files it reads, as paths from the repository
+#             root; * and ? work as in a shell and stay within one directory
+#   uses      YAML files only: the action a step's "uses:" names; only the
+#             settings of such a step count
+#   docs      where the agent documents these settings
+#   settings  one inline table per setting:
+#     rule    the rule that reports it:
+#               agent-mcp-auto-approve      MCP servers or their tools run
+#                                           without asking
+#               agent-api-endpoint          requests go to another API
+#                                           endpoint
+#               agent-full-access           commands run without asking or
+#                                           outside the sandbox
+#               agent-unrestricted-trigger  anyone can start the agent in CI
+#     key     the setting, keys joined with "."; * stands for any one key,
+#             such as a server's name. A key that itself holds dots, as in
+#             VS Code's settings, is matched whole first
+#     value   the risky value, or for a list the risky item. Leave it out
+#             when any value is, such as an endpoint's URL
+#     docs    optional: a page more specific than the agent's docs
+#
+# JSON files may hold // and /* */ comments and trailing commas. YAML files
+# are read a line at a time: a setting matches on a "key: value" line, so a
+# value written across several lines, or through an anchor, is not seen.
+#
+# Only settings an agent documents belong here, with the page that says so.
+# Values are matched as the docs write them: "Bash" and "Bash(*)" are, a
+# rule such as "Bash(python3:*)" that also allows any command is not. These
+# rules catch the settings that open everything up, not every risky one.
+
+[[agent]]
+name = "Claude Code"
+files = [".claude/settings.json", ".claude/settings.local.json"]
+docs = "https://code.claude.com/docs/en/settings"
+settings = [
+    { rule = "agent-mcp-auto-approve", key = "enableAllProjectMcpServers", value = true },
+    { rule = "agent-mcp-auto-approve", key = "enabledMcpjsonServers" },
+    { rule = "agent-api-endpoint", key = "env.ANTHROPIC_BASE_URL", docs = "https://code.claude.com/docs/en/env-vars" },
+    { rule = "agent-api-endpoint", key = "env.ANTHROPIC_BEDROCK_BASE_URL", docs = "https://code.claude.com/docs/en/env-vars" },
+    { rule = "agent-api-endpoint", key = "env.ANTHROPIC_BEDROCK_MANTLE_BASE_URL", docs = "https://code.claude.com/docs/en/env-vars" },
+    { rule = "agent-api-endpoint", key = "env.ANTHROPIC_AWS_BASE_URL", docs = "https://code.claude.com/docs/en/env-vars" },
+    { rule = "agent-api-endpoint", key = "env.ANTHROPIC_VERTEX_BASE_URL", docs = "https://code.claude.com/docs/en/env-vars" },
+    { rule = "agent-api-endpoint", key = "env.ANTHROPIC_FOUNDRY_BASE_URL", docs = "https://code.claude.com/docs/en/env-vars" },
+    { rule = "agent-full-access", key = "permissions.allow", value = "Bash", docs = "https://code.claude.com/docs/en/permissions" },
+    { rule = "agent-full-access", key = "permissions.allow", value = "Bash(*)", docs = "https://code.claude.com/docs/en/permissions" },
+    # Ignored in project settings since Claude Code 2.1.257, still read by
+    # older versions.
+    { rule = "agent-full-access", key = "permissions.defaultMode", value = "bypassPermissions" },
+]
+
+[[agent]]
+name = "Claude Code GitHub Action"
+files = [
+    ".github/workflows/*.yml",
+    ".github/workflows/*.yaml",
+    ".github/actions/*/action.yml",
+    ".github/actions/*/action.yaml",
+]
+uses = "anthropics/claude-code-action"
+docs = "https://github.com/anthropics/claude-code-action/blob/main/docs/security.md"
+settings = [
+    { rule = "agent-unrestricted-trigger", key = "allowed_bots", value = "*" },
+    { rule = "agent-unrestricted-trigger", key = "allowed_non_write_users", value = "*" },
+]
+
+[[agent]]
+name = "Codex"
+files = [".codex/config.toml"]
+docs = "https://developers.openai.com/codex/config-reference"
+settings = [
+    { rule = "agent-full-access", key = "sandbox_mode", value = "danger-full-access" },
+    { rule = "agent-full-access", key = "default_permissions", value = ":danger-full-access" },
+    { rule = "agent-full-access", key = "approval_policy", value = "never" },
+    # [profiles.*] is not listed: Codex ignores profile and profiles in a
+    # project's .codex/config.toml.
+]
+
+[[agent]]
+name = "Gemini CLI"
+files = [".gemini/settings.json"]
+docs = "https://geminicli.com/docs/tools/mcp-server"
+settings = [
+    { rule = "agent-mcp-auto-approve", key = "mcpServers.*.trust", value = true },
+]
+
+[[agent]]
+name = "Cursor CLI"
+files = [".cursor/cli.json"]
+docs = "https://cursor.com/docs/cli/reference/permissions"
+settings = [
+    { rule = "agent-mcp-auto-approve", key = "permissions.allow", value = "Mcp(*:*)" },
+]
+
+[[agent]]
+name = "GitHub Copilot in VS Code"
+files = [".vscode/settings.json"]
+docs = "https://code.visualstudio.com/docs/agents/run/approvals"
+settings = [
+    { rule = "agent-full-access", key = "chat.tools.global.autoApprove", value = true },
+    # The earlier name, which CVE-2025-53773 had Copilot write to this file.
+    { rule = "agent-full-access", key = "chat.tools.autoApprove", value = true, docs = "https://embracethered.com/blog/posts/2025/github-copilot-remote-code-execution-via-prompt-injection/" },
+]
