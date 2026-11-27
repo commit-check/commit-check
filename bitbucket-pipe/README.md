@@ -7,7 +7,7 @@ Check a pull request against your team's commit policy: the source branch name, 
 Add the following snippet to the script section of your `bitbucket-pipelines.yml` file:
 
 ```yaml
-- pipe: commit-check/commit-check:2.24.2
+- pipe: commit-check/commit-check:2.25.0
   variables:
     # MESSAGE: '<boolean>' # Optional
     # BRANCH: '<boolean>' # Optional
@@ -64,7 +64,7 @@ pipelines:
           clone:
             depth: full
           script:
-            - pipe: commit-check/commit-check:2.24.2
+            - pipe: commit-check/commit-check:2.25.0
 ```
 
 Advanced example. Also check the commit author emails, the pull request title and its AI attribution:
@@ -78,7 +78,7 @@ pipelines:
           clone:
             depth: full
           script:
-            - pipe: commit-check/commit-check:2.24.2
+            - pipe: commit-check/commit-check:2.25.0
               variables:
                 AUTHOR_EMAIL: 'true'
                 PR_TITLE: 'true'
@@ -89,7 +89,7 @@ pipelines:
 Leave out the branch check and override one rule without a `cchk.toml`:
 
 ```yaml
-            - pipe: commit-check/commit-check:2.24.2
+            - pipe: commit-check/commit-check:2.25.0
               variables:
                 BRANCH: 'false'
                 CCHK_SUBJECT_MAX_LENGTH: '72'
