@@ -36,7 +36,7 @@ RULES = {
     "agent-unrestricted-trigger": "agent_unrestricted_trigger",
 }
 
-#: The ``[agent_config]`` list that lets a finding of each check through,
+#: The ``[agent]`` list that lets a finding of each check through,
 #: for the checks that have one. A server is let through by its name, an
 #: endpoint by its URL.
 ALLOWLISTS = {
@@ -509,7 +509,7 @@ def find_settings(
 
 
 def is_allowed(finding: Finding, allowed: Iterable[str]) -> bool:
-    """Whether an ``[agent_config]`` allowlist lets *finding* through.
+    """Whether an ``[agent]`` allowlist lets *finding* through.
 
     An endpoint matches with or without a trailing slash; anything else
     must match exactly. A URL is never matched by its start, which

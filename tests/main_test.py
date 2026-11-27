@@ -1390,7 +1390,7 @@ class TestNoticesInJson:
         assert data["checks"] == []
         hint = (
             "--files requested but nothing is configured in the [files] or "
-            "[agent_config] section"
+            "[agent] section"
         )
         assert data["notices"] == [{"setting": "--files", "message": hint}]
         assert f"⊘ {hint}" in err
@@ -1873,7 +1873,7 @@ class TestFilesFlag:
         _, err = capfd.readouterr()
         assert (
             "⊘ --files requested but nothing is configured in the [files] or "
-            "[agent_config] section" in err
+            "[agent] section" in err
         )
 
 

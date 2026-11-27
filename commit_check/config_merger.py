@@ -109,7 +109,7 @@ def get_default_config() -> dict[str, Any]:
             "prohibited_patterns": [],
             "max_path_length": 0,
         },
-        "agent_config": {
+        "agent": {
             "enabled": False,
             "allow_mcp_servers": [],
             "allow_api_endpoints": [],
@@ -228,15 +228,15 @@ class ConfigMerger:
         "CCHK_FILES_MAX_SIZE": ("files", "max_size", str),
         "CCHK_FILES_PROHIBITED_PATTERNS": ("files", "prohibited_patterns", parse_list),
         "CCHK_FILES_MAX_PATH_LENGTH": ("files", "max_path_length", parse_int),
-        # Agent config section
-        "CCHK_AGENT_CONFIG_ENABLED": ("agent_config", "enabled", parse_bool),
-        "CCHK_AGENT_CONFIG_ALLOW_MCP_SERVERS": (
-            "agent_config",
+        # Agent section
+        "CCHK_AGENT_ENABLED": ("agent", "enabled", parse_bool),
+        "CCHK_AGENT_ALLOW_MCP_SERVERS": (
+            "agent",
             "allow_mcp_servers",
             parse_list,
         ),
-        "CCHK_AGENT_CONFIG_ALLOW_API_ENDPOINTS": (
-            "agent_config",
+        "CCHK_AGENT_ALLOW_API_ENDPOINTS": (
+            "agent",
             "allow_api_endpoints",
             parse_list,
         ),
@@ -280,11 +280,11 @@ class ConfigMerger:
         "files_max_size": ("files", "max_size"),
         "files_prohibited_patterns": ("files", "prohibited_patterns"),
         "files_max_path_length": ("files", "max_path_length"),
-        # Agent config section
-        "agent_config_enabled": ("agent_config", "enabled"),
-        "agent_config_allow_mcp_servers": ("agent_config", "allow_mcp_servers"),
-        "agent_config_allow_api_endpoints": (
-            "agent_config",
+        # Agent section
+        "agent_enabled": ("agent", "enabled"),
+        "agent_allow_mcp_servers": ("agent", "allow_mcp_servers"),
+        "agent_allow_api_endpoints": (
+            "agent",
             "allow_api_endpoints",
         ),
     }
@@ -303,7 +303,7 @@ class ConfigMerger:
             "push": {},
             "tag": {},
             "files": {},
-            "agent_config": {},
+            "agent": {},
         }
 
         for env_var, (section, key, parser) in ConfigMerger.ENV_VAR_MAPPING.items():
@@ -335,7 +335,7 @@ class ConfigMerger:
             "push": {},
             "tag": {},
             "files": {},
-            "agent_config": {},
+            "agent": {},
         }
 
         for arg_name, (section, key) in ConfigMerger.CLI_ARG_MAPPING.items():

@@ -552,7 +552,7 @@ class TestRuleBuilder:
 
     def test_enabled_builds_all_four_with_their_allowlists(self):
         config = {
-            "agent_config": {
+            "agent": {
                 "enabled": True,
                 "allow_mcp_servers": ["github"],
                 "allow_api_endpoints": "https://a.example.com, https://b.example.com",
@@ -573,27 +573,27 @@ class TestRuleBuilder:
         assert rules["agent_mcp_auto_approve"].rule_id == "CC601"
 
     def test_enabled_must_be_a_boolean(self):
-        with pytest.raises(ConfigError, match=r"\[agent_config\] enabled"):
-            RuleBuilder({"agent_config": {"enabled": "false"}})
+        with pytest.raises(ConfigError, match=r"\[agent\] enabled"):
+            RuleBuilder({"agent": {"enabled": "false"}})
 
     def test_an_allowlist_must_be_strings(self):
-        config = {"agent_config": {"enabled": True, "allow_mcp_servers": [1]}}
+        config = {"agent": {"enabled": True, "allow_mcp_servers": [1]}}
         with pytest.raises(ConfigError, match="allow_mcp_servers"):
             RuleBuilder(config).build_all_rules()
 
     def test_a_scalar_section_is_a_notice(self):
         notices = []
-        rules = RuleBuilder({"agent_config": True}, notices).build_all_rules()
+        rules = RuleBuilder({"agent": True}, notices).build_all_rules()
         assert not {r.check for r in rules} & AGENT_CONFIG_CHECKS
-        assert notices[0]["setting"] == "[agent_config]"
+        assert notices[0]["setting"] == "[agent]"
 
     def test_an_empty_scalar_section_is_no_notice(self):
         notices = []
-        RuleBuilder({"agent_config": ""}, notices).build_all_rules()
+        RuleBuilder({"agent": ""}, notices).build_all_rules()
         assert notices == []
 
     def test_warn_demotes_one_rule(self):
-        config = {"agent_config": {"enabled": True}, "warn": ["CC602"]}
+        config = {"agent": {"enabled": True}, "warn": ["CC602"]}
         severity = {r.check: r.severity for r in RuleBuilder(config).build_all_rules()}
         assert severity["agent_api_endpoint"] == "warn"
         assert severity["agent_mcp_auto_approve"] == "error"
@@ -607,12 +607,10 @@ def _no_args():
 
 class TestConfigSources:
     def test_env_vars(self, monkeypatch):
-        monkeypatch.setenv("CCHK_AGENT_CONFIG_ENABLED", "true")
-        monkeypatch.setenv("CCHK_AGENT_CONFIG_ALLOW_MCP_SERVERS", "github,notes")
-        monkeypatch.setenv(
-            "CCHK_AGENT_CONFIG_ALLOW_API_ENDPOINTS", "https://llm.example.com"
-        )
-        assert ConfigMerger.parse_env_vars()["agent_config"] == {
+        monkeypatch.setenv("CCHK_AGENT_ENABLED", "true")
+        monkeypatch.setenv("CCHK_AGENT_ALLOW_MCP_SERVERS", "github,notes")
+        monkeypatch.setenv("CCHK_AGENT_ALLOW_API_ENDPOINTS", "https://llm.example.com")
+        assert ConfigMerger.parse_env_vars()["agent"] == {
             "enabled": True,
             "allow_mcp_servers": ["github", "notes"],
             "allow_api_endpoints": ["https://llm.example.com"],
@@ -621,9 +619,9 @@ class TestConfigSources:
     def test_a_misspelt_key_is_named(self):
         from commit_check.config_merger import unknown_setting_warnings
 
-        [warning] = unknown_setting_warnings({"agent_config": {"enable": True}})
+        [warning] = unknown_setting_warnings({"agent": {"enable": True}})
         assert warning.endswith(
-            "unknown setting [agent_config] enable is ignored; did you mean enabled?"
+            "unknown setting [agent] enable is ignored; did you mean enabled?"
         )
 
 
@@ -846,7 +844,7 @@ class TestEndToEnd:
             '{"enableAllProjectMcpServers": true}', encoding="utf-8"
         )
         (tmp_path / "cchk.toml").write_text(
-            "[agent_config]\nenabled = true\n", encoding="utf-8"
+            "[agent]\nenabled = true\n", encoding="utf-8"
         )
         _git(tmp_path, "add", "-A")
         _git(tmp_path, "commit", "-q", "-m", "chore: add settings")

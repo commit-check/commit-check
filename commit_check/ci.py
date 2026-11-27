@@ -49,8 +49,7 @@ HELP = {
     "author-name": "check the author name of every commit",
     "author-email": "check the author email of every commit",
     "files": (
-        "check the files every commit changes against the [files] and "
-        "[agent_config] rules"
+        "check the files every commit changes against the [files] and [agent] rules"
     ),
     "pr-title": "check the title against the commit message rules",
     "pr-body-ai-attribution": (

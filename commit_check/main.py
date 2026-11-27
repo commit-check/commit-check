@@ -302,7 +302,7 @@ def _get_parser() -> argparse.ArgumentParser:
         help="check the files the commit at HEAD (or --rev) touches: size "
         "limit, prohibited path patterns, path length, and risky settings in "
         "agent config files (all off until configured in the [files] and "
-        "[agent_config] config sections)",
+        "[agent] config sections)",
         action="store_true",
         required=False,
     )
@@ -644,12 +644,12 @@ def _get_parser() -> argparse.ArgumentParser:
 
     # Agent config options
     agent_group = parser.add_argument_group(
-        "agent config options",
+        "agent options",
         "Configuration options for the agent config rules, run by --files",
     )
 
     agent_group.add_argument(
-        "--agent-config-enabled",
+        "--agent-enabled",
         type=parse_bool,
         default=None,
         metavar="BOOL",
@@ -658,7 +658,7 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     agent_group.add_argument(
-        "--agent-config-allow-mcp-servers",
+        "--agent-allow-mcp-servers",
         type=parse_list,
         default=None,
         metavar="LIST",
@@ -667,7 +667,7 @@ def _get_parser() -> argparse.ArgumentParser:
     )
 
     agent_group.add_argument(
-        "--agent-config-allow-api-endpoints",
+        "--agent-allow-api-endpoints",
         type=parse_list,
         default=None,
         metavar="LIST",
@@ -844,7 +844,7 @@ _UNCONFIGURED_HINTS = (
         tuple(sorted(FILES_CHECKS)),
         (
             "--files requested but nothing is configured in the [files] or "
-            "[agent_config] section"
+            "[agent] section"
         ),
     ),
     (

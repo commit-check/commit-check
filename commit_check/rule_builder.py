@@ -492,17 +492,17 @@ class RuleBuilder:
     def _build_agent_config_rules(self) -> list[ValidationRule]:
         """Build the agent config rules, CC601 to CC604.
 
-        Off by default, all four at once: ``[agent_config] enabled = true``
+        Off by default, all four at once: ``[agent] enabled = true``
         turns them on. Each rule that has an allowlist carries it as
         ``allowed``. ``warn`` can demote any of them on its own.
         """
-        section = self.config.get("agent_config", {})
+        section = self.config.get("agent", {})
         if not isinstance(section, dict):
             if section:
                 report_notice(
                     self.notices,
-                    "[agent_config]",
-                    f"[agent_config] must be a table, got {section!r}; "
+                    "[agent]",
+                    f"[agent] must be a table, got {section!r}; "
                     "the agent config rules are disabled",
                 )
             return []
@@ -511,9 +511,7 @@ class RuleBuilder:
         rules = []
         for catalog_entry in AGENT_CONFIG_RULES:
             key = ALLOWLISTS.get(catalog_entry.check)
-            allowed = (
-                _string_list(section, key, [], f"[agent_config] {key}") if key else None
-            )
+            allowed = _string_list(section, key, [], f"[agent] {key}") if key else None
             rules.append(
                 ValidationRule(
                     check=catalog_entry.check,
