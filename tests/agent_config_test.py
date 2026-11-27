@@ -479,6 +479,16 @@ class TestFindSettings:
                 "with: # inputs",
                 "allowed_bots: &all '*'",
             ),
+            (
+                "uses: anthropics/claude-code-action@v1",
+                "with: !!map",
+                "allowed_bots: '*'",
+            ),
+            (
+                "uses: anthropics/claude-code-action@v1",
+                "with: &inputs # shared",
+                "allowed_bots: '*'",
+            ),
         ],
     )
     def test_keys_and_values_are_read_as_yaml_reads_them(self, uses, with_, setting):
@@ -499,10 +509,34 @@ class TestFindSettings:
 
     @pytest.mark.parametrize(
         "line",
-        [" " * 500_000 + "x", "! " * 250_000 + "x", "!" * 500_000, '"\\' * 250_000],
+        [
+            " " * 500_000 + "x",
+            "      -" + " " * 500_000 + "x",
+            "- " + "! " * 250_000 + "x",
+            "!" * 500_000,
+            '"\\' * 250_000,
+        ],
     )
     def test_a_long_yaml_line_is_read_in_linear_time(self, line):
         text = f"- uses: anthropics/claude-code-action@v1\n  with:\n{line}\n"
+        started = time.perf_counter()
+        assert _settings(".github/workflows/a.yml", text) == []
+        assert time.perf_counter() - started < 2
+
+    @pytest.mark.parametrize(
+        "line",
+        [
+            "uses: anthropics/claude-code-action@v1",
+            "  - uses: anthropics/claude-code-action@v1",
+        ],
+    )
+    def test_many_uses_lines_are_read_in_linear_time(self, line):
+        started = time.perf_counter()
+        assert _settings(".github/workflows/a.yml", f"{line}\n" * 25_000) == []
+        assert time.perf_counter() - started < 2
+
+    def test_many_with_lines_are_read_in_linear_time(self):
+        text = "- uses: anthropics/claude-code-action@v1\n" + "  with:\n" * 120_000
         started = time.perf_counter()
         assert _settings(".github/workflows/a.yml", text) == []
         assert time.perf_counter() - started < 2

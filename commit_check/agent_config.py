@@ -345,12 +345,13 @@ _YAML_ESCAPES = {
 _YAML_ESCAPE = r"\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8}|.)"
 _YAML_QUOTED = {'"': r'"((?:\\.|[^"\\])*)"', "'": r"'((?:''|[^'])*)'"}
 # A node's tag and anchor, such as "!!str " and "&name ", before its key or value.
-_YAML_PROPERTIES = r"(?:[!&]\S*\s+)*"
+_YAML_PROPERTIES = r"(?:[!&]\S*(?:\s+|$))*"
 # A "key: rest" line of a block mapping, as a list item or not. Only keys
 # spelled with word characters, dots and dashes are read unquoted: no key
-# this module looks for is spelled otherwise.
+# this module looks for is spelled otherwise. Each run of spaces can be
+# matched one way only, so a long line that is not an entry fails at once.
 _YAML_ENTRY = re.compile(
-    rf"""^(?P<dash>\s*-\s+)?\s*{_YAML_PROPERTIES}"""
+    rf"""^\s*(?:(?P<dash>-)\s+)?{_YAML_PROPERTIES}"""
     r"""(?P<key>"(?:\\.|[^"\\])*"|'(?:''|[^'])*'|[\w.-]+)\s*:(?P<rest>.*)$"""
 )
 
@@ -408,10 +409,15 @@ def _steps_using(lines: list[str], uses: str) -> list[list[str]]:
 
     A step runs from its ``-`` to the next line indented no deeper than
     that ``-``, so a setting of another step, another job's action or a
-    comment that names the action is not taken for this one's.
+    comment that names the action is not taken for this one's. Steps do
+    not overlap, so each line is walked over once, however many ``uses:``
+    lines the file holds.
     """
     steps = []
+    covered = 0  # the lines before this one are in a step already found
     for number, line in enumerate(lines):
+        if number < covered:
+            continue
         entry = _yaml_entry(line)
         if entry is None or entry[0] != "uses":
             continue
@@ -425,7 +431,7 @@ def _steps_using(lines: list[str], uses: str) -> list[list[str]]:
             # "uses:" under the step's "- name:" line: the step starts at the
             # nearest line above that begins with a "-" further left.
             dash = _indent(line) - 2
-            while start > 0:
+            while start > covered:
                 start -= 1
                 above = lines[start]
                 if above.strip().startswith("-") and _indent(above) <= dash:
@@ -442,6 +448,7 @@ def _steps_using(lines: list[str], uses: str) -> list[list[str]]:
                 break
             end += 1
         steps.append(lines[start:end])
+        covered = end
     return steps
 
 
@@ -456,11 +463,14 @@ def _inputs(step: list[str]) -> list[str]:
         entry = _yaml_entry(line)
         if entry is None or entry[0] != "with":
             continue
-        if not re.fullmatch(r"\s*(?:#.*)?", entry[1]):
+        # Nothing after "with:" but a tag, an anchor or a comment, as in
+        # "with: !!map": the inputs are on the lines below.
+        if not re.fullmatch(rf"\s*{_YAML_PROPERTIES}(?:#.*)?", entry[1]):
             continue
         column = len(line) - len(line.lstrip(" -"))
         depth = None
-        for below in step[number + 1 :]:
+        for below_number in range(number + 1, len(step)):
+            below = step[below_number]
             stripped = below.strip()
             if not stripped or stripped.startswith("#"):
                 continue
